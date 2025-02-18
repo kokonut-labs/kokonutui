@@ -1239,4 +1239,16 @@ export const component: Registry = [
             },
         ],
     },
+    {
+        "name": "footer",
+        "type": "registry:component",
+        "dependencies": ["lucide-react"],
+        "registryDependencies": ["link"],
+        "files": [
+            {
+                "path": "components/kokonutui/footer.tsx",
+                "type": "registry:component"
+            }
+        ]
+    }    
 ];
