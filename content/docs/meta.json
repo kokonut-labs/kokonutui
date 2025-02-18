@@ -21,6 +21,7 @@
         "components/tweet-card",
         "components/particles-background",
         "components/faq",
+        "components/footer",
         "---Blocks---",
         "blocks/ai-card-generation",
         "blocks/minimal-shop",
