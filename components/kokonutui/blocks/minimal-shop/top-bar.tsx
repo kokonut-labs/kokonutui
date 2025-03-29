@@ -79,7 +79,7 @@ export function TopBar({ cartItemCount, onCartClick, onSearch }: TopBarProps) {
 
                 <div className="flex items-center gap-1.5 shrink-0">
                     <motion.div
-                        className="relative"
+                        className="relative overflow-hidden p-1"
                         initial={false}
                         animate={{ width: isSearchOpen ? "auto" : 0 }}
                     >
@@ -116,7 +116,7 @@ export function TopBar({ cartItemCount, onCartClick, onSearch }: TopBarProps) {
                             isSearchOpen
                                 ? "bg-zinc-100 dark:bg-zinc-800"
                                 : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                        }`}
+                        } z-10`}
                     >
                         <Search className="w-4 h-4" />
                     </button>
