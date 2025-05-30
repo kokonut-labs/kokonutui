@@ -99,7 +99,7 @@ export const navigationSections: NavSection[] = [
                 title: "Text",
                 href: "/docs/components/text",
                 description: "Typography and text animation components",
-                count: 6,
+                count: 7,
             },
         ],
     },

@@ -511,6 +511,17 @@ export const component: Registry = [
         ],
     },
     {
+        name: "text-07",
+        type: "registry:component",
+        dependencies: ["@motionone/utils", "framer-motion"],
+        files: [
+            {
+                path: "components/kokonutui/text/text-07.tsx",
+                type: "registry:component",
+            },
+        ],
+    },
+    {
         name: "card-01",
         type: "registry:component",
         dependencies: [],
