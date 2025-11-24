@@ -183,12 +183,12 @@ const Card = ({ product, index, totalCards, isExpanded }: CardProps) => {
                     {product.specs.map((spec) => (
                         <div
                             key={spec.label}
-                            className="text-[10px] backdrop-blur-sm flex flex-col items-start text-left"
+                            className="text-[10px] backdrop-blur-sm flex flex-col items-start text-start"
                         >
-                            <dd className="font-medium text-gray-500 dark:text-gray-400 w-full text-left">
+                            <dd className="font-medium text-gray-500 dark:text-gray-400 w-full text-start">
                                 {spec.value}
                             </dd>
-                            <dt className="text-gray-900 dark:text-gray-100 mb-0.5 w-full text-left">
+                            <dt className="text-gray-900 dark:text-gray-100 mb-0.5 w-full text-start">
                                 {spec.label}
                             </dt>
                         </div>
@@ -215,14 +215,14 @@ const Card = ({ product, index, totalCards, isExpanded }: CardProps) => {
 
                 <div className="mt-4">
                     <div className="space-y-1">
-                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white text-left">
+                        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white text-start">
                             {product.title}
                         </h2>
-                        <span className="block text-3xl font-semibold tracking-tight bg-gradient-to-r from-gray-400 via-gray-300 to-gray-500 dark:from-gray-200 dark:via-white dark:to-gray-300 bg-clip-text text-transparent text-left">
+                        <span className="block text-3xl font-semibold tracking-tight bg-gradient-to-r from-gray-400 via-gray-300 to-gray-500 dark:from-gray-200 dark:via-white dark:to-gray-300 bg-clip-text text-transparent text-start">
                             {product.subtitle}
                         </span>
                     </div>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 text-left">
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 text-start">
                         Experience the iconic design that revolutionized
                         technology
                     </p>

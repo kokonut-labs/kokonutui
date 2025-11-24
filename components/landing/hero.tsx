@@ -15,7 +15,7 @@ export function HeroSection() {
   return (
     <div className="container relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl flex-col items-center justify-between gap-8 px-4 py-8 md:py-12 lg:flex-row lg:gap-4">
       {/* Left side - Title and CTA */}
-      <div className="flex w-full flex-col items-start space-y-8 text-left md:mb-28 lg:w-[45%]">
+      <div className="flex w-full flex-col items-start space-y-8 text-start md:mb-28 lg:w-[45%]">
         <div>
           <Link
             className="group relative mb-6 inline-flex items-center gap-3 rounded-lg px-4 py-2 text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"

@@ -53,7 +53,7 @@ export default function AI_Input_Search() {
                     tabIndex={0}
                     aria-label="Search input container"
                     className={cn(
-                        "relative flex flex-col rounded-xl transition-all duration-200 w-full text-left cursor-text",
+                        "relative flex flex-col rounded-xl transition-all duration-200 w-full text-start cursor-text",
                         "ring-1 ring-black/10 dark:ring-white/10",
                         isFocused && "ring-black/20 dark:ring-white/20"
                     )}

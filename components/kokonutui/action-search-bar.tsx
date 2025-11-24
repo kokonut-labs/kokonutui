@@ -331,7 +331,7 @@ function ActionSearchBar({
                                                     </span>
                                                 )}
                                                 {action.end && (
-                                                    <span className="text-xs text-gray-400 text-right">
+                                                    <span className="text-xs text-gray-400 text-end">
                                                         {action.end}
                                                     </span>
                                                 )}

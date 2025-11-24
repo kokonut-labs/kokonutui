@@ -253,7 +253,7 @@ export default function AILoadingState() {
                                     key={`${line.number}-${line.text}`}
                                     className="flex h-[28px] items-center px-2"
                                 >
-                                    <div className="text-gray-400 dark:text-gray-500 pr-3 select-none w-6 text-right">
+                                    <div className="text-gray-400 dark:text-gray-500 pr-3 select-none w-6 text-end">
                                         {line.number}
                                     </div>
 

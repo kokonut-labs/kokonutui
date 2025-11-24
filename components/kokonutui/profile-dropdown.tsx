@@ -89,7 +89,7 @@ export default function ProfileDropdown({
                             type="button"
                             className="flex items-center gap-16 p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 hover:shadow-sm transition-all duration-200 focus:outline-none"
                         >
-                            <div className="text-left flex-1">
+                            <div className="text-start flex-1">
                                 <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100 tracking-tight leading-tight">
                                     {data.name}
                                 </div>
