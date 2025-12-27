@@ -133,6 +133,21 @@ export const component: Registry = [
     ],
   },
   {
+    name: "action-search-bar-02",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/action-search-bar-02.tsx",
+        type: "registry:component",
+      },
+      {
+        path: "hooks/use-debounce.ts",
+        type: "registry:hook",
+      },
+    ],
+  },
+  {
     name: "ai-input-search",
     type: "registry:component",
     dependencies: ["motion"],

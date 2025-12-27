@@ -32,7 +32,7 @@ export default function ScrollText({
     "TypeScript",
     "Fumadocs",
     "Supabase",
-    "Vercel",
+    "Turborepo",
   ],
   className,
 }: ScrollTextProps) {
