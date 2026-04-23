@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { Header } from "@/components/landing/header";
 import { Footer } from "@/components/layout/footer";
-// import { usePathname } from "next/navigation";
 
 export const metadata: Metadata = {
   title: {
@@ -18,9 +16,7 @@ export default function HomeLayout({
 }) {
   return (
     <>
-      <Suspense fallback={<div>Loading...</div>}>
-        <Header />
-      </Suspense>
+      <Header />
       <main className="relative w-full bg-white pt-0 md:pt-0 dark:bg-black">
         {children}
       </main>

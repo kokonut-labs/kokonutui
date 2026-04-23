@@ -1,10 +1,11 @@
 "use client";
 
 import { ArrowUpRight } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { DURATION } from "@/lib/animation-presets";
 import { cn } from "@/lib/utils";
 
 type FeatureCardProps = {
@@ -37,6 +38,7 @@ const FeatureCard = ({
 }: FeatureCardProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!videoRef.current) {
@@ -60,23 +62,24 @@ const FeatureCard = ({
       onHoverEnd={() => setIsHovered(false)}
       onHoverStart={() => setIsHovered(true)}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      whileHover={{ y: -5 }}
+      whileHover={reduceMotion ? undefined : { y: -5 }}
+      whileTap={reduceMotion ? undefined : { scale: 0.98 }}
     >
       <Link
         aria-label={`${title} - ${description}${
           tags?.length ? `. Tags: ${tags.join(", ")}` : ""
         }`}
         className={cn(
-          "group relative flex flex-col gap-4 rounded-xl p-4 transition-all duration-300",
+          "group relative flex flex-col gap-4 rounded-xl p-4",
+          "transition-[border-color,box-shadow,background-color] duration-200 ease-out",
           "bg-gradient-to-b from-card to-card",
           "border border-primary/5",
           "before:absolute before:inset-0 before:rounded-xl",
           "before:bg-gradient-to-b before:from-primary/5 before:to-transparent",
-          "before:opacity-0 before:transition-opacity before:duration-300",
+          "before:opacity-0 before:transition-opacity before:duration-200",
           "after:absolute after:inset-0 after:z-[-1] after:rounded-xl after:bg-card",
           "hover:border-primary/30",
           "hover:shadow-lg hover:shadow-primary/5",
-          "hover:backdrop-blur-sm",
           "hover:bg-primary/[0.02]",
           "before:hover:opacity-100",
           "flex h-full flex-col",
@@ -92,8 +95,8 @@ const FeatureCard = ({
             <div className="relative h-48 w-full overflow-hidden rounded-lg">
               <motion.div
                 className="h-full w-full"
-                transition={{ duration: 0.3 }}
-                whileHover={{ scale: 1.05 }}
+                transition={{ duration: DURATION.slow }}
+                whileHover={reduceMotion ? undefined : { scale: 1.04 }}
               >
                 <video
                   className="h-full w-full object-cover"
@@ -110,8 +113,8 @@ const FeatureCard = ({
             <div className="relative h-48 w-full overflow-hidden rounded-lg">
               <motion.div
                 className="relative h-full w-full"
-                transition={{ duration: 0.3 }}
-                whileHover={{ scale: 1.05 }}
+                transition={{ duration: DURATION.slow }}
+                whileHover={reduceMotion ? undefined : { scale: 1.04 }}
               >
                 <Image
                   alt={image.alt}

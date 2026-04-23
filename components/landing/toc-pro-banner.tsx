@@ -23,7 +23,7 @@ const STACK = [
 export default function TocProBanner() {
   return (
     <Link
-      className="group relative mt-4 flex flex-col gap-4 overflow-hidden rounded-xl border border-[#FF2D55]/25 p-4 transition-all duration-300 hover:border-[#FF2D55]/45"
+      className="group relative mt-4 flex flex-col gap-4 overflow-hidden rounded-xl border border-[#FF2D55]/25 p-4 transition-colors duration-200 ease-out hover:border-[#FF2D55]/45"
       href="https://kokonutui.pro?utm_source=kokonutui.com&utm_medium=toc"
       rel="noopener"
       target="_blank"
@@ -94,7 +94,7 @@ export default function TocProBanner() {
       {/* Accent bottom line */}
       <div
         aria-hidden="true"
-        className="absolute bottom-0 left-0 h-[2px] w-0 rounded-full transition-all duration-500 group-hover:w-full"
+        className="absolute bottom-0 left-0 h-[2px] w-0 rounded-full transition-[width] duration-500 ease-out group-hover:w-full"
         style={{
           background: "linear-gradient(to right, #FF2D55, transparent)",
         }}

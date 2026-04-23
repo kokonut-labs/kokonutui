@@ -8,8 +8,9 @@ import {
   PaletteIcon,
   TerminalIcon,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
+import { DURATION, EASE_OUT, STAGGER } from "@/lib/animation-presets";
 
 const CLI_COMMAND = "npx shadcn@latest add @kokonutui/<name>";
 
@@ -47,14 +48,16 @@ const steps: Step[] = [
 
 export default function HowItWorks() {
   const { isCopied, copyToClipboard } = useCopyToClipboard();
+  const reduceMotion = useReducedMotion();
+  const fadeUpInitial = reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 };
 
   return (
     <section className="w-full py-24 md:py-32" id="how-it-works">
       <div className="container mx-auto px-4 md:px-6">
         <motion.div
           className="mb-12 text-center md:mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}
+          initial={fadeUpInitial}
+          transition={{ duration: DURATION.marketing, ease: EASE_OUT }}
           viewport={{ once: true, margin: "-100px" }}
           whileInView={{ opacity: 1, y: 0 }}
         >
@@ -72,12 +75,12 @@ export default function HowItWorks() {
             return (
               <motion.div
                 className="flex flex-col gap-4 rounded-2xl border border-black/[0.06] bg-black/[0.02] p-6 dark:border-white/[0.06] dark:bg-white/[0.02]"
-                initial={{ opacity: 0, y: 30 }}
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
                 key={step.number}
                 transition={{
-                  duration: 0.6,
-                  delay: index * 0.12,
-                  ease: [0.21, 0.47, 0.32, 0.98],
+                  duration: DURATION.marketing,
+                  delay: index * STAGGER.relaxed,
+                  ease: EASE_OUT,
                 }}
                 viewport={{ once: true, margin: "-50px" }}
                 whileInView={{ opacity: 1, y: 0 }}
