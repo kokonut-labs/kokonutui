@@ -241,7 +241,7 @@ export const component: Registry = [
   {
     name: "team-selector",
     type: "registry:component",
-    dependencies: ["motion"],
+    dependencies: ["motion", "lucide-react"],
     files: [
       {
         path: "components/kokonutui/team-selector.tsx",
@@ -572,6 +572,116 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/spotlight-cards.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "reveal-on-scroll",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/reveal-on-scroll.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "counter-text",
+    type: "registry:component",
+    dependencies: ["@number-flow/react"],
+    files: [
+      {
+        path: "components/kokonutui/counter-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "aurora-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/aurora-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "magnetic-button",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/magnetic-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "toast-notification",
+    type: "registry:component",
+    dependencies: ["motion", "lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/toast-notification.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "glass-card",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/glass-card.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "submit-button",
+    type: "registry:component",
+    dependencies: ["motion", "lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/submit-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "otp-input",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/otp-input.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "command-palette",
+    type: "registry:component",
+    dependencies: ["motion", "lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/command-palette.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "stat-card",
+    type: "registry:component",
+    dependencies: ["motion", "@number-flow/react", "lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/stat-card.tsx",
         type: "registry:component",
       },
     ],
