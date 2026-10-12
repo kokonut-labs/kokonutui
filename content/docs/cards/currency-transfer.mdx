@@ -1,6 +1,6 @@
 ---
 title: Currency Transfer
-description: Multi-step currency exchange card with animated progress and SVG checkmark confirmation, built with React, Tailwind CSS and Motion animations.
+description: Currency exchange status card with animated progress and a drawn checkmark on completion, built with React, Tailwind CSS and Motion animations.
 keywords: ["payment", "fintech", "checkout", "transaction", "money", "success state"]
 icon: ArrowLeftRight
 full: false
@@ -14,3 +14,32 @@ import CurrencyTransfer from "@/components/kokonutui/currency-transfer";
 <PreviewClient link="currency-transfer" comment={["Motion"]}>
     <CurrencyTransfer />
 </PreviewClient>
+
+## Usage
+
+With no props the card runs a demo: it shows "Transfer in Progress" and completes on its own. Pass `status` to drive it from your own transfer state.
+
+```tsx
+<CurrencyTransfer
+  from={{ amount: 1200, currency: "GBP", symbol: "£", bank: "Monzo", last4: "1180" }}
+  to={{ amount: 1404, currency: "USD", symbol: "$", bank: "Chase Bank", last4: "4589" }}
+  rate={1.17}
+  txnId="TXN-8F2K19QZ"
+  timestamp="2:30 PM"
+  status={isDone ? "completed" : "processing"}
+/>
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `from` | `TransferAccount` | 500.00 USD, Chase Bank ••••4589 | Sending account and amount. |
+| `to` | `TransferAccount` | 460.00 EUR, Deutsche Bank ••••7823 | Receiving account and amount. |
+| `rate` | `number` | `0.92` | Units of `to.currency` per one `from.currency`. |
+| `txnId` | `string` | `"TXN-DAB3UL494"` | Transaction ID shown on completion. |
+| `timestamp` | `string` | `"10:45 AM"` | When the rate was set, shown in the info tooltip. |
+| `status` | `"processing" \| "completed"` | — | Controlled status. Omit it for the self-completing demo. |
+| `className` | `string` | — | Extra classes for the card. |
+
+`TransferAccount` is `{ amount: number; currency: string; symbol?: string; bank: string; last4?: string }`. Status changes are announced to screen readers, and motion is reduced to fades when the user prefers reduced motion.
