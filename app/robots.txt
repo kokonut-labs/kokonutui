@@ -1,7 +1,6 @@
 User-Agent: *
 Allow: /
 Disallow: /api/
-Disallow: /_next/
 
 # Content Signals (https://contentsignals.org). These components are MIT
 # licensed and meant to be installed by agents, so every use is permitted.

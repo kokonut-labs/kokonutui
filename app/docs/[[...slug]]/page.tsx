@@ -16,6 +16,10 @@ import WhatIncluded from "@/components/mdx/what-included";
 import { siteConfig } from "@/config/site";
 import { source } from "@/lib/source";
 
+function ogImagePath(slug: string[] = []) {
+  return ["/docs-og", ...slug, "image.png"].join("/");
+}
+
 export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const params = await props.params;
   const page = source.getPage(params.slug);
@@ -46,12 +50,17 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
             name: "Docs",
             item: `${siteConfig.url}/docs`,
           },
-          {
-            "@type": "ListItem",
-            position: 3,
-            name: page.data.title,
-            item: pageUrl,
-          },
+          // The docs index is the "Docs" crumb itself, so it stops at two.
+          ...(page.url === "/docs"
+            ? []
+            : [
+                {
+                  "@type": "ListItem",
+                  position: 3,
+                  name: page.data.title,
+                  item: pageUrl,
+                },
+              ]),
         ],
       },
       {
@@ -60,6 +69,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         headline: page.data.title,
         description: page.data.description,
         url: pageUrl,
+        image: `${siteConfig.url}${ogImagePath(params.slug)}`,
         dateModified: lastModified?.toISOString(),
         inLanguage: "en-US",
         isPartOf: { "@id": `${siteConfig.url}/#website` },
@@ -145,7 +155,7 @@ export async function generateMetadata(props: {
   }
 
   const ogImage = {
-    url: ["/docs-og", ...(params.slug ?? []), "image.png"].join("/"),
+    url: ogImagePath(params.slug),
     width: 1200,
     height: 630,
     alt: page.data.title,
@@ -163,10 +173,12 @@ export async function generateMetadata(props: {
       url: page.url,
       siteName: siteConfig.name,
       type: "article",
+      locale: "en_US",
       images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
+      creator: "@dorianbaffier",
       title: page.data.title,
       description: page.data.description,
       images: [ogImage],
