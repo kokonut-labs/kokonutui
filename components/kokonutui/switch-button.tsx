@@ -45,8 +45,8 @@ export default function SwitchButton({
       "shadow-[0_1px_2px_-1px_rgb(0_0_0/0.1),0_1px_3px_-2px_rgb(0_0_0/0.1)] dark:shadow-[0_1px_2px_-1px_rgb(0_0_0/0.3),0_1px_3px_-2px_rgb(0_0_0/0.3)]",
       "hover:shadow-[0_2px_4px_-2px_rgb(0_0_0/0.15),0_2px_6px_-3px_rgb(0_0_0/0.15)] dark:hover:shadow-[0_2px_4px_-2px_rgb(0_0_0/0.4),0_2px_6px_-3px_rgb(0_0_0/0.4)]",
       "active:shadow-[0_0px_1px_0_rgb(0_0_0/0.1)] dark:active:shadow-[0_0px_1px_0_rgb(0_0_0/0.2)]",
-      "transition-all duration-200 ease-out",
-      "backdrop-blur-sm",
+      "transition-[color,background-color,border-color,box-shadow,scale,--tw-gradient-from,--tw-gradient-to] duration-200 ease-out",
+      "motion-safe:active:scale-[0.97]",
       "relative",
       "after:absolute after:inset-0 after:rounded-lg after:bg-gradient-to-t after:from-white/10 after:to-transparent after:opacity-0 hover:after:opacity-100 after:transition-opacity",
       "before:absolute before:inset-[1px] before:rounded-[7px] before:bg-gradient-to-b before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity dark:before:from-white/5",
@@ -63,7 +63,6 @@ export default function SwitchButton({
     <Button
       className={cn(
         "group relative",
-        "transition-all duration-300 ease-out",
         "text-zinc-600 dark:text-zinc-300",
         "hover:text-zinc-800 dark:hover:text-zinc-100",
         variants[variant],
@@ -81,7 +80,7 @@ export default function SwitchButton({
       >
         <Sun
           className={cn(
-            "transition-all duration-700 ease-in-out",
+            "transition-[rotate,scale,color] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-colors",
             size === "sm" && "h-3.5 w-3.5",
             size === "default" && "h-4 w-4",
             size === "lg" && "h-5 w-5",
@@ -142,18 +141,6 @@ export default function SwitchButton({
           </span>
         )}
       </div>
-      <span
-        className={cn(
-          "absolute inset-0",
-          "bg-gradient-to-r from-zinc-500/0 via-zinc-500/[0.12] to-zinc-500/0 dark:from-white/0 dark:via-white/[0.05]",
-          "translate-x-[-100%]",
-          "group-hover:translate-x-[100%]",
-          "transition-transform duration-500",
-          "ease-in-out",
-          "pointer-events-none",
-          "z-[1]"
-        )}
-      />
       <span
         className={cn(
           "absolute inset-0 opacity-0 group-hover:opacity-100",
