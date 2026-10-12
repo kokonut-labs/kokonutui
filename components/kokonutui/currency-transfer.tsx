@@ -102,11 +102,25 @@ const swapVariants: Variants = {
   exit: { opacity: 0, y: -6, transition: { duration: 0.15, ease: EASE_OUT } },
 };
 
-/** Same swap without movement, for prefers-reduced-motion. */
+/**
+ * Same swap without movement, for prefers-reduced-motion. `y` and `scale` are
+ * pinned at rest so the server (which can't know the preference) and the
+ * client render the same transform.
+ */
 const fadeVariants: Variants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: 0.2, ease: EASE_OUT } },
-  exit: { opacity: 0, transition: { duration: 0.15, ease: EASE_OUT } },
+  initial: { opacity: 0, y: 0, scale: 1 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.2, ease: EASE_OUT },
+  },
+  exit: {
+    opacity: 0,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.15, ease: EASE_OUT },
+  },
 };
 
 /** Status icon swap: never from scale(0), a slight 0.9 -> 1 settle. */
@@ -290,12 +304,19 @@ export default function CurrencyTransfer({
   }, [isControlled]);
 
   const swap = reduceMotion ? fadeVariants : swapVariants;
+  // The hidden pose is the same on server and client; reduced motion drops
+  // the rise by giving `y` no duration.
   const entry: Variants = {
-    hidden: { opacity: 0, y: reduceMotion ? 0 : 8 },
+    hidden: { opacity: 0, y: 8 },
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
-      transition: { duration: 0.25, delay: i * 0.06, ease: EASE_OUT },
+      transition: {
+        duration: 0.25,
+        delay: i * 0.06,
+        ease: EASE_OUT,
+        y: reduceMotion ? { duration: 0 } : undefined,
+      },
     }),
   };
 
