@@ -114,9 +114,13 @@ function generateAestheticPath(
     });
   }
 
+  // Math.sin/cos can differ in the last digits between the server and the
+  // browser, so round the coordinates to keep the SSR markup identical.
+  const f = (n: number) => n.toFixed(1);
+
   const pathCommands = points.map((point: Point, i: number) => {
     if (i === 0) {
-      return `M ${point.x} ${point.y}`;
+      return `M ${f(point.x)} ${f(point.y)}`;
     }
     const prevPoint = points[i - 1];
     const tension = 0.4;
@@ -124,7 +128,7 @@ function generateAestheticPath(
     const cp1y = prevPoint.y;
     const cp2x = prevPoint.x + (point.x - prevPoint.x) * (1 - tension);
     const cp2y = point.y;
-    return `C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${point.x} ${point.y}`;
+    return `C ${f(cp1x)} ${f(cp1y)}, ${f(cp2x)} ${f(cp2y)}, ${f(point.x)} ${f(point.y)}`;
   });
 
   return pathCommands.join(" ");
