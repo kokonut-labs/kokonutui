@@ -1,4 +1,5 @@
 import { VerifiedIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -12,16 +13,16 @@ import { cn } from "@/lib/utils";
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-type ReplyProps = {
+interface ReplyProps {
   authorName: string;
   authorHandle: string;
   authorImage: string;
   content: string;
   isVerified?: boolean;
   timestamp: string;
-};
+}
 
-type TweetCardProps = {
+interface TweetCardProps {
   authorName?: string;
   authorHandle?: string;
   authorImage?: string;
@@ -31,7 +32,7 @@ type TweetCardProps = {
   href?: string;
   reply?: ReplyProps;
   className?: string;
-};
+}
 
 export default function TweetCard({
   authorName = "Dorian",
@@ -67,29 +68,28 @@ export default function TweetCard({
           "backdrop-blur-xl backdrop-saturate-[180%]",
           "border border-black/10 dark:border-white/10",
           "shadow-[0_8px_16px_rgb(0_0_0_/_0.15)] dark:shadow-[0_8px_16px_rgb(0_0_0_/_0.25)]",
-          "translate-z-0 will-change-transform"
+          className
         )}
       >
         <div
           className={cn(
             "relative w-full rounded-xl p-5",
             "bg-linear-to-br from-black/[0.05] to-transparent dark:from-white/[0.08] dark:to-transparent",
-            "backdrop-blur-md backdrop-saturate-150",
             "border border-black/[0.05] dark:border-white/[0.08]",
             "text-black/90 dark:text-white",
-            "shadow-xs",
-            "translate-z-0 will-change-transform",
-            "before:pointer-events-none before:absolute before:inset-0 before:bg-linear-to-br before:from-black/[0.02] before:to-black/[0.01] before:opacity-0 before:transition-opacity dark:before:from-white/[0.03] dark:before:to-white/[0.01]",
-            "hover:before:opacity-100"
+            "shadow-xs"
           )}
         >
           <div className="flex gap-3">
             <div className="shrink-0">
               <div className="h-10 w-10 overflow-hidden rounded-full">
-                <img
-                  alt={authorName}
+                <Image
+                  alt=""
                   className="h-full w-full object-cover"
+                  height={40}
                   src={authorImage}
+                  unoptimized
+                  width={40}
                 />
               </div>
             </div>
@@ -102,16 +102,21 @@ export default function TweetCard({
                       {authorName}
                     </span>
                     {isVerified && (
-                      <VerifiedIcon className="h-4 w-4 text-blue-400" />
+                      <>
+                        <VerifiedIcon className="h-4 w-4 text-blue-400" />
+                        <span className="sr-only">Verified</span>
+                      </>
                     )}
                   </div>
                   <span className="text-black text-sm dark:text-white/60">
                     @{authorHandle}
                   </span>
                 </div>
-                <button
-                  className="flex h-8 w-8 items-center justify-center rounded-lg p-1 text-black hover:bg-black/5 hover:text-black dark:text-white/80 dark:hover:bg-white/5 dark:hover:text-white"
-                  type="button"
+                {/* Decorative mark: a <button> here would be interactive
+                    content nested inside the card's link. */}
+                <span
+                  aria-hidden="true"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg p-1 text-black dark:text-white/80"
                 >
                   <svg
                     className="h-4 w-4"
@@ -127,7 +132,7 @@ export default function TweetCard({
                       fill="currentColor"
                     />
                   </svg>
-                </button>
+                </span>
               </div>
             </div>
           </div>
@@ -136,6 +141,7 @@ export default function TweetCard({
             {content.map((item, index) => (
               <p
                 className="text-base text-black dark:text-white/90"
+                // biome-ignore lint/suspicious/noArrayIndexKey: static lines that are never reordered and may repeat
                 key={index}
               >
                 {item}
@@ -151,10 +157,13 @@ export default function TweetCard({
               <div className="flex gap-3">
                 <div className="shrink-0">
                   <div className="h-10 w-10 overflow-hidden rounded-full">
-                    <img
-                      alt={reply.authorName}
+                    <Image
+                      alt=""
                       className="h-full w-full object-cover"
+                      height={40}
                       src={reply.authorImage}
+                      unoptimized
+                      width={40}
                     />
                   </div>
                 </div>
@@ -164,7 +173,10 @@ export default function TweetCard({
                       {reply.authorName}
                     </span>
                     {reply.isVerified && (
-                      <VerifiedIcon className="h-4 w-4 text-blue-400" />
+                      <>
+                        <VerifiedIcon className="h-4 w-4 text-blue-400" />
+                        <span className="sr-only">Verified</span>
+                      </>
                     )}
                     <span className="text-black text-sm dark:text-white/60">
                       @{reply.authorHandle}
