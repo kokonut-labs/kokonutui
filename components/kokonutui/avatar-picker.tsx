@@ -14,7 +14,7 @@ import { Check, ChevronRight, User2 } from "lucide-react";
 import type { Variants } from "motion/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,15 +24,9 @@ interface Avatar {
   id: number;
   svg: ReactNode;
   alt: string;
+  /** "r, g, b" of the color ring shown around the selected avatar. */
+  color: string;
 }
-
-// RGB values for the per-avatar color ring on the stage
-const AVATAR_RGB: Record<number, string> = {
-  1: "255, 0, 91",
-  2: "255, 125, 16",
-  3: "255, 0, 91",
-  4: "137, 252, 179",
-};
 
 const avatars: Avatar[] = [
   {
@@ -48,17 +42,7 @@ const avatars: Avatar[] = [
         xmlns="http://www.w3.org/2000/svg"
       >
         <title>Avatar 1</title>
-        <mask
-          height="36"
-          id=":r111:"
-          maskUnits="userSpaceOnUse"
-          width="36"
-          x="0"
-          y="0"
-        >
-          <rect fill="#FFFFFF" height="36" rx="72" width="36" />
-        </mask>
-        <g mask="url(#:r111:)">
+        <g>
           <rect fill="#ff005b" height="36" width="36" />
           <rect
             fill="#ffb238"
@@ -99,6 +83,7 @@ const avatars: Avatar[] = [
       </svg>
     ),
     alt: "Avatar 1",
+    color: "255, 0, 91",
   },
   {
     id: 2,
@@ -113,17 +98,7 @@ const avatars: Avatar[] = [
         xmlns="http://www.w3.org/2000/svg"
       >
         <title>Avatar 2</title>
-        <mask
-          height="36"
-          id=":R4mrttb:"
-          maskUnits="userSpaceOnUse"
-          width="36"
-          x="0"
-          y="0"
-        >
-          <rect fill="#FFFFFF" height="36" rx="72" width="36" />
-        </mask>
-        <g mask="url(#:R4mrttb:)">
+        <g>
           <rect fill="#ff7d10" height="36" width="36" />
           <rect
             fill="#0a0310"
@@ -164,6 +139,7 @@ const avatars: Avatar[] = [
       </svg>
     ),
     alt: "Avatar 2",
+    color: "255, 125, 16",
   },
   {
     id: 3,
@@ -178,17 +154,7 @@ const avatars: Avatar[] = [
         xmlns="http://www.w3.org/2000/svg"
       >
         <title>Avatar 3</title>
-        <mask
-          height="36"
-          id=":r11c:"
-          maskUnits="userSpaceOnUse"
-          width="36"
-          x="0"
-          y="0"
-        >
-          <rect fill="#FFFFFF" height="36" rx="72" width="36" />
-        </mask>
-        <g mask="url(#:r11c:)">
+        <g>
           <rect fill="#0a0310" height="36" width="36" />
           <rect
             fill="#ff005b"
@@ -224,6 +190,7 @@ const avatars: Avatar[] = [
       </svg>
     ),
     alt: "Avatar 3",
+    color: "255, 0, 91",
   },
   {
     id: 4,
@@ -238,17 +205,7 @@ const avatars: Avatar[] = [
         xmlns="http://www.w3.org/2000/svg"
       >
         <title>Avatar 4</title>
-        <mask
-          height="36"
-          id=":r1gg:"
-          maskUnits="userSpaceOnUse"
-          width="36"
-          x="0"
-          y="0"
-        >
-          <rect fill="#FFFFFF" height="36" rx="72" width="36" />
-        </mask>
-        <g mask="url(#:r1gg:)">
+        <g>
           <rect fill="#d8fcb3" height="36" width="36" />
           <rect
             fill="#89fcb3"
@@ -289,13 +246,19 @@ const avatars: Avatar[] = [
       </svg>
     ),
     alt: "Avatar 4",
+    color: "137, 252, 179",
   },
 ];
 
-interface ProfileSetupProps {
+interface AvatarPickerProps {
   onComplete?: (data: { username: string; avatarId: number }) => void;
   className?: string;
 }
+
+const USERNAME_MIN_LENGTH = 3;
+const USERNAME_MAX_LENGTH = 20;
+
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 const containerVariants: Variants = {
   initial: { opacity: 0 },
@@ -305,26 +268,29 @@ const containerVariants: Variants = {
   },
 };
 
+// Only `y` here: animating opacity would leave an inline `opacity: 1` that
+// overrides the dimmed `opacity-50` of unselected thumbnails.
 const thumbnailVariants: Variants = {
-  initial: { opacity: 0, y: 6 },
+  initial: { y: 6 },
   animate: {
-    opacity: 1,
     y: 0,
-    transition: { duration: 0.28, ease: "easeOut" },
+    transition: { duration: 0.28, ease: EASE_OUT },
   },
 };
 
-export default function ProfileSetup({
+export default function AvatarPicker({
   onComplete,
   className,
-}: ProfileSetupProps) {
+}: AvatarPickerProps) {
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar>(avatars[0]);
   const [username, setUsername] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+  const inputId = useId();
 
   const handleAvatarSelect = (avatar: Avatar) => {
-    if (avatar.id === selectedAvatar.id) return;
+    if (avatar.id === selectedAvatar.id) {
+      return;
+    }
     setSelectedAvatar(avatar);
   };
 
@@ -337,9 +303,9 @@ export default function ProfileSetup({
     }
   };
 
-  const isValid = username.trim().length >= 3;
-  const showError = username.trim().length > 0 && username.trim().length < 3;
-  const rgb = AVATAR_RGB[selectedAvatar.id];
+  const isValid = username.trim().length >= USERNAME_MIN_LENGTH;
+  const showError =
+    username.trim().length > 0 && username.trim().length < USERNAME_MIN_LENGTH;
 
   return (
     <Card
@@ -350,7 +316,6 @@ export default function ProfileSetup({
     >
       <CardContent className="p-8">
         <div className="space-y-8">
-          {/* Header */}
           <div className="space-y-1 text-center">
             <h2 className="font-semibold text-xl tracking-tight">
               Pick Your Avatar
@@ -360,32 +325,31 @@ export default function ProfileSetup({
             </p>
           </div>
 
-          {/* Avatar Stage */}
           <div className="flex flex-col items-center gap-4">
             {/*
-             * Two-div approach: outer div holds the animated color ring
-             * (no overflow-hidden so box-shadow renders cleanly),
-             * inner div clips the avatar SVG.
-             * scale-[4] fills the 160px circle with the avatar's background.
+             * The color rings sit outside the clipping circle so their
+             * box-shadow isn't cut off. Each avatar has its own static ring
+             * and only its opacity transitions, so no box-shadow animates.
              */}
             <div className="relative h-40 w-40">
-              {/* Animated per-avatar color ring */}
-              <motion.div
-                animate={{
-                  boxShadow: `0 0 0 2px rgba(${rgb}, 0.55), 0 6px 24px rgba(${rgb}, 0.18)`,
-                }}
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 rounded-full"
-                transition={
-                  shouldReduceMotion
-                    ? { duration: 0 }
-                    : { duration: 0.45, ease: "easeOut" }
-                }
-              />
+              {avatars.map((avatar) => (
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    "pointer-events-none absolute inset-0 rounded-full transition-opacity duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                    avatar.id === selectedAvatar.id
+                      ? "opacity-100"
+                      : "opacity-0"
+                  )}
+                  key={avatar.id}
+                  style={{
+                    boxShadow: `0 0 0 2px rgba(${avatar.color}, 0.55), 0 6px 24px rgba(${avatar.color}, 0.18)`,
+                  }}
+                />
+              ))}
 
-              {/* Avatar circle — clips content */}
               <div className="relative h-full w-full overflow-hidden rounded-full">
-                <AnimatePresence mode="wait">
+                <AnimatePresence>
                   <motion.div
                     animate={{ opacity: 1 }}
                     className="absolute inset-0 flex items-center justify-center"
@@ -395,37 +359,35 @@ export default function ProfileSetup({
                     transition={
                       shouldReduceMotion
                         ? { duration: 0 }
-                        : { duration: 0.2, ease: "easeOut" }
+                        : { duration: 0.18, ease: EASE_OUT }
                     }
                   >
                     {/* scale-[4]: 40px SVG × 4 = 160px, fills the circle */}
-                    <div className="scale-[4] transform">
-                      {selectedAvatar.svg}
-                    </div>
+                    <div className="scale-[4]">{selectedAvatar.svg}</div>
                   </motion.div>
                 </AnimatePresence>
               </div>
             </div>
 
-            {/* Avatar name — fades with selection */}
-            <AnimatePresence mode="wait">
-              <motion.span
-                animate={{ opacity: 1 }}
-                className="text-[11px] text-muted-foreground uppercase tracking-[0.12em]"
-                exit={{ opacity: 0 }}
-                initial={{ opacity: 0 }}
-                key={selectedAvatar.id}
-                transition={
-                  shouldReduceMotion
-                    ? { duration: 0 }
-                    : { duration: 0.16, ease: "easeOut" }
-                }
-              >
-                {selectedAvatar.alt}
-              </motion.span>
-            </AnimatePresence>
+            <div className="grid place-items-center">
+              <AnimatePresence>
+                <motion.span
+                  animate={{ opacity: 1 }}
+                  className="col-start-1 row-start-1 text-[11px] text-muted-foreground uppercase tracking-[0.12em]"
+                  exit={{ opacity: 0 }}
+                  initial={{ opacity: 0 }}
+                  key={selectedAvatar.id}
+                  transition={
+                    shouldReduceMotion
+                      ? { duration: 0 }
+                      : { duration: 0.16, ease: EASE_OUT }
+                  }
+                >
+                  {selectedAvatar.alt}
+                </motion.span>
+              </AnimatePresence>
+            </div>
 
-            {/* Thumbnail strip */}
             <motion.div
               animate="animate"
               className="flex gap-3"
@@ -449,10 +411,10 @@ export default function ProfileSetup({
                     type="button"
                     variants={thumbnailVariants}
                     whileHover={shouldReduceMotion ? {} : { scale: 1.06 }}
-                    whileTap={shouldReduceMotion ? {} : { scale: 0.94 }}
+                    whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
                   >
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="scale-[2.3] transform">{avatar.svg}</div>
+                      <div className="scale-[2.3]">{avatar.svg}</div>
                     </div>
                     {isSelected && (
                       <div className="absolute -right-0.5 -bottom-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground">
@@ -468,26 +430,25 @@ export default function ProfileSetup({
             </motion.div>
           </div>
 
-          {/* Username field */}
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="font-medium text-sm" htmlFor="username">
+                <label className="font-medium text-sm" htmlFor={inputId}>
                   Username
                 </label>
                 <span
                   className={cn(
                     "text-xs tabular-nums transition-colors duration-200 ease-out",
-                    username.length >= 18
+                    username.length >= USERNAME_MAX_LENGTH - 2
                       ? "text-amber-500 dark:text-amber-400"
                       : "text-muted-foreground/50"
                   )}
                 >
-                  {username.length}/20
+                  {username.length}/{USERNAME_MAX_LENGTH}
                 </span>
               </div>
 
-              <div className="relative">
+              <div className="group relative">
                 <Input
                   autoComplete="username"
                   className={cn(
@@ -495,12 +456,10 @@ export default function ProfileSetup({
                     showError &&
                       "border-destructive/50 focus-visible:ring-destructive"
                   )}
-                  id="username"
-                  maxLength={20}
+                  id={inputId}
+                  maxLength={USERNAME_MAX_LENGTH}
                   name="username"
-                  onBlur={() => setIsFocused(false)}
                   onChange={(e) => setUsername(e.target.value)}
-                  onFocus={() => setIsFocused(true)}
                   placeholder="your_username…"
                   spellCheck={false}
                   type="text"
@@ -508,10 +467,7 @@ export default function ProfileSetup({
                 />
                 <User2
                   aria-hidden="true"
-                  className={cn(
-                    "absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transition-colors duration-200 ease-out",
-                    isFocused ? "text-foreground" : "text-muted-foreground"
-                  )}
+                  className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors duration-200 ease-out group-focus-within:text-foreground"
                 />
               </div>
 
@@ -523,9 +479,9 @@ export default function ProfileSetup({
                     exit={{ opacity: 0, y: -4 }}
                     initial={{ opacity: 0, y: -4 }}
                     role="alert"
-                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    transition={{ duration: 0.15, ease: EASE_OUT }}
                   >
-                    Username must be at least 3 characters
+                    Username must be at least {USERNAME_MIN_LENGTH} characters
                   </motion.p>
                 )}
               </AnimatePresence>
