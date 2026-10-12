@@ -41,12 +41,14 @@ const SAMPLE_PROFILE_DATA: Profile = {
 
 interface ProfileDropdownProps extends React.HTMLAttributes<HTMLDivElement> {
   data?: Profile;
+  /** Has no effect. Kept so existing callers keep type-checking. */
   showTopbar?: boolean;
 }
 
 export default function ProfileDropdown({
   data = SAMPLE_PROFILE_DATA,
   className,
+  showTopbar: _showTopbar,
   ...props
 }: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -117,16 +119,16 @@ export default function ProfileDropdown({
           {/* Bending line indicator on the right */}
           <div
             className={cn(
-              "absolute top-1/2 -right-3 -translate-y-1/2 transition-all duration-200",
+              "absolute top-1/2 -right-3 -translate-y-1/2 transition-opacity duration-200",
               isOpen ? "opacity-100" : "opacity-60 group-hover:opacity-100"
             )}
           >
             <svg
               aria-hidden="true"
               className={cn(
-                "transition-all duration-200",
+                "transition-[color,scale] duration-200",
                 isOpen
-                  ? "scale-110 text-blue-500 dark:text-blue-400"
+                  ? "scale-110 text-blue-500 motion-reduce:scale-100 dark:text-blue-400"
                   : "text-zinc-400 group-hover:text-zinc-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
               )}
               fill="none"
@@ -146,14 +148,14 @@ export default function ProfileDropdown({
 
           <DropdownMenuContent
             align="end"
-            className="data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 w-64 origin-top-right rounded-2xl border border-zinc-200/60 bg-white/95 p-2 shadow-xl shadow-zinc-900/5 backdrop-blur-sm data-[state=closed]:animate-out data-[state=open]:animate-in dark:border-zinc-800/60 dark:bg-zinc-900/95 dark:shadow-zinc-950/20"
+            className="motion-reduce:data-[side=bottom]:slide-in-from-top-0 motion-reduce:data-[side=top]:slide-in-from-bottom-0 motion-reduce:data-[state=closed]:zoom-out-100 motion-reduce:data-[state=open]:zoom-in-100 w-64 origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border border-zinc-200/60 bg-white/95 p-2 shadow-xl shadow-zinc-900/5 dark:border-zinc-800/60 dark:bg-zinc-900/95 dark:shadow-zinc-950/20"
             sideOffset={4}
           >
             <div className="space-y-1">
               {menuItems.map((item) => (
                 <DropdownMenuItem asChild key={item.label}>
                   <Link
-                    className="group flex cursor-pointer items-center rounded-xl border border-transparent p-3 transition-all duration-200 hover:border-zinc-200/50 hover:bg-zinc-100/80 hover:shadow-sm dark:hover:border-zinc-700/50 dark:hover:bg-zinc-800/60"
+                    className="group flex cursor-pointer items-center rounded-xl border border-transparent p-3 transition-none hover:border-zinc-200/50 hover:bg-zinc-100/80 hover:shadow-sm dark:hover:border-zinc-700/50 dark:hover:bg-zinc-800/60"
                     href={item.href}
                   >
                     <div className="flex flex-1 items-center gap-2">
@@ -185,7 +187,7 @@ export default function ProfileDropdown({
 
             <DropdownMenuItem asChild>
               <button
-                className="group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-transparent bg-red-500/10 p-3 transition-all duration-200 hover:border-red-500/30 hover:bg-red-500/20 hover:shadow-sm"
+                className="group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-transparent bg-red-500/10 p-3 transition-none hover:border-red-500/30 hover:bg-red-500/20 hover:shadow-sm"
                 type="button"
               >
                 <LogOut className="h-4 w-4 text-red-500 group-hover:text-red-600" />
