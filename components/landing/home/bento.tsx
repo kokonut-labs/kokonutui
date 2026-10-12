@@ -49,6 +49,10 @@ export function Bento({ categories }: { categories: Category[] }) {
   );
 
   const startHold = () => {
+    // A second finger can press again mid-hold; restart rather than leak.
+    if (holdTimer.current !== null) {
+      window.clearTimeout(holdTimer.current);
+    }
     setHold("holding");
     holdTimer.current = window.setTimeout(() => setHold("done"), HOLD_MS);
   };
@@ -229,7 +233,7 @@ function Tile({
         </Link>
         <span
           aria-live="polite"
-          className="min-w-0 flex-1 truncate text-[12px] text-black/40 dark:text-white/40"
+          className="min-w-0 flex-1 truncate text-[12px] text-black/55 dark:text-white/55"
         >
           {hint}
         </span>

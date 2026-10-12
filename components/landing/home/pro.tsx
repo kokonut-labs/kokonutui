@@ -101,7 +101,7 @@ export function Pro() {
                 {PRO_TEMPLATES.map((template, i) => (
                   <div
                     className={cn(
-                      "absolute w-[58%] overflow-hidden rounded-xl bg-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_24px_48px_-12px_rgba(0,0,0,0.7)] transition-[translate,rotate] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
+                      "absolute w-[58%] overflow-hidden rounded-xl bg-white shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_24px_48px_-12px_rgba(0,0,0,0.7)] transition-[translate,rotate] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
                       FAN[i]
                     )}
                     key={template.name}
@@ -117,7 +117,7 @@ export function Pro() {
                   </div>
                 ))}
               </a>
-              <p className="mt-2 text-center text-[13px] text-white/45">
+              <p className="mt-2 text-center text-[13px] text-white/55">
                 Agenta, Lume and Sonae, from the Pro templates
               </p>
             </div>

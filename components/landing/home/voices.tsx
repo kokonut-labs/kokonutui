@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, Reveal } from "./client";
 import { POSTS, type Post, V0_THREAD, VIDEO_ID } from "./data";
 import { SectionHeading } from "./section-heading";
-import { FOCUS } from "./styles";
+import { FOCUS, FOCUS_INSET } from "./styles";
 import { VideoCard } from "./video";
 
 const TOKEN = /(@\w+|https?:\/\/\S+|\b[\w-]+\.com\b)/g;
@@ -93,7 +93,7 @@ function Thread({ className }: { className?: string }) {
         <Avatar name={reply.name} size={40} src={reply.avatar} />
         <div className="min-w-0 flex-1">
           <Byline date={reply.date} handle={reply.handle} name={reply.name} />
-          <p className="text-[13px] text-black/45 dark:text-white/45">
+          <p className="text-[13px] text-black/55 dark:text-white/55">
             Replying to <span className="text-[#1d9bf0]">@{post.handle}</span>
           </p>
         </div>
@@ -108,20 +108,20 @@ function Thread({ className }: { className?: string }) {
           </span>
           <span className="text-black/20 dark:text-white/25">”</span>
         </p>
-        <footer className="mt-4 text-[14px] text-black/50 dark:text-white/50">
+        <footer className="mt-4 text-[14px] text-black/55 dark:text-white/55">
           shadcn, creator of shadcn/ui, on KokonutUI opening in v0
         </footer>
       </blockquote>
       <a
         aria-label="Read the thread on X"
-        className={cn("absolute inset-0 rounded-3xl", FOCUS)}
+        className={cn("absolute inset-0 rounded-3xl", FOCUS_INSET)}
         href={post.href}
         rel="noreferrer"
         target="_blank"
       >
         <ArrowUpRightIcon
           aria-hidden
-          className="absolute top-6 right-6 size-4 text-black/30 transition-[transform,color] duration-150 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-black/70 sm:top-8 sm:right-8 dark:text-white/30 dark:group-hover:text-white/70"
+          className="absolute top-6 right-6 size-4 text-black/30 transition-[translate,color] duration-150 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-black/70 sm:top-8 sm:right-8 dark:text-white/30 dark:group-hover:text-white/70"
         />
       </a>
     </article>
@@ -142,7 +142,7 @@ function Byline({
       <span className="truncate font-medium text-black dark:text-white">
         {name}
       </span>
-      <span className="truncate text-black/45 dark:text-white/45">
+      <span className="truncate text-black/55 dark:text-white/55">
         @{handle}
       </span>
       {date ? (
@@ -150,7 +150,7 @@ function Byline({
           <span aria-hidden className="text-black/30 dark:text-white/30">
             ·
           </span>
-          <span className="shrink-0 text-black/45 dark:text-white/45">
+          <span className="shrink-0 text-black/55 dark:text-white/55">
             {date}
           </span>
         </>
@@ -177,7 +177,7 @@ function PostCard({ post, className }: { post: Post; className?: string }) {
           <span className="truncate font-medium text-[14px] text-black dark:text-white">
             {post.name}
           </span>
-          <span className="truncate text-[13px] text-black/45 dark:text-white/45">
+          <span className="truncate text-[13px] text-black/55 dark:text-white/55">
             @{post.handle}
           </span>
         </span>
@@ -187,7 +187,7 @@ function PostCard({ post, className }: { post: Post; className?: string }) {
         <RichText text={post.text} />
       </span>
       {post.date ? (
-        <span className="mt-auto text-[13px] text-black/40 dark:text-white/40">
+        <span className="mt-auto text-[13px] text-black/55 dark:text-white/55">
           {post.date}
         </span>
       ) : null}
@@ -217,7 +217,7 @@ function Belt({ posts }: { posts: Post[] }) {
   );
 
   return (
-    <div className="home-marquee-track relative mt-3 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_64px,black_calc(100%-64px),transparent)]">
+    <div className="home-marquee-track relative mt-2 -mb-1 overflow-hidden py-1 [mask-image:linear-gradient(to_right,transparent,black_64px,black_calc(100%-64px),transparent)]">
       <div className="home-marquee flex w-max [--marquee-duration:55s]">
         {copy(false)}
         {copy(true)}

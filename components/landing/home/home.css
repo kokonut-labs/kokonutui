@@ -133,7 +133,6 @@
   }
 
   .home-caret,
-  .home-marquee,
   .home-reveal[data-reveal="shown"] .home-shimmer {
     animation: none;
   }
@@ -147,13 +146,27 @@
   }
 }
 
-/* Reduced motion: the belt stops and becomes a row you can scroll. */
-@media (prefers-reduced-motion: reduce) {
+/* The belt becomes a row you swipe when motion is reduced, and on touch
+   screens, where there's no hover to stop it. Only the far edge fades, as a
+   hint there's more. */
+@media (prefers-reduced-motion: reduce), (pointer: coarse) {
   .home-marquee-track {
     overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    mask-image: linear-gradient(to right, black calc(100% - 48px), transparent);
+  }
+
+  .home-marquee {
+    animation: none;
   }
 
   .home-marquee > [aria-hidden="true"] {
     display: none;
+  }
+
+  .home-marquee > :first-child > * {
+    scroll-snap-align: start;
   }
 }

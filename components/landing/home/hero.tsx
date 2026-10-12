@@ -37,7 +37,7 @@ export function Hero() {
         style={enter(1)}
       >
         Try it here.{" "}
-        <span className="text-black/35 dark:text-white/40">Ship it there.</span>
+        <span className="text-black/45 dark:text-white/40">Ship it there.</span>
       </h1>
 
       <p
@@ -68,7 +68,7 @@ export function Hero() {
             GitHub
           </Link>
         </div>
-        <p className="flex items-center gap-2 text-[13px] text-black/45 dark:text-white/45">
+        <p className="flex items-center gap-2 text-[13px] text-black/55 dark:text-white/55">
           <span>MIT licensed</span>
           <span aria-hidden>·</span>
           <a

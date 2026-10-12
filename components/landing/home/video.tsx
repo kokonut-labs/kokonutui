@@ -4,7 +4,6 @@ import { PlayIcon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { FOCUS } from "./styles";
 
 /**
  * A YouTube embed that costs nothing until it's wanted: a thumbnail and a play
@@ -32,14 +31,16 @@ export function VideoCard({
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           className="absolute inset-0 size-full"
+          // The play button it replaces had focus; hand it to the player so
+          // keyboard users land on the video, not back at the top.
+          ref={(el) => el?.focus()}
           referrerPolicy="strict-origin-when-cross-origin"
           src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`}
           title="KokonutUI on YouTube"
         />
       ) : (
         <button
-          aria-label="Play the video"
-          className={cn("group absolute inset-0 rounded-3xl", FOCUS)}
+          className="group absolute inset-0 rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-inset"
           onClick={() => setPlaying(true)}
           type="button"
         >
@@ -63,7 +64,7 @@ export function VideoCard({
             </span>
           </span>
           <span className="absolute bottom-5 left-5 font-medium text-[14px] text-white">
-            Watch on YouTube
+            Play video
           </span>
         </button>
       )}

@@ -2,11 +2,15 @@ import type { CSSProperties } from "react";
 
 /** Press feedback for anything clickable: a quick 0.97 squeeze. */
 export const PRESS =
-  "transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97]";
+  "transition-[scale,background-color,border-color,color,box-shadow] duration-150 ease-out active:scale-[0.97]";
 
 /** One focus ring for every control on the page, keyboard only. */
 export const FOCUS =
   "outline-none focus-visible:ring-2 focus-visible:ring-black/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-white/35 dark:focus-visible:ring-offset-black";
+
+/** For controls that fill a clipped card: the ring draws inside the edge. */
+export const FOCUS_INSET =
+  "outline-none focus-visible:ring-2 focus-visible:ring-black/30 focus-visible:ring-inset dark:focus-visible:ring-white/40";
 
 export const PRIMARY_BUTTON =
   "inline-flex h-10 items-center gap-2 rounded-lg bg-black px-5 font-medium text-[14px] text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/85";

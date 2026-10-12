@@ -53,7 +53,7 @@ export function Categories({ categories }: { categories: Category[] }) {
                       {item.title}
                       <ArrowRightIcon
                         aria-hidden
-                        className="size-3.5 -translate-x-1 opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-x-0 group-hover:opacity-60 group-focus-visible:translate-x-0 group-focus-visible:opacity-60"
+                        className="size-3.5 -translate-x-1 opacity-0 transition-[opacity,translate] duration-150 ease-out group-hover:translate-x-0 group-hover:opacity-60 group-focus-visible:translate-x-0 group-focus-visible:opacity-60"
                       />
                     </Link>
                   </li>

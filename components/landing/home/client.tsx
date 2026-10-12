@@ -48,7 +48,7 @@ export function useCopy() {
 }
 
 const ICON_SWAP =
-  "absolute inset-0 size-full transition-[opacity,transform,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-opacity";
+  "absolute inset-0 size-full transition-[opacity,scale,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-opacity";
 
 /**
  * Copy and check icons stacked in one box. They cross-fade with a 2px blur so
@@ -116,7 +116,7 @@ export function CommandChip({
         {command}
       </span>
       <CopyIconSwap
-        className="text-black/40 group-hover:text-black/70 dark:text-white/40 dark:group-hover:text-white/70"
+        className="text-black/45 group-hover:text-black/70 dark:text-white/45 dark:group-hover:text-white/70"
         copied={copied}
       />
     </button>

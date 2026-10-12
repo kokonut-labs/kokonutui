@@ -31,19 +31,20 @@ export function Agents() {
     <section className="scroll-mt-28 pt-28 md:pt-36" id="agents">
       <Reveal className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10">
         <div className="min-w-0 lg:col-span-5">
-          <p className="mb-4 font-mono text-[12px] text-black/45 uppercase tracking-[0.08em] dark:text-white/45">
+          <p className="mb-4 font-mono text-[12px] text-black/55 uppercase tracking-[0.08em] dark:text-white/55">
             For agents
           </p>
           <h2 className="text-balance font-semibold text-[32px] text-black leading-[1.1] tracking-[-0.035em] sm:text-[40px] dark:text-white">
-            Your agent already knows them.
+            Just ask your agent.
           </h2>
           <p className="mt-4 max-w-[460px] text-pretty text-[16px] text-black/60 leading-relaxed dark:text-white/60">
-            KokonutUI is a shadcn registry. Connect it once, then ask for what
-            you need in plain words. Your agent installs the component, its
-            dependencies and the primitives it uses, as code you own.
+            KokonutUI is a shadcn registry. Add it to your components.json and
+            connect the shadcn MCP server once, then ask for what you need in
+            plain words. Your agent installs the component, its dependencies and
+            the primitives it uses, as code you own.
           </p>
           <McpSetup />
-          <p className="mt-6 text-[14px] text-black/50 leading-relaxed dark:text-white/50">
+          <p className="mt-6 text-[14px] text-black/55 leading-relaxed dark:text-white/55">
             Then ask{" "}
             <span className="text-black/80 dark:text-white/80">
               “Add @kokonutui/particle-button to my project”
@@ -134,11 +135,8 @@ function McpSetup() {
 
   return (
     <div className="mt-8 flex max-w-[460px] flex-col gap-2">
-      <div
-        aria-label="Your editor"
-        className="relative flex w-full rounded-lg bg-black/[0.04] p-1 sm:w-fit dark:bg-white/[0.06]"
-        role="tablist"
-      >
+      <fieldset className="relative m-0 flex w-full min-w-0 rounded-lg border-0 bg-black/[0.04] p-1 sm:w-fit dark:bg-white/[0.06]">
+        <legend className="sr-only">Your editor</legend>
         <span
           aria-hidden
           className={cn(
@@ -150,12 +148,12 @@ function McpSetup() {
         />
         {MCP_CLIENTS.map((c, i) => (
           <button
-            aria-selected={c.id === client}
+            aria-pressed={c.id === client}
             className={cn(
-              "relative h-8 flex-1 whitespace-nowrap rounded-md px-3 font-medium text-[13px] transition-colors duration-150 sm:flex-none",
+              "relative h-8 flex-1 whitespace-nowrap rounded-md px-3 font-medium text-[13px] transition-[color,scale] duration-150 ease-out active:scale-[0.97] sm:flex-none",
               c.id === client
                 ? "text-black dark:text-white"
-                : "text-black/50 hover:text-black/80 dark:text-white/50 dark:hover:text-white/80",
+                : "text-black/55 hover:text-black/80 dark:text-white/55 dark:hover:text-white/80",
               FOCUS
             )}
             key={c.id}
@@ -163,17 +161,14 @@ function McpSetup() {
             ref={(el) => {
               tabRefs.current[i] = el;
             }}
-            role="tab"
             type="button"
           >
             {c.label}
           </button>
         ))}
-      </div>
+      </fieldset>
       {/* Clients get compared back and forth, so the command swaps instantly. */}
-      <div role="tabpanel">
-        <CommandChip command={mcpCommand(client)} />
-      </div>
+      <CommandChip command={mcpCommand(client)} />
     </div>
   );
 }
@@ -311,15 +306,18 @@ function Demo() {
 
   // Pause reasons, each an edge case people never notice: the demo holds
   // while you play with an installed component, while the tab is hidden, and
-  // while the demo is scrolled out of view.
+  // while the demo is scrolled out of view. Touch has no hover and iOS doesn't
+  // focus tapped buttons, so a tap inside counts until the next tap outside.
   const [pointerInside, setPointerInside] = useState(false);
   const [focusInside, setFocusInside] = useState(false);
+  const [touched, setTouched] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [offscreen, setOffscreen] = useState(false);
-  const playing = (pointerInside || focusInside) && snap.installed;
+  const playing = (pointerInside || focusInside || touched) && snap.installed;
   const paused = playing || hidden || offscreen;
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLElement>(null);
   const progressRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const elapsed = useRef(0);
 
@@ -333,6 +331,19 @@ function Demo() {
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
+
+  useEffect(() => {
+    if (!touched) {
+      return;
+    }
+    const onPointerDown = (e: PointerEvent) => {
+      if (!previewRef.current?.contains(e.target as Node)) {
+        setTouched(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [touched]);
 
   useEffect(() => {
     const el = rootRef.current;
@@ -418,36 +429,35 @@ function Demo() {
       ref={rootRef}
     >
       {/* Tabs double as the timeline: the active one fills as it plays. */}
-      <div
-        aria-label="Demo scenarios"
-        className="flex border-white/[0.08] border-b"
-        role="tablist"
-      >
+      <fieldset className="m-0 flex min-w-0 border-0 border-white/[0.08] border-b p-0">
+        <legend className="sr-only">Demo scenarios</legend>
         {SCENARIOS.map((s, i) => (
           <button
-            aria-selected={i === index}
+            aria-pressed={i === index}
             className={cn(
-              "relative flex h-10 min-w-0 flex-1 items-center justify-center px-3 font-mono text-[12px] outline-none transition-colors duration-150 ease-out focus-visible:bg-white/[0.08] sm:flex-none sm:justify-start sm:px-4",
+              "relative flex h-10 min-w-0 flex-1 items-center justify-center px-3 font-mono text-[12px] outline-none transition-[color,background-color] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-inset active:bg-white/[0.08] sm:flex-none sm:justify-start sm:px-4",
               i === index
                 ? "bg-white/[0.04] text-white"
-                : "text-white/45 hover:text-white/75"
+                : "text-white/55 hover:text-white/75"
             )}
             key={s.name}
             onClick={() => go(i)}
-            role="tab"
             type="button"
           >
             <span className="truncate">{s.name}.tsx</span>
             <span
               aria-hidden
-              className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-[#3BB44B] motion-reduce:hidden"
+              className="absolute inset-x-0 bottom-0 h-px origin-left bg-[#3BB44B] motion-reduce:hidden"
               ref={(el) => {
                 progressRefs.current[i] = el;
               }}
+              // Inline, not `scale-x-0`: Tailwind's class sets the `scale`
+              // property, which would multiply the transform written below.
+              style={{ transform: "scaleX(0)" }}
             />
           </button>
         ))}
-      </div>
+      </fieldset>
 
       <div
         className="h-[284px] overflow-hidden px-5 py-4 font-mono text-[12.5px] leading-[1.75] sm:h-[248px] sm:text-[13px]"
@@ -477,11 +487,17 @@ function Demo() {
           }
         }}
         onFocus={() => setFocusInside(true)}
+        onPointerDown={(e) => {
+          if (e.pointerType !== "mouse") {
+            setTouched(true);
+          }
+        }}
         onPointerEnter={() => setPointerInside(true)}
         onPointerLeave={() => setPointerInside(false)}
+        ref={previewRef}
       >
         <div className="flex h-9 items-center justify-between border-black/[0.06] border-b px-4 text-[12px] dark:border-white/[0.06]">
-          <span className="inline-flex items-center gap-2 text-black/45 dark:text-white/45">
+          <span className="inline-flex items-center gap-2 text-black/55 dark:text-white/55">
             <span
               aria-hidden
               className={cn(
@@ -493,7 +509,7 @@ function Demo() {
             />
             Preview
           </span>
-          <span className="text-black/45 dark:text-white/45">
+          <span className="text-black/55 dark:text-white/55">
             {previewStatus(snap.installed, playing, scenario.hint)}
           </span>
         </div>
@@ -501,7 +517,7 @@ function Demo() {
           {snap.installed ? (
             <Preview key={scenario.name} scenario={scenario} />
           ) : (
-            <span className="font-mono text-[12px] text-black/30 dark:text-white/30">
+            <span className="font-mono text-[12px] text-black/45 dark:text-white/45">
               {installCommand(scenario.name)}
             </span>
           )}
@@ -551,5 +567,5 @@ function TranscriptLine({ line }: { line: Line }) {
       </p>
     );
   }
-  return <p className="home-line truncate pl-10 text-white/45">{line.text}</p>;
+  return <p className="home-line truncate pl-10 text-white/50">{line.text}</p>;
 }

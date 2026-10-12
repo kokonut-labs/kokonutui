@@ -15,7 +15,7 @@ export function SectionHeading({
     <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="max-w-[560px]">
         {eyebrow ? (
-          <p className="mb-4 font-mono text-[12px] text-black/45 uppercase tracking-[0.08em] dark:text-white/45">
+          <p className="mb-4 font-mono text-[12px] text-black/55 uppercase tracking-[0.08em] dark:text-white/55">
             {eyebrow}
           </p>
         ) : null}
