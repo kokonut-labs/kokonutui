@@ -484,7 +484,7 @@
       "name": "gradient-button",
       "type": "registry:component",
       "title": "Gradient Button",
-      "description": "Layered gradient button with emerald, purple, and orange variants, soft inner glow, and hover overlay, styled entirely with Tailwind CSS in React.",
+      "description": "Layered gradient button with emerald, purple, and orange variants, a gradient border in light and dark mode, soft inner glow, press feedback, and an optional icon, styled entirely with Tailwind CSS in React.",
       "registryDependencies": [
         "button"
       ],
