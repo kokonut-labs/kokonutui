@@ -167,12 +167,14 @@ const transition = {
 
 export default function SmoothTab({
   items = DEFAULT_TABS,
-  defaultTabId = DEFAULT_TABS[0].id,
+  defaultTabId,
   className,
   activeColor = "bg-[#1F9CFE]",
   onChange,
 }: SmoothTabProps) {
-  const [selected, setSelected] = React.useState<string>(defaultTabId);
+  const [selected, setSelected] = React.useState<string>(
+    defaultTabId ?? items[0]?.id
+  );
   const [direction, setDirection] = React.useState(0);
   const [dimensions, setDimensions] = React.useState({ width: 0, left: 0 });
 
