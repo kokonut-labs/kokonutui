@@ -277,7 +277,7 @@ export default function AI_Prompt({
                     aria-label="Attach file"
                     className={cn(
                       "cursor-pointer rounded-lg bg-black/5 p-2 dark:bg-white/5",
-                      "focus-within:ring-1 focus-within:ring-blue-500 focus-within:ring-offset-0 hover:bg-black/10 dark:hover:bg-white/10",
+                      "hover:bg-black/10 has-focus-visible:ring-1 has-focus-visible:ring-blue-500 has-focus-visible:ring-offset-0 dark:hover:bg-white/10",
                       "text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white",
                       "transition-[background-color,color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:active:scale-100"
                     )}
