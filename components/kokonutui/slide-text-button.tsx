@@ -10,7 +10,7 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion } from "motion/react";
+import { MotionConfig, motion } from "motion/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -38,29 +38,36 @@ export default function SlideTextButton({
       : "bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90";
 
   return (
-    <motion.div
-      animate={{ x: 0, opacity: 1, transition: { duration: 0.2 } }}
-      className="relative"
-      initial={{ x: 200, opacity: 0 }}
-    >
-      <Link
-        className={cn(
-          "group relative inline-flex h-10 items-center justify-center overflow-hidden rounded-lg px-8 font-medium text-md tracking-tighter transition-all duration-300 md:min-w-56",
-          variantStyles,
-          className
-        )}
-        href={href}
-        {...props}
+    // Under reduced motion the entrance is an opacity fade only.
+    <MotionConfig reducedMotion="user">
+      <motion.div
+        animate={{ x: 0, opacity: 1 }}
+        className="relative"
+        initial={{ x: 8, opacity: 0 }}
+        transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
       >
-        <span className="relative inline-block transition-transform duration-300 ease-in-out group-hover:-translate-y-full">
-          <span className="flex items-center gap-2 opacity-100 transition-opacity duration-300 group-hover:opacity-0">
-            <span className="font-medium">{text}</span>
+        <Link
+          className={cn(
+            "group relative inline-flex h-10 items-center justify-center overflow-hidden rounded-lg px-8 font-medium text-base tracking-tighter transition-[background-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:active:scale-100 md:min-w-56",
+            variantStyles,
+            className
+          )}
+          href={href}
+          {...props}
+        >
+          <span className="relative inline-block transition-transform duration-200 ease-[cubic-bezier(0.77,0,0.175,1)] group-hover:-translate-y-full group-focus-visible:-translate-y-full motion-reduce:transition-none">
+            <span className="flex items-center gap-2 opacity-100 transition-opacity duration-200 group-hover:opacity-0 group-focus-visible:opacity-0">
+              <span className="font-medium">{text}</span>
+            </span>
+            <span
+              aria-hidden="true"
+              className="absolute top-full left-0 flex items-center gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
+            >
+              <span className="font-medium">{slideText}</span>
+            </span>
           </span>
-          <span className="absolute top-full left-0 flex items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <span className="font-medium">{slideText}</span>
-          </span>
-        </span>
-      </Link>
-    </motion.div>
+        </Link>
+      </motion.div>
+    </MotionConfig>
   );
 }
