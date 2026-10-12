@@ -280,7 +280,13 @@ function TypingFeature({
   const [typed, setTyped] = useState(0);
 
   useEffect(() => {
-    if (!inView || reduceMotion || typed >= code.length) {
+    // Reduced motion shows the whole snippet, but only after hydration so the
+    // server and client render the same text.
+    if (reduceMotion) {
+      setTyped(code.length);
+      return;
+    }
+    if (!inView || typed >= code.length) {
       return;
     }
     const timeout = setTimeout(() => {
@@ -304,7 +310,7 @@ function TypingFeature({
       >
         <span className="sr-only">{code}</span>
         <pre aria-hidden="true" className="whitespace-pre-wrap">
-          {reduceMotion ? code : code.slice(0, typed)}
+          {code.slice(0, typed)}
           <span className="animate-pulse motion-reduce:animate-none">|</span>
         </pre>
       </div>
@@ -477,11 +483,9 @@ export function BentoCard({ item }: { item: BentoItem }) {
       className="h-full"
       onPointerLeave={resetTilt}
       onPointerMove={handlePointerMove}
-      style={
-        reduceMotion
-          ? undefined
-          : { rotateX, rotateY, transformPerspective: 1200 }
-      }
+      // Always set, so server and client agree; under reduced motion the
+      // pointer handler never moves the tilt off zero.
+      style={{ rotateX, rotateY, transformPerspective: 1200 }}
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
       whileHover={reduceMotion || !item.href ? undefined : { y: -4 }}
     >
