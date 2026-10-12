@@ -27,13 +27,31 @@ export default function CardFlip({
   description = "Dive deep into the world of modern UI/UX design.",
   features = ["UI/UX", "Modern Design", "Tailwind CSS", "Kokonut UI"],
 }: CardFlipProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
+  const isFlipped = isHovered || hasKeyboardFocus;
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: a labelled card group, not a form fieldset
     <div
-      className="group relative h-[320px] w-full max-w-[280px] [perspective:2000px]"
-      onMouseEnter={() => setIsFlipped(true)}
-      onMouseLeave={() => setIsFlipped(false)}
+      aria-label={title}
+      className="group relative h-[320px] w-full max-w-[280px] rounded-2xl outline-hidden [perspective:2000px] focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-900"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setHasKeyboardFocus(false);
+        }
+      }}
+      onFocus={(e) => {
+        // Only keyboard focus flips the card, so a mouse click doesn't pin it open
+        if (e.target.matches(":focus-visible")) {
+          setHasKeyboardFocus(true);
+        }
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      role="group"
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: keyboard focus is what flips the card; the turned-away face is inert
+      tabIndex={0}
     >
       <div
         className={cn(
@@ -47,6 +65,7 @@ export default function CardFlip({
         )}
       >
         <div
+          aria-hidden={isFlipped || undefined}
           className={cn(
             "absolute inset-0 h-full w-full",
             "[backface-visibility:hidden] [transform:rotateY(0deg)]",
@@ -57,6 +76,7 @@ export default function CardFlip({
             "transition-shadow duration-500",
             "group-hover:shadow-lg dark:group-hover:shadow-xl"
           )}
+          inert={isFlipped}
         >
           <div className="relative h-full overflow-hidden bg-gradient-to-b from-zinc-100 to-white dark:from-zinc-900 dark:to-black">
             <div
@@ -113,6 +133,7 @@ export default function CardFlip({
 
         {/* Back of card */}
         <div
+          aria-hidden={!isFlipped || undefined}
           className={cn(
             "absolute inset-0 h-full w-full",
             "[backface-visibility:hidden] [transform:rotateY(180deg)]",
@@ -124,6 +145,7 @@ export default function CardFlip({
             "transition-shadow duration-500",
             "group-hover:shadow-lg dark:group-hover:shadow-xl"
           )}
+          inert={!isFlipped}
         >
           <div className="flex-1 space-y-6">
             <div className="space-y-2">
