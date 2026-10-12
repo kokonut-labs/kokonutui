@@ -103,7 +103,7 @@ export default function AI_Voice({
     <div className={cn("w-full py-4", className)}>
       <div className="relative mx-auto flex w-full max-w-xl flex-col items-center gap-2">
         <button
-          aria-label={isListening ? "Stop listening" : "Start listening"}
+          aria-label="Voice input"
           aria-pressed={isListening}
           className={cn(
             "group flex h-16 w-16 items-center justify-center rounded-xl transition-colors",
