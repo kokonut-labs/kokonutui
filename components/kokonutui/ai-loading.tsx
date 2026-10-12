@@ -99,6 +99,10 @@ const LoadingAnimation = ({ progress }: { progress: number }) => (
 
                     .g-spin circle:nth-child(2n) { animation-delay: 0.2s; }
                     .g-spin circle:nth-child(3n) { animation-delay: 0.3s; }
+
+                    @media (prefers-reduced-motion: reduce) {
+                        .g-spin circle:nth-child(n) { animation: none; }
+                    }
                 `}
       </style>
 
@@ -151,7 +155,7 @@ export default function AILoadingState() {
   const totalLines = currentSequence.lines.length;
 
   useEffect(() => {
-    const initialLines = [];
+    const initialLines: { text: string; number: number }[] = [];
     for (let i = 0; i < Math.min(5, totalLines); i++) {
       initialLines.push({
         text: currentSequence.lines[i],
@@ -160,16 +164,14 @@ export default function AILoadingState() {
     }
     setVisibleLines(initialLines);
     setScrollPosition(0);
-  }, [sequenceIndex, currentSequence.lines, totalLines]);
+  }, [currentSequence.lines, totalLines]);
 
-  // Handle line advancement
   useEffect(() => {
     if (!isVisible) {
       return;
     }
 
     const advanceTimer = setInterval(() => {
-      // Get the current first visible line index
       const firstVisibleLineIndex = Math.floor(scrollPosition / lineHeight);
       const nextLineIndex = (firstVisibleLineIndex + 3) % totalLines;
 
@@ -181,7 +183,6 @@ export default function AILoadingState() {
         return;
       }
 
-      // Add the next line if needed
       if (nextLineIndex >= visibleLines.length && nextLineIndex < totalLines) {
         setVisibleLines((prevLines) => [
           ...prevLines,
@@ -192,9 +193,8 @@ export default function AILoadingState() {
         ]);
       }
 
-      // Scroll to the next line
       setScrollPosition((prevPosition) => prevPosition + lineHeight);
-    }, 2000); // Slightly slower than the example for better readability
+    }, 2000);
 
     return () => clearInterval(advanceTimer);
   }, [
@@ -202,12 +202,9 @@ export default function AILoadingState() {
     scrollPosition,
     visibleLines,
     totalLines,
-    sequenceIndex,
     currentSequence.lines,
-    lineHeight,
   ]);
 
-  // Apply scroll position
   useEffect(() => {
     if (codeContainerRef.current) {
       codeContainerRef.current.scrollTop = scrollPosition;
@@ -229,12 +226,11 @@ export default function AILoadingState() {
 
         <div className="relative">
           <div
-            className="relative h-[84px] w-full overflow-hidden rounded-lg font-mono text-xs"
+            className="relative h-[84px] w-full overflow-hidden rounded-lg font-mono text-xs motion-safe:scroll-smooth"
             ref={codeContainerRef}
-            style={{ scrollBehavior: "smooth" }}
           >
             <div>
-              {visibleLines.map((line, index) => (
+              {visibleLines.map((line) => (
                 <div
                   className="flex h-[28px] items-center px-2"
                   key={`${line.number}-${line.text}`}
@@ -252,7 +248,7 @@ export default function AILoadingState() {
           </div>
 
           <div
-            className="pointer-events-none absolute top-0 right-0 bottom-0 left-0 rounded-lg from-white/90 via-white/50 to-transparent dark:from-black/90 dark:via-black/50 dark:to-transparent"
+            className="pointer-events-none absolute inset-0 rounded-lg from-white/90 via-white/50 to-transparent dark:from-black/90 dark:via-black/50 dark:to-transparent"
             style={{
               background:
                 "linear-gradient(to bottom, var(--tw-gradient-from) 0%, var(--tw-gradient-via) 30%, var(--tw-gradient-to) 100%)",
