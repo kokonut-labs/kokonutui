@@ -1,18 +1,10 @@
-import type { Metadata } from "next";
 import { source } from "@/lib/source";
 import type { Category, CategoryItem } from "./data";
-import { Harness } from "./harness";
-
-// Prototype surface for the landing page redesign. Not linked from anywhere
-// and kept out of search results; delete this folder once a variant ships.
-export const metadata: Metadata = {
-  title: "Landing page prototypes",
-  robots: { index: false, follow: false },
-};
 
 const DOCS_PREFIX = "/docs/";
 
-function getCategories(): Category[] {
+/** Component categories, read from the docs tree so the homepage never drifts. */
+export function getCategories(): Category[] {
   const categories: Category[] = [];
 
   for (const node of source.getPageTree().children) {
@@ -48,11 +40,4 @@ function getCategories(): Category[] {
   }
 
   return categories;
-}
-
-export default function LandingPrototypesPage() {
-  const categories = getCategories();
-  const total = categories.reduce((sum, c) => sum + c.items.length, 0);
-
-  return <Harness categories={categories} total={total} />;
 }
