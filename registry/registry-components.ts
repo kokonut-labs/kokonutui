@@ -219,7 +219,7 @@ export const component: Registry = [
   {
     name: "ai-voice",
     type: "registry:component",
-    dependencies: ["motion", "lucide-react"],
+    dependencies: ["lucide-react"],
     files: [
       {
         path: "components/kokonutui/ai-voice.tsx",
@@ -315,7 +315,7 @@ export const component: Registry = [
   {
     name: "hold-button",
     type: "registry:component",
-    dependencies: ["class-variance-authority", "lucide-react", "motion"],
+    dependencies: ["lucide-react", "motion"],
     registryDependencies: ["button"],
     files: [
       {
@@ -372,7 +372,6 @@ export const component: Registry = [
   {
     name: "ai-loading",
     type: "registry:component",
-    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/ai-loading.tsx",
