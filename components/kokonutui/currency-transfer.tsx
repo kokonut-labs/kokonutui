@@ -243,19 +243,11 @@ function StatusIcon({
             key="processing"
             variants={reduceMotion ? fadeVariants : iconVariants}
           >
-            <motion.div
-              animate={reduceMotion ? undefined : { rotate: 360 }}
+            {/* CSS spin runs off the main thread, so it stays smooth while
+                the app is busy with the transfer. */}
+            <div
               aria-hidden="true"
-              className="absolute inset-0 rounded-full border-2 border-transparent"
-              style={{
-                borderLeftColor: "rgb(16 185 129)",
-                borderTopColor: "rgb(16 185 129 / 0.2)",
-              }}
-              transition={{
-                duration: 1,
-                repeat: Number.POSITIVE_INFINITY,
-                ease: "linear",
-              }}
+              className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-emerald-500/20 border-l-emerald-500 motion-reduce:animate-none"
             />
             <div className="relative z-10 rounded-full bg-white p-5 shadow-[0_0_15px_rgba(16,185,129,0.1)] dark:bg-zinc-900">
               <ArrowUpDown
@@ -399,7 +391,7 @@ export default function CurrencyTransfer({
                 <Tooltip>
                   <TooltipTrigger
                     aria-label="Exchange rate details"
-                    className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+                    className="rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/50"
                   >
                     <InfoIcon
                       aria-hidden="true"
