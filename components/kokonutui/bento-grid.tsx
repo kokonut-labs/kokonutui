@@ -80,7 +80,7 @@ export interface BentoGridProps {
 /*                                  Demo data                                 */
 /* -------------------------------------------------------------------------- */
 
-const iconClass = "h-7 w-7";
+const iconClass = "h-5 w-5";
 
 export const defaultBentoItems: BentoItem[] = [
   {
@@ -233,16 +233,16 @@ function SpotlightFeature({ items }: { items: string[] }) {
 
 function LogosFeature({ logos }: { logos: BentoLogo[] }) {
   return (
-    <ul className="mt-4 grid grid-cols-3 gap-3">
+    <ul className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-2">
       {logos.map((logo) => (
         <li
-          className="flex flex-col items-center gap-2 rounded-xl border border-neutral-200/50 bg-gradient-to-b from-neutral-100/80 to-neutral-100 p-3 transition-colors duration-200 group-hover:border-neutral-300/70 dark:border-neutral-700/50 dark:from-neutral-800/80 dark:to-neutral-800 dark:group-hover:border-neutral-600/70"
+          className="flex min-w-0 items-center gap-2.5 rounded-xl border border-neutral-200/50 bg-gradient-to-b from-neutral-100/80 to-neutral-100 px-2.5 py-2 transition-colors duration-200 group-hover:border-neutral-300/70 dark:border-neutral-700/50 dark:from-neutral-800/80 dark:to-neutral-800 dark:group-hover:border-neutral-600/70"
           key={logo.name}
         >
-          <div className="flex h-8 w-8 items-center justify-center">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center">
             {logo.icon}
           </div>
-          <span className="text-center font-medium text-neutral-600 text-xs dark:text-neutral-400">
+          <span className="min-w-0 truncate font-medium text-neutral-600 text-xs dark:text-neutral-400">
             {logo.name}
           </span>
         </li>
