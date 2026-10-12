@@ -24,7 +24,6 @@ export interface GradientButtonProps
   icon?: ReactNode;
   /** Color theme. */
   variant?: GradientButtonVariant;
-  className?: string;
 }
 
 interface VariantClasses {
@@ -32,7 +31,7 @@ interface VariantClasses {
   ring: string;
   /** Outer 2px gradient border. */
   border: string;
-  /** Soft base tint (light) / solid surface (dark). */
+  /** Soft base tint, light mode only (dark mode shows the solid surface). */
   base: string;
   /** Vertical color wash. */
   overlay: string;
@@ -57,7 +56,7 @@ const variantClasses: Record<GradientButtonVariant, VariantClasses> = {
     ring: "focus-visible:ring-emerald-500/60 dark:focus-visible:ring-[#87F6B7]/50",
     border:
       "from-emerald-400 via-emerald-300 to-emerald-200 dark:from-[#336C4F] dark:via-[#0C1F21] dark:to-[#0D6437]",
-    base: "from-emerald-50 via-emerald-50/80 to-emerald-50/90 dark:from-[#0C1F21] dark:via-[#0C1F21] dark:to-[#0C1F21]",
+    base: "from-emerald-50 via-emerald-50/80 to-emerald-50/90",
     overlay:
       "from-emerald-300/30 via-emerald-200/20 to-emerald-400/20 dark:from-[#347B52]/40 dark:via-[#0C1F21] dark:to-[#0D6437]/30",
     accent:
@@ -72,7 +71,7 @@ const variantClasses: Record<GradientButtonVariant, VariantClasses> = {
     ring: "focus-visible:ring-purple-500/60 dark:focus-visible:ring-[#D6BCFA]/50",
     border:
       "from-purple-400 via-purple-300 to-purple-200 dark:from-[#6B46C1] dark:via-[#0C1F21] dark:to-[#553C9A]",
-    base: "from-purple-50 via-purple-50/80 to-purple-50/90 dark:from-[#0C1F21] dark:via-[#0C1F21] dark:to-[#0C1F21]",
+    base: "from-purple-50 via-purple-50/80 to-purple-50/90",
     overlay:
       "from-purple-300/30 via-purple-200/20 to-purple-400/20 dark:from-[#7E22CE]/40 dark:via-[#0C1F21] dark:to-[#6B46C1]/30",
     accent:
@@ -87,7 +86,7 @@ const variantClasses: Record<GradientButtonVariant, VariantClasses> = {
     ring: "focus-visible:ring-orange-500/60 dark:focus-visible:ring-[#FBD38D]/50",
     border:
       "from-orange-400 via-orange-300 to-orange-200 dark:from-[#C05621] dark:via-[#0C1F21] dark:to-[#9C4221]",
-    base: "from-orange-50 via-orange-50/80 to-orange-50/90 dark:from-[#0C1F21] dark:via-[#0C1F21] dark:to-[#0C1F21]",
+    base: "from-orange-50 via-orange-50/80 to-orange-50/90",
     overlay:
       "from-orange-300/30 via-orange-200/20 to-orange-400/20 dark:from-[#DD6B20]/40 dark:via-[#0C1F21] dark:to-[#C05621]/30",
     accent:
@@ -144,7 +143,11 @@ export default function GradientButton({
       />
       <span
         aria-hidden="true"
-        className={cn(innerLayer, "bg-linear-to-r opacity-90", colors.base)}
+        className={cn(
+          innerLayer,
+          "bg-linear-to-r opacity-90 dark:hidden",
+          colors.base
+        )}
       />
       <span
         aria-hidden="true"
