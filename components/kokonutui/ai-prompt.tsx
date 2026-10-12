@@ -11,8 +11,8 @@
  */
 
 import { ArrowRight, Bot, Check, ChevronDown, Paperclip } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useId, useState } from "react";
 import Anthropic from "@/components/icons/anthropic";
 import AnthropicDark from "@/components/icons/anthropic-dark";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,41 @@ const OPENAI_SVG = (
   </div>
 );
 
+// Rendered once in the trigger and once in the menu, so every instance needs
+// its own gradient id.
+function GeminiIcon() {
+  const gradientId = useId();
+
+  return (
+    <svg
+      height="1em"
+      style={{ flex: "none", lineHeight: "1" }}
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <title>Gemini</title>
+      <defs>
+        <linearGradient
+          id={gradientId}
+          x1="0%"
+          x2="68.73%"
+          y1="100%"
+          y2="30.395%"
+        >
+          <stop offset="0%" stopColor="#1C7DFF" />
+          <stop offset="52.021%" stopColor="#1C69FF" />
+          <stop offset="100%" stopColor="#F0DCD6" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M12 24A14.304 14.304 0 000 12 14.304 14.304 0 0012 0a14.305 14.305 0 0012 12 14.305 14.305 0 00-12 12"
+        fill={`url(#${gradientId})`}
+        fillRule="nonzero"
+      />
+    </svg>
+  );
+}
+
 interface AIPromptProps {
   models?: string[];
   defaultModel?: string;
@@ -91,37 +126,13 @@ export default function AI_Prompt({
     maxHeight: 300,
   });
   const [selectedModel, setSelectedModel] = useState(defaultModel);
+  const textareaId = useId();
+  const shouldReduceMotion = useReducedMotion();
+  const labelOffset = shouldReduceMotion ? 0 : 5;
 
   const MODEL_ICONS: Record<string, React.ReactNode> = {
     "GPT-5.6 Mini": OPENAI_SVG,
-    "Gemini 3 Pro": (
-      <svg
-        height="1em"
-        style={{ flex: "none", lineHeight: "1" }}
-        viewBox="0 0 24 24"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <title>Gemini</title>
-        <defs>
-          <linearGradient
-            id="lobe-icons-gemini-fill"
-            x1="0%"
-            x2="68.73%"
-            y1="100%"
-            y2="30.395%"
-          >
-            <stop offset="0%" stopColor="#1C7DFF" />
-            <stop offset="52.021%" stopColor="#1C69FF" />
-            <stop offset="100%" stopColor="#F0DCD6" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M12 24A14.304 14.304 0 000 12 14.304 14.304 0 0012 0a14.305 14.305 0 0012 12 14.305 14.305 0 00-12 12"
-          fill="url(#lobe-icons-gemini-fill)"
-          fillRule="nonzero"
-        />
-      </svg>
-    ),
+    "Gemini 3 Pro": <GeminiIcon />,
     "Claude Fable 5": (
       <div>
         <svg
@@ -180,26 +191,24 @@ export default function AI_Prompt({
         </div>
         <div className="relative">
           <div className="relative flex flex-col">
-            <div className="overflow-y-auto" style={{ maxHeight: "400px" }}>
-              <Textarea
-                className={cn(
-                  "w-full resize-none rounded-xl rounded-b-none border-none bg-black/5 px-4 py-3 placeholder:text-black/70 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-white/5 dark:text-white dark:placeholder:text-white/70",
-                  "min-h-[72px]"
-                )}
-                id="ai-input-15"
-                onChange={(e) => {
-                  setValue(e.target.value);
-                  adjustHeight();
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                ref={textareaRef}
-                value={value}
-              />
-            </div>
+            <Textarea
+              className={cn(
+                "w-full resize-none rounded-xl rounded-b-none border-none bg-black/5 px-4 py-3 placeholder:text-black/70 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-white/5 dark:text-white dark:placeholder:text-white/70",
+                "min-h-[72px]"
+              )}
+              id={textareaId}
+              onChange={(e) => {
+                setValue(e.target.value);
+                adjustHeight();
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              ref={textareaRef}
+              value={value}
+            />
 
             <div className="flex h-14 items-center rounded-b-xl bg-black/5 dark:bg-white/5">
-              <div className="absolute right-3 bottom-3 left-3 flex w-[calc(100%-24px)] items-center justify-between">
+              <div className="absolute right-3 bottom-3 left-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -207,7 +216,7 @@ export default function AI_Prompt({
                         className="flex h-8 items-center gap-1 rounded-md pr-2 pl-1 text-xs hover:bg-black/10 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:ring-offset-0 dark:text-white dark:hover:bg-white/10"
                         variant="ghost"
                       >
-                        <AnimatePresence mode="wait">
+                        <AnimatePresence initial={false} mode="popLayout">
                           <motion.div
                             animate={{
                               opacity: 1,
@@ -216,15 +225,16 @@ export default function AI_Prompt({
                             className="flex items-center gap-1"
                             exit={{
                               opacity: 0,
-                              y: 5,
+                              y: labelOffset,
                             }}
                             initial={{
                               opacity: 0,
-                              y: -5,
+                              y: -labelOffset,
                             }}
                             key={selectedModel}
                             transition={{
                               duration: 0.15,
+                              ease: [0.23, 1, 0.32, 1],
                             }}
                           >
                             {MODEL_ICONS[selectedModel]}
@@ -250,8 +260,7 @@ export default function AI_Prompt({
                           <div className="flex items-center gap-2">
                             {MODEL_ICONS[model] || (
                               <Bot className="h-4 w-4 opacity-50" />
-                            )}{" "}
-                            {/* Use mapped SVG or fallback */}
+                            )}
                             <span>{model}</span>
                           </div>
                           {selectedModel === model && (
