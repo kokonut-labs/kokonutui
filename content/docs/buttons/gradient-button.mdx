@@ -1,6 +1,6 @@
 ---
 title: Gradient Button
-description: Layered gradient button with emerald, purple, and orange variants, soft inner glow, and hover overlay, styled entirely with Tailwind CSS in React.
+description: Layered gradient button with emerald, purple, and orange variants, a gradient border in light and dark mode, soft inner glow, press feedback, and an optional icon, styled entirely with Tailwind CSS in React.
 keywords: ["cta", "call to action", "colorful", "shiny", "glossy"]
 icon: MousePointerClick
 full: false
@@ -15,6 +15,6 @@ import GradientButton from "@/components/kokonutui/gradient-button";
     <div className="flex flex-col gap-2">
         <GradientButton label="Gradient Button" />
         <GradientButton label="Gradient Button" variant="orange" />
-        <GradientButton label="Gradient Button" variant="purple" />
+        <GradientButton variant="purple">Gradient Button</GradientButton>
     </div>
 </Preview>
