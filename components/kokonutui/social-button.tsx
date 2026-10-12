@@ -12,12 +12,12 @@
 
 import { Link } from "lucide-react";
 import { motion } from "motion/react";
-import { type ComponentType, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface ShareItem {
-  icon: ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
 }
 
