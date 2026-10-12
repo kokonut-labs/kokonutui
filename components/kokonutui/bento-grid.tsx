@@ -36,10 +36,6 @@ import OpenAI from "@/components/icons/open-ai";
 import OpenAIDark from "@/components/icons/open-ai-dark";
 import { cn } from "@/lib/utils";
 
-/* -------------------------------------------------------------------------- */
-/*                                    Types                                   */
-/* -------------------------------------------------------------------------- */
-
 export interface BentoLogo {
   name: string;
   icon: ReactNode;
@@ -75,10 +71,6 @@ export interface BentoGridProps {
   items?: BentoItem[];
   className?: string;
 }
-
-/* -------------------------------------------------------------------------- */
-/*                                  Demo data                                 */
-/* -------------------------------------------------------------------------- */
 
 const iconClass = "h-5 w-5";
 
@@ -182,10 +174,6 @@ export const defaultBentoItems: BentoItem[] = [
   },
 ];
 
-/* -------------------------------------------------------------------------- */
-/*                                   Motion                                   */
-/* -------------------------------------------------------------------------- */
-
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 const gridVariants: Variants = {
@@ -207,10 +195,6 @@ const listItemVariants: Variants = {
   hidden: { opacity: 0, x: -8 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.3, ease: EASE_OUT } },
 };
-
-/* -------------------------------------------------------------------------- */
-/*                                  Features                                  */
-/* -------------------------------------------------------------------------- */
 
 function SpotlightFeature({ items }: { items: string[] }) {
   return (
@@ -358,9 +342,15 @@ function VoiceFeature() {
   }, [recording]);
 
   // Self-running demo loop (record 3s, pause 1s) while visible, until the
-  // user takes over by clicking.
+  // user takes over by clicking. Leaving the viewport mid-loop stops the
+  // demo recording so the counter above doesn't keep ticking off-screen.
   useEffect(() => {
-    if (!(isDemo && inView)) {
+    if (!isDemo) {
+      return;
+    }
+    if (!inView) {
+      setRecording(false);
+      setSeconds(0);
       return;
     }
     let timeout: ReturnType<typeof setTimeout>;
@@ -388,7 +378,7 @@ function VoiceFeature() {
       <button
         aria-label={recording ? "Stop recording" : "Start recording"}
         aria-pressed={recording}
-        className="relative z-10 flex h-16 w-16 items-center justify-center rounded-xl transition-[background-color,transform] duration-150 ease-out hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 active:scale-[0.97] dark:hover:bg-white/10"
+        className="relative z-10 flex h-16 w-16 items-center justify-center rounded-xl transition-[background-color,transform] duration-150 ease-out hover:bg-black/5 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 active:scale-[0.97] dark:hover:bg-white/10"
         onClick={handleClick}
         type="button"
       >
@@ -458,10 +448,6 @@ function FeatureContent({ feature }: { feature: BentoFeature }) {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                    Card                                    */
-/* -------------------------------------------------------------------------- */
-
 const TILT_SPRING = { stiffness: 300, damping: 30 };
 const MAX_TILT_DEG = 2;
 
@@ -513,7 +499,7 @@ export function BentoCard({ item }: { item: BentoItem }) {
           <h3 className="font-semibold text-neutral-900 text-xl tracking-tight dark:text-neutral-100">
             {item.href ? (
               <Link
-                className="outline-none after:absolute after:inset-0 after:rounded-xl"
+                className="outline-hidden after:absolute after:inset-0 after:rounded-xl"
                 href={item.href}
               >
                 {item.title}
@@ -539,10 +525,6 @@ export function BentoCard({ item }: { item: BentoItem }) {
     </motion.div>
   );
 }
-
-/* -------------------------------------------------------------------------- */
-/*                                    Grid                                    */
-/* -------------------------------------------------------------------------- */
 
 export default function BentoGrid({
   items = defaultBentoItems,
