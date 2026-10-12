@@ -39,6 +39,9 @@ export default function AI_Input_Search({
   const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = () => {
+    if (!value.trim()) {
+      return;
+    }
     onSubmit?.(value);
     setValue("");
     adjustHeight(true);
@@ -86,7 +89,11 @@ export default function AI_Input_Search({
               }}
               onFocus={handleFocus}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey &&
+                  !e.nativeEvent.isComposing
+                ) {
                   e.preventDefault();
                   handleSubmit();
                 }
