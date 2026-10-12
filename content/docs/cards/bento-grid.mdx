@@ -14,3 +14,41 @@ import BentoGrid from "@/components/kokonutui/bento-grid";
 <Preview link="bento-grid">
     <BentoGrid />
 </Preview>
+
+## Usage
+
+Pass your own `items` to replace the demo content. The grid is 6 columns from `md` up; size each card with `className` (for example `md:col-span-4`).
+
+```tsx
+import BentoGrid, { type BentoItem } from "@/components/kokonutui/bento-grid";
+
+const items: BentoItem[] = [
+  {
+    id: "launch",
+    title: "Ship faster",
+    description: "Everything you need to go from idea to production.",
+    href: "/features",
+    feature: { type: "spotlight", items: ["Edge functions", "Preview URLs"] },
+    className: "md:col-span-4",
+  },
+  {
+    id: "history",
+    title: "Our story",
+    description: "A few milestones along the way.",
+    feature: {
+      type: "timeline",
+      events: [
+        { year: "2023", event: "Founded" },
+        { year: "2024", event: "Public launch" },
+      ],
+    },
+    className: "md:col-span-2",
+  },
+];
+
+export default function Page() {
+  return <BentoGrid items={items} />;
+}
+```
+
+Available features: `spotlight`, `typing`, `logos`, `timeline` and `voice`. Cards with an `href` become links; hover tilt and lift are disabled for users who prefer reduced motion.
