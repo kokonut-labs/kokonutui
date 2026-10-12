@@ -150,8 +150,8 @@ const Card = ({
         "border border-white/20 dark:border-neutral-800/40",
         "backdrop-blur-xl backdrop-saturate-150",
         "shadow-[0_8px_20px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_20px_rgb(0,0,0,0.3)]",
-        "hover:border-white/30 dark:hover:border-neutral-700/30",
-        "hover:shadow-[0_12px_40px_rgb(0,0,0,0.12)] dark:hover:shadow-[0_12px_40px_rgb(0,0,0,0.4)]",
+        "group-hover/stack:border-white/30 dark:group-hover/stack:border-neutral-700/30",
+        "group-hover/stack:shadow-[0_12px_40px_rgb(0,0,0,0.12)] dark:group-hover/stack:shadow-[0_12px_40px_rgb(0,0,0,0.4)]",
         "transition-[border-color,box-shadow] duration-300 ease-out",
         "transform-gpu overflow-hidden"
       )}
@@ -237,20 +237,24 @@ export default function CardStackExample({ className }: CardStackProps) {
   const handleToggle = () => setIsExpanded((prev) => !prev);
 
   return (
-    <button
-      aria-expanded={isExpanded}
-      aria-label={isExpanded ? "Collapse card stack" : "Expand card stack"}
+    <div
       className={cn(
-        "relative mx-auto cursor-pointer",
+        "group/stack relative mx-auto",
         "min-h-[440px] w-full max-w-[90vw]",
         "md:max-w-[1200px]",
-        "appearance-none border-0 bg-transparent p-0",
         "mb-8 flex items-center justify-center",
         className
       )}
-      onClick={handleToggle}
-      type="button"
     >
+      {/* Transparent toggle over the whole stack: clicking anywhere toggles, and
+          the cards stay outside the button so their text is readable */}
+      <button
+        aria-expanded={isExpanded}
+        aria-label={isExpanded ? "Collapse card stack" : "Expand card stack"}
+        className="absolute inset-0 z-10 cursor-pointer rounded-2xl outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-500 dark:focus-visible:ring-neutral-400"
+        onClick={handleToggle}
+        type="button"
+      />
       {products.map((product, index) => (
         <Card
           index={index}
@@ -261,6 +265,6 @@ export default function CardStackExample({ className }: CardStackProps) {
           totalCards={products.length}
         />
       ))}
-    </button>
+    </div>
   );
 }
