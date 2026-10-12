@@ -11,14 +11,19 @@
  */
 
 import { Magnet } from "lucide-react";
-import { motion, useAnimation } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { motion, type Transition, useReducedMotion } from "motion/react";
+import {
+  type ComponentProps,
+  type PointerEvent,
+  useEffect,
+  useState,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface AttractButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface AttractButtonProps extends ComponentProps<"button"> {
   particleCount?: number;
+  /** Max distance in px that particles scatter from the button's center. */
   attractRadius?: number;
 }
 
@@ -28,90 +33,114 @@ interface Particle {
   y: number;
 }
 
+const SPRING: Transition = { type: "spring", duration: 0.5, bounce: 0.2 };
+
 export default function AttractButton({
   className,
+  children,
   particleCount = 12,
-  attractRadius = 50,
+  attractRadius = 180,
+  onPointerEnter,
+  onPointerLeave,
+  onPointerDown,
+  onPointerUp,
+  onPointerCancel,
   ...props
 }: AttractButtonProps) {
   const [isAttracting, setIsAttracting] = useState(false);
   const [particles, setParticles] = useState<Particle[]>([]);
-  const particlesControl = useAnimation();
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
-    const newParticles = Array.from({ length: particleCount }, (_, i) => ({
-      id: i,
-      x: Math.random() * 360 - 180,
-      y: Math.random() * 360 - 180,
-    }));
-    setParticles(newParticles);
-  }, [particleCount]);
+    setParticles(
+      Array.from({ length: particleCount }, (_, i) => ({
+        id: i,
+        x: (Math.random() * 2 - 1) * attractRadius,
+        y: (Math.random() * 2 - 1) * attractRadius,
+      }))
+    );
+  }, [particleCount, attractRadius]);
 
-  const handleInteractionStart = useCallback(async () => {
-    setIsAttracting(true);
-    await particlesControl.start({
-      x: 0,
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 50,
-        damping: 10,
-      },
-    });
-  }, [particlesControl]);
+  // Mouse attracts on hover. Touch and pen attract only while pressed, so a
+  // tap can't leave the button stuck in the attracting state.
+  const handlePointerEnter = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerEnter?.(event);
+    if (event.pointerType === "mouse") {
+      setIsAttracting(true);
+    }
+  };
 
-  const handleInteractionEnd = useCallback(async () => {
-    setIsAttracting(false);
-    await particlesControl.start((i) => ({
-      x: particles[i].x,
-      y: particles[i].y,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 15,
-      },
-    }));
-  }, [particlesControl, particles]);
+  const handlePointerLeave = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerLeave?.(event);
+    if (event.pointerType === "mouse") {
+      setIsAttracting(false);
+    }
+  };
+
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerDown?.(event);
+    if (event.pointerType !== "mouse") {
+      setIsAttracting(true);
+    }
+  };
+
+  const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerUp?.(event);
+    if (event.pointerType !== "mouse") {
+      setIsAttracting(false);
+    }
+  };
+
+  const handlePointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerCancel?.(event);
+    if (event.pointerType !== "mouse") {
+      setIsAttracting(false);
+    }
+  };
+
+  const pullIn = isAttracting && !shouldReduceMotion;
 
   return (
     <Button
+      {...props}
       className={cn(
-        "relative min-w-40 touch-none",
+        "relative min-w-40",
         "bg-violet-100 dark:bg-violet-900",
         "hover:bg-violet-200 dark:hover:bg-violet-800",
         "text-violet-600 dark:text-violet-300",
         "border border-violet-300 dark:border-violet-700",
-        "transition-all duration-300",
+        "transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.97]",
         className
       )}
-      onMouseEnter={handleInteractionStart}
-      onMouseLeave={handleInteractionEnd}
-      onTouchEnd={handleInteractionEnd}
-      onTouchStart={handleInteractionStart}
-      {...props}
+      onPointerCancel={handlePointerCancel}
+      onPointerDown={handlePointerDown}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+      onPointerUp={handlePointerUp}
     >
-      {particles.map((_, index) => (
+      {particles.map((particle) => (
         <motion.div
-          animate={particlesControl}
+          animate={pullIn ? { x: 0, y: 0 } : { x: particle.x, y: particle.y }}
+          aria-hidden="true"
           className={cn(
-            "absolute h-1.5 w-1.5 rounded-full",
+            "pointer-events-none absolute h-1.5 w-1.5 rounded-full",
             "bg-violet-400 dark:bg-violet-300",
             "transition-opacity duration-300",
             isAttracting ? "opacity-100" : "opacity-40"
           )}
-          custom={index}
-          initial={{ x: particles[index].x, y: particles[index].y }}
-          key={index}
+          initial={{ x: particle.x, y: particle.y }}
+          key={particle.id}
+          transition={SPRING}
         />
       ))}
       <span className="relative flex w-full items-center justify-center gap-2">
         <Magnet
           className={cn(
             "h-4 w-4 transition-transform duration-300",
-            isAttracting && "scale-110"
+            isAttracting && "motion-safe:scale-110"
           )}
         />
-        {isAttracting ? "Attracting" : "Hover me"}
+        {children ?? (isAttracting ? "Attracting" : "Hover me")}
       </span>
     </Button>
   );
