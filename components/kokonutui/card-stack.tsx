@@ -125,14 +125,14 @@ const Card = ({
   const collapsedPose = {
     x: defaultX,
     y: defaultY,
-    rotate: reducedMotion ? 0 : defaultRotate,
+    rotate: defaultRotate,
     scale: 1,
   };
 
   const expandedPose = {
     x: spreadX,
     y: 0,
-    rotate: reducedMotion ? 0 : spreadRotate,
+    rotate: spreadRotate,
     scale: 1,
   };
 
