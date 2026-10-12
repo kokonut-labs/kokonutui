@@ -24,7 +24,6 @@ import { Button, type ButtonProps } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-// Constants for better maintainability
 const GLASS_SHADOW_LIGHT =
   "shadow-[0_0_6px_rgba(0,0,0,0.03),0_2px_6px_rgba(0,0,0,0.08),inset_3px_3px_0.5px_-3px_rgba(0,0,0,0.9),inset_-3px_-3px_0.5px_-3px_rgba(0,0,0,0.85),inset_1px_1px_1px_-0.5px_rgba(0,0,0,0.6),inset_-1px_-1px_1px_-0.5px_rgba(0,0,0,0.6),inset_0_0_6px_6px_rgba(0,0,0,0.12),inset_0_0_2px_2px_rgba(0,0,0,0.06),0_0_12px_rgba(255,255,255,0.15)]";
 
@@ -36,7 +35,6 @@ const GLASS_SHADOW = `${GLASS_SHADOW_LIGHT} ${GLASS_SHADOW_DARK}`;
 const DEFAULT_GLASS_FILTER_SCALE = 30;
 const BUTTON_GLASS_FILTER_SCALE = 70;
 
-// Shared glass filter component
 interface GlassFilterProps {
   id: string;
   scale?: number;
@@ -45,7 +43,6 @@ interface GlassFilterProps {
 const GlassFilter = React.memo(
   ({ id, scale = DEFAULT_GLASS_FILTER_SCALE }: GlassFilterProps) => (
     <svg aria-hidden="true" className="hidden" focusable={false}>
-      <title>Glass Effect Filter</title>
       <defs>
         <filter
           colorInterpolationFilters="sRGB"
@@ -84,14 +81,16 @@ const GlassFilter = React.memo(
 );
 GlassFilter.displayName = "GlassFilter";
 
-// Liquid Button - extends shadcn Button with glass effect
+// Colours are listed next to scale so callers have no reason to pass
+// `transition-colors`, which tailwind-merge would swap in for this list,
+// making the press and hover scale snap.
 const liquidButtonVariants = cva(
-  "relative transition-transform duration-200 motion-reduce:transition-none",
+  "relative transition-[color,background-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
   {
     variants: {
       liquidVariant: {
         default:
-          "active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:hover:scale-100 [@media(hover:hover)]:hover:scale-105",
+          "hover:scale-105 active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:hover:scale-100",
         none: "",
       },
     },
@@ -135,7 +134,6 @@ function LiquidButton({
   );
 }
 
-// Liquid Glass Card - extends shadcn Card with glass effect
 const liquidGlassCardVariants = cva(
   "group relative overflow-hidden bg-background/20 backdrop-blur-[2px]",
   {
@@ -203,7 +201,6 @@ const TIMER_INTERVAL_MS = 1000;
 const STATIC_BAR_HEIGHT = "6px";
 const MIN_TIME = 0;
 const BAR_DELAY_INCREMENT = 0.1;
-const PROGRESS_PERCENTAGE_MULTIPLIER = 100;
 
 const formatTime = (timeInSeconds: number): string => {
   const minutes = Math.floor(timeInSeconds / 60);
@@ -250,8 +247,7 @@ interface ProgressBarProps {
 
 const ProgressBar = React.memo(
   ({ currentTime, totalDuration, onSeek }: ProgressBarProps) => {
-    const progress =
-      (currentTime / totalDuration) * PROGRESS_PERCENTAGE_MULTIPLIER;
+    const progress = currentTime / totalDuration;
 
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
       const bar = e.currentTarget;
@@ -307,8 +303,8 @@ const ProgressBar = React.memo(
           tabIndex={0}
         >
           <div
-            className="h-full bg-gradient-to-r from-[#FF2E55] to-[#FF6B88] transition-all duration-200"
-            style={{ width: `${progress}%` }}
+            className="h-full w-full origin-left bg-gradient-to-r from-[#FF2E55] to-[#FF6B88] transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+            style={{ transform: `scaleX(${progress})` }}
           />
         </div>
       </>
@@ -409,7 +405,7 @@ export function NotificationCenter() {
             <div className="flex items-center justify-center gap-2">
               <LiquidButton
                 aria-label="Previous track"
-                className="h-10 w-10 rounded-full bg-transparent text-zinc-700 transition-colors hover:bg-zinc-200/80 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
+                className="h-10 w-10 rounded-full bg-transparent text-zinc-700 hover:bg-zinc-200/80 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
                 size="icon"
                 variant="ghost"
               >
@@ -417,7 +413,7 @@ export function NotificationCenter() {
               </LiquidButton>
               <LiquidButton
                 aria-label={isPlaying ? "Pause" : "Play"}
-                className="h-11 w-11 rounded-full bg-transparent text-zinc-700 transition-colors hover:bg-zinc-200/80 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
+                className="h-11 w-11 rounded-full bg-transparent text-zinc-700 hover:bg-zinc-200/80 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
                 onClick={handlePlayPause}
                 size="icon"
                 variant="ghost"
@@ -430,7 +426,7 @@ export function NotificationCenter() {
               </LiquidButton>
               <LiquidButton
                 aria-label="Next track"
-                className="h-10 w-10 rounded-full bg-transparent text-zinc-700 transition-colors hover:bg-zinc-200/80 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
+                className="h-10 w-10 rounded-full bg-transparent text-zinc-700 hover:bg-zinc-200/80 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
                 size="icon"
                 variant="ghost"
               >
@@ -439,7 +435,7 @@ export function NotificationCenter() {
             </div>
             <LiquidButton
               aria-label="More options"
-              className="h-10 w-10 rounded-full bg-transparent text-zinc-700 transition-colors hover:bg-zinc-200/80 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
+              className="h-10 w-10 rounded-full bg-transparent text-zinc-700 hover:bg-zinc-200/80 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
               size="icon"
               variant="ghost"
             >
