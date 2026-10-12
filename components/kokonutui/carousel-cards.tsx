@@ -205,7 +205,7 @@ const ExperienceCard = ({ experience }: { experience: ExperienceItem }) => (
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-xl">
       <Image
         alt={experience.title}
-        className="object-cover transition-transform duration-300 group-hover:scale-105"
+        className="object-cover transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:group-hover:scale-105"
         fill
         src={experience.image}
       />
@@ -267,19 +267,14 @@ const ExperienceSection = ({
 }: ExperienceGridProps) => {
   const scrollContainer = React.useRef<HTMLDivElement>(null);
 
-  const handleScrollLeft = () => {
-    if (scrollContainer.current) {
-      scrollContainer.current.scrollBy({
-        left: -320,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  const handleScrollRight = () => {
-    if (scrollContainer.current) {
-      scrollContainer.current.scrollBy({ left: 320, behavior: "smooth" });
-    }
+  const scrollByCards = (left: number) => {
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    scrollContainer.current?.scrollBy({
+      left,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
   };
 
   return (
@@ -292,7 +287,7 @@ const ExperienceSection = ({
           <div className="flex items-center gap-1">
             <Button
               className="h-7 w-7 rounded-full border-neutral-200 hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-900"
-              onClick={handleScrollLeft}
+              onClick={() => scrollByCards(-320)}
               size="icon"
               variant="outline"
             >
@@ -301,7 +296,7 @@ const ExperienceSection = ({
             </Button>
             <Button
               className="h-7 w-7 rounded-full border-neutral-200 hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-900"
-              onClick={handleScrollRight}
+              onClick={() => scrollByCards(320)}
               size="icon"
               variant="outline"
             >
@@ -318,12 +313,8 @@ const ExperienceSection = ({
         </div>
 
         <div
-          className="scrollbar-hide -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2"
+          className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           ref={scrollContainer}
-          style={{
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-          }}
         >
           {items.map((item) => (
             <div
