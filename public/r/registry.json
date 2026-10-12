@@ -218,7 +218,7 @@
       "name": "currency-transfer",
       "type": "registry:component",
       "title": "Currency Transfer",
-      "description": "Multi-step currency exchange card with animated progress and SVG checkmark confirmation, built with React, Tailwind CSS and Motion animations.",
+      "description": "Currency exchange status card with animated progress and a drawn checkmark on completion, built with React, Tailwind CSS and Motion animations.",
       "dependencies": [
         "lucide-react",
         "motion"
