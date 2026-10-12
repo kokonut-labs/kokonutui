@@ -52,35 +52,33 @@ export default function AI_Input_Search({
     setIsFocused(false);
   };
 
-  const handleContainerClick = () => {
-    if (textareaRef.current) {
-      textareaRef.current.focus();
+  // Mouse convenience: clicking the box around the field focuses it. Clicks
+  // on the controls keep their own behaviour.
+  const handleContainerClick = (target: EventTarget) => {
+    if (target instanceof Element && target.closest("button, label, input")) {
+      return;
     }
+    textareaRef.current?.focus();
   };
+
+  const canSubmit = value.trim().length > 0;
 
   return (
     <div className={cn("w-full py-4", className)}>
       <div className="relative mx-auto w-full max-w-xl">
+        {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents lint/a11y/noNoninteractiveElementInteractions: pointer-only shortcut; the textarea and buttons inside are keyboard reachable */}
         <div
-          aria-label="Search input container"
           className={cn(
             "relative flex w-full cursor-text flex-col rounded-xl text-left transition-all duration-200",
             "ring-1 ring-black/10 dark:ring-white/10",
             isFocused && "ring-black/20 dark:ring-white/20"
           )}
-          onClick={handleContainerClick}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              handleContainerClick();
-            }
-          }}
-          role="textbox"
-          tabIndex={0}
+          onClick={(e) => handleContainerClick(e.target)}
         >
           <div className="max-h-[200px] overflow-y-auto">
             <Textarea
+              aria-label={placeholder}
               className="w-full resize-none rounded-xl rounded-b-none border-none bg-black/5 px-4 py-3 leading-[1.2] placeholder:text-black/70 focus-visible:ring-0 dark:bg-white/5 dark:text-white dark:placeholder:text-white/70"
-              id="ai-input-04"
               onBlur={handleBlur}
               onChange={(e) => {
                 setValue(e.target.value);
@@ -101,11 +99,17 @@ export default function AI_Input_Search({
 
           <div className="h-12 rounded-b-xl bg-black/5 dark:bg-white/5">
             <div className="absolute bottom-3 left-3 flex items-center gap-2">
-              <label className="cursor-pointer rounded-lg bg-black/5 p-2 dark:bg-white/5">
-                <input className="hidden" type="file" />
+              <label className="cursor-pointer rounded-lg bg-black/5 p-2 has-focus-visible:ring-2 has-focus-visible:ring-sky-600 dark:bg-white/5 dark:has-focus-visible:ring-sky-500">
+                <input
+                  aria-label="Attach file"
+                  className="sr-only"
+                  type="file"
+                />
                 <Paperclip className="h-4 w-4 text-black/40 transition-colors hover:text-black dark:text-white/40 dark:hover:text-white" />
               </label>
               <button
+                aria-label={searchLabel}
+                aria-pressed={showSearch}
                 className={cn(
                   "flex h-8 cursor-pointer items-center gap-2 rounded-full border px-1.5 py-1 transition-all",
                   showSearch
@@ -166,12 +170,14 @@ export default function AI_Input_Search({
             </div>
             <div className="absolute right-3 bottom-3">
               <button
+                aria-label="Send"
                 className={cn(
                   "rounded-lg p-2 transition-colors",
-                  value
-                    ? "bg-sky-500/15 text-sky-500"
-                    : "cursor-pointer bg-black/5 text-black/40 hover:text-black dark:bg-white/5 dark:text-white/40 dark:hover:text-white"
+                  canSubmit
+                    ? "cursor-pointer bg-sky-500/15 text-sky-500"
+                    : "bg-black/5 text-black/40 dark:bg-white/5 dark:text-white/40"
                 )}
+                disabled={!canSubmit}
                 onClick={handleSubmit}
                 type="button"
               >
