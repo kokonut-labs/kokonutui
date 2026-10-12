@@ -14,26 +14,46 @@ import { Mic } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-export default function AI_Voice() {
+const BAR_COUNT = 48;
+const BAR_IDS = Array.from({ length: BAR_COUNT }, (_, i) => `bar-${i}`);
+
+// Bar heights in percent. Random levels are only created in effects, never
+// during render, so the server and client markup match.
+const INITIAL_LEVELS = BAR_IDS.map(() => 20);
+const createLevels = () => BAR_IDS.map(() => 20 + Math.random() * 80);
+
+interface AIVoiceProps {
+  className?: string;
+  /** Plays a fake listening loop until the first click. */
+  demo?: boolean;
+  /** Called with the new state when the user starts or stops listening. */
+  onListeningChange?: (listening: boolean) => void;
+}
+
+export default function AI_Voice({
+  className,
+  demo = true,
+  onListeningChange,
+}: AIVoiceProps) {
   const [submitted, setSubmitted] = useState(false);
   const [time, setTime] = useState(0);
-  const [isClient, setIsClient] = useState(false);
-  const [isDemo, setIsDemo] = useState(true);
+  const [levels, setLevels] = useState(INITIAL_LEVELS);
+  const [isDemo, setIsDemo] = useState(demo);
+  // The demo loop is not the user listening, so assistive tech only hears
+  // about real listening.
+  const isListening = submitted && !isDemo;
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
-    if (submitted) {
-      intervalId = setInterval(() => {
-        setTime((t) => t + 1);
-      }, 1000);
-    } else {
+    if (!submitted) {
       setTime(0);
+      return;
     }
+
+    setLevels(createLevels());
+    const intervalId = setInterval(() => {
+      setTime((t) => t + 1);
+      setLevels(createLevels());
+    }, 1000);
 
     return () => clearInterval(intervalId);
   }, [submitted]);
@@ -69,18 +89,22 @@ export default function AI_Voice() {
   }, [isDemo]);
 
   const handleClick = () => {
-    if (isDemo) {
-      setIsDemo(false);
-      setSubmitted(false);
-    } else {
-      setSubmitted((prev) => !prev);
+    // The first click ends the demo loop and starts listening right away.
+    const next = isDemo || !submitted;
+    setIsDemo(false);
+    setSubmitted(next);
+    if (next) {
+      setTime(0);
     }
+    onListeningChange?.(next);
   };
 
   return (
-    <div className="w-full py-4">
+    <div className={cn("w-full py-4", className)}>
       <div className="relative mx-auto flex w-full max-w-xl flex-col items-center gap-2">
         <button
+          aria-label={isListening ? "Stop listening" : "Start listening"}
+          aria-pressed={isListening}
           className={cn(
             "group flex h-16 w-16 items-center justify-center rounded-xl transition-colors",
             submitted
@@ -112,19 +136,19 @@ export default function AI_Voice() {
         </span>
 
         <div className="flex h-4 w-64 items-center justify-center gap-0.5">
-          {[...Array(48)].map((_, i) => (
+          {BAR_IDS.map((id, i) => (
             <div
               className={cn(
-                "w-0.5 rounded-full transition-all duration-300",
+                "w-0.5 rounded-full transition-[height,background-color] duration-300 motion-reduce:transition-none",
                 submitted
-                  ? "animate-pulse bg-black/50 dark:bg-white/50"
+                  ? "animate-pulse bg-black/50 motion-reduce:animate-none dark:bg-white/50"
                   : "h-1 bg-black/10 dark:bg-white/10"
               )}
-              key={i}
+              key={id}
               style={
-                submitted && isClient
+                submitted
                   ? {
-                      height: `${20 + Math.random() * 80}%`,
+                      height: `${levels[i]}%`,
                       animationDelay: `${i * 0.05}s`,
                     }
                   : undefined
@@ -133,9 +157,14 @@ export default function AI_Voice() {
           ))}
         </div>
 
-        <p className="h-4 text-black/70 text-xs dark:text-white/70">
+        {/* <output> has the implicit role="status". It stays silent while the
+            demo loop toggles the caption every few seconds. */}
+        <output
+          aria-live={isDemo ? "off" : "polite"}
+          className="h-4 text-black/70 text-xs dark:text-white/70"
+        >
           {submitted ? "Listening..." : "Click to speak"}
-        </p>
+        </output>
       </div>
     </div>
   );
