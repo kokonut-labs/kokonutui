@@ -12,17 +12,20 @@
 
 import type { LucideIcon } from "lucide-react";
 import { Cloud, Code, Cpu, Globe, Lock, Zap } from "lucide-react";
-import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
+import {
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from "motion/react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-
-// ─── Constants ──────────────────────────────────────────────────────────────────
 
 const TILT_MAX = 9;
 const TILT_SPRING = { stiffness: 300, damping: 28 } as const;
 const GLOW_SPRING = { stiffness: 180, damping: 22 } as const;
-
-// ─── Data ────────────────────────────────────────────────────────────────────────
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 export interface SpotlightItem {
   icon: LucideIcon;
@@ -76,16 +79,14 @@ const DEFAULT_ITEMS: SpotlightItem[] = [
   },
 ];
 
-// ─── Card ────────────────────────────────────────────────────────────────────────
-
 interface CardProps {
   item: SpotlightItem;
   dimmed: boolean;
+  reduceMotion: boolean;
   onHoverStart: () => void;
-  onHoverEnd: () => void;
 }
 
-function Card({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
+function Card({ item, dimmed, reduceMotion, onHoverStart }: CardProps) {
   const Icon = item.icon;
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -99,9 +100,11 @@ function Card({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
   const rotateY = useSpring(rawRotateY, TILT_SPRING);
   const glowOpacity = useSpring(0, GLOW_SPRING);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Tilt follows a mouse only: on touch, tap-generated events would leave the
+  // card tilted. Motion's onHoverStart/End already ignore touch.
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const el = cardRef.current;
-    if (!el) {
+    if (e.pointerType !== "mouse" || reduceMotion || !el) {
       return;
     }
     const rect = el.getBoundingClientRect();
@@ -109,22 +112,21 @@ function Card({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
     normY.set((e.clientY - rect.top) / rect.height);
   };
 
-  const handleMouseEnter = () => {
+  const handleHoverStart = () => {
     glowOpacity.set(1);
     onHoverStart();
   };
 
-  const handleMouseLeave = () => {
+  const handleHoverEnd = () => {
     normX.set(0.5);
     normY.set(0.5);
     glowOpacity.set(0);
-    onHoverEnd();
   };
 
   return (
     <motion.div
       animate={{
-        scale: dimmed ? 0.96 : 1,
+        scale: dimmed && !reduceMotion ? 0.96 : 1,
         opacity: dimmed ? 0.5 : 1,
       }}
       className={cn(
@@ -136,16 +138,16 @@ function Card({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
         "transition-[border-color] duration-300",
         "hover:border-zinc-300 dark:hover:border-white/14"
       )}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onMouseMove={handleMouseMove}
+      onHoverEnd={handleHoverEnd}
+      onHoverStart={handleHoverStart}
+      onPointerMove={handlePointerMove}
       ref={cardRef}
       style={{
         rotateX,
         rotateY,
         transformPerspective: 900,
       }}
-      transition={{ duration: 0.18, ease: "easeOut" }}
+      transition={{ duration: 0.18, ease: EASE_OUT }}
     >
       {/* Static accent tint — always visible */}
       <div
@@ -166,10 +168,11 @@ function Card({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
         }}
       />
 
-      {/* Shimmer sweep */}
+      {/* Shimmer sweep: transitions on hover-in only, so it resets off-card
+          instead of sweeping back on leave. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 left-0 w-[55%] -translate-x-full -skew-x-12 bg-linear-to-r from-transparent via-white/4.5 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[280%]"
+        className="pointer-events-none absolute inset-y-0 left-0 w-[55%] -translate-x-full -skew-x-12 bg-linear-to-r from-transparent via-white/4.5 to-transparent group-hover:translate-x-[280%] group-hover:transition-transform group-hover:duration-700 group-hover:ease-out motion-reduce:hidden"
       />
 
       {/* Icon badge */}
@@ -196,7 +199,7 @@ function Card({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
       {/* Accent bottom line */}
       <div
         aria-hidden="true"
-        className="absolute bottom-0 left-0 h-[2px] w-0 rounded-full transition-all duration-500 group-hover:w-full"
+        className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 rounded-full transition-transform duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-x-100 motion-reduce:transition-none"
         style={{
           background: `linear-gradient(to right, ${item.color}80, transparent)`,
         }}
@@ -204,10 +207,6 @@ function Card({ item, dimmed, onHoverStart, onHoverEnd }: CardProps) {
     </motion.div>
   );
 }
-
-Card.displayName = "Card";
-
-// ─── Main export ──────────────────────────────────────────────────────────────────
 
 export interface SpotlightCardsProps {
   items?: SpotlightItem[];
@@ -223,6 +222,7 @@ export default function SpotlightCards({
   className,
 }: SpotlightCardsProps) {
   const [hoveredTitle, setHoveredTitle] = useState<string | null>(null);
+  const reduceMotion = useReducedMotion() ?? false;
 
   return (
     <div
@@ -253,18 +253,22 @@ export default function SpotlightCards({
         </h2>
       </div>
 
-      {/* Card grid */}
-      <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {/* Card grid. Hover clears on leaving the grid, not each card, so
+          crossing the gap between cards doesn't briefly undim the siblings. */}
+      <motion.div
+        className="relative grid grid-cols-2 gap-3 sm:grid-cols-3"
+        onHoverEnd={() => setHoveredTitle(null)}
+      >
         {items.map((item) => (
           <Card
             dimmed={hoveredTitle !== null && hoveredTitle !== item.title}
             item={item}
             key={item.title}
-            onHoverEnd={() => setHoveredTitle(null)}
             onHoverStart={() => setHoveredTitle(item.title)}
+            reduceMotion={reduceMotion}
           />
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }
