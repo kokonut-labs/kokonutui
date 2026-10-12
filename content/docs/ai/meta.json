@@ -1,5 +1,6 @@
 {
   "title": "AI",
+  "defaultOpen": true,
   "pages": [
     "ai-prompt",
     "ai-input-search",

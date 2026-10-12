@@ -119,19 +119,14 @@
 } */
 
 @layer utilities {
-  body {
-    font-family: Arial, Helvetica, sans-serif;
-  }
-
-  pre::-webkit-scrollbar {
-    display: none;
-  }
-
+  /*
+    Long lines in code blocks scroll horizontally. Keep a thin scrollbar so
+    that overflow is visible instead of silently cut off.
+  */
   pre {
-    -ms-overflow-style: none;
-    /* IE and Edge */
-    scrollbar-width: none;
-    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, currentColor 25%, transparent)
+      transparent;
   }
 
   /* Remove Safari input shadow on mobile */
@@ -165,6 +160,21 @@
 button {
   outline: none;
   cursor: pointer;
+}
+
+/*
+  Mobile baseline: no grey flash on tap (controls bring their own :active
+  feedback) and no double-tap-zoom delay on controls.
+*/
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+[role="button"],
+[role="tab"] {
+  touch-action: manipulation;
 }
 
 @layer base {

@@ -1,5 +1,6 @@
 {
   "title": "Navigation",
+  "defaultOpen": true,
   "pages": [
     "morphic-navbar",
     "toolbar",

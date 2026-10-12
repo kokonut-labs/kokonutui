@@ -14,7 +14,7 @@ export function OpenInV0Button({
       aria-label="Open in v0"
       asChild
       className={cn(
-        "not-prose h-7 gap-1 rounded-sm bg-black px-2 text-white text-xs shadow-none transition-colors duration-200 hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200",
+        "not-prose h-7 gap-1 rounded-sm border border-zinc-200 bg-transparent px-2 text-xs text-zinc-700 shadow-none transition-[background-color,transform] duration-150 ease-out hover:bg-zinc-100 active:scale-[0.97] dark:border-zinc-800 dark:bg-transparent dark:text-zinc-300 dark:hover:bg-zinc-900",
         className
       )}
     >

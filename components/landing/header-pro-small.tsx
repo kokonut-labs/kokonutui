@@ -3,27 +3,28 @@ import Link from "next/link";
 import { ConfettiOutline } from "../icons/conffeti";
 
 /**
- * Pro badge pinned to the bottom of the docs sidebar via `sidebar.footer`,
- * which already supplies the surrounding padding.
+ * Pro link pinned to the bottom of the docs sidebar via `sidebar.footer`,
+ * which already supplies the surrounding padding. Kept quiet on purpose: the
+ * TOC banner carries the full pitch, so this should not outshine the nav.
  */
 export default function HeaderProSmall() {
   return (
     <Link
-      className="group mt-2 flex w-full flex-col gap-0.5 rounded-lg bg-[#FF2D55] px-3 py-2.5 tracking-tighter transition-opacity duration-200 hover:opacity-90"
+      className="group mt-2 flex w-full items-center gap-2.5 rounded-lg border border-[#FF2D55]/20 px-3 py-2 transition-colors duration-150 ease-out hover:border-[#FF2D55]/40 hover:bg-[#FF2D55]/5"
       href="https://kokonutui.pro?utm_source=kokonutui.com&utm_medium=header"
+      rel="noopener"
       target="_blank"
     >
-      <span className="flex w-full items-center gap-2.5">
-        <ConfettiOutline className="h-4 w-4 shrink-0 text-white" />
-        <span className="min-w-0 flex-1 truncate font-medium text-sm text-white">
+      <ConfettiOutline className="h-4 w-4 shrink-0 text-[#FF2D55]" />
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate font-medium text-foreground text-sm">
           Kokonut UI Pro
         </span>
-        <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-white transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        <span className="truncate text-muted-foreground text-xs">
+          100+ components and templates
+        </span>
       </span>
-      <span className="text-sm text-white/90 leading-snug">
-        100+ components to build websites faster, works with Claude Code, Cursor
-        and more
-      </span>
+      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-150 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
     </Link>
   );
 }

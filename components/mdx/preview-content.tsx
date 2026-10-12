@@ -1,64 +1,11 @@
 "use client";
 
 import { CheckCheck, Copy } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import {
-  type RefObject,
-  useActionState,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import { copyComponent } from "@/lib/action";
 import { cn } from "@/lib/utils";
 import { OpenInV0Button } from "../open-in-v0-button";
 import { PackageManagerTabs } from "./package-manager-tabs";
-
-function SuccessParticles({
-  buttonRef,
-}: {
-  buttonRef: React.RefObject<HTMLButtonElement>;
-}) {
-  const rect = buttonRef.current?.getBoundingClientRect();
-  if (!rect) return null;
-
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-
-  // Create a unique key for each particle to satisfy the linter
-  const particles = Array.from({ length: 6 }, (_, index) => ({
-    id: `particle-${index}-${Math.random().toString(36).substr(2, 9)}`,
-    index, // Pass index for staggering delay
-  }));
-
-  return (
-    <AnimatePresence>
-      {particles.map((particle) => (
-        <motion.div
-          animate={{
-            scale: [0, 1, 0],
-            x: [0, (particle.index % 2 ? 1 : -1) * (Math.random() * 50 + 20)],
-            y: [0, -Math.random() * 50 - 20],
-          }}
-          className="fixed h-1 w-1 rounded-full bg-black dark:bg-white"
-          initial={{
-            scale: 0,
-            x: 0,
-            y: 0,
-          }}
-          key={particle.id}
-          style={{ left: centerX, top: centerY }}
-          transition={{
-            duration: 0.6,
-            delay: particle.index * 0.1, // Use particle.index for delay
-            ease: "easeOut",
-          }}
-        />
-      ))}
-    </AnimatePresence>
-  );
-}
 
 export default function PreviewContent({
   link,
@@ -75,15 +22,12 @@ export default function PreviewContent({
     content: "",
     success: false,
   });
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isTerminalCopied, setIsTerminalCopied] = useState(false);
 
-  const handleCopyClick = async () => {
+  const handleCopyClick = () => {
     const [folder, filename] = link.split("/");
 
-    startTransition(async () => {
+    startTransition(() => {
       const formData = new FormData();
       formData.append("folder", folder);
       formData.append("fileName", filename);
@@ -113,10 +57,6 @@ export default function PreviewContent({
     }
 
     navigator.clipboard.writeText(commandToCopy);
-    setIsTerminalCopied(true);
-    setTimeout(() => {
-      setIsTerminalCopied(false);
-    }, 1000);
   };
 
   const openInV0 = () => {
@@ -126,9 +66,6 @@ export default function PreviewContent({
   };
 
   useEffect(() => {
-    if (state.error) {
-      setShowLoginDialog(true);
-    }
     if (state.success && state.content) {
       setIsCopied(true);
       navigator.clipboard.writeText(state.content);
@@ -139,75 +76,66 @@ export default function PreviewContent({
     }
   }, [state]);
 
-  const terminalButtonRef = useRef<HTMLButtonElement>(null);
-  const copyButtonRef = useRef<HTMLButtonElement>(null);
-
   return (
-    <>
-      {isTerminalCopied ? (
-        <SuccessParticles
-          buttonRef={terminalButtonRef as RefObject<HTMLButtonElement>}
+    <div className="relative flex w-full flex-col items-start justify-between gap-1 sm:flex-row sm:items-center sm:gap-2">
+      <div className="w-full sm:w-auto">
+        <PackageManagerTabs
+          commandName={getFileName()}
+          onSelect={handleTerminalClick}
+          prePath={prePath}
         />
-      ) : null}
-      {isCopied ? (
-        <SuccessParticles
-          buttonRef={copyButtonRef as RefObject<HTMLButtonElement>}
-        />
-      ) : null}
-      <div className="relative flex w-full flex-col items-start justify-between gap-1 sm:flex-row sm:items-center sm:gap-2">
-        <div className="w-full sm:w-auto">
-          <PackageManagerTabs
-            commandName={getFileName()}
-            onSelect={handleTerminalClick}
-            prePath={prePath}
-          />
-        </div>
-        <div className="mt-1 flex w-full items-center justify-end gap-2 sm:mt-0 sm:w-auto">
-          <OpenInV0Button name={openInV0()} />
-
-          {!isBlock && (
-            <form
-              className="w-full sm:w-auto"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleCopyClick();
-              }}
-            >
-              <button
-                className={cn(
-                  "relative overflow-hidden",
-                  "h-7 px-2 font-medium text-xs",
-                  "bg-black dark:bg-white",
-                  "text-white dark:text-black",
-                  "hover:bg-black/90 dark:hover:bg-white/90",
-                  "hover:text-white dark:hover:text-black",
-                  "transition-all duration-200",
-                  "group flex items-center justify-center gap-1",
-                  "rounded-sm",
-                  "my-0 py-0 shadow-none",
-                  "w-fit md:w-full"
-                )}
-                disabled={isPending}
-                ref={copyButtonRef}
-                type="submit"
-              >
-                {isCopied ? (
-                  <CheckCheck className="h-3.5 w-3.5 text-white dark:text-black" />
-                ) : (
-                  <Copy
-                    className={cn(
-                      "h-3.5 w-3.5",
-                      "transition-all duration-200",
-                      "group-hover:rotate-12"
-                    )}
-                  />
-                )}
-                <span>Copy</span>
-              </button>
-            </form>
-          )}
-        </div>
       </div>
-    </>
+      <div className="mt-1 flex w-full items-center justify-end gap-2 sm:mt-0 sm:w-auto">
+        <OpenInV0Button name={openInV0()} />
+
+        {!isBlock && (
+          <form
+            className="w-full sm:w-auto"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCopyClick();
+            }}
+          >
+            <button
+              aria-label={isCopied ? "Copied" : "Copy component source code"}
+              className={cn(
+                "relative h-7 overflow-hidden rounded-sm px-2.5 font-medium text-xs",
+                "bg-black text-white dark:bg-white dark:text-black",
+                "hover:bg-zinc-800 dark:hover:bg-zinc-200",
+                "transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]",
+                "w-fit md:w-full"
+              )}
+              disabled={isPending}
+              type="submit"
+            >
+              {/*
+                Both labels stay mounted and crossfade with a light blur, so
+                rapid clicks retarget the transition instead of restarting it.
+              */}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "flex items-center justify-center gap-1 transition-[opacity,filter] duration-150 ease-out",
+                  isCopied ? "opacity-0 blur-[2px]" : "opacity-100 blur-0"
+                )}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copy code
+              </span>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute inset-0 flex items-center justify-center gap-1 transition-[opacity,filter] duration-150 ease-out",
+                  isCopied ? "opacity-100 blur-0" : "opacity-0 blur-[2px]"
+                )}
+              >
+                <CheckCheck className="h-3.5 w-3.5" />
+                Copied
+              </span>
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
   );
 }

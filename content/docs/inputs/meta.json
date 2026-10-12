@@ -1,4 +1,5 @@
 {
   "title": "Inputs",
+  "defaultOpen": true,
   "pages": ["file-upload", "avatar-picker", "team-selector", "loader"]
 }

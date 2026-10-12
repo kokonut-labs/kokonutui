@@ -15,7 +15,7 @@ interface PreviewClientProps {
   comment?: string[];
 }
 
-export function PreviewClient(props: PreviewClientProps) {
+export function PreviewClient({ children, ...props }: PreviewClientProps) {
   const [key, setKey] = React.useState(0);
 
   const handleRefresh = () => {
@@ -23,11 +23,9 @@ export function PreviewClient(props: PreviewClientProps) {
   };
 
   return (
-    <div className="relative">
-      <RefreshButton onRefresh={handleRefresh} />
-      <div key={key}>
-        <Preview {...props} />
-      </div>
-    </div>
+    <Preview {...props} action={<RefreshButton onRefresh={handleRefresh} />}>
+      {/* Re-keying only the demo replays it without resetting the install bar. */}
+      <React.Fragment key={key}>{children}</React.Fragment>
+    </Preview>
   );
 }

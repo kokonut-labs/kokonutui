@@ -100,7 +100,6 @@ export function PackageManagerTabs({
           "relative flex items-center justify-start gap-1",
           "rounded-sm bg-background",
           "border",
-          "transition-all duration-200",
           "h-7 text-black dark:text-white"
         )}
         ref={containerRef}
@@ -131,7 +130,7 @@ export function PackageManagerTabs({
                 aria-selected={isSelected}
                 className={cn(
                   "relative flex h-7 items-center justify-center gap-0.5 rounded-sm px-2 py-0.5",
-                  "font-medium text-xs transition-all duration-300",
+                  "font-medium text-xs transition-colors duration-150",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   "truncate",
                   isSelected
@@ -165,14 +164,14 @@ export function PackageManagerTabs({
           "h-7 font-medium text-xs",
           "border border-black/10 dark:border-white/10",
           "rounded-sm px-2",
-          "transition-all duration-200",
+          "transition-[background-color,transform] duration-150 ease-out hover:bg-muted/50 active:scale-[0.99]",
           "group flex items-center justify-center gap-1",
-          "w-full",
-          "min-w-[250px]",
+          "w-full min-w-0 sm:min-w-[250px]",
           "relative"
         )}
         onClick={handleCopyCommand}
         ref={copyButtonRef}
+        title={getCommand(selected)}
         type="button"
       >
         <span

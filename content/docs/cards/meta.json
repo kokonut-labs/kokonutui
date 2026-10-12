@@ -1,5 +1,6 @@
 {
   "title": "Cards",
+  "defaultOpen": true,
   "pages": [
     "card-flip",
     "card-stack",

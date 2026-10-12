@@ -11,8 +11,10 @@ export const source = loader({
       return;
     }
 
-    if (icon in icons) {
-      return createElement(icons[icon as keyof typeof icons]);
-    }
+    // Lucide renames icons between versions; fall back to a neutral glyph so a
+    // stale name never leaves a sidebar row without an icon.
+    const Icon =
+      icon in icons ? icons[icon as keyof typeof icons] : icons.Component;
+    return createElement(Icon);
   },
 });

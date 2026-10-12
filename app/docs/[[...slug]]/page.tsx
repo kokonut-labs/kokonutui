@@ -104,6 +104,13 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         footer: <TocProBanner />,
       };
 
+  const pageActions = (
+    <>
+      <MarkdownCopyButton markdownUrl={markdownUrl} />
+      <ViewOptionsPopover githubUrl={githubUrl} markdownUrl={markdownUrl} />
+    </>
+  );
+
   return (
     <DocsPage
       full={page.data.full}
@@ -115,16 +122,21 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         dangerouslySetInnerHTML={{ __html: breadcrumbData }}
         type="application/ld+json"
       />
-      <DocsTitle className="font-semibold text-4xl">
-        {page.data.title}
-      </DocsTitle>
-      <DocsDescription className="text-xl">
+      {/*
+        The page actions sit beside the title on desktop and move to the end of
+        the page on mobile, so the component demo lands in the first screen.
+      */}
+      <div className="flex items-start justify-between gap-4">
+        <DocsTitle className="font-semibold text-3xl md:text-4xl">
+          {page.data.title}
+        </DocsTitle>
+        <div className="hidden shrink-0 flex-row items-center gap-2 pt-1.5 md:flex">
+          {pageActions}
+        </div>
+      </div>
+      <DocsDescription className="mb-2 text-pretty text-base md:text-lg">
         {page.data.description}
       </DocsDescription>
-      <div className="flex flex-row items-center gap-2">
-        <MarkdownCopyButton markdownUrl={markdownUrl} />
-        <ViewOptionsPopover githubUrl={githubUrl} markdownUrl={markdownUrl} />
-      </div>
       <DocsBody>
         <MDX
           components={{
@@ -137,6 +149,9 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
           }}
         />
       </DocsBody>
+      <div className="flex flex-row items-center gap-2 md:hidden">
+        {pageActions}
+      </div>
     </DocsPage>
   );
 }

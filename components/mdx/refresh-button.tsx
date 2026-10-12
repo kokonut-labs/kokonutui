@@ -9,16 +9,14 @@ interface RefreshButtonProps {
 export function RefreshButton({ onRefresh }: RefreshButtonProps) {
   return (
     <button
-      aria-label="Refresh preview"
-      className="group absolute top-17 right-2 z-10 flex h-7 items-center gap-2 rounded-md bg-black p-2 px-3 text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-100"
+      aria-label="Replay preview"
+      className="flex h-7 items-center gap-1.5 rounded-md border border-zinc-200 bg-background/80 px-2 text-xs text-zinc-600 backdrop-blur-sm transition-[color,background-color,transform] duration-150 ease-out hover:bg-zinc-100 hover:text-zinc-900 active:scale-[0.97] dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
       onClick={onRefresh}
+      title="Replay preview"
       type="button"
     >
-      <RefreshCw
-        className="transition-transform duration-300 group-hover:rotate-180"
-        size={16}
-      />
-      <span className="font-medium text-sm">Refresh</span>
+      <RefreshCw className="h-3.5 w-3.5" />
+      <span className="font-medium">Replay</span>
     </button>
   );
 }
