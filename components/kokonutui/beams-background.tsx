@@ -54,6 +54,7 @@ function createBeam(width: number, height: number, isDarkMode: boolean): Beam {
 
 export default function BeamsBackground({
   className,
+  children,
   intensity = "strong",
 }: AnimatedGradientBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -89,17 +90,24 @@ export default function BeamsBackground({
 
     updateDarkMode();
 
+    // Drawing is scaled by the device pixel ratio, so beams are positioned in
+    // CSS pixels, not in the canvas's device-pixel size.
+    let width = 0;
+    let height = 0;
+
     const updateCanvasSize = () => {
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
       ctx.scale(dpr, dpr);
 
       const totalBeams = MINIMUM_BEAMS * 1.5;
       beamsRef.current = Array.from({ length: totalBeams }, () =>
-        createBeam(canvas.width, canvas.height, isDarkModeRef.current)
+        createBeam(width, height, isDarkModeRef.current)
       );
     };
 
@@ -110,12 +118,12 @@ export default function BeamsBackground({
       if (!canvas) return beam;
 
       const column = index % 3;
-      const spacing = canvas.width / 3;
+      const spacing = width / 3;
 
       const hueBase = isDarkModeRef.current ? 190 : 210;
       const hueRange = isDarkModeRef.current ? 70 : 50;
 
-      beam.y = canvas.height + 100;
+      beam.y = height + 100;
       beam.x =
         column * spacing + spacing / 2 + (Math.random() - 0.5) * spacing * 0.5;
       beam.width = 100 + Math.random() * 100;
@@ -237,16 +245,18 @@ export default function BeamsBackground({
 
       <div className="relative z-10 flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-6 px-4 text-center">
-          <motion.h1
-            animate={{ opacity: 1, y: 0 }}
-            className="font-semibold text-6xl text-neutral-900 tracking-tighter md:text-7xl lg:text-8xl dark:text-white"
-            initial={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.8 }}
-          >
-            Beams
-            <br />
-            Background
-          </motion.h1>
+          {children ?? (
+            <motion.h1
+              animate={{ opacity: 1, y: 0 }}
+              className="font-semibold text-6xl text-neutral-900 tracking-tighter md:text-7xl lg:text-8xl dark:text-white"
+              initial={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.8 }}
+            >
+              Beams
+              <br />
+              Background
+            </motion.h1>
+          )}
         </div>
       </div>
     </div>
