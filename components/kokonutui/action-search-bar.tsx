@@ -39,35 +39,28 @@ interface SearchResult {
 
 const ANIMATION_VARIANTS = {
   container: {
-    hidden: { opacity: 0, height: 0 },
-    show: {
-      opacity: 1,
-      height: "auto",
-      transition: {
-        height: { duration: 0.4 },
-        staggerChildren: 0.1,
-      },
-    },
-    exit: {
-      opacity: 0,
-      height: 0,
-      transition: {
-        height: { duration: 0.3 },
-        opacity: { duration: 0.2 },
-      },
-    },
-  },
-  item: {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: -4 },
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.3 },
+      transition: {
+        duration: 0.15,
+        ease: [0.23, 1, 0.32, 1],
+        staggerChildren: 0.03,
+      },
     },
     exit: {
       opacity: 0,
-      y: -10,
-      transition: { duration: 0.2 },
+      y: -4,
+      transition: { duration: 0.1, ease: [0.23, 1, 0.32, 1] },
+    },
+  },
+  item: {
+    hidden: { opacity: 0, y: 4 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.15, ease: [0.23, 1, 0.32, 1] },
     },
   },
 } as const;
@@ -243,27 +236,25 @@ function ActionSearchBar({
             />
             <div className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2">
               <AnimatePresence mode="popLayout">
-                {query.length > 0 ? (
-                  <motion.div
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: 20, opacity: 0 }}
-                    initial={{ y: -20, opacity: 0 }}
-                    key="send"
-                    transition={{ duration: 0.2 }}
-                  >
+                <motion.div
+                  animate={{ y: 0, opacity: 1 }}
+                  // Only the fade remains under reduced motion.
+                  className="motion-reduce:transform-none!"
+                  exit={{
+                    y: 20,
+                    opacity: 0,
+                    transition: { duration: 0.15, ease: [0.23, 1, 0.32, 1] },
+                  }}
+                  initial={{ y: -20, opacity: 0 }}
+                  key={query.length > 0 ? "send" : "search"}
+                  transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                >
+                  {query.length > 0 ? (
                     <Send className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: 20, opacity: 0 }}
-                    initial={{ y: -20, opacity: 0 }}
-                    key="search"
-                    transition={{ duration: 0.2 }}
-                  >
+                  ) : (
                     <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                  </motion.div>
-                )}
+                  )}
+                </motion.div>
               </AnimatePresence>
             </div>
           </div>
@@ -316,10 +307,7 @@ function ActionSearchBar({
                       </div>
                       <div className="flex items-center gap-2">
                         {action.short && (
-                          <span
-                            aria-label={`Keyboard shortcut: ${action.short}`}
-                            className="text-gray-400 text-xs"
-                          >
+                          <span className="text-gray-400 text-xs">
                             {action.short}
                           </span>
                         )}
