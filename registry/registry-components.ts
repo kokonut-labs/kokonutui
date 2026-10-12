@@ -51,7 +51,7 @@ export const component: Registry = [
   {
     name: "smooth-drawer",
     type: "registry:component",
-    dependencies: ["motion"],
+    dependencies: ["lucide-react", "motion"],
     registryDependencies: ["drawer", "button"],
     files: [
       {
@@ -135,7 +135,7 @@ export const component: Registry = [
   {
     name: "ai-input-search",
     type: "registry:component",
-    dependencies: ["motion"],
+    dependencies: ["lucide-react", "motion"],
     registryDependencies: ["textarea"],
     files: [
       {
@@ -252,7 +252,7 @@ export const component: Registry = [
   {
     name: "switch-button",
     type: "registry:component",
-    dependencies: ["lucide-react"],
+    dependencies: ["lucide-react", "next-themes"],
     registryDependencies: ["button"],
     files: [
       {
@@ -315,7 +315,7 @@ export const component: Registry = [
   {
     name: "hold-button",
     type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
+    dependencies: ["class-variance-authority", "lucide-react", "motion"],
     registryDependencies: ["button"],
     files: [
       {
@@ -506,7 +506,7 @@ export const component: Registry = [
   {
     name: "liquid-glass-card",
     type: "registry:component",
-    dependencies: ["lucide-react"],
+    dependencies: ["class-variance-authority", "lucide-react"],
     registryDependencies: ["card", "button"],
     files: [
       {
@@ -546,7 +546,6 @@ export const component: Registry = [
     name: "slide-text-button",
     type: "registry:component",
     dependencies: ["motion"],
-    registryDependencies: ["button"],
     files: [
       {
         path: "components/kokonutui/slide-text-button.tsx",
