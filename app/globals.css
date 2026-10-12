@@ -158,8 +158,23 @@
 }
 
 button {
-  outline: none;
   cursor: pointer;
+}
+
+/*
+  Hide the focus ring for mouse and touch clicks, but always show it for
+  keyboard users. A blanket `outline: none` made keyboard focus invisible.
+*/
+@layer base {
+  /* In the base layer so component utilities (focus-visible:ring-*) win. */
+  button:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--color-fd-ring, currentColor);
+    outline-offset: 2px;
+  }
 }
 
 /*

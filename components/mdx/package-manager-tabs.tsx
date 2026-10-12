@@ -113,7 +113,7 @@ export function InstallCommand({
               <button
                 aria-selected={isSelected}
                 className={cn(
-                  "h-9 border-b font-medium text-xs transition-colors duration-150 ease-out",
+                  "h-9 rounded-sm border-b font-medium text-xs transition-colors duration-150 ease-out",
                   isSelected
                     ? "border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100"
                     : "border-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-200"
