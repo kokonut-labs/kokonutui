@@ -11,7 +11,7 @@
  */
 
 import { Fingerprint } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion, type Variants } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import type * as React from "react";
@@ -55,7 +55,7 @@ function PriceTag({ price, discountedPrice }: PriceTagProps) {
   );
 }
 
-interface DrawerDemoProps extends React.HTMLAttributes<HTMLDivElement> {
+interface SmoothDrawerProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string;
   description?: string;
   primaryButtonText?: string;
@@ -66,53 +66,33 @@ interface DrawerDemoProps extends React.HTMLAttributes<HTMLDivElement> {
   discountedPrice?: number;
 }
 
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+
+// vaul already slides the sheet in, so the content only staggers a short
+// fade-up instead of sliding in a second time.
 const drawerVariants = {
-  hidden: {
-    y: "100%",
-    opacity: 0,
-    rotateX: 5,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 30,
-    },
-  },
+  hidden: {},
   visible: {
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 30,
-      mass: 0.8,
-      staggerChildren: 0.07,
-      delayChildren: 0.2,
-    },
+    transition: { staggerChildren: 0.04 },
   },
-};
+} satisfies Variants;
 
 const itemVariants = {
-  hidden: {
-    y: 20,
-    opacity: 0,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 30,
-    },
-  },
+  hidden: { y: 8, opacity: 0 },
   visible: {
     y: 0,
     opacity: 1,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 30,
-      mass: 0.8,
-    },
+    transition: { duration: 0.2, ease: EASE_OUT },
   },
-};
+} satisfies Variants;
+
+const reducedItemVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.2, ease: EASE_OUT },
+  },
+} satisfies Variants;
 
 export default function SmoothDrawer({
   title = "KokonutUI - Pro",
@@ -122,10 +102,9 @@ export default function SmoothDrawer({
   onSecondaryAction,
   price = 169,
   discountedPrice = 99,
-}: DrawerDemoProps) {
-  const handleSecondaryClick = () => {
-    onSecondaryAction?.();
-  };
+}: SmoothDrawerProps) {
+  const shouldReduceMotion = useReducedMotion();
+  const item = shouldReduceMotion ? reducedItemVariants : itemVariants;
 
   return (
     <Drawer>
@@ -137,21 +116,19 @@ export default function SmoothDrawer({
           animate="visible"
           className="mx-auto w-full max-w-[340px] space-y-6"
           initial="hidden"
-          variants={drawerVariants as any}
+          variants={drawerVariants}
         >
-          <motion.div variants={itemVariants as any}>
+          <motion.div variants={item}>
             <DrawerHeader className="space-y-2.5 px-0">
               <DrawerTitle className="flex items-center gap-2.5 font-semibold text-2xl tracking-tighter">
-                <motion.div variants={itemVariants as any}>
+                <motion.div variants={item}>
                   <div className="rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 p-1.5 shadow-inner dark:from-zinc-800 dark:to-zinc-900">
                     <Image alt="Logo" height={32} src="/logo.svg" width={32} />
                   </div>
                 </motion.div>
-                <motion.span variants={itemVariants as any}>
-                  {title}
-                </motion.span>
+                <motion.span variants={item}>{title}</motion.span>
               </DrawerTitle>
-              <motion.div variants={itemVariants as any}>
+              <motion.div variants={item}>
                 <DrawerDescription className="text-sm text-zinc-600 leading-relaxed tracking-tighter dark:text-zinc-400">
                   {description}
                 </DrawerDescription>
@@ -159,11 +136,11 @@ export default function SmoothDrawer({
             </DrawerHeader>
           </motion.div>
 
-          <motion.div variants={itemVariants as any}>
+          <motion.div variants={item}>
             <PriceTag discountedPrice={discountedPrice} price={price} />
           </motion.div>
 
-          <motion.div variants={itemVariants as any}>
+          <motion.div variants={item}>
             <DrawerFooter className="flex flex-col gap-3 px-0">
               <div className="w-full">
                 <Link
@@ -172,28 +149,19 @@ export default function SmoothDrawer({
                   target="_blank"
                 >
                   <motion.span
-                    className="absolute inset-0 translate-x-[-200%] bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    transition={{
-                      duration: 1.5,
-                      ease: "easeInOut",
-                      repeat: 0,
-                    }}
-                    whileHover={{
-                      x: ["-200%", "200%"],
-                    }}
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                    initial={{ x: "-100%" }}
+                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                    whileHover={shouldReduceMotion ? undefined : { x: "100%" }}
                   />
-                  <motion.div
-                    animate={{ opacity: 1 }}
-                    className="relative flex items-center gap-2 tracking-tighter"
-                    initial={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
+                  <div className="relative flex items-center gap-2 tracking-tighter">
                     {primaryButtonText}
                     <motion.div
-                      animate={{
-                        rotate: [0, 15, -15, 0],
-                        y: [0, -2, 2, 0],
-                      }}
+                      animate={
+                        shouldReduceMotion
+                          ? undefined
+                          : { rotate: [0, 15, -15, 0], y: [0, -2, 2, 0] }
+                      }
                       transition={{
                         duration: 2,
                         ease: "easeInOut",
@@ -203,13 +171,13 @@ export default function SmoothDrawer({
                     >
                       <Fingerprint className="h-4 w-4" />
                     </motion.div>
-                  </motion.div>
+                  </div>
                 </Link>
               </div>
               <DrawerClose asChild>
                 <Button
                   className="h-11 w-full rounded-xl border-zinc-200 font-semibold text-sm tracking-tighter transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800/80"
-                  onClick={handleSecondaryClick}
+                  onClick={onSecondaryAction}
                   variant="outline"
                 >
                   {secondaryButtonText}
