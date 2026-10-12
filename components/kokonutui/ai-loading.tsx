@@ -234,7 +234,7 @@ export default function AILoadingState() {
         <div className="ml-2 flex items-center space-x-2 font-medium text-gray-600 dark:text-gray-300">
           <LoadingAnimation
             maskId={progressMaskId}
-            progress={(sequenceIndex / TASK_SEQUENCES.length) * 100}
+            progress={((sequenceIndex + 1) / TASK_SEQUENCES.length) * 100}
           />
           <span className="text-sm">{currentSequence.status}...</span>
         </div>
