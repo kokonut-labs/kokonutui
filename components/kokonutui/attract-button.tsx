@@ -109,7 +109,7 @@ export default function AttractButton({
         "hover:bg-violet-200 dark:hover:bg-violet-800",
         "text-violet-600 dark:text-violet-300",
         "border border-violet-300 dark:border-violet-700",
-        "transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.97]",
+        "transition-[color,background-color,border-color,scale] duration-150 ease-out active:scale-[0.97]",
         className
       )}
       onPointerCancel={handlePointerCancel}

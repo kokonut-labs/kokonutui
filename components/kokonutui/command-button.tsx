@@ -28,7 +28,7 @@ export default function CommandButton({
         "dark:from-zinc-800 dark:to-zinc-900",
         "border border-zinc-200 dark:border-zinc-800",
         "hover:border-zinc-300 dark:hover:border-zinc-700",
-        "transition-[border-color,transform] duration-150 ease-out",
+        "transition-[border-color,scale] duration-150 ease-out",
         "active:scale-[0.97] motion-reduce:active:scale-100",
         "group",
         className

@@ -378,7 +378,7 @@ function VoiceFeature() {
       <button
         aria-label={recording ? "Stop recording" : "Start recording"}
         aria-pressed={recording}
-        className="relative z-10 flex h-16 w-16 items-center justify-center rounded-xl transition-[background-color,transform] duration-150 ease-out hover:bg-black/5 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 active:scale-[0.97] dark:hover:bg-white/10"
+        className="relative z-10 flex h-16 w-16 items-center justify-center rounded-xl transition-[background-color,scale] duration-150 ease-out hover:bg-black/5 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 active:scale-[0.97] dark:hover:bg-white/10"
         onClick={handleClick}
         type="button"
       >
@@ -488,7 +488,7 @@ export function BentoCard({ item }: { item: BentoItem }) {
       <div
         className={cn(
           "group relative flex h-full flex-col gap-2 rounded-xl border border-neutral-200/60 bg-gradient-to-b from-neutral-50/80 to-neutral-50 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.04)]",
-          "transition-[border-color,box-shadow,transform] duration-200 ease-out",
+          "transition-[border-color,box-shadow,scale] duration-200 ease-out",
           "hover:border-neutral-300/70 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)]",
           "dark:border-neutral-800/60 dark:from-neutral-900/80 dark:to-neutral-900 dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] dark:hover:border-neutral-700/60 dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)]",
           item.href &&
@@ -511,7 +511,7 @@ export function BentoCard({ item }: { item: BentoItem }) {
           {item.href && (
             <ArrowUpRight
               aria-hidden="true"
-              className="h-5 w-5 shrink-0 -translate-x-1 translate-y-1 text-neutral-400 opacity-0 transition-[opacity,transform] duration-200 ease-out group-focus-within:translate-x-0 group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:translate-x-0 motion-reduce:translate-y-0 dark:text-neutral-500"
+              className="h-5 w-5 shrink-0 -translate-x-1 translate-y-1 text-neutral-400 opacity-0 transition-[opacity,translate] duration-200 ease-out group-focus-within:translate-x-0 group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:translate-x-0 motion-reduce:translate-y-0 dark:text-neutral-500"
             />
           )}
         </div>
