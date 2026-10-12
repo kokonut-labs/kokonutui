@@ -3,7 +3,7 @@
 /**
  * @author: @dorianbaffier
  * @description: Particle Button
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2025-06-26
  * @license: MIT
  * @website: https://kokonutui.com
@@ -11,53 +11,73 @@
  */
 
 import { MousePointerClick } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { type RefObject, useRef, useState } from "react";
-import type { ButtonProps } from "@/components/ui/button";
+import { motion, useReducedMotion } from "motion/react";
+import {
+  type ComponentProps,
+  type MouseEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface ParticleButtonProps extends ButtonProps {
+export interface ParticleButtonProps extends ComponentProps<typeof Button> {
+  /** Called after a click that was not `preventDefault()`-ed, alongside the burst. */
   onSuccess?: () => void;
+  /** How long (ms) the particle layer stays mounted after a click. */
   successDuration?: number;
+  /** Icon rendered after the label. Pass `null` to hide it. */
+  icon?: ReactNode;
 }
 
-function SuccessParticles({
-  buttonRef,
-}: {
-  buttonRef: React.RefObject<HTMLButtonElement>;
-}) {
-  const rect = buttonRef.current?.getBoundingClientRect();
-  if (!rect) return null;
+interface Particle {
+  x: number;
+  y: number;
+}
 
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
+interface Burst {
+  id: number;
+  particles: Particle[];
+}
 
+const PARTICLE_COUNT = 6;
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+
+function createParticles(): Particle[] {
+  return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+    x: (i % 2 ? 1 : -1) * (Math.random() * 40 + 16),
+    y: -(Math.random() * 36 + 16),
+  }));
+}
+
+function SuccessParticles({ particles }: { particles: Particle[] }) {
   return (
-    <AnimatePresence>
-      {[...Array(6)].map((_, i) => (
-        <motion.div
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 overflow-visible"
+    >
+      {particles.map((particle, i) => (
+        <motion.span
           animate={{
-            scale: [0, 1, 0],
-            x: [0, (i % 2 ? 1 : -1) * (Math.random() * 50 + 20)],
-            y: [0, -Math.random() * 50 - 20],
+            opacity: [1, 1, 0],
+            scale: [0.5, 1, 0.6],
+            x: particle.x,
+            y: particle.y,
           }}
-          className="fixed h-1 w-1 rounded-full bg-black dark:bg-white"
-          initial={{
-            scale: 0,
-            x: 0,
-            y: 0,
-          }}
+          className="absolute top-1/2 left-1/2 -mt-0.5 -ml-0.5 size-1 rounded-full bg-zinc-900 dark:bg-zinc-50"
+          initial={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
+          // biome-ignore lint/suspicious/noArrayIndexKey: particles are a fixed-size, never-reordered list
           key={i}
-          style={{ left: centerX, top: centerY }}
           transition={{
-            duration: 0.6,
-            delay: i * 0.1,
-            ease: "easeOut",
+            duration: 0.45,
+            delay: i * 0.02,
+            ease: EASE_OUT,
           }}
         />
       ))}
-    </AnimatePresence>
+    </span>
   );
 }
 
@@ -65,42 +85,61 @@ export default function ParticleButton({
   children,
   onClick,
   onSuccess,
-  successDuration = 1000,
+  successDuration = 600,
+  icon = <MousePointerClick className="h-4 w-4" />,
   className,
   ...props
 }: ParticleButtonProps) {
-  const [showParticles, setShowParticles] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [burst, setBurst] = useState<Burst | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const burstIdRef = useRef(0);
+  const shouldReduceMotion = useReducedMotion();
 
-  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    setShowParticles(true);
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    },
+    []
+  );
 
-    setTimeout(() => {
-      setShowParticles(false);
-    }, successDuration);
+  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
+    onClick?.(e);
+    if (e.defaultPrevented) {
+      return;
+    }
+
+    if (!shouldReduceMotion) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      burstIdRef.current += 1;
+      // A new id remounts the particles so rapid re-clicks restart the burst.
+      setBurst({ id: burstIdRef.current, particles: createParticles() });
+      timeoutRef.current = setTimeout(() => {
+        setBurst(null);
+        timeoutRef.current = null;
+      }, successDuration);
+    }
+
+    onSuccess?.();
   };
 
   return (
-    <>
-      {showParticles && (
-        <SuccessParticles
-          buttonRef={buttonRef as RefObject<HTMLButtonElement>}
-        />
-      )}
+    <span className="relative inline-flex">
+      {burst && <SuccessParticles key={burst.id} particles={burst.particles} />}
       <Button
         className={cn(
-          "relative",
-          showParticles && "scale-95",
-          "transition-transform duration-100",
+          "relative transition-[transform,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:transition-none",
           className
         )}
         onClick={handleClick}
-        ref={buttonRef}
         {...props}
       >
         {children}
-        <MousePointerClick className="h-4 w-4" />
+        {icon}
       </Button>
-    </>
+    </span>
   );
 }
