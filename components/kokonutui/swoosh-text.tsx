@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * @author: @dorianbaffier
  * @description: Swoosh Text
@@ -10,7 +8,7 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion } from "motion/react";
+import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 interface SwooshTextProps {
@@ -25,44 +23,38 @@ interface SwooshTextProps {
   };
 }
 
+const DEFAULT_SHADOW_COLORS = {
+  first: "#07bccc",
+  second: "#e601c0",
+  third: "#e9019a",
+  fourth: "#f40468",
+  glow: "#f40468",
+};
+
 export default function SwooshText({
   text = "Hover Me",
-  className = "",
-  shadowColors = {
-    first: "#07bccc",
-    second: "#e601c0",
-    third: "#e9019a",
-    fourth: "#f40468",
-    glow: "#f40468",
-  },
+  className,
+  shadowColors,
 }: SwooshTextProps) {
-  const textShadowStyle = {
-    textShadow: `10px 10px 0px ${shadowColors.first}, 
-                     15px 15px 0px ${shadowColors.second}, 
-                     20px 20px 0px ${shadowColors.third}, 
-                     25px 25px 0px ${shadowColors.fourth}, 
-                     45px 45px 10px ${shadowColors.glow}`,
-  };
-
-  const noShadowStyle = {
-    textShadow: "none",
+  // Merge so a partial `shadowColors` keeps the other defaults instead of
+  // producing `undefined` (which invalidates the whole text-shadow).
+  const colors = { ...DEFAULT_SHADOW_COLORS, ...shadowColors };
+  const style: CSSProperties & Record<"--swoosh-shadow", string> = {
+    "--swoosh-shadow": `10px 10px 0px ${colors.first}, 15px 15px 0px ${colors.second}, 20px 20px 0px ${colors.third}, 25px 25px 0px ${colors.fourth}, 45px 45px 10px ${colors.glow}`,
   };
 
   return (
-    <div className="w-full text-center">
-      <motion.div
-        className={cn(
-          "w-full cursor-pointer text-center font-bold text-3xl",
-          "tracking-widest transition-all duration-200 ease-in-out",
-          "text-black italic dark:text-white",
-          "stroke-[#d6f4f4]",
-          className
-        )}
-        style={textShadowStyle}
-        whileHover={noShadowStyle}
-      >
-        {text}
-      </motion.div>
+    <div
+      className={cn(
+        "w-full cursor-pointer text-center font-bold text-3xl tracking-widest",
+        "text-black italic dark:text-white",
+        "[text-shadow:var(--swoosh-shadow)] hover:[text-shadow:none]",
+        "transition-[text-shadow] duration-200 ease-[ease] motion-reduce:transition-none",
+        className
+      )}
+      style={style}
+    >
+      {text}
     </div>
   );
 }
