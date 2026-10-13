@@ -548,6 +548,21 @@
       ]
     },
     {
+      "name": "notification-stack",
+      "type": "registry:component",
+      "title": "Notification Stack",
+      "description": "Stacked notification cards that fan out on hover and dismiss with a swipe or a quick flick, with keyboard and button fallbacks, built with React and Tailwind CSS.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/notification-stack.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",
