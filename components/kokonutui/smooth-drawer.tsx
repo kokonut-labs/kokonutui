@@ -36,7 +36,7 @@ function PriceTag({ price, discountedPrice }: PriceTagProps) {
   return (
     <div className="mx-auto flex max-w-fit items-center justify-around gap-4">
       <div className="flex items-baseline gap-2">
-        <span className="bg-gradient-to-br from-zinc-900 to-zinc-700 bg-clip-text font-bold text-4xl text-transparent dark:from-white dark:to-zinc-300">
+        <span className="font-bold text-4xl text-zinc-900 dark:text-white">
           ${discountedPrice}
         </span>
         <span className="text-lg text-zinc-400 line-through dark:text-zinc-500">
@@ -96,6 +96,22 @@ const reducedItemVariants = {
   },
 } satisfies Variants;
 
+// Hovering the CTA sweeps the shine across once and wiggles the icon once;
+// leaving snaps the shine back out of view instead of sweeping it back.
+const shineVariants = {
+  rest: { x: "-100%", transition: { duration: 0 } },
+  hover: { x: "100%", transition: { duration: 1.5, ease: "easeInOut" } },
+} satisfies Variants;
+
+const fingerprintVariants = {
+  rest: { rotate: 0, y: 0, transition: { duration: 0.2, ease: EASE_OUT } },
+  hover: {
+    rotate: [0, 15, -15, 0],
+    y: [0, -2, 2, 0],
+    transition: { duration: 0.6, ease: "easeInOut" },
+  },
+} satisfies Variants;
+
 export default function SmoothDrawer({
   title = "KokonutUI - Pro",
   description = "100+ collection of UI Components and templates built for React, Next.js, and Tailwind CSS. Spend no time on design and focus on shipping.",
@@ -115,7 +131,7 @@ export default function SmoothDrawer({
       <DrawerTrigger asChild>
         <Button variant="outline">Open Drawer</Button>
       </DrawerTrigger>
-      <DrawerContent className="mx-auto max-w-fit rounded-2xl p-6 shadow-xl">
+      <DrawerContent className="mx-auto max-w-fit rounded-2xl p-6 shadow-xl data-[vaul-drawer-direction=bottom]:rounded-t-2xl">
         <motion.div
           animate="visible"
           className="mx-auto w-full max-w-[340px] space-y-6"
@@ -125,21 +141,22 @@ export default function SmoothDrawer({
           <motion.div variants={item}>
             <DrawerHeader className="space-y-2.5 px-0">
               <DrawerTitle className="flex items-center gap-2.5 font-semibold text-2xl tracking-tighter">
-                <motion.div variants={item}>
-                  <div className="rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 p-1.5 shadow-inner dark:from-zinc-800 dark:to-zinc-900">
+                {/* Spans: a heading only allows phrasing content. */}
+                <motion.span className="block" variants={item}>
+                  <span className="block rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 p-1.5 shadow-inner dark:from-zinc-800 dark:to-zinc-900">
                     <Image
-                      alt="Logo"
+                      alt=""
                       height={32}
                       src="https://kokonutui.com/logo.svg"
                       unoptimized
                       width={32}
                     />
-                  </div>
-                </motion.div>
+                  </span>
+                </motion.span>
                 <motion.span variants={item}>{title}</motion.span>
               </DrawerTitle>
               <motion.div variants={item}>
-                <DrawerDescription className="text-sm text-zinc-600 leading-relaxed tracking-tighter dark:text-zinc-400">
+                <DrawerDescription className="text-sm text-zinc-600 leading-relaxed dark:text-zinc-400">
                   {description}
                 </DrawerDescription>
               </motion.div>
@@ -152,42 +169,33 @@ export default function SmoothDrawer({
 
           <motion.div variants={item}>
             <DrawerFooter className="flex flex-col gap-3 px-0">
-              <div className="w-full">
+              <motion.div
+                animate="rest"
+                className="w-full"
+                initial="rest"
+                whileHover={shouldReduceMotion ? undefined : "hover"}
+              >
                 <Link
-                  className="group relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 font-semibold text-sm text-white tracking-wide shadow-lg shadow-rose-500/20 transition-all duration-500 hover:from-rose-600 hover:to-pink-600 hover:shadow-rose-500/30 hover:shadow-xl dark:from-rose-600 dark:to-pink-600 dark:hover:from-rose-500 dark:hover:to-pink-500"
+                  className="group relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 font-semibold text-sm text-white shadow-lg shadow-rose-500/20 transition-[--tw-gradient-from,--tw-gradient-to,box-shadow,scale] duration-200 ease-out hover:from-rose-600 hover:to-pink-600 hover:shadow-rose-500/30 hover:shadow-xl motion-safe:active:scale-[0.97] dark:from-rose-600 dark:to-pink-600 dark:hover:from-rose-500 dark:hover:to-pink-500"
                   href={primaryHref}
                   onClick={onPrimaryAction}
                   target="_blank"
                 >
                   <motion.span
                     className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    initial={{ x: "-100%" }}
-                    transition={{ duration: 1.5, ease: "easeInOut" }}
-                    whileHover={shouldReduceMotion ? undefined : { x: "100%" }}
+                    variants={shineVariants}
                   />
-                  <div className="relative flex items-center gap-2 tracking-tighter">
+                  <div className="relative flex items-center gap-2">
                     {primaryButtonText}
-                    <motion.div
-                      animate={
-                        shouldReduceMotion
-                          ? undefined
-                          : { rotate: [0, 15, -15, 0], y: [0, -2, 2, 0] }
-                      }
-                      transition={{
-                        duration: 2,
-                        ease: "easeInOut",
-                        repeat: Number.POSITIVE_INFINITY,
-                        repeatDelay: 1,
-                      }}
-                    >
+                    <motion.div variants={fingerprintVariants}>
                       <Fingerprint className="h-4 w-4" />
                     </motion.div>
                   </div>
                 </Link>
-              </div>
+              </motion.div>
               <DrawerClose asChild>
                 <Button
-                  className="h-11 w-full rounded-xl border-zinc-200 font-semibold text-sm tracking-tighter transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800/80"
+                  className="h-11 w-full rounded-xl border-zinc-200 font-semibold text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800/80"
                   onClick={onSecondaryAction}
                   variant="outline"
                 >
