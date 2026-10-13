@@ -16,6 +16,7 @@ import {
   type DragEvent,
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -28,7 +29,19 @@ interface FileError {
   code: string;
 }
 
+interface UploadHelpers {
+  /** Report upload progress from 0 to 100. */
+  onProgress: (percent: number) => void;
+  /** Aborted when the user cancels or the component unmounts. */
+  signal: AbortSignal;
+}
+
 interface FileUploadProps {
+  /**
+   * Performs the real upload. Resolve to report success, reject to report an
+   * error. When omitted, the upload is simulated over `uploadDelay`.
+   */
+  onUpload?: (file: File, helpers: UploadHelpers) => Promise<void>;
   onUploadSuccess?: (file: File) => void;
   onUploadError?: (error: FileError) => void;
   acceptedFileTypes?: string[];
@@ -43,6 +56,9 @@ interface FileUploadProps {
 
 const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const UPLOAD_STEP_SIZE = 5;
+const ERROR_RESET_DELAY = 3000;
+const PROGRESS_MASK_RADIUS = 60;
+const PROGRESS_MASK_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_MASK_RADIUS;
 const FILE_SIZES = [
   "Bytes",
   "KB",
@@ -54,6 +70,25 @@ const FILE_SIZES = [
   "ZB",
   "YB",
 ] as const;
+
+// Accepts exact MIME types ("image/png"), wildcards ("image/*") and
+// extensions (".pdf"), like the input's `accept` attribute.
+const matchesAcceptedType = (file: File, acceptedType: string): boolean => {
+  const accepted = acceptedType.trim().toLowerCase();
+  if (!accepted) {
+    return false;
+  }
+  if (accepted.startsWith(".")) {
+    return file.name.toLowerCase().endsWith(accepted);
+  }
+  const fileType = file.type.toLowerCase();
+  if (accepted.endsWith("/*")) {
+    return fileType.startsWith(accepted.slice(0, -1));
+  }
+  return fileType === accepted;
+};
+
+const clampProgress = (value: number) => Math.min(Math.max(value, 0), 100);
 
 const formatBytes = (bytes: number, decimals = 2): string => {
   if (!+bytes) return "0 Bytes";
@@ -152,7 +187,13 @@ const UploadIllustration = () => (
   </div>
 );
 
-const UploadingAnimation = ({ progress }: { progress: number }) => (
+const UploadingAnimation = ({
+  progress,
+  maskId,
+}: {
+  progress: number;
+  maskId: string;
+}) => (
   <div className="relative h-16 w-16">
     <svg
       aria-label={`Upload progress: ${Math.round(progress)}%`}
@@ -164,14 +205,19 @@ const UploadingAnimation = ({ progress }: { progress: number }) => (
       <title>Upload Progress Indicator</title>
 
       <defs>
-        <mask id="progress-mask">
+        <mask id={maskId}>
           <rect fill="black" height="240" width="240" />
+          {/* Dim track so the rings stay visible before progress is reported */}
+          <circle cx="120" cy="120" fill="white" opacity="0.2" r="120" />
+          {/* A stroke as wide as the disk turns the dash into a growing pie slice */}
           <circle
             cx="120"
             cy="120"
-            fill="white"
-            r="120"
-            strokeDasharray={`${(progress / 100) * 754}, 754`}
+            fill="none"
+            r={PROGRESS_MASK_RADIUS}
+            stroke="white"
+            strokeDasharray={`${(clampProgress(progress) / 100) * PROGRESS_MASK_CIRCUMFERENCE} ${PROGRESS_MASK_CIRCUMFERENCE}`}
+            strokeWidth={PROGRESS_MASK_RADIUS * 2}
             transform="rotate(-90 120 120)"
           />
         </mask>
@@ -201,9 +247,6 @@ const UploadingAnimation = ({ progress }: { progress: number }) => (
                     .g-spin circle:nth-child(9) { animation: rotate-cw 8s linear infinite; }
                     .g-spin circle:nth-child(10) { animation: rotate-ccw 8s linear infinite; }
                     .g-spin circle:nth-child(11) { animation: rotate-cw 8s linear infinite; }
-                    .g-spin circle:nth-child(12) { animation: rotate-ccw 8s linear infinite; }
-                    .g-spin circle:nth-child(13) { animation: rotate-cw 8s linear infinite; }
-                    .g-spin circle:nth-child(14) { animation: rotate-ccw 8s linear infinite; }
 
                     .g-spin circle:nth-child(2n) { animation-delay: 0.2s; }
                     .g-spin circle:nth-child(3n) { animation-delay: 0.3s; }
@@ -214,13 +257,10 @@ const UploadingAnimation = ({ progress }: { progress: number }) => (
 
       <g
         className="g-spin"
-        mask="url(#progress-mask)"
+        mask={`url(#${maskId})`}
         strokeDasharray="18% 40%"
         strokeWidth="10"
       >
-        <circle cx="120" cy="120" opacity="0.95" r="150" stroke="#FF2E7E" />
-        <circle cx="120" cy="120" opacity="0.95" r="140" stroke="#FFD600" />
-        <circle cx="120" cy="120" opacity="0.95" r="130" stroke="#00E5FF" />
         <circle cx="120" cy="120" opacity="0.95" r="120" stroke="#FF3D71" />
         <circle cx="120" cy="120" opacity="0.95" r="110" stroke="#4ADE80" />
         <circle cx="120" cy="120" opacity="0.95" r="100" stroke="#2196F3" />
@@ -238,6 +278,7 @@ const UploadingAnimation = ({ progress }: { progress: number }) => (
 );
 
 export default function FileUpload({
+  onUpload,
   onUploadSuccess = () => {},
   onUploadError = () => {},
   acceptedFileTypes = [],
@@ -253,15 +294,37 @@ export default function FileUpload({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<FileError | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const progressMaskId = useId();
   const uploadIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const uploadAbortRef = useRef<AbortController | null>(null);
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearUploadInterval = useCallback(() => {
+    if (uploadIntervalRef.current) {
+      clearInterval(uploadIntervalRef.current);
+      uploadIntervalRef.current = null;
+    }
+  }, []);
+
+  const cancelUpload = useCallback(() => {
+    clearUploadInterval();
+    uploadAbortRef.current?.abort();
+    uploadAbortRef.current = null;
+  }, [clearUploadInterval]);
+
+  const clearErrorTimeout = useCallback(() => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = null;
+    }
+  }, []);
 
   useEffect(
     () => () => {
-      if (uploadIntervalRef.current) {
-        clearInterval(uploadIntervalRef.current);
-      }
+      cancelUpload();
+      clearErrorTimeout();
     },
-    []
+    [cancelUpload, clearErrorTimeout]
   );
 
   const validateFileSize = useCallback(
@@ -281,10 +344,7 @@ export default function FileUpload({
     (file: File): FileError | null => {
       if (!acceptedFileTypes?.length) return null;
 
-      const fileType = file.type.toLowerCase();
-      if (
-        !acceptedFileTypes.some((type) => fileType.match(type.toLowerCase()))
-      ) {
+      if (!acceptedFileTypes.some((type) => matchesAcceptedType(file, type))) {
         return {
           message: `File type must be ${acceptedFileTypes.join(", ")}`,
           code: "INVALID_FILE_TYPE",
@@ -297,54 +357,89 @@ export default function FileUpload({
 
   const handleError = useCallback(
     (error: FileError) => {
+      clearErrorTimeout();
       setError(error);
       setStatus("error");
       onUploadError?.(error);
 
-      setTimeout(() => {
+      errorTimeoutRef.current = setTimeout(() => {
+        errorTimeoutRef.current = null;
         setError(null);
         setStatus("idle");
-      }, 3000);
+      }, ERROR_RESET_DELAY);
     },
-    [onUploadError]
+    [clearErrorTimeout, onUploadError]
   );
 
-  const simulateUpload = useCallback(
+  const startUpload = useCallback(
     (uploadingFile: File) => {
-      let currentProgress = 0;
+      cancelUpload();
+      const controller = new AbortController();
+      uploadAbortRef.current = controller;
 
-      if (uploadIntervalRef.current) {
-        clearInterval(uploadIntervalRef.current);
+      // Never report success for an upload that was cancelled or replaced.
+      const completeUpload = () => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        uploadAbortRef.current = null;
+        setProgress(0);
+        setStatus("idle");
+        setFile(null);
+        onUploadSuccess?.(uploadingFile);
+      };
+
+      const failUpload = (uploadError: unknown) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        uploadAbortRef.current = null;
+        handleError({
+          message:
+            uploadError instanceof Error && uploadError.message
+              ? uploadError.message
+              : "Upload failed",
+          code: "UPLOAD_FAILED",
+        });
+      };
+
+      if (onUpload) {
+        const onProgress = (percent: number) => {
+          if (!controller.signal.aborted) {
+            setProgress(clampProgress(percent));
+          }
+        };
+        Promise.resolve()
+          .then(() =>
+            onUpload(uploadingFile, { onProgress, signal: controller.signal })
+          )
+          .then(completeUpload, failUpload);
+        return;
       }
 
+      // Demo fallback: simulate an upload over `uploadDelay`.
+      let currentProgress = 0;
       uploadIntervalRef.current = setInterval(
         () => {
           currentProgress += UPLOAD_STEP_SIZE;
           if (currentProgress >= 100) {
-            if (uploadIntervalRef.current) {
-              clearInterval(uploadIntervalRef.current);
-            }
-            setProgress(0);
-            setStatus("idle");
-            setFile(null);
-            onUploadSuccess?.(uploadingFile);
+            clearUploadInterval();
+            completeUpload();
           } else {
-            setStatus((prevStatus) => {
-              if (prevStatus === "uploading") {
-                setProgress(currentProgress);
-                return "uploading";
-              }
-              if (uploadIntervalRef.current) {
-                clearInterval(uploadIntervalRef.current);
-              }
-              return prevStatus;
-            });
+            setProgress(currentProgress);
           }
         },
         uploadDelay / (100 / UPLOAD_STEP_SIZE)
       );
     },
-    [onUploadSuccess, uploadDelay]
+    [
+      cancelUpload,
+      clearUploadInterval,
+      handleError,
+      onUpload,
+      onUploadSuccess,
+      uploadDelay,
+    ]
   );
 
   const handleFileSelect = useCallback(
@@ -352,6 +447,7 @@ export default function FileUpload({
       if (!selectedFile) return;
 
       // Reset error state
+      clearErrorTimeout();
       setError(null);
 
       // Validate file
@@ -376,10 +472,11 @@ export default function FileUpload({
       setFile(selectedFile);
       setStatus("uploading");
       setProgress(0);
-      simulateUpload(selectedFile);
+      startUpload(selectedFile);
     },
     [
-      simulateUpload,
+      clearErrorTimeout,
+      startUpload,
       validateFileSize,
       validateFileType,
       validateFile,
@@ -387,15 +484,33 @@ export default function FileUpload({
     ]
   );
 
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setStatus((prev) => (prev !== "uploading" ? "dragging" : prev));
-  }, []);
+  // The drag handlers sit on the always-mounted card so `preventDefault` runs
+  // in every state; otherwise dropping during an upload or an error makes the
+  // browser open the file.
+  const canDrop = status === "idle" || status === "dragging";
+
+  const handleDragOver = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = canDrop ? "copy" : "none";
+      if (status === "idle") {
+        setStatus("dragging");
+      }
+    },
+    [canDrop, status]
+  );
 
   const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    // Moving onto a child element also fires dragleave; ignore it.
+    if (
+      e.relatedTarget instanceof Node &&
+      e.currentTarget.contains(e.relatedTarget)
+    ) {
+      return;
+    }
     setStatus((prev) => (prev === "dragging" ? "idle" : prev));
   }, []);
 
@@ -403,12 +518,16 @@ export default function FileUpload({
     (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       e.stopPropagation();
-      if (status === "uploading") return;
+      if (!canDrop) {
+        return;
+      }
       setStatus("idle");
       const droppedFile = e.dataTransfer.files?.[0];
-      if (droppedFile) handleFileSelect(droppedFile);
+      if (droppedFile) {
+        handleFileSelect(droppedFile);
+      }
     },
-    [status, handleFileSelect]
+    [canDrop, handleFileSelect]
   );
 
   const handleFileInputChange = useCallback(
@@ -426,11 +545,12 @@ export default function FileUpload({
   }, [status]);
 
   const resetState = useCallback(() => {
+    cancelUpload();
     setFile(null);
     setStatus("idle");
     setProgress(0);
-    if (onFileRemove) onFileRemove();
-  }, [onFileRemove]);
+    onFileRemove?.();
+  }, [cancelUpload, onFileRemove]);
 
   return (
     <div
@@ -438,7 +558,14 @@ export default function FileUpload({
       className={cn("relative mx-auto w-full max-w-sm", className || "")}
       role="complementary"
     >
-      <div className="group relative w-full rounded-xl bg-white p-0.5 ring-1 ring-gray-200 dark:bg-black dark:ring-white/10">
+      {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions: pointer drop target; keyboard users have the Upload File button */}
+      <div
+        className="group relative w-full rounded-xl bg-white p-0.5 ring-1 ring-gray-200 dark:bg-black dark:ring-white/10"
+        onDragEnter={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         <div className="absolute inset-x-0 -top-px h-px w-full bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
 
         <div className="relative w-full rounded-[10px] bg-gray-50/50 p-1.5 dark:bg-white/[0.02]">
@@ -476,9 +603,6 @@ export default function FileUpload({
                     exit={{ opacity: 0, y: -10 }}
                     initial={{ opacity: 0, y: 10 }}
                     key="dropzone"
-                    onDragLeave={handleDragLeave}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
                     transition={{ duration: 0.2 }}
                   >
                     <div className="mb-4">
@@ -531,7 +655,10 @@ export default function FileUpload({
                     key="uploading"
                   >
                     <div className="mb-4">
-                      <UploadingAnimation progress={progress} />
+                      <UploadingAnimation
+                        maskId={progressMaskId}
+                        progress={progress}
+                      />
                     </div>
 
                     <div className="mb-4 space-y-1.5 text-center">

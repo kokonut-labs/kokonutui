@@ -17,6 +17,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface ExperienceItem {
   id: string;
@@ -29,12 +30,16 @@ interface ExperienceItem {
   reviewCount?: number;
   badge?: string;
   date?: string;
+  href?: string;
 }
+
+type ToggleFavorite = (id: string, favorite: boolean) => void;
 
 interface ExperienceGridProps {
   title: string;
   items: ExperienceItem[];
   viewAllHref?: string;
+  onToggleFavorite?: ToggleFavorite;
 }
 
 const sampleExperiences: ExperienceItem[] = [
@@ -200,7 +205,49 @@ const popularExperiences: ExperienceItem[] = [
   },
 ];
 
-const ExperienceCard = ({ experience }: { experience: ExperienceItem }) => (
+const FavoriteButton = ({
+  id,
+  onToggleFavorite,
+}: {
+  id: string;
+  onToggleFavorite?: ToggleFavorite;
+}) => {
+  const [isFavorite, setIsFavorite] = React.useState(false);
+
+  const handleClick = () => {
+    const next = !isFavorite;
+    setIsFavorite(next);
+    onToggleFavorite?.(id, next);
+  };
+
+  return (
+    <Button
+      aria-pressed={isFavorite}
+      className="absolute top-2 right-2 z-10 rounded-full bg-white/80 text-neutral-700 backdrop-blur-sm transition-[color,background-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-white/90 hover:text-black motion-safe:active:scale-[0.97]"
+      onClick={handleClick}
+      size="icon"
+      variant="ghost"
+    >
+      <Heart
+        className={cn(
+          "h-4 w-4 stroke-[2px]",
+          isFavorite && "fill-rose-500 text-rose-500"
+        )}
+      />
+      <span className="sr-only">Favorite</span>
+    </Button>
+  );
+};
+
+// The title link is stretched over the whole card (`after:inset-0`), so the
+// card stays clickable while the favorite button sits outside the link.
+const ExperienceCard = ({
+  experience,
+  onToggleFavorite,
+}: {
+  experience: ExperienceItem;
+  onToggleFavorite?: ToggleFavorite;
+}) => (
   <Card className="group relative flex h-[320px] w-full flex-col overflow-hidden rounded-xl border-0 shadow-sm transition-shadow duration-300 hover:shadow-md">
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-xl">
       <Image
@@ -210,14 +257,7 @@ const ExperienceCard = ({ experience }: { experience: ExperienceItem }) => (
         src={experience.image}
         unoptimized
       />
-      <Button
-        className="absolute top-2 right-2 z-10 rounded-full bg-white/80 text-neutral-700 backdrop-blur-sm hover:bg-white/90 hover:text-black"
-        size="icon"
-        variant="ghost"
-      >
-        <Heart className="h-4 w-4 stroke-[2px]" />
-        <span className="sr-only">Add to favorites</span>
-      </Button>
+      <FavoriteButton id={experience.id} onToggleFavorite={onToggleFavorite} />
       {experience.badge && (
         <Badge className="absolute top-2 left-2 rounded-md bg-white/90 px-1.5 py-0.5 font-medium text-black text-xs">
           {experience.badge}
@@ -228,7 +268,12 @@ const ExperienceCard = ({ experience }: { experience: ExperienceItem }) => (
     <div className="flex flex-1 flex-col justify-between">
       <CardContent className="p-2 pt-3 pb-0">
         <h3 className="font-medium text-sm tracking-tight">
-          {experience.title}
+          <Link
+            className="after:absolute after:inset-0 focus-visible:outline-hidden"
+            href={experience.href ?? "#"}
+          >
+            {experience.title}
+          </Link>
         </h3>
         <p className="text-muted-foreground text-xs tracking-tight">
           {experience.location}
@@ -241,16 +286,16 @@ const ExperienceCard = ({ experience }: { experience: ExperienceItem }) => (
       </CardContent>
 
       <CardFooter className="mt-auto flex items-center gap-0.5 p-2 pt-0 text-xs">
-        {experience.rating && (
+        {experience.rating !== undefined && (
           <span className="flex items-center gap-0.5">
             <Star className="h-3 w-3 fill-current" />
             {experience.rating}
           </span>
         )}
-        {experience.reviewCount && (
+        {experience.reviewCount !== undefined && experience.reviewCount > 0 && (
           <span className="text-muted-foreground text-xs tracking-tight">
-            {experience.rating && "·"}
-            {experience.reviewCount > 0 ? ` (${experience.reviewCount})` : ""}
+            {experience.rating !== undefined && "·"}
+            {` (${experience.reviewCount})`}
           </span>
         )}
         <span className="ml-auto text-xs tracking-tight">
@@ -265,6 +310,7 @@ const ExperienceSection = ({
   title,
   items,
   viewAllHref = "#",
+  onToggleFavorite,
 }: ExperienceGridProps) => {
   const scrollContainer = React.useRef<HTMLDivElement>(null);
 
@@ -311,7 +357,7 @@ const ExperienceSection = ({
             </Button>
             <Link
               className="ml-1 hidden font-medium text-xs hover:underline md:block"
-              href="#"
+              href={viewAllHref}
             >
               Show all
             </Link>
@@ -328,15 +374,13 @@ const ExperienceSection = ({
         >
           {items.map((item) => (
             <div
-              className="w-[240px] flex-none snap-start md:w-[260px]"
+              className="w-[240px] flex-none snap-start rounded-xl has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-primary has-[a:focus-visible]:ring-offset-2 md:w-[260px]"
               key={item.id}
             >
-              <Link
-                className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                href="#"
-              >
-                <ExperienceCard experience={item} />
-              </Link>
+              <ExperienceCard
+                experience={item}
+                onToggleFavorite={onToggleFavorite}
+              />
             </div>
           ))}
         </div>
@@ -345,16 +389,23 @@ const ExperienceSection = ({
   );
 };
 
-export default function CarouselCards() {
+export default function CarouselCards({
+  onToggleFavorite,
+}: {
+  /** Called when a card's heart is toggled, with the item id and new state. */
+  onToggleFavorite?: ToggleFavorite;
+}) {
   return (
     <div className="mt-4 w-full space-y-4">
       <ExperienceSection
         items={sampleExperiences}
+        onToggleFavorite={onToggleFavorite}
         title="Airbnb Originals ›"
         viewAllHref="#"
       />
       <ExperienceSection
         items={popularExperiences}
+        onToggleFavorite={onToggleFavorite}
         title="Popular experiences in Paris"
         viewAllHref="#"
       />

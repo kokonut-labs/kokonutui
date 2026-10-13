@@ -65,6 +65,8 @@ interface AIPromptProps {
   headerText?: string;
   headerAction?: string;
   onSubmit?: (value: string, model: string) => void;
+  /** Called with the files picked from the attach button. */
+  onAttach?: (files: FileList) => void;
   className?: string;
 }
 
@@ -83,6 +85,7 @@ export default function AI_Prompt({
   headerText = "is free this weekend!",
   headerAction = "Ship Now!",
   onSubmit,
+  onAttach,
   className,
 }: AIPromptProps) {
   const [value, setValue] = useState("");
@@ -154,12 +157,20 @@ export default function AI_Prompt({
     "GPT-5.6": OPENAI_SVG,
   };
 
+  const submit = () => {
+    if (!(value.trim() && onSubmit)) {
+      return;
+    }
+    onSubmit(value, selectedModel);
+    setValue("");
+    adjustHeight(true);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Enter during IME composition confirms the candidate; it must not submit.
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      onSubmit?.(value, selectedModel);
-      setValue("");
-      adjustHeight(true);
+      submit();
     }
   };
 
@@ -266,11 +277,21 @@ export default function AI_Prompt({
                     aria-label="Attach file"
                     className={cn(
                       "cursor-pointer rounded-lg bg-black/5 p-2 dark:bg-white/5",
-                      "hover:bg-black/10 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:ring-offset-0 dark:hover:bg-white/10",
-                      "text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white"
+                      "hover:bg-black/10 has-focus-visible:ring-1 has-focus-visible:ring-blue-500 has-focus-visible:ring-offset-0 dark:hover:bg-white/10",
+                      "text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white",
+                      "transition-[background-color,color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:active:scale-100"
                     )}
                   >
-                    <input className="hidden" type="file" />
+                    <input
+                      aria-label="Attach file"
+                      className="sr-only"
+                      onChange={(e) => {
+                        if (e.target.files?.length) {
+                          onAttach?.(e.target.files);
+                        }
+                      }}
+                      type="file"
+                    />
                     <Paperclip className="h-4 w-4 transition-colors" />
                   </label>
                 </div>
@@ -278,9 +299,11 @@ export default function AI_Prompt({
                   aria-label="Send message"
                   className={cn(
                     "rounded-lg bg-black/5 p-2 dark:bg-white/5",
-                    "hover:bg-black/10 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:ring-offset-0 dark:hover:bg-white/10"
+                    "hover:bg-black/10 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:ring-offset-0 dark:hover:bg-white/10",
+                    "transition-[background-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:pointer-events-none motion-reduce:active:scale-100"
                   )}
                   disabled={!value.trim()}
+                  onClick={submit}
                   type="button"
                 >
                   <ArrowRight

@@ -27,12 +27,19 @@ export default function SwitchButton({
   variant = "minimal",
   size = "default",
   showLabel = true,
+  onClick,
   ...props
 }: SwitchButtonProps) {
-  const { setTheme, theme } = useTheme();
+  // `resolvedTheme` is the theme actually applied, so it is "light" or "dark"
+  // even when the stored theme is "system".
+  const { resolvedTheme, setTheme } = useTheme();
 
-  const handleThemeToggle = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    onClick?.(e);
+    if (e.defaultPrevented) {
+      return;
+    }
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
   const variants = {
@@ -59,8 +66,11 @@ export default function SwitchButton({
     lg: "h-11 px-5",
   };
 
+  // The theme is unknown during SSR, so the light/dark look below is driven by
+  // `dark:` classes instead of branching on the theme while rendering.
   return (
     <Button
+      aria-label="Toggle theme"
       className={cn(
         "group relative",
         "transition-all duration-300 ease-out",
@@ -70,8 +80,8 @@ export default function SwitchButton({
         sizes[size],
         className
       )}
-      onClick={handleThemeToggle}
       {...props}
+      onClick={handleClick}
     >
       <div
         className={cn(
@@ -85,18 +95,18 @@ export default function SwitchButton({
             size === "sm" && "h-3.5 w-3.5",
             size === "default" && "h-4 w-4",
             size === "lg" && "h-5 w-5",
-            "group-hover:rotate-[360deg] group-hover:scale-110",
-            theme === "dark" ? "rotate-180" : "rotate-0",
+            "rotate-0 group-hover:rotate-[360deg] group-hover:scale-110",
+            "dark:rotate-180 dark:group-hover:rotate-[360deg]",
             "transform-gpu",
             "drop-shadow-[0_0_12px_rgba(252,211,77,0.3)] dark:drop-shadow-[0_0_12px_rgba(252,211,77,0.2)]",
-            theme === "dark"
-              ? "text-zinc-300 group-hover:text-zinc-100"
-              : "text-amber-500 group-hover:text-amber-600",
+            "text-amber-500 group-hover:text-amber-600",
+            "dark:text-zinc-300 dark:group-hover:text-zinc-100",
             "group-active:scale-95"
           )}
         />
         {showLabel && (
           <span
+            aria-hidden="true"
             className={cn(
               "relative font-medium capitalize",
               "transition-opacity duration-300 ease-out"
@@ -105,7 +115,7 @@ export default function SwitchButton({
             <span
               className={cn(
                 "absolute inset-0",
-                theme === "dark" ? "opacity-0" : "opacity-100",
+                "opacity-100 dark:opacity-0",
                 "transition-opacity duration-300 ease-out"
               )}
             >
@@ -123,7 +133,7 @@ export default function SwitchButton({
             <span
               className={cn(
                 "absolute inset-0",
-                theme === "dark" ? "opacity-100" : "opacity-0",
+                "opacity-0 dark:opacity-100",
                 "transition-opacity duration-300 ease-out"
               )}
             >

@@ -315,7 +315,7 @@ export const component: Registry = [
   {
     name: "hold-button",
     type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
+    dependencies: ["class-variance-authority", "lucide-react"],
     registryDependencies: ["button"],
     files: [
       {
