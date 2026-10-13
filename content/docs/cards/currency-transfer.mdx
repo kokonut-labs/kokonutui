@@ -39,7 +39,8 @@ With no props the card runs a demo: it shows "Transfer in Progress" and complete
 | `rate` | `number` | `0.92` | Units of `to.currency` per one `from.currency`. |
 | `txnId` | `string` | `"TXN-DAB3UL494"` | Transaction ID shown on completion. |
 | `timestamp` | `string` | `"10:45 AM"` | When the rate was set, shown in the info tooltip. |
-| `status` | `"processing" \| "completed"` | — | Controlled status. Omit it for the self-completing demo. |
+| `status` | `"processing" \| "completed" \| "failed"` | — | Controlled status. Omit it for the self-completing demo. |
+| `locale` | `string` | `"en-US"` | BCP 47 locale for amounts, currency symbols and the rate. |
 | `className` | `string` | — | Extra classes for the card. |
 
 `TransferAccount` is `{ amount: number; currency: string; symbol?: string; bank: string; last4?: string }`. Status changes are announced to screen readers, and motion is reduced to fades when the user prefers reduced motion.
