@@ -42,6 +42,9 @@ const PROXIMITY_OPACITY_BOOST = 0.8;
 const TWINKLE_KEYFRAMES =
   "@keyframes kokonutui-dot-twinkle { 50% { opacity: var(--dot-peak); } }";
 
+const SUBTITLE_CLASS_NAME =
+  "relative max-w-sm text-center font-medium text-base text-zinc-700 leading-relaxed dark:text-zinc-300";
+
 export interface MouseEffectCardProps {
   className?: string;
   children?: React.ReactNode;
@@ -117,6 +120,13 @@ function getForce(
   return { x: dx * push, y: dy * push, boost };
 }
 
+// Deterministic noise per grid cell, so a resize keeps the same pattern
+// instead of reshuffling every dot.
+function cellNoise(row: number, col: number): number {
+  const n = Math.sin(row * 12.9898 + col * 78.233) * 43_758.5453;
+  return n - Math.floor(n);
+}
+
 function generateDots(width: number, height: number, spacing: number): Dot[] {
   const dots: Dot[] = [];
   const cols = Math.ceil(width / spacing);
@@ -137,9 +147,9 @@ function generateDots(width: number, height: number, spacing: number): Dot[] {
       // 0 at the center, rising to 1 at 70% of the way to the corners.
       const edgeFactor = Math.min(distanceFromCenter / (maxDistance * 0.7), 1);
 
-      // Randomly drop dots, more of them towards the center, to keep the
+      // Drop dots at random, more of them towards the center, to keep the
       // area behind the text clear.
-      if (Math.random() > edgeFactor) {
+      if (cellNoise(row, col) > edgeFactor) {
         continue;
       }
 
@@ -257,8 +267,7 @@ export default function MouseEffectCard({
       setDots(newDots);
     };
 
-    updateDots();
-
+    // The observer's first callback does the initial generation.
     const resizeObserver = new ResizeObserver(updateDots);
     if (innerContainerRef.current) {
       resizeObserver.observe(innerContainerRef.current);
@@ -289,7 +298,7 @@ export default function MouseEffectCard({
   return (
     <Card
       className={cn(
-        "relative w-full max-w-md overflow-hidden rounded-2xl border border-white/40 p-0 shadow-none dark:border-white/10",
+        "relative h-[400px] w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 p-0 shadow-none dark:border-white/10",
         className
       )}
     >
@@ -297,7 +306,7 @@ export default function MouseEffectCard({
         {TWINKLE_KEYFRAMES}
       </style>
       <CardContent
-        className="relative h-[400px] w-full overflow-hidden p-0"
+        className="relative h-full w-full overflow-hidden p-0"
         onPointerLeave={handlePointerLeave}
         onPointerMove={handlePointerMove}
         ref={innerContainerRef}
@@ -346,24 +355,29 @@ export default function MouseEffectCard({
             {(subtitle || children) && (
               <div className="relative">
                 <div className="absolute inset-0 rounded-lg bg-white/60 blur-xl dark:bg-zinc-950/60" />
-                <p className="relative max-w-sm text-center font-medium text-base text-zinc-700 leading-relaxed dark:text-zinc-300">
-                  {children || subtitle}
-                </p>
+                {/* children can be block content, so it must not go in a <p>. */}
+                {children ? (
+                  <div className={SUBTITLE_CLASS_NAME}>{children}</div>
+                ) : (
+                  <p className={SUBTITLE_CLASS_NAME}>{subtitle}</p>
+                )}
               </div>
             )}
             <div className="mt-2 flex items-center gap-3">
-              <Button asChild className="rounded-full shadow-lg" size="lg">
-                <a
-                  href={primaryCtaUrl}
-                  onClick={(e) => {
-                    if (primaryCtaUrl === "#") {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  {primaryCtaText}
-                </a>
-              </Button>
+              {primaryCtaText && (
+                <Button asChild className="rounded-full shadow-lg" size="lg">
+                  <a
+                    href={primaryCtaUrl}
+                    onClick={(e) => {
+                      if (primaryCtaUrl === "#") {
+                        e.preventDefault();
+                      }
+                    }}
+                  >
+                    {primaryCtaText}
+                  </a>
+                </Button>
+              )}
               {secondaryCtaText && (
                 <Button
                   asChild
