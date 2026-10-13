@@ -594,4 +594,37 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "peel-sticker",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/peel-sticker.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "split-flap",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/split-flap.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "toss-board",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/toss-board.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];

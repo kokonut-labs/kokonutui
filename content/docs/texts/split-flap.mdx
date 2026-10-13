@@ -1,0 +1,17 @@
+---
+title: Split Flap
+description: Departure-board text where every character flips through its reel on 3D hinged flaps, with mechanical timing and a landing bounce, built with React and Motion.
+keywords: ["split flap", "solari", "departure board", "flip", "airport", "text animation", "3d"]
+icon: PlaneTakeoff
+full: false
+---
+
+import SplitFlap from "@/components/kokonutui/split-flap";
+
+<Preview link="split-flap" comment={["Motion"]}>
+    <SplitFlap />
+</Preview>
+
+Each cell is a reel of flaps that only turns one way, so a letter flips through every character between where it is and where it's going. The top half falls with gravity and darkens as it turns away from the light; the bottom half swings down onto the stop. Long journeys speed up so no cell takes more than 1.6 seconds, and the last flip lands slower with a small bounce.
+
+Pass `words` to cycle through, or `value` to show a fixed string. The board pauses while the tab is hidden. With reduced motion, letters change without flipping.
