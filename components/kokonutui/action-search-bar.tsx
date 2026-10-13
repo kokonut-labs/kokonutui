@@ -22,7 +22,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useId, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
-import useDebounce from "@/hooks/use-debounce";
+import { cn } from "@/lib/utils";
 
 export interface Action {
   id: string;
@@ -75,7 +75,7 @@ const allActionsSample = [
     label: "Summarize",
     icon: <BarChart2 className="h-4 w-4 text-orange-500" />,
     description: "gpt-5",
-    short: "⌘cmd+p",
+    short: "⌘P",
     end: "Command",
   },
   {
@@ -108,11 +108,17 @@ function ActionSearchBar({
   actions = allActionsSample,
   defaultOpen = false,
   onSelect,
+  label = "Search Commands",
+  placeholder = "What's up?",
+  className,
 }: {
   actions?: Action[];
   defaultOpen?: boolean;
   /** Called with the chosen action, from Enter or a click. */
   onSelect?: (action: Action) => void;
+  label?: string;
+  placeholder?: string;
+  className?: string;
 }) {
   const id = useId();
   const inputId = `${id}-input`;
@@ -122,31 +128,27 @@ function ActionSearchBar({
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const debouncedQuery = useDebounce(query, 200);
 
+  // Filtering a local list is cheap, so it follows every keystroke.
   const filteredActions = useMemo(() => {
-    if (!debouncedQuery) {
+    const normalizedQuery = query.toLowerCase().trim();
+    if (!normalizedQuery) {
       return actions;
     }
 
-    const normalizedQuery = debouncedQuery.toLowerCase().trim();
     return actions.filter((action) => {
       const searchableText =
         `${action.label} ${action.description || ""}`.toLowerCase();
       return searchableText.includes(normalizedQuery);
     });
-  }, [debouncedQuery, actions]);
+  }, [query, actions]);
 
-  // The list updates after the debounce, so drop the highlight whenever the
-  // visible list changes, not only on keystrokes.
-  const [highlightedList, setHighlightedList] = useState(filteredActions);
-  if (highlightedList !== filteredActions) {
-    setHighlightedList(filteredActions);
-    setActiveIndex(-1);
-  }
+  // Typing resets the highlight; the clamp covers a shrinking `actions` list.
+  const highlightedIndex =
+    activeIndex < filteredActions.length ? activeIndex : -1;
 
   const activeAction: Action | undefined = isOpen
-    ? filteredActions[activeIndex]
+    ? filteredActions[highlightedIndex]
     : undefined;
 
   const openList = () => {
@@ -169,21 +171,28 @@ function ActionSearchBar({
     openList();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // Moves the highlight one row, wrapping at both ends. With no highlight,
+  // Down goes to the first row and Up to the last.
+  const moveHighlight = (step: 1 | -1) => {
     const count = filteredActions.length;
+    if (count === 0) {
+      return;
+    }
+    const from = highlightedIndex === -1 && step === -1 ? 0 : highlightedIndex;
+    setActiveIndex((from + step + count) % count);
+  };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
         setIsOpen(true);
-        if (count > 0) {
-          setActiveIndex((prev) => (prev < count - 1 ? prev + 1 : 0));
-        }
+        moveHighlight(1);
         break;
       case "ArrowUp":
-        if (isOpen && count > 0) {
+        if (isOpen && filteredActions.length > 0) {
           e.preventDefault();
-          setActiveIndex((prev) => (prev > 0 ? prev - 1 : count - 1));
+          moveHighlight(-1);
         }
         break;
       case "Enter":
@@ -203,14 +212,14 @@ function ActionSearchBar({
   };
 
   return (
-    <div className="mx-auto w-full max-w-xl">
+    <div className={cn("mx-auto w-full max-w-xl", className)}>
       <div className="relative flex min-h-[300px] flex-col items-center justify-start">
         <div className="sticky top-0 z-10 w-full max-w-sm bg-background pt-4 pb-1">
           <label
             className="mb-1 block font-medium text-gray-500 text-xs dark:text-gray-400"
             htmlFor={inputId}
           >
-            Search Commands
+            {label}
           </label>
           <div className="relative">
             <Input
@@ -227,7 +236,7 @@ function ActionSearchBar({
               onChange={handleInputChange}
               onFocus={openList}
               onKeyDown={handleKeyDown}
-              placeholder="What's up?"
+              placeholder={placeholder}
               role="combobox"
               type="text"
               value={query}
@@ -277,17 +286,19 @@ function ActionSearchBar({
                   role="listbox"
                 >
                   {filteredActions.map((action, index) => (
+                    // The pointer moves the same highlight as the arrow keys, so
+                    // only one row is ever highlighted. It changes instantly.
                     <motion.li
-                      aria-selected={activeIndex === index}
-                      className={`flex cursor-pointer items-center justify-between rounded-md px-3 py-2 hover:bg-gray-200 dark:hover:bg-zinc-900 ${
-                        activeIndex === index
-                          ? "bg-gray-100 dark:bg-zinc-800"
-                          : ""
-                      }`}
+                      aria-selected={highlightedIndex === index}
+                      className="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 transition-[scale] duration-150 ease-out aria-selected:bg-gray-100 motion-safe:active:scale-[0.97] dark:aria-selected:bg-zinc-800"
                       id={getOptionId(action.id)}
                       key={action.id}
-                      layout
                       onClick={() => selectAction(action)}
+                      onPointerMove={(e) => {
+                        if (e.pointerType === "mouse") {
+                          setActiveIndex(index);
+                        }
+                      }}
                       role="option"
                       variants={ANIMATION_VARIANTS.item}
                     >
@@ -323,7 +334,7 @@ function ActionSearchBar({
                 </motion.ul>
                 <div className="mt-2 border-gray-100 border-t px-3 py-2 dark:border-gray-800">
                   <div className="flex items-center justify-between text-gray-500 text-xs">
-                    <span>Press ⌘K to open commands</span>
+                    <span>↑↓ to navigate</span>
                     <span>ESC to cancel</span>
                   </div>
                 </div>
