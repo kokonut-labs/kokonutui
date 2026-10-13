@@ -9,19 +9,29 @@
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  *
- * Requires a next-themes `ThemeProvider` (with `attribute="class"`) higher in the tree.
+ * Works on its own: it toggles the `dark` class on <html>. If a theme provider
+ * owns the theme (next-themes or your own), pass `theme` and `onThemeChange`.
  */
 
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+type Theme = "light" | "dark";
 
 interface SwitchButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "minimal";
   size?: "sm" | "default" | "lg";
   showLabel?: boolean;
+  /**
+   * The applied theme, when a theme provider owns it (for next-themes, its
+   * `resolvedTheme`). Pair it with `onThemeChange`. Without it the button
+   * toggles the `dark` class on <html> itself.
+   */
+  theme?: Theme;
+  /** Called with the theme to switch to. */
+  onThemeChange?: (theme: Theme) => void;
 }
 
 const VARIANTS = {
@@ -55,19 +65,25 @@ export default function SwitchButton({
   variant = "minimal",
   size = "default",
   showLabel = true,
+  theme,
+  onThemeChange,
   onClick,
   ...props
 }: SwitchButtonProps) {
-  // `resolvedTheme` is the theme actually applied, so it is "light" or "dark"
-  // even when the stored theme is "system".
-  const { resolvedTheme, setTheme } = useTheme();
-
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     onClick?.(e);
     if (e.defaultPrevented) {
       return;
     }
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+    const root = document.documentElement;
+    const current =
+      theme ?? (root.classList.contains("dark") ? "dark" : "light");
+    const next = current === "dark" ? "light" : "dark";
+    if (theme === undefined) {
+      root.classList.toggle("dark", next === "dark");
+      root.style.colorScheme = next;
+    }
+    onThemeChange?.(next);
   };
 
   // The theme is unknown during SSR, so the light/dark look below is driven by

@@ -247,7 +247,7 @@ export const component: Registry = [
   {
     name: "switch-button",
     type: "registry:component",
-    dependencies: ["lucide-react", "next-themes"],
+    dependencies: ["lucide-react"],
     registryDependencies: ["button"],
     files: [
       {
