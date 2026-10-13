@@ -1,26 +1,23 @@
-import type { Metadata } from "next";
-import { Geist_Mono, Instrument_Serif } from "next/font/google";
-import { getCategories } from "@/components/landing/home/get-categories";
-import { cn } from "@/lib/utils";
 import { component as registry } from "@/registry/registry-components";
-import type { Part } from "./data";
-import { Harness } from "./harness";
-import "@/components/landing/home/home.css";
+import { getCategories } from "./get-categories";
 
-// Prototype surface for the homepage redesign. Not linked from anywhere and
-// kept out of search results; delete this folder once a direction ships.
-export const metadata: Metadata = {
-  title: "Homepage prototypes",
-  robots: { index: false, follow: false },
-};
-
-const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-proto-mono" });
-const serif = Instrument_Serif({
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  variable: "--font-proto-serif",
-});
+/** One component, with everything the catalog shows about it. */
+export interface Part {
+  /** Catalog code, e.g. "BT-05": category prefix and position in it. */
+  code: string;
+  name: string;
+  title: string;
+  description?: string;
+  url: string;
+  category: string;
+  categorySlug: string;
+  /** npm packages the registry installs alongside it. */
+  dependencies: string[];
+  /** shadcn/ui primitives it builds on. */
+  registryDependencies: string[];
+  /** Files the CLI writes into your project. */
+  files: string[];
+}
 
 // Two letters per docs category, for the catalog's part codes.
 const CODES: Record<string, string> = {
@@ -33,7 +30,8 @@ const CODES: Record<string, string> = {
   texts: "TX",
 };
 
-export default function HomePrototypesPage() {
+/** Every component in docs order, with its catalog code and registry facts. */
+export function getParts(): Part[] {
   const categories = getCategories();
   const entries = new Map(registry.map((entry) => [entry.name, entry]));
 
@@ -60,9 +58,5 @@ export default function HomePrototypesPage() {
     })
   );
 
-  return (
-    <div className={cn(mono.variable, serif.variable)}>
-      <Harness categories={categories} parts={parts} />
-    </div>
-  );
+  return parts;
 }

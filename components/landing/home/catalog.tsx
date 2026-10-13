@@ -4,11 +4,9 @@ import { ArrowDownIcon, ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, Suspense, useState } from "react";
-import {
-  Avatar,
-  CopyIconSwap,
-  useCopy,
-} from "@/components/landing/home/client";
+import { cn } from "@/lib/utils";
+import { Avatar, CopyIconSwap, useCopy } from "./client";
+import { ClientPicker, CopyLine } from "./controls";
 import {
   GITHUB_URL,
   installCommand,
@@ -22,22 +20,16 @@ import {
   V0_THREAD,
   VERCEL_OSS_URL,
   VIDEO_ID,
-} from "@/components/landing/home/data";
-import {
-  EASE_COLORS,
-  enter,
-  FOCUS,
-  FOCUS_INSET,
-} from "@/components/landing/home/styles";
-import { VideoCard } from "@/components/landing/home/video";
-import { cn } from "@/lib/utils";
-import type { Part, PrototypeProps } from "./data";
+} from "./data";
 import { Fit, LIVE, LiveFallback } from "./live";
-import { ClientPicker, CopyLine } from "./shared";
+import type { Part } from "./parts";
+import { EASE_COLORS, enter, FOCUS, FOCUS_INSET } from "./styles";
+import { VideoCard } from "./video";
 
 // The catalog is drawn with rules, not cards: cells share one hairline, the
 // corners are square, and type does the decorating.
-const MONO = "font-(family-name:--font-proto-mono)";
+/** A plain class (home.css), so cn() never mistakes it for a font weight. */
+const MONO = "home-mono";
 const LINE = "border-black/[0.13] dark:border-white/[0.14]";
 const GRID = "gap-px bg-black/[0.13] dark:bg-white/[0.14]";
 const CELL = "bg-white dark:bg-black";
@@ -62,7 +54,13 @@ const PLATES = [
   "dynamic-text",
 ];
 
-export function CatalogVariant({ parts }: PrototypeProps) {
+export function Catalog({
+  parts,
+  className,
+}: {
+  parts: Part[];
+  className?: string;
+}) {
   const byName = new Map(parts.map((p) => [p.name, p]));
   const featured = byName.get(FEATURED);
   const plates = PLATES.map((name) => byName.get(name)).filter((p): p is Part =>
@@ -70,7 +68,12 @@ export function CatalogVariant({ parts }: PrototypeProps) {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-4 pt-8 pb-32 sm:px-6 md:pt-12">
+    <div
+      className={cn(
+        "mx-auto w-full max-w-[1280px] px-4 pt-8 pb-32 sm:px-6 md:pt-12",
+        className
+      )}
+    >
       <Cover featured={featured} />
       <Plates plates={plates} />
       <Index parts={parts} />
@@ -100,11 +103,12 @@ function Cover({ featured }: { featured?: Part }) {
             className={cn(
               "home-enter flex h-10 items-center px-4",
               CELL,
-              META,
-              i === 0 && "font-medium text-black dark:text-white"
+              i === 0
+                ? "font-medium text-[11.5px] text-black dark:text-white"
+                : META
             )}
             key={label}
-            style={enter(i)}
+            style={enter(0)}
           >
             {label}
           </p>
@@ -123,7 +127,7 @@ function Cover({ featured }: { featured?: Part }) {
               "home-enter font-semibold text-[clamp(52px,9vw,124px)] leading-[0.9] tracking-[-0.06em]",
               INK
             )}
-            style={enter(4)}
+            style={enter(0)}
           >
             Components
             <br />
@@ -134,7 +138,7 @@ function Cover({ featured }: { featured?: Part }) {
               "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
               SOFT
             )}
-            style={enter(5)}
+            style={enter(1)}
           >
             A catalog of React components built with Tailwind CSS and Motion.
             Every part on this page is live: try it, then install it with one
@@ -150,7 +154,7 @@ function Cover({ featured }: { featured?: Part }) {
             "home-enter flex flex-col gap-3 p-5 sm:p-6 md:col-span-7",
             CELL
           )}
-          style={enter(7)}
+          style={enter(2)}
         >
           <p className={META}>Ask your agent</p>
           <PromptLine prompt={AGENT_PROMPT} />
@@ -165,7 +169,7 @@ function Cover({ featured }: { featured?: Part }) {
             FOCUS_INSET
           )}
           href="#index"
-          style={enter(9)}
+          style={enter(2)}
         >
           <span className="flex flex-col gap-1">
             <span className={META}>Contents</span>
@@ -188,7 +192,7 @@ function Cover({ featured }: { featured?: Part }) {
           )}
           href={VERCEL_OSS_URL}
           rel="noreferrer"
-          style={enter(10)}
+          style={enter(2)}
           target="_blank"
         >
           <span className="flex flex-col gap-1">
@@ -221,7 +225,7 @@ function FeaturedPlate({ part }: { part: Part }) {
         "home-enter flex min-h-[360px] flex-col lg:col-span-4",
         CELL
       )}
-      style={enter(6)}
+      style={enter(1)}
     >
       <div className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
         <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>
@@ -292,7 +296,7 @@ function ConnectEditor() {
         "home-enter flex flex-col gap-3 p-5 sm:p-6 md:col-span-7 md:row-start-2",
         CELL
       )}
-      style={enter(8)}
+      style={enter(2)}
     >
       <p className="flex items-baseline justify-between gap-4">
         <span className={META}>Connect your editor once</span>
@@ -627,7 +631,11 @@ function Method({
 function References() {
   const { post, reply } = V0_THREAD;
   return (
-    <section aria-labelledby="references" className="pt-24 md:pt-32">
+    <section
+      aria-labelledby="references"
+      className="scroll-mt-24 pt-24 md:pt-32"
+      id="testimonials"
+    >
       <SectionHead
         aside="What developers said when they found it, including the person behind shadcn/ui."
         id="references"

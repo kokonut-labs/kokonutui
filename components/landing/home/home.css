@@ -1,29 +1,18 @@
 /* Motion for the homepage.
 
    Entrances are CSS animations rather than Motion: they play while the main
-   thread is busy hydrating the page, and CSS keeps them off it. Every curve is
+   thread is busy hydrating the page, and CSS keeps them off it. The curve is
    the project's strong ease-out (EASE_OUT in lib/animation-presets). */
+
+.home-mono {
+  font-family: var(--font-home-mono), ui-monospace, monospace;
+}
 
 @keyframes home-enter {
   from {
     opacity: 0;
-    transform: translateY(8px);
-    filter: blur(4px);
-  }
-}
-
-@keyframes home-materialize {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-    filter: blur(4px);
-  }
-}
-
-@keyframes home-line {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px);
+    filter: blur(2px);
   }
 }
 
@@ -33,20 +22,11 @@
   }
 }
 
-@keyframes home-caret {
-  0%,
-  50% {
-    opacity: 1;
-  }
-  50.01%,
-  100% {
-    opacity: 0;
-  }
-}
-
-/* Hero copy and tiles fade up as one cascade: 50ms apart, 500ms each. */
+/* The cover arrives in three beats, 50ms apart and 300ms each, so the whole
+   page has landed by 400ms: the meta row and headline, then the copy and
+   the featured part, then the agent and install row. */
 .home-enter {
-  animation: home-enter 500ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: home-enter 300ms cubic-bezier(0.23, 1, 0.32, 1) both;
   animation-delay: calc(
     var(--enter-index, 0) *
     var(--enter-stagger, 50ms) +
@@ -54,28 +34,9 @@
   );
 }
 
-/* A freshly installed component settles in from 97%, never from nothing. */
-.home-materialize {
-  animation: home-materialize 300ms cubic-bezier(0.23, 1, 0.32, 1) both;
-}
-
-.home-line {
-  animation: home-line 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
-}
-
-.home-caret {
-  animation: home-caret 1s linear infinite;
-}
-
-/* Reduced motion: keep the fades that aid comprehension, drop movement. */
+/* Reduced motion: keep the fade, drop the movement. */
 @media (prefers-reduced-motion: reduce) {
-  .home-enter,
-  .home-materialize,
-  .home-line {
-    animation: home-fade 200ms ease both;
-  }
-
-  .home-caret {
-    animation: none;
+  .home-enter {
+    animation: home-fade 150ms ease-out both;
   }
 }

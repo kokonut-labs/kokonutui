@@ -1,16 +1,11 @@
 "use client";
 
 import type { ReactNode, SVGProps } from "react";
-import { CopyIconSwap, useCopy } from "@/components/landing/home/client";
-import { MCP_CLIENTS, type McpClient } from "@/components/landing/home/data";
-import {
-  ClaudeMark,
-  CursorMark,
-  OpenAIMark,
-  VSCodeMark,
-} from "@/components/landing/home/logos";
-import { EASE_COLORS, FOCUS } from "@/components/landing/home/styles";
 import { cn } from "@/lib/utils";
+import { CopyIconSwap, useCopy } from "./client";
+import { MCP_CLIENTS, type McpClient } from "./data";
+import { ClaudeMark, CursorMark, OpenAIMark, VSCodeMark } from "./logos";
+import { EASE_COLORS, FOCUS } from "./styles";
 
 // Each editor's mark takes its own color once picked.
 export const CLIENT_MARKS: Record<

@@ -44,16 +44,6 @@ export type McpClient = (typeof MCP_CLIENTS)[number]["id"];
 export const mcpCommand = (client: McpClient) =>
   `npx shadcn@latest mcp init --client ${client}`;
 
-export const docsUrl = (categories: Category[], name: string) => {
-  for (const category of categories) {
-    const item = category.items.find((i) => i.name === name);
-    if (item) {
-      return item.url;
-    }
-  }
-  return "/docs";
-};
-
 export interface Post {
   avatar: string;
   date?: string;

@@ -4,7 +4,6 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { EASE_COLORS, FOCUS } from "./styles";
 
 const COPIED_MS = 1600;
 
@@ -78,51 +77,6 @@ export function CopyIconSwap({
         )}
       />
     </span>
-  );
-}
-
-/** A copyable shell command. The whole chip is the button. */
-export function CommandChip({
-  command,
-  prefix = "$",
-  label,
-  className,
-}: {
-  command: string;
-  /** Shell prompt shown before the command; null for a code snippet. */
-  prefix?: string | null;
-  /** Accessible name when the command alone doesn't say what it is. */
-  label?: string;
-  className?: string;
-}) {
-  const { copied, copy } = useCopy();
-  return (
-    <button
-      aria-label={copied ? "Copied" : `Copy ${label ?? command}`}
-      className={cn(
-        "group flex min-h-11 w-full min-w-0 items-center gap-3 rounded-xl border border-black/[0.08] bg-white px-4 py-2.5 text-left font-mono text-[13px] text-black/80 hover:border-black/15 active:bg-black/[0.02] dark:border-white/[0.1] dark:bg-black dark:text-white/80 dark:active:bg-white/[0.03] dark:hover:border-white/20",
-        EASE_COLORS,
-        FOCUS,
-        className
-      )}
-      onClick={() => copy(command)}
-      type="button"
-    >
-      {prefix ? (
-        <span aria-hidden className="text-black/30 dark:text-white/30">
-          {prefix}
-        </span>
-      ) : null}
-      {/* Wraps on narrow screens (at spaces first) rather than hiding the
-          flag you came for. */}
-      <span className="wrap-anywhere min-w-0 flex-1 leading-snug sm:truncate">
-        {command}
-      </span>
-      <CopyIconSwap
-        className="text-black/45 group-hover:text-black/70 dark:text-white/45 dark:group-hover:text-white/70"
-        copied={copied}
-      />
-    </button>
   );
 }
 

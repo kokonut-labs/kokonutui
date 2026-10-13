@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
-import { Agents } from "@/components/landing/home/agents";
-import { Bento } from "@/components/landing/home/bento";
-import { Categories } from "@/components/landing/home/categories";
-import { getCategories } from "@/components/landing/home/get-categories";
-import { Hero } from "@/components/landing/home/hero";
-import { Pro } from "@/components/landing/home/pro";
-import { Voices } from "@/components/landing/home/voices";
+import { Geist_Mono } from "next/font/google";
+import { Catalog } from "@/components/landing/home/catalog";
+import { getParts } from "@/components/landing/home/parts";
 import { siteConfig } from "@/config/site";
 import "@/components/landing/home/home.css";
 
@@ -16,17 +12,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
-  const categories = getCategories();
+// The catalog sets its codes, labels and commands in a monospace face.
+const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-home-mono" });
 
-  return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 pb-32 sm:px-6">
-      <Hero />
-      <Bento categories={categories} />
-      <Agents />
-      <Categories categories={categories} />
-      <Voices />
-      <Pro />
-    </div>
-  );
+export default function Home() {
+  return <Catalog className={mono.variable} parts={getParts()} />;
 }
