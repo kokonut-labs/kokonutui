@@ -11,7 +11,8 @@
  */
 
 import { MotionConfig, motion, useInView } from "motion/react";
-import { useId, useRef } from "react";
+import { type ReactNode, useId, useRef } from "react";
+import { cn } from "@/lib/utils";
 
 interface Point {
   x: number;
@@ -212,25 +213,39 @@ function FloatingPaths() {
 
 export default function BackgroundPaths({
   title = "Background Paths",
+  className,
+  children,
 }: {
   title?: string;
+  className?: string;
+  /** Replaces the demo title. Pass `null` to render the paths alone. */
+  children?: ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-white dark:bg-neutral-950">
+    <div
+      className={cn(
+        "relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-white dark:bg-neutral-950",
+        className
+      )}
+    >
       {/* Reduced motion skips the drift and the title's rise; fades stay. */}
       <MotionConfig reducedMotion="user">
         <FloatingPaths />
 
         <div className="container relative z-10 mx-auto px-4 text-center md:px-6">
           <div className="mx-auto max-w-4xl">
-            <motion.h1
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8 bg-gradient-to-r from-neutral-800/90 to-neutral-600/90 bg-clip-text font-bold text-3xl text-transparent tracking-tighter sm:text-5xl dark:from-white/90 dark:to-white/70"
-              initial={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.7, ease: EASE_OUT }}
-            >
-              {title}
-            </motion.h1>
+            {children === undefined ? (
+              <motion.h1
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8 bg-gradient-to-r from-neutral-800/90 to-neutral-600/90 bg-clip-text font-bold text-3xl text-transparent tracking-tighter sm:text-5xl dark:from-white/90 dark:to-white/70"
+                initial={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.7, ease: EASE_OUT }}
+              >
+                {title}
+              </motion.h1>
+            ) : (
+              children
+            )}
           </div>
         </div>
       </MotionConfig>
