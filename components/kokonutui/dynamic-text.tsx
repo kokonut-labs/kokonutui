@@ -11,12 +11,25 @@
  */
 
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
-interface Greeting {
+export interface Greeting {
   text: string;
   /** BCP 47 language tag, so screen readers pronounce each word correctly. */
-  lang: string;
+  lang?: string;
+}
+
+interface DynamicTextProps {
+  /** Words to show in turn. Defaults to the greetings demo. */
+  words?: Greeting[];
+  /** Milliseconds between words. */
+  interval?: number;
+  /** Start over after the last word instead of stopping on it. */
+  loop?: boolean;
+  /** Called once the last word is shown. Never called when looping. */
+  onComplete?: () => void;
+  className?: string;
 }
 
 const greetings: Greeting[] = [
@@ -30,29 +43,53 @@ const greetings: Greeting[] = [
   { text: "こんにちは", lang: "ja" },
 ];
 
-const LAST_INDEX = greetings.length - 1;
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
-const DynamicText = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const isDone = currentIndex === LAST_INDEX;
+const DynamicText = ({
+  words = greetings,
+  interval = 300,
+  loop = false,
+  onComplete,
+  className,
+}: DynamicTextProps) => {
+  // Counts every advance, so a looping word gets a fresh key each time.
+  const [step, setStep] = useState(0);
+  const count = words.length;
+  const lastIndex = count - 1;
+  const isDone = !loop && step >= lastIndex;
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    if (isDone || count < 2) {
+      return;
+    }
+    const id = setInterval(() => {
+      setStep((current) => current + 1);
+    }, interval);
+    return () => clearInterval(id);
+  }, [isDone, count, interval]);
 
   useEffect(() => {
     if (isDone) {
-      return;
+      onCompleteRef.current?.();
     }
-    const interval = setInterval(() => {
-      setCurrentIndex((index) => Math.min(index + 1, LAST_INDEX));
-    }, 300);
-    return () => clearInterval(interval);
   }, [isDone]);
 
-  const greeting = greetings[currentIndex];
+  const greeting = words[loop ? step % count : Math.min(step, lastIndex)];
+  if (!greeting) {
+    return null;
+  }
 
   return (
-    <section
-      aria-label="Rapid greetings in different languages"
-      className="flex min-h-[200px] items-center justify-center gap-1 p-4"
+    <div
+      className={cn(
+        "flex min-h-[200px] items-center justify-center gap-1 p-4",
+        className
+      )}
     >
       <div className="relative flex h-16 w-60 items-center justify-center">
         {/* Reduced motion keeps the crossfade and drops the slide. */}
@@ -72,7 +109,7 @@ const DynamicText = () => {
                 transition: { duration: 0.15, ease: EASE_OUT },
               }}
               initial={{ y: 8, opacity: 0 }}
-              key={currentIndex}
+              key={step}
               lang={greeting.lang}
             >
               <div
@@ -84,7 +121,7 @@ const DynamicText = () => {
           </AnimatePresence>
         </MotionConfig>
       </div>
-    </section>
+    </div>
   );
 };
 

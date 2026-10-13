@@ -10,8 +10,13 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  motion,
+  useInView,
+  useReducedMotion,
+  type Variants,
+} from "motion/react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface LetterState {
@@ -24,6 +29,17 @@ interface LetterState {
 const NO_MATRIX_CHARS: ReadonlyMap<number, string> = new Map();
 
 const getRandomChar = () => (Math.random() > 0.5 ? "1" : "0");
+
+// Each flip remounts its glyph (the key includes the character), so a glyph
+// tweens from the inherited text color into the matrix color and snaps back
+// with the letter. The color comes from a CSS variable so light mode can use
+// a darker green.
+const LETTER_VARIANTS = {
+  matrix: {
+    color: "var(--matrix-text-glyph)",
+    textShadow: "0 2px 4px rgba(0, 255, 0, 0.5)",
+  },
+} satisfies Variants;
 
 interface MatrixTextProps {
   text?: string;
@@ -42,6 +58,9 @@ const MatrixText = ({
 }: MatrixTextProps) => {
   // Binary characters currently shown in place of the letter at each index.
   const [matrixChars, setMatrixChars] = useState(NO_MATRIX_CHARS);
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true });
+  const shouldReduceMotion = useReducedMotion();
 
   const letters: LetterState[] = text.split("").map((char, index) => {
     const matrixChar = matrixChars.get(index);
@@ -56,6 +75,12 @@ const MatrixText = ({
   // timer on cleanup so nothing updates state after unmount.
   useEffect(() => {
     setMatrixChars(NO_MATRIX_CHARS);
+
+    // Reduced motion shows the static copy, so there is nothing to animate.
+    // Otherwise wait until the text is on screen.
+    if (shouldReduceMotion || !isInView) {
+      return;
+    }
 
     const timeouts = new Set<ReturnType<typeof setTimeout>>();
     const schedule = (callback: () => void, delay: number) => {
@@ -100,50 +125,51 @@ const MatrixText = ({
         clearTimeout(timeout);
       }
     };
-  }, [text, initialDelay, letterAnimationDuration, letterInterval]);
+  }, [
+    text,
+    initialDelay,
+    letterAnimationDuration,
+    letterInterval,
+    shouldReduceMotion,
+    isInView,
+  ]);
 
-  const motionVariants = useMemo(
-    () => ({
-      matrix: {
-        color: "#00ff00",
-        textShadow: "0 2px 4px rgba(0, 255, 0, 0.5)",
-      },
-    }),
-    []
-  );
-
+  // Spans only, so it can sit inside a heading or a paragraph.
   return (
-    <div
+    <span
       className={cn(
-        "flex min-h-screen items-center justify-center text-black dark:text-white",
+        "flex items-center justify-center text-black [--matrix-text-glyph:#059669] dark:text-white dark:[--matrix-text-glyph:#00ff00]",
         className
       )}
+      ref={ref}
     >
       <span className="sr-only">{text}</span>
-      <div aria-hidden="true" className="flex h-24 items-center justify-center">
-        <div className="flex flex-wrap items-center justify-center motion-reduce:hidden">
+      <span
+        aria-hidden="true"
+        className="flex min-h-24 items-center justify-center"
+      >
+        <span className="flex flex-wrap items-center justify-center motion-reduce:hidden">
           {letters.map((letter, index) => (
-            <motion.div
-              animate={letter.isMatrix ? "matrix" : "normal"}
+            <motion.span
+              animate={letter.isMatrix ? "matrix" : undefined}
               className="w-[1ch] overflow-hidden text-center font-mono text-4xl md:text-6xl"
-              initial="initial"
               key={`${index}-${letter.char}`}
               transition={{
                 duration: 0.1,
                 ease: "easeInOut",
               }}
-              variants={motionVariants}
+              variants={LETTER_VARIANTS}
             >
               {letter.isSpace ? "\u00A0" : letter.char}
-            </motion.div>
+            </motion.span>
           ))}
-        </div>
+        </span>
         {/* Reduced motion shows the final text instead of the glyph flicker. */}
-        <div className="hidden whitespace-pre-wrap text-center font-mono text-4xl motion-reduce:block md:text-6xl">
+        <span className="hidden whitespace-pre-wrap text-center font-mono text-4xl motion-reduce:block md:text-6xl">
           {text}
-        </div>
-      </div>
-    </div>
+        </span>
+      </span>
+    </span>
   );
 };
 

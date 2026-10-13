@@ -13,14 +13,14 @@
 import { Check, ChevronRight, User2 } from "lucide-react";
 import type { Variants } from "motion/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-interface Avatar {
+export interface AvatarOption {
   id: number;
   svg: ReactNode;
   alt: string;
@@ -28,7 +28,7 @@ interface Avatar {
   color: string;
 }
 
-const avatars: Avatar[] = [
+const defaultAvatars: AvatarOption[] = [
   {
     id: 1,
     svg: (
@@ -251,6 +251,16 @@ const avatars: Avatar[] = [
 ];
 
 interface AvatarPickerProps {
+  /** Avatars to choose from. Defaults to the four demo avatars. */
+  avatars?: AvatarOption[];
+  /** Selected avatar id, when you control the selection. */
+  value?: number;
+  /** Avatar id selected at first when uncontrolled. Defaults to the first. */
+  defaultValue?: number;
+  onAvatarChange?: (avatarId: number) => void;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
   onComplete?: (data: { username: string; avatarId: number }) => void;
   className?: string;
 }
@@ -279,33 +289,59 @@ const thumbnailVariants: Variants = {
 };
 
 export default function AvatarPicker({
+  avatars = defaultAvatars,
+  value,
+  defaultValue,
+  onAvatarChange,
+  title = "Pick Your Avatar",
+  description = "Choose one to get started",
+  submitLabel = "Get Started",
   onComplete,
   className,
 }: AvatarPickerProps) {
-  const [selectedAvatar, setSelectedAvatar] = useState<Avatar>(avatars[0]);
+  const [uncontrolledId, setUncontrolledId] = useState(
+    defaultValue ?? avatars[0]?.id
+  );
   const [username, setUsername] = useState("");
+  // The length error waits for a blur or an Enter, so it doesn't interrupt
+  // someone who is still typing.
+  const [isTouched, setIsTouched] = useState(false);
   const shouldReduceMotion = useReducedMotion();
   const inputId = useId();
+  const errorId = useId();
+  const radioName = useId();
 
-  const handleAvatarSelect = (avatar: Avatar) => {
+  const selectedId = value ?? uncontrolledId;
+  const selectedAvatar =
+    avatars.find((avatar) => avatar.id === selectedId) ?? avatars[0];
+
+  if (!selectedAvatar) {
+    return null;
+  }
+
+  const handleAvatarSelect = (avatar: AvatarOption) => {
     if (avatar.id === selectedAvatar.id) {
       return;
     }
-    setSelectedAvatar(avatar);
+    if (value === undefined) {
+      setUncontrolledId(avatar.id);
+    }
+    onAvatarChange?.(avatar.id);
   };
 
-  const handleSubmit = () => {
-    if (username.trim() && onComplete) {
-      onComplete({
+  const trimmedLength = username.trim().length;
+  const isValid = trimmedLength >= USERNAME_MIN_LENGTH;
+  const showError = isTouched && trimmedLength > 0 && !isValid;
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isValid) {
+      onComplete?.({
         username: username.trim(),
         avatarId: selectedAvatar.id,
       });
     }
   };
-
-  const isValid = username.trim().length >= USERNAME_MIN_LENGTH;
-  const showError =
-    username.trim().length > 0 && username.trim().length < USERNAME_MIN_LENGTH;
 
   return (
     <Card
@@ -317,12 +353,8 @@ export default function AvatarPicker({
       <CardContent className="p-8">
         <div className="space-y-8">
           <div className="space-y-1 text-center">
-            <h2 className="font-semibold text-xl tracking-tight">
-              Pick Your Avatar
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              Choose one to get started
-            </p>
+            <h2 className="font-semibold text-xl tracking-tight">{title}</h2>
+            <p className="text-muted-foreground text-sm">{description}</p>
           </div>
 
           <div className="flex flex-col items-center gap-4">
@@ -388,32 +420,43 @@ export default function AvatarPicker({
               </AnimatePresence>
             </div>
 
+            {/* Native radios: one tab stop, arrow keys move the selection. */}
             <motion.div
               animate="animate"
+              aria-label="Avatar"
               className="flex gap-3"
               initial="initial"
+              role="radiogroup"
               variants={containerVariants}
             >
               {avatars.map((avatar) => {
                 const isSelected = selectedAvatar.id === avatar.id;
                 return (
-                  <motion.button
-                    aria-label={`Select ${avatar.alt}`}
-                    aria-pressed={isSelected}
+                  <motion.label
                     className={cn(
-                      "relative h-14 w-14 overflow-hidden rounded-xl border bg-muted transition-[opacity,box-shadow] duration-200 ease-out",
+                      "relative h-14 w-14 cursor-pointer rounded-xl border bg-muted transition-[opacity,box-shadow] duration-200 ease-out",
+                      "has-focus-visible:outline-2 has-focus-visible:outline-ring has-focus-visible:outline-offset-4",
                       isSelected
                         ? "border-foreground/20 opacity-100 ring-2 ring-foreground/70 ring-offset-2 ring-offset-background"
                         : "border-border opacity-50 hover:opacity-100"
                     )}
                     key={avatar.id}
-                    onClick={() => handleAvatarSelect(avatar)}
-                    type="button"
                     variants={thumbnailVariants}
                     whileHover={shouldReduceMotion ? {} : { scale: 1.06 }}
                     whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
                   >
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <input
+                      aria-label={avatar.alt}
+                      checked={isSelected}
+                      className="sr-only"
+                      name={radioName}
+                      onChange={() => handleAvatarSelect(avatar)}
+                      type="radio"
+                      value={avatar.id}
+                    />
+                    {/* Only the artwork is clipped, so the check badge can
+                        overhang the corner. */}
+                    <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-[calc(var(--radius-xl)-1px)]">
                       <div className="scale-[2.3]">{avatar.svg}</div>
                     </div>
                     {isSelected && (
@@ -424,13 +467,13 @@ export default function AvatarPicker({
                         />
                       </div>
                     )}
-                  </motion.button>
+                  </motion.label>
                 );
               })}
             </motion.div>
           </div>
 
-          <div className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="font-medium text-sm" htmlFor={inputId}>
@@ -450,6 +493,8 @@ export default function AvatarPicker({
 
               <div className="group relative">
                 <Input
+                  aria-describedby={showError ? errorId : undefined}
+                  aria-invalid={showError || undefined}
                   autoComplete="username"
                   className={cn(
                     "h-10 pl-9 text-sm",
@@ -459,7 +504,15 @@ export default function AvatarPicker({
                   id={inputId}
                   maxLength={USERNAME_MAX_LENGTH}
                   name="username"
+                  onBlur={() => setIsTouched(true)}
                   onChange={(e) => setUsername(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Enter can't submit while the button is disabled, so
+                    // show why instead.
+                    if (e.key === "Enter") {
+                      setIsTouched(true);
+                    }
+                  }}
                   placeholder="your_username…"
                   spellCheck={false}
                   type="text"
@@ -477,6 +530,7 @@ export default function AvatarPicker({
                     animate={{ opacity: 1, y: 0 }}
                     className="ml-0.5 text-destructive text-xs"
                     exit={{ opacity: 0, y: -4 }}
+                    id={errorId}
                     initial={{ opacity: 0, y: -4 }}
                     role="alert"
                     transition={{ duration: 0.15, ease: EASE_OUT }}
@@ -490,16 +544,15 @@ export default function AvatarPicker({
             <Button
               className="group h-10 w-full text-sm"
               disabled={!isValid}
-              onClick={handleSubmit}
-              type="button"
+              type="submit"
             >
-              Get Started
+              {submitLabel}
               <ChevronRight
                 aria-hidden="true"
                 className="ml-1 h-4 w-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5"
               />
             </Button>
-          </div>
+          </form>
         </div>
       </CardContent>
     </Card>

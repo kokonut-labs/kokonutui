@@ -1,6 +1,6 @@
 ---
 title: Bento Grid
-description: Responsive bento grid of feature cards with animated charts, counters and timelines, built with React, Tailwind CSS and Motion animations.
+description: Responsive bento grid of feature cards with a spotlight list, a typing code snippet, logos, a timeline and a voice widget, built with React, Tailwind CSS and Motion animations.
 keywords: ["feature grid", "dashboard", "showcase", "landing page", "stats", "mosaic"]
 icon: Grip
 full: false
@@ -51,4 +51,4 @@ export default function Page() {
 }
 ```
 
-Available features: `spotlight`, `typing`, `logos`, `timeline` and `voice`. Cards with an `href` become links; hover tilt and lift are disabled for users who prefer reduced motion.
+Available features: `spotlight`, `typing`, `logos`, `timeline` and `voice`. The `voice` feature also takes an optional `label` (the mic button's accessible name) and `onToggle(recording)`, called when the user turns it on or off. Cards with an `href` become links; hover tilt is disabled for users who prefer reduced motion. `className` goes on the outer section and `gridClassName` on the grid, to change its width, padding or gap.

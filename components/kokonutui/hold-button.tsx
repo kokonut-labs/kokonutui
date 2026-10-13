@@ -28,31 +28,31 @@ const holdButtonVariants = cva("relative min-w-40 touch-none overflow-hidden", {
       red: [
         "bg-red-100 dark:bg-red-200",
         "hover:bg-red-100 dark:hover:bg-red-200",
-        "text-red-500 dark:text-red-600",
+        "text-red-800",
         "border border-red-200 dark:border-red-300",
       ],
       green: [
         "bg-green-100 dark:bg-green-200",
         "hover:bg-green-100 dark:hover:bg-green-200",
-        "text-green-500 dark:text-green-600",
+        "text-green-800",
         "border border-green-200 dark:border-green-300",
       ],
       blue: [
         "bg-blue-100 dark:bg-blue-200",
         "hover:bg-blue-100 dark:hover:bg-blue-200",
-        "text-blue-500 dark:text-blue-600",
+        "text-blue-800",
         "border border-blue-200 dark:border-blue-300",
       ],
       orange: [
         "bg-orange-100 dark:bg-orange-200",
         "hover:bg-orange-100 dark:hover:bg-orange-200",
-        "text-orange-500 dark:text-orange-600",
+        "text-orange-800",
         "border border-orange-200 dark:border-orange-300",
       ],
       grey: [
         "bg-gray-100 dark:bg-gray-200",
         "hover:bg-gray-100 dark:hover:bg-gray-200",
-        "text-gray-500 dark:text-gray-600",
+        "text-gray-800",
         "border border-gray-200 dark:border-gray-300",
       ],
     },
@@ -75,6 +75,14 @@ interface HoldButtonProps
 
 const HOLD_KEYS = new Set([" ", "Enter"]);
 
+const VARIANT_ICONS = {
+  red: Trash2Icon,
+  green: ArchiveXIcon,
+  blue: XCircleIcon,
+  orange: AlertCircleIcon,
+  grey: BanIcon,
+} as const;
+
 const holdFeedbackClassName = cn(
   "select-none [-webkit-touch-callout:none]",
   "transition-[color,background-color,border-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
@@ -91,6 +99,7 @@ export default function HoldButton({
   ...props
 }: HoldButtonProps) {
   const [isHolding, setIsHolding] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
   const holdingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onHoldCompleteRef = useRef(onHoldComplete);
@@ -109,7 +118,8 @@ export default function HoldButton({
   );
 
   function handleHoldStart() {
-    if (holdingRef.current) {
+    // Browsers still dispatch pointer events to disabled buttons.
+    if (holdingRef.current || props.disabled) {
       return;
     }
     holdingRef.current = true;
@@ -117,6 +127,7 @@ export default function HoldButton({
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
       if (holdingRef.current) {
+        setIsComplete(true);
         onHoldCompleteRef.current?.();
       }
     }, holdDuration);
@@ -128,6 +139,7 @@ export default function HoldButton({
     }
     holdingRef.current = false;
     setIsHolding(false);
+    setIsComplete(false);
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -147,6 +159,8 @@ export default function HoldButton({
     handleHoldStart();
   }
 
+  const Icon = VARIANT_ICONS[variant ?? "red"];
+
   return (
     <Button
       {...props}
@@ -155,6 +169,8 @@ export default function HoldButton({
         holdFeedbackClassName,
         className
       )}
+      data-complete={isComplete || undefined}
+      data-holding={isHolding || undefined}
       onBlur={(e) => {
         props.onBlur?.(e);
         handleHoldEnd();
@@ -189,18 +205,11 @@ export default function HoldButton({
       <span
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute inset-0 transition-[clip-path]",
+          "pointer-events-none absolute inset-0 bg-current/15 transition-[clip-path] dark:bg-current/10",
           "motion-reduce:transition-opacity motion-reduce:[clip-path:none]",
           isHolding
             ? "ease-linear [clip-path:inset(0_0_0_0)] motion-reduce:opacity-100"
-            : "duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] [clip-path:inset(0_100%_0_0)] motion-reduce:opacity-0",
-          {
-            "bg-red-200/30 dark:bg-red-300/30": variant === "red",
-            "bg-green-200/30 dark:bg-green-300/30": variant === "green",
-            "bg-blue-200/30 dark:bg-blue-300/30": variant === "blue",
-            "bg-orange-200/30 dark:bg-orange-300/30": variant === "orange",
-            "bg-gray-200/30 dark:bg-gray-300/30": variant === "grey",
-          }
+            : "duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] [clip-path:inset(0_100%_0_0)] motion-reduce:opacity-0"
         )}
         style={
           isHolding ? { transitionDuration: `${holdDuration}ms` } : undefined
@@ -209,13 +218,7 @@ export default function HoldButton({
       <span className="relative z-10 flex w-full items-center justify-center gap-2">
         {children ?? (
           <>
-            {(variant === "red" || !variant) && (
-              <Trash2Icon className="h-4 w-4" />
-            )}
-            {variant === "green" && <ArchiveXIcon className="h-4 w-4" />}
-            {variant === "blue" && <XCircleIcon className="h-4 w-4" />}
-            {variant === "orange" && <AlertCircleIcon className="h-4 w-4" />}
-            {variant === "grey" && <BanIcon className="h-4 w-4" />}
+            <Icon className="h-4 w-4" />
             {isHolding ? "Release" : "Hold me"}
           </>
         )}

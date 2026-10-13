@@ -15,6 +15,7 @@ import {
   ArrowUpDown,
   ArrowUpIcon,
   InfoIcon,
+  XIcon,
 } from "lucide-react";
 import {
   AnimatePresence,
@@ -33,14 +34,14 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-export type TransferStatus = "processing" | "completed";
+export type TransferStatus = "processing" | "completed" | "failed";
 
 export interface TransferAccount {
   /** Amount sent from / received into this account. */
   amount: number;
   /** ISO currency code, e.g. "USD". */
   currency: string;
-  /** Short symbol shown in the badge, e.g. "$". Defaults to the first letter of `currency`. */
+  /** Short symbol shown in the badge, e.g. "$". Defaults to the currency's own symbol. */
   symbol?: string;
   /** Bank or account name, e.g. "Chase Bank". */
   bank: string;
@@ -62,6 +63,8 @@ export interface CurrencyTransferProps {
    * "processing" and completes on its own after a short delay.
    */
   status?: TransferStatus;
+  /** BCP 47 locale for amounts, symbols and the rate. */
+  locale?: string;
   className?: string;
 }
 
@@ -86,13 +89,29 @@ const DEMO_COMPLETE_DELAY_MS = 1500;
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
 
-const amountFormatter = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+function formatAmount(account: TransferAccount, locale: string) {
+  const amount = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(account.amount);
+  return `${amount} ${account.currency}`;
+}
 
-function formatAmount(account: TransferAccount) {
-  return `${amountFormatter.format(account.amount)} ${account.currency}`;
+function getCurrencySymbol(currency: string, locale: string) {
+  try {
+    const parts = new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+    }).formatToParts(0);
+    return (
+      parts.find((part) => part.type === "currency")?.value ??
+      currency.charAt(0)
+    );
+  } catch {
+    // Not an ISO 4217 code.
+    return currency.charAt(0);
+  }
 }
 
 /** Text that swaps between states: short rise in, short rise out. */
@@ -142,6 +161,7 @@ interface AccountRowProps {
   direction: "from" | "to";
   account: TransferAccount;
   completed: boolean;
+  locale: string;
   reduceMotion: boolean;
 }
 
@@ -149,6 +169,7 @@ function AccountRow({
   direction,
   account,
   completed,
+  locale,
   reduceMotion,
 }: AccountRowProps) {
   const isFrom = direction === "from";
@@ -159,17 +180,21 @@ function AccountRow({
   const transition: Transition = reduceMotion
     ? { duration: 0 }
     : { duration: 0.3, ease: EASE_IN_OUT };
+  // The facing corners square off once the rows meet, not as they start
+  // moving; they round again as soon as the rows start to part.
+  const [hasMet, setHasMet] = useState(completed);
+  const joined = completed && hasMet;
 
   return (
     <motion.div
       animate={{ y: completed ? joinOffset : 0 }}
       className={cn(
-        "w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 transition-colors duration-200 dark:border-zinc-700/50 dark:bg-zinc-800/50",
-        completed && isFrom && "rounded-b-none border-b-0",
-        completed && !isFrom && "rounded-t-none border-t-0",
-        !completed && "hover:border-emerald-500/30"
+        "w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 dark:border-zinc-700/50 dark:bg-zinc-800/50",
+        joined && isFrom && "rounded-b-none border-b-0",
+        joined && !isFrom && "rounded-t-none border-t-0"
       )}
       initial={false}
+      onAnimationComplete={() => setHasMet(completed)}
       transition={transition}
     >
       <div className="w-full space-y-1">
@@ -182,16 +207,18 @@ function AccountRow({
             aria-hidden="true"
             className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-300 bg-white font-medium text-sm text-zinc-900 shadow-lg dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           >
-            {account.symbol ?? account.currency.charAt(0)}
+            {account.symbol ?? getCurrencySymbol(account.currency, locale)}
           </span>
           <div className="flex flex-col items-start">
             <span
               className={cn(
-                "font-medium text-zinc-900 tabular-nums tracking-tight transition-opacity duration-200 dark:text-zinc-100",
-                !completed && "opacity-50"
+                "font-medium tabular-nums tracking-tight transition-colors duration-200",
+                completed
+                  ? "text-zinc-900 dark:text-zinc-100"
+                  : "text-zinc-500 dark:text-zinc-400"
               )}
             >
-              {formatAmount(account)}
+              {formatAmount(account, locale)}
             </span>
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
               {account.bank}
@@ -205,23 +232,32 @@ function AccountRow({
 }
 
 function StatusIcon({
-  completed,
+  status,
   reduceMotion,
 }: {
-  completed: boolean;
+  status: TransferStatus;
   reduceMotion: boolean;
 }) {
   return (
     <div className="relative flex h-[100px] w-[100px] items-center justify-center">
-      <motion.div
-        animate={{ opacity: completed ? 1 : 0.6 }}
-        aria-hidden="true"
-        className="absolute inset-0 rounded-full bg-emerald-500/10 blur-2xl dark:bg-emerald-500/5"
-        initial={{ opacity: 0 }}
-        transition={{ duration: 0.3, ease: EASE_OUT }}
-      />
       <AnimatePresence initial={false} mode="wait">
-        {completed ? (
+        {status === "failed" && (
+          <motion.div
+            animate="animate"
+            className="relative z-10 rounded-full border border-red-500 bg-white p-5 dark:bg-zinc-900"
+            exit="exit"
+            initial="initial"
+            key="failed"
+            variants={reduceMotion ? fadeVariants : iconVariants}
+          >
+            <XIcon
+              aria-hidden="true"
+              className="h-10 w-10 text-red-500"
+              strokeWidth={3.5}
+            />
+          </motion.div>
+        )}
+        {status === "completed" && (
           <motion.div
             animate="animate"
             className="relative z-10 rounded-full border border-emerald-500 bg-white p-5 dark:bg-zinc-900"
@@ -248,7 +284,8 @@ function StatusIcon({
               />
             </svg>
           </motion.div>
-        ) : (
+        )}
+        {status === "processing" && (
           <motion.div
             animate="animate"
             className="relative z-10"
@@ -276,6 +313,12 @@ function StatusIcon({
   );
 }
 
+const TITLES: Record<TransferStatus, string> = {
+  processing: "Transfer in Progress",
+  completed: "Transfer Completed",
+  failed: "Transfer Failed",
+};
+
 export default function CurrencyTransfer({
   from = DEFAULT_FROM,
   to = DEFAULT_TO,
@@ -283,6 +326,7 @@ export default function CurrencyTransfer({
   txnId = "TXN-DAB3UL494",
   timestamp = "10:45 AM",
   status,
+  locale = "en-US",
   className,
 }: CurrencyTransferProps = {}) {
   const reduceMotion = useReducedMotion() ?? false;
@@ -290,6 +334,12 @@ export default function CurrencyTransfer({
   const [demoStatus, setDemoStatus] = useState<TransferStatus>("processing");
   const currentStatus = status ?? demoStatus;
   const completed = currentStatus === "completed";
+  const failed = currentStatus === "failed";
+  const processing = currentStatus === "processing";
+  const rateText = `Exchange Rate: 1 ${from.currency} = ${new Intl.NumberFormat(
+    locale,
+    { maximumFractionDigits: 4 }
+  ).format(rate)} ${to.currency}`;
 
   // Demo mode only: auto-complete after a short delay. Controlled usage
   // (status passed in) never starts a timer.
@@ -322,61 +372,68 @@ export default function CurrencyTransfer({
 
   return (
     <TooltipProvider>
+      {/* Sized by its content, so the icon and rows no longer overflow
+          fixed slots into the card's padding. */}
       <Card
         className={cn(
-          "mx-auto flex h-[420px] w-full max-w-sm flex-col border border-zinc-200/60 bg-white p-6 shadow-[0_0_0_1px_rgba(0,0,0,0.03)] transition-colors duration-200 hover:border-emerald-500/20 dark:border-zinc-800/60 dark:bg-zinc-900 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.03)] dark:hover:border-emerald-500/20",
+          "mx-auto flex w-full max-w-sm flex-col border border-zinc-200/60 bg-white p-6 dark:border-zinc-800/60 dark:bg-zinc-900",
           className
         )}
       >
-        <CardContent className="flex flex-1 flex-col justify-center space-y-4">
+        <CardContent className="flex flex-1 flex-col justify-center space-y-4 py-0">
           <output aria-live="polite" className="sr-only">
-            {completed
-              ? `Transfer completed. Transaction ID ${txnId}.`
-              : "Transfer in progress."}
+            {completed && `Transfer completed. Transaction ID ${txnId}.`}
+            {failed && "Transfer failed."}
+            {processing && "Transfer in progress."}
           </output>
 
           <motion.div
             animate="visible"
-            className="flex h-[80px] items-center justify-center"
+            className="flex items-center justify-center"
             custom={0}
             initial="hidden"
             variants={entry}
           >
-            <StatusIcon completed={completed} reduceMotion={reduceMotion} />
+            <StatusIcon reduceMotion={reduceMotion} status={currentStatus} />
           </motion.div>
 
           <motion.div
             animate="visible"
-            className="flex h-[280px] flex-col"
+            className="flex flex-col"
             custom={1}
             initial="hidden"
             variants={entry}
           >
-            <div className="mb-4 w-full space-y-2 text-center">
+            <div className="w-full space-y-2 text-center">
               <AnimatePresence initial={false} mode="wait">
                 <motion.h2
                   animate="animate"
-                  className="font-semibold text-lg text-zinc-900 uppercase tracking-tighter dark:text-zinc-100"
+                  className="font-semibold text-lg text-zinc-900 uppercase tracking-wide dark:text-zinc-100"
                   exit="exit"
                   initial="initial"
-                  key={completed ? "completed-title" : "processing-title"}
+                  key={`${currentStatus}-title`}
                   variants={swap}
                 >
-                  {completed ? "Transfer Completed" : "Transfer in Progress"}
+                  {TITLES[currentStatus]}
                 </motion.h2>
               </AnimatePresence>
               <AnimatePresence initial={false} mode="wait">
                 <motion.div
                   animate="animate"
-                  className="font-medium text-emerald-600 text-xs dark:text-emerald-400"
+                  className={cn(
+                    "font-medium text-xs",
+                    failed
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-emerald-600 dark:text-emerald-400"
+                  )}
                   exit="exit"
                   initial="initial"
-                  key={completed ? "completed-id" : "processing-status"}
+                  key={`${currentStatus}-detail`}
                   variants={swap}
                 >
-                  {completed
-                    ? `Transaction ID: ${txnId}`
-                    : "Processing Transaction..."}
+                  {completed && `Transaction ID: ${txnId}`}
+                  {failed && "Please try again"}
+                  {processing && "Processing Transaction..."}
                 </motion.div>
               </AnimatePresence>
 
@@ -385,12 +442,14 @@ export default function CurrencyTransfer({
                   account={from}
                   completed={completed}
                   direction="from"
+                  locale={locale}
                   reduceMotion={reduceMotion}
                 />
                 <AccountRow
                   account={to}
                   completed={completed}
                   direction="to"
+                  locale={locale}
                   reduceMotion={reduceMotion}
                 />
               </div>
@@ -401,32 +460,30 @@ export default function CurrencyTransfer({
                     animate="animate"
                     exit="exit"
                     initial="initial"
-                    key={completed ? "completed-rate" : "calculating-rate"}
+                    key={processing ? "calculating-rate" : "rate"}
                     variants={swap}
                   >
-                    {completed
-                      ? `Exchange Rate: 1 ${from.currency} = ${rate} ${to.currency}`
-                      : "Calculating exchange rate..."}
+                    {processing ? "Calculating exchange rate..." : rateText}
                   </motion.span>
                 </AnimatePresence>
-                <Tooltip>
-                  <TooltipTrigger
-                    aria-label="Exchange rate details"
-                    className="rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/50"
-                  >
-                    <InfoIcon
-                      aria-hidden="true"
-                      className="h-3 w-3 text-zinc-400 transition-colors hover:text-zinc-600 dark:hover:text-zinc-300"
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">
-                      {completed
-                        ? `Rate updated at ${timestamp}`
-                        : "Please wait..."}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
+                {/* Only once there is a rate to explain. The padding gives
+                    the 12px icon a 24px target without moving the layout. */}
+                {!processing && (
+                  <Tooltip>
+                    <TooltipTrigger
+                      aria-label="Exchange rate details"
+                      className="-m-1.5 rounded-sm p-1.5 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+                    >
+                      <InfoIcon
+                        aria-hidden="true"
+                        className="h-3 w-3 text-zinc-400 transition-colors hover:text-zinc-600 dark:hover:text-zinc-300"
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Rate updated at {timestamp}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             </div>
           </motion.div>

@@ -7,6 +7,7 @@ export default function V0Button({
   name = "liquid-glass-card",
   url = `${REGISTRY_URL}/${name}.json`,
   className,
+  ...props
 }: {
   name?: string;
   /** Registry item JSON to open in v0. Defaults to the KokonutUI entry for `name`. */
@@ -15,9 +16,10 @@ export default function V0Button({
   return (
     <Button
       aria-label="Open in v0"
+      {...props}
       asChild
       className={cn(
-        "not-prose gap-1 rounded-lg bg-black px-3 text-white text-xs shadow-none transition-[color,background-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-zinc-800 motion-safe:active:scale-[0.97] dark:bg-white dark:text-black dark:hover:bg-zinc-200",
+        "gap-1 rounded-lg bg-black px-3 text-white text-xs shadow-none transition-[color,background-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-zinc-800 motion-safe:active:scale-[0.97] dark:bg-white dark:text-black dark:hover:bg-zinc-200",
         className
       )}
     >

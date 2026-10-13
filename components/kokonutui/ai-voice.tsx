@@ -17,10 +17,12 @@ import { cn } from "@/lib/utils";
 const BAR_COUNT = 48;
 const BAR_IDS = Array.from({ length: BAR_COUNT }, (_, i) => `bar-${i}`);
 
-// Bar heights in percent. Random levels are only created in effects, never
-// during render, so the server and client markup match.
-const INITIAL_LEVELS = BAR_IDS.map(() => 20);
-const createLevels = () => BAR_IDS.map(() => 20 + Math.random() * 80);
+// Bar levels as a fraction of the full bar height. Random levels are only
+// created in effects, never during render, so the server and client markup
+// match.
+const IDLE_LEVEL = 0.25;
+const INITIAL_LEVELS = BAR_IDS.map(() => 0.2);
+const createLevels = () => BAR_IDS.map(() => 0.2 + Math.random() * 0.8);
 
 interface AIVoiceProps {
   className?: string;
@@ -45,7 +47,6 @@ export default function AI_Voice({
 
   useEffect(() => {
     if (!submitted) {
-      setTime(0);
       return;
     }
 
@@ -73,6 +74,7 @@ export default function AI_Voice({
 
     let timeoutId: ReturnType<typeof setTimeout>;
     const runAnimation = () => {
+      setTime(0);
       setSubmitted(true);
       timeoutId = setTimeout(() => {
         setSubmitted(false);
@@ -113,7 +115,7 @@ export default function AI_Voice({
         >
           {submitted ? (
             <div
-              className="h-6 w-6 cursor-pointer rounded-sm bg-black motion-safe:animate-spin dark:bg-white"
+              className="h-6 w-6 rounded-sm bg-black motion-safe:animate-spin dark:bg-white"
               style={{ animationDuration: "3s" }}
             />
           ) : (
@@ -129,27 +131,23 @@ export default function AI_Voice({
               : "text-black/30 dark:text-white/30"
           )}
         >
-          {formatTime(time)}
+          {formatTime(submitted ? time : 0)}
         </span>
 
         <div className="flex h-4 w-64 items-center justify-center gap-0.5">
           {BAR_IDS.map((id, i) => (
             <div
               className={cn(
-                "w-0.5 rounded-full transition-[height,background-color] duration-300 motion-reduce:transition-none",
+                "h-full w-0.5 rounded-full transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
                 submitted
                   ? "animate-pulse bg-black/50 motion-reduce:animate-none dark:bg-white/50"
-                  : "h-1 bg-black/10 dark:bg-white/10"
+                  : "bg-black/10 dark:bg-white/10"
               )}
               key={id}
-              style={
-                submitted
-                  ? {
-                      height: `${levels[i]}%`,
-                      animationDelay: `${i * 0.05}s`,
-                    }
-                  : undefined
-              }
+              style={{
+                transform: `scaleY(${submitted ? levels[i] : IDLE_LEVEL})`,
+                animationDelay: submitted ? `${i * 0.05}s` : undefined,
+              }}
             />
           ))}
         </div>

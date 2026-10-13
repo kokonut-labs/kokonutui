@@ -10,7 +10,7 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion, useInView, useReducedMotion } from "motion/react";
+import { motion, steps, useInView, useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
@@ -41,8 +41,10 @@ export interface GlitchTextProps {
   isStatic?: boolean;
   size?: GlitchTextSize;
   fontWeight?: number;
-  /** Letter spacing in px. */
+  /** Letter spacing in px. Defaults to 0.07em, so it scales with `size`. */
   letterSpacing?: number;
+  /** Root element. A span by default, so it also fits inside a heading. */
+  as?: "span" | "div" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 }
 
 /** One OKLCH color: lightness, chroma, hue (hue may be a CSS expression). */
@@ -172,7 +174,10 @@ const SIZE_CLASSES: Record<Exclude<GlitchTextSize, number>, string> = {
   "3xl": "text-8xl",
 };
 
-const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+// Each segment jumps straight to its next keyframe and holds it: a glitch
+// cuts, it doesn't glide. ("start", so the last keyframe, the rest pose, is
+// what stays on screen between bursts.)
+const HARD_CUT = steps(1, "start");
 const BURST_TIMES = [0, 0.2, 0.4, 0.6, 0.8, 1];
 const FIRST_BURST_DELAY = 0.6;
 const REST = { x: 0, y: 0, skewX: 0, opacity: 0 };
@@ -212,9 +217,10 @@ const GlitchText = ({
   isStatic = false,
   size = "md",
   fontWeight = 700,
-  letterSpacing = 5,
+  letterSpacing,
+  as: Root = "span",
 }: GlitchTextProps) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref);
   const prefersReducedMotion = useReducedMotion();
   // Paused while offscreen so the loops don't spend frames nobody sees.
@@ -226,7 +232,7 @@ const GlitchText = ({
   const transition = {
     duration: settings.burst,
     times: BURST_TIMES,
-    ease: EASE_OUT,
+    ease: HARD_CUT,
     delay: FIRST_BURST_DELAY,
     repeat: Number.POSITIVE_INFINITY,
     repeatDelay: settings.rest,
@@ -236,9 +242,11 @@ const GlitchText = ({
     cn("block", paint.kind === "gradient" && "bg-clip-text text-transparent");
 
   return (
-    <div
-      className={cn("relative flex items-center justify-center p-8", className)}
-      ref={ref}
+    <Root
+      className={cn(
+        "relative inline-flex items-center justify-center",
+        className
+      )}
       style={backgroundColor ? { backgroundColor } : undefined}
     >
       <motion.span
@@ -247,10 +255,11 @@ const GlitchText = ({
           "relative inline-block",
           typeof size === "string" && SIZE_CLASSES[size]
         )}
+        ref={ref}
         style={{
           fontSize: typeof size === "number" ? `${size}px` : undefined,
           fontWeight,
-          letterSpacing,
+          letterSpacing: letterSpacing ?? "0.07em",
         }}
         transition={RAINBOW_TRANSITION}
       >
@@ -298,7 +307,7 @@ const GlitchText = ({
           {text}
         </motion.span>
       </motion.span>
-    </div>
+    </Root>
   );
 };
 

@@ -16,13 +16,8 @@ import {
   useReducedMotion,
   type Variants,
 } from "motion/react";
-import { Pacifico } from "next/font/google";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-
-const pacifico = Pacifico({
-  subsets: ["latin"],
-  weight: ["400"],
-});
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
@@ -56,7 +51,7 @@ function ElegantShape({
   width = 400,
   height = 100,
   rotate = 0,
-  gradient = "from-white/[0.08]",
+  gradient = "from-white/8",
   borderRadius = 16,
   float = true,
 }: ElegantShapeProps) {
@@ -108,8 +103,6 @@ function ElegantShape({
             "absolute inset-0",
             "bg-linear-to-r to-transparent",
             gradient,
-            "ring-1 ring-white/[0.03] dark:ring-white/[0.02]",
-            "shadow-[0_2px_16px_-2px_rgba(255,255,255,0.04)]",
             "after:absolute after:inset-0",
             "after:bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.12),transparent_70%)]",
             "after:rounded-[inherit]"
@@ -207,17 +200,35 @@ const SHAPES: (ElegantShapeProps & { id: string })[] = [
 export default function ShapeHero({
   title1 = "Elevate Your",
   title2 = "Digital Vision",
+  subtitle = "UI Components built with Tailwind CSS.",
+  title2ClassName,
+  className,
+  children,
 }: {
   title1?: string;
   title2?: string;
+  subtitle?: string;
+  /**
+   * Extra classes for the second title line, such as a script font's
+   * `className` from next/font. Without it the line uses the inherited font.
+   */
+  title2ClassName?: string;
+  className?: string;
+  /** Rendered under the subtitle, e.g. call-to-action buttons. */
+  children?: ReactNode;
 }) {
   const shouldReduceMotion = useReducedMotion();
 
   return (
     // reducedMotion="user" turns the drop-in and text slide into opacity-only fades.
     <MotionConfig reducedMotion="user">
-      <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-white dark:bg-[#030303]">
-        <div className="absolute inset-0 bg-linear-to-br from-indigo-500/[0.02] via-transparent to-rose-500/[0.02] dark:from-indigo-500/[0.05] dark:via-transparent dark:to-rose-500/[0.05]" />
+      <div
+        className={cn(
+          "relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-white dark:bg-[#030303]",
+          className
+        )}
+      >
+        <div className="absolute inset-0 bg-linear-to-br from-indigo-500/2 via-transparent to-rose-500/2 dark:from-indigo-500/5 dark:via-transparent dark:to-rose-500/5" />
 
         <div className="absolute inset-0 overflow-hidden">
           {SHAPES.map(({ id, ...shape }) => (
@@ -227,37 +238,45 @@ export default function ShapeHero({
 
         <div className="container relative z-10 mx-auto px-4 md:px-6">
           <div className="mx-auto max-w-3xl text-center">
-            <motion.div
+            <motion.h1
               animate="visible"
+              className="mb-6 font-bold text-4xl tracking-tight sm:text-6xl md:mb-8 md:text-8xl"
               custom={1}
               initial="hidden"
               variants={fadeUpVariants}
             >
-              <h1 className="mb-6 font-bold text-4xl tracking-tight sm:text-6xl md:mb-8 md:text-8xl">
-                <span className="bg-linear-to-b from-black to-black/80 bg-clip-text text-transparent dark:from-white dark:to-white/80">
-                  {title1}
-                </span>
-                <br />
-                <span
-                  className={cn(
-                    "bg-linear-to-r from-indigo-300 via-black/90 to-rose-300 bg-clip-text text-transparent dark:from-indigo-300 dark:via-white/90 dark:to-rose-300",
-                    pacifico.className
-                  )}
-                >
-                  {title2}
-                </span>
-              </h1>
-            </motion.div>
-            <motion.div
+              <span className="bg-linear-to-b from-black to-black/80 bg-clip-text text-transparent dark:from-white dark:to-white/80">
+                {title1}
+              </span>
+              <br />
+              <span
+                className={cn(
+                  "bg-linear-to-r from-indigo-500 via-black/90 to-rose-500 bg-clip-text text-transparent dark:from-indigo-300 dark:via-white/90 dark:to-rose-300",
+                  title2ClassName
+                )}
+              >
+                {title2}
+              </span>
+            </motion.h1>
+            <motion.p
               animate="visible"
+              className="mx-auto mb-8 max-w-xl px-4 font-light text-base text-black/60 leading-relaxed tracking-wide sm:text-lg md:text-xl dark:text-white/60"
               custom={2}
               initial="hidden"
               variants={fadeUpVariants}
             >
-              <p className="mx-auto mb-8 max-w-xl px-4 font-light text-base text-black/40 leading-relaxed tracking-wide sm:text-lg md:text-xl dark:text-white/40">
-                UI Components built with Tailwind CSS.
-              </p>
-            </motion.div>
+              {subtitle}
+            </motion.p>
+            {children !== undefined && (
+              <motion.div
+                animate="visible"
+                custom={3}
+                initial="hidden"
+                variants={fadeUpVariants}
+              >
+                {children}
+              </motion.div>
+            )}
           </div>
         </div>
 

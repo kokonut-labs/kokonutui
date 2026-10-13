@@ -26,6 +26,8 @@ interface AITextLoadingProps {
   texts?: string[];
   className?: string;
   interval?: number;
+  /** Stable status for screen readers; the cycling words are hidden from them. */
+  label?: string;
 }
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -46,14 +48,20 @@ export default function AITextLoading({
   ],
   className,
   interval = 1500,
+  label = "Loading",
 }: AITextLoadingProps) {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
+  // Clamped, so a shorter (or empty) `texts` never reads past the end.
+  const textIndex = texts.length > 0 ? currentTextIndex % texts.length : 0;
   const shouldReduceMotion = useReducedMotion();
   // Shared by every word so the shimmer keeps sweeping across word swaps
   // instead of restarting on each keyed element.
   const backgroundPosition = useMotionValue("200% center");
 
   useEffect(() => {
+    if (texts.length < 2) {
+      return;
+    }
     const timer = setInterval(() => {
       setCurrentTextIndex((prevIndex) => (prevIndex + 1) % texts.length);
     }, interval);
@@ -74,28 +82,31 @@ export default function AITextLoading({
   }, [backgroundPosition, shouldReduceMotion]);
 
   return (
-    <div
+    <output
+      aria-live="polite"
       className={cn(
         "flex items-center justify-center font-bold text-3xl",
         className
       )}
     >
+      <span className="sr-only">{label}</span>
       {/* With reduced motion the words swap with a fade only, no slide. */}
       <MotionConfig reducedMotion="user">
         <AnimatePresence mode="wait">
-          <motion.div
+          <motion.span
             animate="animate"
+            aria-hidden="true"
             className="flex min-w-max justify-center whitespace-nowrap bg-[length:200%_100%] bg-gradient-to-r from-neutral-950 via-neutral-400 to-neutral-950 bg-clip-text text-transparent dark:from-white dark:via-neutral-600 dark:to-white"
             exit="exit"
             initial="initial"
-            key={currentTextIndex}
+            key={textIndex}
             style={{ backgroundPosition }}
             variants={swapVariants}
           >
-            {texts[currentTextIndex]}
-          </motion.div>
+            {texts[textIndex]}
+          </motion.span>
         </AnimatePresence>
       </MotionConfig>
-    </div>
+    </output>
   );
 }

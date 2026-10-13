@@ -52,12 +52,6 @@ export default function ScrollText({
   const itemsRef = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = 0;
-    }
-  }, []);
-
   // Highlight the item crossing the middle band of the scroll container. This
   // runs in an effect because item refs attach before the container ref, so
   // `containerRef.current` is still null inside the item ref callbacks.
@@ -94,16 +88,18 @@ export default function ScrollText({
   }, [texts]);
 
   return (
-    <div className={cn("mx-auto w-full max-w-3xl", className)}>
+    <div className={cn("mx-auto h-[300px] w-full max-w-3xl", className)}>
       <div
         className={cn(
-          "h-[300px] overflow-y-auto",
+          "h-full overflow-y-auto overflow-x-hidden",
           "relative flex flex-col items-center",
           "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         )}
         ref={containerRef}
       >
-        <div className="h-[150px]" />
+        {/* Half-height spacers let the first and last items reach the middle
+            band. shrink-0 keeps flex from collapsing them to 0. */}
+        <div className="h-1/2 shrink-0" />
         {/* Under reduced motion the rise is skipped and only the fade plays. */}
         <MotionConfig reducedMotion="user">
           {texts.map((text, index) => (
@@ -131,7 +127,7 @@ export default function ScrollText({
             </motion.div>
           ))}
         </MotionConfig>
-        <div className="h-[150px]" />
+        <div className="h-1/2 shrink-0" />
       </div>
     </div>
   );

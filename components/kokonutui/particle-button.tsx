@@ -23,7 +23,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export interface ParticleButtonProps extends ComponentProps<typeof Button> {
+// `asChild` is left out: Slot needs a single child, and the button renders
+// the particle layer, the label and the icon.
+export interface ParticleButtonProps
+  extends Omit<ComponentProps<typeof Button>, "asChild"> {
   /** Called after a click that was not `preventDefault()`-ed, alongside the burst. */
   onSuccess?: () => void;
   /** How long (ms) the particle layer stays mounted after a click. */
@@ -66,7 +69,9 @@ function SuccessParticles({ particles }: { particles: Particle[] }) {
             x: particle.x,
             y: particle.y,
           }}
-          className="absolute top-1/2 left-1/2 -mt-0.5 -ml-0.5 size-1 rounded-full bg-zinc-900 dark:bg-zinc-50"
+          // Starts on the top edge: the dots share the button's color, so
+          // any part of the path drawn over the button would be invisible.
+          className="absolute top-0 left-1/2 -mt-0.5 -ml-0.5 size-1 rounded-full bg-zinc-900 dark:bg-zinc-50"
           initial={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
           // biome-ignore lint/suspicious/noArrayIndexKey: particles are a fixed-size, never-reordered list
           key={i}

@@ -9,8 +9,32 @@ full: false
 #
 
 
-import ShapeHero from "@/components/kokonutui/shape-hero";
+import ShapeHeroDemo from "@/components/mdx/shape-hero-demo";
 
 <Preview link="shape-hero" comment={["Motion"]}>
-    <ShapeHero />
+    <ShapeHeroDemo />
 </Preview>
+
+## Usage
+
+The second title line uses your app's font. The demo above sets it in Pacifico. To do the same, load the font in your app and pass its class name. With `next/font`:
+
+```tsx
+import { Pacifico } from "next/font/google";
+import ShapeHero from "@/components/kokonutui/shape-hero";
+
+const pacifico = Pacifico({ subsets: ["latin"], weight: "400" });
+
+export default function Hero() {
+  return <ShapeHero title2ClassName={pacifico.className} />;
+}
+```
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `title1` | `string` | `"Elevate Your"` | First title line. |
+| `title2` | `string` | `"Digital Vision"` | Second title line, drawn with a gradient. |
+| `title2ClassName` | `string` | — | Extra classes for the second line, such as a font's class name. |
+| `subtitle` | `string` | `"UI Components built with Tailwind CSS."` | Text under the title. |
+| `className` | `string` | — | Classes for the outer section. |
+| `children` | `ReactNode` | — | Rendered under the subtitle, such as call-to-action buttons. |

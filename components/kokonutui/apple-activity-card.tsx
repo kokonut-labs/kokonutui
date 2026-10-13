@@ -16,12 +16,11 @@ import {
   useInView,
   useReducedMotion,
 } from "motion/react";
-import { useId, useRef } from "react";
+import { type CSSProperties, useId, useRef } from "react";
 import { cn } from "@/lib/utils";
 
-interface ActivityData {
+export interface ActivityData {
   label: string;
-  value: number;
   color: string;
   colorEnd: string;
   size: number;
@@ -39,10 +38,9 @@ interface CircleProgressProps {
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
-const activities: ActivityData[] = [
+const SAMPLE_ACTIVITIES: ActivityData[] = [
   {
     label: "MOVE",
-    value: 85,
     color: "#FF2D55",
     colorEnd: "#FF6B8B",
     size: 200,
@@ -52,7 +50,6 @@ const activities: ActivityData[] = [
   },
   {
     label: "EXERCISE",
-    value: 60,
     color: "#A3F900",
     colorEnd: "#C5FF4D",
     size: 160,
@@ -62,7 +59,6 @@ const activities: ActivityData[] = [
   },
   {
     label: "STAND",
-    value: 30,
     color: "#04C7DD",
     colorEnd: "#4DDFED",
     size: 120,
@@ -81,7 +77,11 @@ const CircleProgress = ({
   const strokeWidth = 16;
   const radius = (data.size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
-  const progress = ((100 - data.value) / 100) * circumference;
+  // Derived from the numbers shown next to the rings, so they always agree.
+  const percent =
+    data.target > 0 ? Math.min(data.current / data.target, 1) * 100 : 0;
+  const progress = ((100 - percent) / 100) * circumference;
+  const progressLabel = `${data.label} Activity Progress - ${Math.round(percent)}%`;
 
   const gradientId = useId();
   const gradientUrl = `url(#${gradientId})`;
@@ -95,13 +95,13 @@ const CircleProgress = ({
     >
       <div className="relative">
         <svg
-          aria-label={`${data.label} Activity Progress - ${data.value}%`}
+          aria-label={progressLabel}
           className="-rotate-90"
           height={data.size}
           viewBox={`0 0 ${data.size} ${data.size}`}
           width={data.size}
         >
-          <title>{`${data.label} Activity Progress - ${data.value}%`}</title>
+          <title>{progressLabel}</title>
 
           <defs>
             <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="100%">
@@ -143,9 +143,6 @@ const CircleProgress = ({
             strokeDasharray={circumference}
             strokeLinecap="round"
             strokeWidth={strokeWidth}
-            style={{
-              filter: "drop-shadow(0 0 6px rgba(0,0,0,0.15))",
-            }}
             transition={
               // MotionConfig only skips transforms; the draw isn't one.
               reduceMotion
@@ -159,11 +156,17 @@ const CircleProgress = ({
   );
 };
 
-const DetailedActivityInfo = ({ inView }: { inView: boolean }) => {
+const DetailedActivityInfo = ({
+  activities,
+  inView,
+}: {
+  activities: ActivityData[];
+  inView: boolean;
+}) => {
   return (
     <motion.div
       animate={inView ? { opacity: 1, x: 0 } : undefined}
-      className="ml-8 flex flex-col gap-6"
+      className="flex flex-col gap-6"
       initial={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.5, delay: 0.3, ease: EASE_OUT }}
     >
@@ -172,9 +175,11 @@ const DetailedActivityInfo = ({ inView }: { inView: boolean }) => {
           <span className="font-medium text-sm text-zinc-600 dark:text-zinc-400">
             {activity.label}
           </span>
+          {/* The ring hues are too light for text on white, so light mode
+              darkens them (3:1 or better for this large text). */}
           <span
-            className="font-semibold text-2xl"
-            style={{ color: activity.color }}
+            className="font-semibold text-2xl text-[color-mix(in_oklab,var(--activity-color)_70%,black)] dark:text-(--activity-color)"
+            style={{ "--activity-color": activity.color } as CSSProperties}
           >
             {activity.current}/{activity.target}
             <span className="ml-1 text-base text-zinc-600 dark:text-zinc-400">
@@ -189,12 +194,22 @@ const DetailedActivityInfo = ({ inView }: { inView: boolean }) => {
 
 export default function AppleActivityCard({
   title = "Activity Rings",
+  titleAs = "h2",
+  activities = SAMPLE_ACTIVITIES,
   className,
 }: {
   title?: string;
+  /** Heading level for the title, to fit the page outline. */
+  titleAs?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+  /** Rings, outermost first. Defaults to sample data. */
+  activities?: ActivityData[];
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const Heading = motion[titleAs];
+  const boxSize = activities.length
+    ? Math.max(...activities.map((activity) => activity.size))
+    : 0;
   const inView = useInView(ref, { once: true, margin: "-40px" });
   const reduceMotion = useReducedMotion() ?? false;
 
@@ -210,17 +225,20 @@ export default function AppleActivityCard({
       {/* Reduced motion keeps the fades and drops the scale/slide. */}
       <MotionConfig reducedMotion="user">
         <div className="flex flex-col items-center gap-8">
-          <motion.h2
+          <Heading
             animate={inView ? { opacity: 1, y: 0 } : undefined}
             className="font-medium text-2xl text-zinc-900 dark:text-white"
             initial={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5, ease: EASE_OUT }}
           >
             {title}
-          </motion.h2>
+          </Heading>
 
-          <div className="flex items-center">
-            <div className="relative h-[180px] w-[180px]">
+          <div className="flex flex-col items-center gap-8 sm:flex-row">
+            <div
+              className="relative shrink-0"
+              style={{ width: boxSize, height: boxSize }}
+            >
               {activities.map((activity, index) => (
                 <CircleProgress
                   data={activity}
@@ -231,7 +249,7 @@ export default function AppleActivityCard({
                 />
               ))}
             </div>
-            <DetailedActivityInfo inView={inView} />
+            <DetailedActivityInfo activities={activities} inView={inView} />
           </div>
         </div>
       </MotionConfig>

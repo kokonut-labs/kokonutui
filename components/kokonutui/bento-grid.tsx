@@ -51,7 +51,13 @@ export type BentoFeature =
   | { type: "typing"; code: string; filename?: string }
   | { type: "logos"; logos: BentoLogo[] }
   | { type: "timeline"; events: BentoTimelineEvent[] }
-  | { type: "voice" };
+  | {
+      type: "voice";
+      /** Accessible name of the mic button. */
+      label?: string;
+      /** Called when the user turns recording on or off (not by the demo). */
+      onToggle?: (recording: boolean) => void;
+    };
 
 export interface BentoItem {
   id: string;
@@ -69,7 +75,10 @@ export interface BentoItem {
 
 export interface BentoGridProps {
   items?: BentoItem[];
+  /** Applied to the outer section. */
   className?: string;
+  /** Applied to the grid, to change its width, padding or gap. */
+  gridClassName?: string;
 }
 
 const iconClass = "h-5 w-5";
@@ -331,7 +340,13 @@ const formatTime = (seconds: number) => {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 };
 
-function VoiceFeature() {
+function VoiceFeature({
+  label = "Record",
+  onToggle,
+}: {
+  label?: string;
+  onToggle?: (recording: boolean) => void;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const inView = useInView(rootRef, { margin: "-40px" });
   const [recording, setRecording] = useState(false);
@@ -374,22 +389,26 @@ function VoiceFeature() {
   }, [isDemo, inView]);
 
   const handleClick = () => {
+    const next = !recording;
     setIsDemo(false);
-    setRecording(!recording);
+    setRecording(next);
     setSeconds(0);
+    onToggle?.(next);
   };
 
   return (
     <div className="flex w-full flex-col items-center gap-2 py-4" ref={rootRef}>
+      {/* A fixed name plus aria-pressed, so the demo loop doesn't rename the
+          button and screen readers don't hear "Stop recording, pressed". */}
       <button
-        aria-label={recording ? "Stop recording" : "Start recording"}
+        aria-label={label}
         aria-pressed={recording}
         className="relative z-10 flex h-16 w-16 items-center justify-center rounded-xl transition-[background-color,scale] duration-150 ease-out hover:bg-black/5 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 active:scale-[0.97] dark:hover:bg-white/10"
         onClick={handleClick}
         type="button"
       >
         {recording ? (
-          <span className="h-6 w-6 animate-spin rounded-sm bg-black [animation-duration:3s] motion-reduce:animate-none dark:bg-white" />
+          <span className="h-6 w-6 rounded-sm bg-black dark:bg-white" />
         ) : (
           <Mic className="h-6 w-6 text-black/70 dark:text-white/70" />
         )}
@@ -427,8 +446,10 @@ function VoiceFeature() {
         ))}
       </div>
 
+      {/* Live only once the user drives it; the demo loop would otherwise
+          announce itself every few seconds. */}
       <p
-        aria-live="polite"
+        aria-live={isDemo ? "off" : "polite"}
         className="h-4 text-black/70 text-xs dark:text-white/70"
       >
         {recording ? "Listening..." : "Click to speak"}
@@ -448,7 +469,7 @@ function FeatureContent({ feature }: { feature: BentoFeature }) {
     case "timeline":
       return <TimelineFeature events={feature.events} />;
     case "voice":
-      return <VoiceFeature />;
+      return <VoiceFeature label={feature.label} onToggle={feature.onToggle} />;
     default:
       return null;
   }
@@ -486,17 +507,16 @@ export function BentoCard({ item }: { item: BentoItem }) {
       // Always set, so server and client agree; under reduced motion the
       // pointer handler never moves the tilt off zero.
       style={{ rotateX, rotateY, transformPerspective: 1200 }}
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-      whileHover={reduceMotion || !item.href ? undefined : { y: -4 }}
     >
       <div
         className={cn(
           "group relative flex h-full flex-col gap-2 rounded-xl border border-neutral-200/60 bg-gradient-to-b from-neutral-50/80 to-neutral-50 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.04)]",
           "transition-[border-color,box-shadow,scale] duration-200 ease-out",
-          "hover:border-neutral-300/70 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)]",
-          "dark:border-neutral-800/60 dark:from-neutral-900/80 dark:to-neutral-900 dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] dark:hover:border-neutral-700/60 dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)]",
+          "dark:border-neutral-800/60 dark:from-neutral-900/80 dark:to-neutral-900 dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)]",
+          // Only links get the hover border and shadow, so plain cards don't
+          // look clickable.
           item.href &&
-            "has-[a:active]:scale-[0.98] has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-neutral-400 motion-reduce:has-[a:active]:scale-100"
+            "hover:border-neutral-300/70 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] has-[a:active]:scale-[0.98] has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-neutral-400 motion-reduce:has-[a:active]:scale-100 dark:hover:border-neutral-700/60 dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)]"
         )}
       >
         <div className="flex items-center justify-between gap-2">
@@ -533,6 +553,7 @@ export function BentoCard({ item }: { item: BentoItem }) {
 export default function BentoGrid({
   items = defaultBentoItems,
   className,
+  gridClassName,
 }: BentoGridProps) {
   return (
     <section
@@ -543,7 +564,10 @@ export default function BentoGrid({
     >
       <MotionConfig reducedMotion="user">
         <motion.ul
-          className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 sm:px-6 md:grid-cols-6 lg:px-8"
+          className={cn(
+            "mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 sm:px-6 md:grid-cols-6 lg:px-8",
+            gridClassName
+          )}
           initial="hidden"
           variants={gridVariants}
           viewport={{ once: true, margin: "-80px" }}

@@ -1,6 +1,6 @@
 ---
 title: Switch Button
-description: Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React, next-themes, and Tailwind CSS.
+description: Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes.
 keywords: ["dark mode", "theme toggle", "light mode", "appearance", "color scheme"]
 icon: Link
 full: false
@@ -9,8 +9,39 @@ full: false
 #
 
 
-import SwitchButton from "@/components/kokonutui/switch-button";
+import SwitchButtonDemo from "@/components/mdx/switch-button-demo";
 
 <Preview link="switch-button">
-    <SwitchButton />
+    <SwitchButtonDemo />
 </Preview>
+
+## Usage
+
+With no props, the button toggles the `dark` class on `<html>`, which is what Tailwind's class-based `dark:` variant reads. It does not save the choice.
+
+If a theme provider already owns the theme, pass the applied theme and a setter instead. With next-themes:
+
+```tsx
+"use client";
+
+import { useTheme } from "next-themes";
+import SwitchButton from "@/components/kokonutui/switch-button";
+
+export function ThemeSwitch() {
+  const { resolvedTheme, setTheme } = useTheme();
+
+  return (
+    <SwitchButton
+      onThemeChange={setTheme}
+      theme={resolvedTheme === "dark" ? "dark" : "light"}
+    />
+  );
+}
+```
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `theme` | `"light" \| "dark"` | — | The applied theme, when a provider owns it. Without it the button toggles the `dark` class itself. |
+| `onThemeChange` | `(theme: "light" \| "dark") => void` | — | Called with the theme to switch to. |
+| `size` | `"sm" \| "default" \| "lg"` | `"default"` | Button size. |
+| `showLabel` | `boolean` | `true` | Shows "Light" or "Dark" next to the icon. |

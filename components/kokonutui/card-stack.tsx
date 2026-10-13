@@ -12,15 +12,15 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-interface Specification {
+export interface Specification {
   label: string;
   value: string;
 }
 
-interface Product {
+export interface Product {
   id: string;
   title: string;
   subtitle: string;
@@ -29,7 +29,7 @@ interface Product {
   specs: Specification[];
 }
 
-const products: Product[] = [
+const SAMPLE_PRODUCTS: Product[] = [
   {
     id: "instant-pay",
     title: "Quick Pay",
@@ -93,6 +93,7 @@ const products: Product[] = [
 
 const CARD_WIDTH = 320;
 const CARD_OVERLAP = 240;
+const SPREAD_STEP = CARD_WIDTH - CARD_OVERLAP;
 
 interface CardProps {
   product: Product;
@@ -100,6 +101,7 @@ interface CardProps {
   totalCards: number;
   isExpanded: boolean;
   reducedMotion: boolean;
+  spreadStep: number;
 }
 
 const Card = ({
@@ -108,18 +110,14 @@ const Card = ({
   totalCards,
   isExpanded,
   reducedMotion,
+  spreadStep,
 }: CardProps) => {
   const centerOffset = (totalCards - 1) * 5;
   const defaultX = index * 10 - centerOffset;
   const defaultY = index * 2;
   const defaultRotate = index * 1.5;
 
-  const totalExpandedWidth =
-    CARD_WIDTH + (totalCards - 1) * (CARD_WIDTH - CARD_OVERLAP);
-  const expandedCenterOffset = totalExpandedWidth / 2;
-
-  const spreadX =
-    index * (CARD_WIDTH - CARD_OVERLAP) - expandedCenterOffset + CARD_WIDTH / 2;
+  const spreadX = (index - (totalCards - 1) / 2) * spreadStep;
   const spreadRotate = index * 5 - (totalCards - 1) * 2.5;
 
   const collapsedPose = {
@@ -140,21 +138,22 @@ const Card = ({
     <motion.div
       animate={isExpanded ? expandedPose : collapsedPose}
       className={cn(
-        "absolute inset-0 w-full rounded-2xl p-6",
-        "bg-white/60 dark:bg-neutral-900/60",
+        // Centred with auto margins, so it stays centred in parents narrower
+        // than the card; at least as tall as the stack, taller if the copy is.
+        "absolute inset-x-0 top-0 mx-auto min-h-full w-full rounded-2xl p-6",
+        // Opaque: blurring the cards beneath every frame of the spring is
+        // expensive and turns the overlapping text into mush.
+        "bg-white dark:bg-neutral-900",
         "border border-white/20 dark:border-neutral-800/40",
-        "backdrop-blur-xl backdrop-saturate-150",
         "shadow-[0_8px_20px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_20px_rgb(0,0,0,0.3)]",
         "group-hover/stack:border-white/30 dark:group-hover/stack:border-neutral-700/30",
         "group-hover/stack:shadow-[0_12px_40px_rgb(0,0,0,0.12)] dark:group-hover/stack:shadow-[0_12px_40px_rgb(0,0,0,0.4)]",
-        "transition-[border-color,box-shadow] duration-300 ease-out",
+        "transition-[border-color] duration-150 ease-out",
         "overflow-hidden"
       )}
       initial={collapsedPose}
       style={{
         maxWidth: `${CARD_WIDTH}px`,
-        left: "50%",
-        marginLeft: `-${CARD_WIDTH / 2}px`,
         zIndex: totalCards - index,
       }}
       transition={
@@ -176,12 +175,13 @@ const Card = ({
               className="flex flex-col items-start text-left text-[10px]"
               key={spec.label}
             >
+              {/* `dt` must come first; `order-last` keeps the value on top */}
+              <dt className="order-last mb-0.5 w-full text-left text-gray-900 dark:text-gray-100">
+                {spec.label}
+              </dt>
               <dd className="w-full text-left font-medium text-gray-500 dark:text-gray-400">
                 {spec.value}
               </dd>
-              <dt className="mb-0.5 w-full text-left text-gray-900 dark:text-gray-100">
-                {spec.label}
-              </dt>
             </div>
           ))}
         </dl>
@@ -195,7 +195,7 @@ const Card = ({
           )}
         >
           <Image
-            alt={product.description}
+            alt=""
             className="object-cover"
             fill
             sizes="320px"
@@ -224,11 +224,43 @@ const Card = ({
 
 interface CardStackProps {
   className?: string;
+  /** Cards, top first. Defaults to sample products. */
+  items?: Product[];
 }
 
-export default function CardStackExample({ className }: CardStackProps) {
+export default function CardStackExample({
+  className,
+  items = SAMPLE_PRODUCTS,
+}: CardStackProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const reducedMotion = useReducedMotion() ?? false;
+  const containerRef = useRef<HTMLDivElement>(null);
+  // Unknown until measured; only the expanded pose uses it, after a click.
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      setContainerWidth(entry.contentRect.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Narrow the fan so the expanded stack fits its container on small screens.
+  const spreadStep =
+    containerWidth === null || items.length < 2
+      ? SPREAD_STEP
+      : Math.max(
+          0,
+          Math.min(
+            SPREAD_STEP,
+            (containerWidth - CARD_WIDTH) / (items.length - 1)
+          )
+        );
 
   const handleToggle = () => setIsExpanded((prev) => !prev);
 
@@ -238,9 +270,12 @@ export default function CardStackExample({ className }: CardStackProps) {
         "group/stack relative mx-auto",
         "min-h-[440px] w-full max-w-[90vw]",
         "md:max-w-[1200px]",
-        "mb-8 flex items-center justify-center",
+        "flex items-center justify-center",
+        // Press feedback on the stack: the toggle on top of it is transparent.
+        "transition-[scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:has-[>button:active]:scale-[0.99]",
         className
       )}
+      ref={containerRef}
     >
       {/* Transparent toggle over the whole stack: clicking anywhere toggles, and
           the cards stay outside the button so their text is readable */}
@@ -251,14 +286,15 @@ export default function CardStackExample({ className }: CardStackProps) {
         onClick={handleToggle}
         type="button"
       />
-      {products.map((product, index) => (
+      {items.map((product, index) => (
         <Card
           index={index}
           isExpanded={isExpanded}
           key={product.id}
           product={product}
           reducedMotion={reducedMotion}
-          totalCards={products.length}
+          spreadStep={spreadStep}
+          totalCards={items.length}
         />
       ))}
     </div>

@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-interface ExperienceItem {
+export interface ExperienceItem {
   id: string;
   title: string;
   image: string;
@@ -33,9 +33,9 @@ interface ExperienceItem {
   href?: string;
 }
 
-type ToggleFavorite = (id: string, favorite: boolean) => void;
+export type ToggleFavorite = (id: string, favorite: boolean) => void;
 
-interface ExperienceGridProps {
+export interface ExperienceSectionProps {
   title: string;
   items: ExperienceItem[];
   viewAllHref?: string;
@@ -46,7 +46,8 @@ const sampleExperiences: ExperienceItem[] = [
   {
     id: "1",
     title: "Become an Otaku Hottie with Megan Thee Stallion",
-    image: "https://images.unsplash.com/photo-1615571022219-eb45cf7faa9d",
+    image:
+      "https://images.unsplash.com/photo-1615571022219-eb45cf7faa9d?w=600&auto=format&fit=crop&q=80",
     location: "Los Angeles, United States",
     price: 120,
     currency: "€",
@@ -58,7 +59,8 @@ const sampleExperiences: ExperienceItem[] = [
   {
     id: "2",
     title: "Spend a Sunday Funday with Patrick Mahomes",
-    image: "https://images.unsplash.com/photo-1622127922040-13cab637ee78",
+    image:
+      "https://images.unsplash.com/photo-1622127922040-13cab637ee78?w=600&auto=format&fit=crop&q=80",
     location: "Kansas City, United States",
     price: 150,
     currency: "€",
@@ -70,7 +72,8 @@ const sampleExperiences: ExperienceItem[] = [
   {
     id: "3",
     title: "Celebrate with SEVENTEEN on their 10th anniversary",
-    image: "https://images.unsplash.com/photo-1534430480872-3498386e7856",
+    image:
+      "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=600&auto=format&fit=crop&q=80",
     location: "Seoul, South Korea",
     price: 200,
     currency: "€",
@@ -82,7 +85,8 @@ const sampleExperiences: ExperienceItem[] = [
   {
     id: "4",
     title: "Learn the secrets of French pastry with nonnas",
-    image: "https://images.unsplash.com/photo-1604999333679-b86d54738315",
+    image:
+      "https://images.unsplash.com/photo-1604999333679-b86d54738315?w=600&auto=format&fit=crop&q=80",
     location: "Paris, France",
     price: 70,
     currency: "€",
@@ -93,7 +97,8 @@ const sampleExperiences: ExperienceItem[] = [
   {
     id: "5",
     title: "Uncover the world of cabaret with a burlesque show",
-    image: "https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b",
+    image:
+      "https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?w=600&auto=format&fit=crop&q=80",
     location: "Paris, France",
     price: 92,
     currency: "€",
@@ -104,7 +109,8 @@ const sampleExperiences: ExperienceItem[] = [
   {
     id: "6",
     title: "The Super Powers of Art-family Game at the Louvre",
-    image: "https://images.unsplash.com/photo-1530789253388-582c481c54b0",
+    image:
+      "https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=600&auto=format&fit=crop&q=80",
     location: "Paris, France",
     price: 90,
     currency: "€",
@@ -115,7 +121,8 @@ const sampleExperiences: ExperienceItem[] = [
   {
     id: "7",
     title: "Savor tasty vegan pastries with a plant-based pro",
-    image: "https://images.unsplash.com/photo-1608830597604-619220679440",
+    image:
+      "https://images.unsplash.com/photo-1608830597604-619220679440?w=600&auto=format&fit=crop&q=80",
     location: "Paris, France",
     price: 75,
     currency: "€",
@@ -129,7 +136,8 @@ const popularExperiences: ExperienceItem[] = [
   {
     id: "p1",
     title: "Learn to bake the French Croissant",
-    image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a",
+    image:
+      "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&auto=format&fit=crop&q=80",
     location: "Paris, France",
     price: 95,
     currency: "€",
@@ -140,7 +148,8 @@ const popularExperiences: ExperienceItem[] = [
   {
     id: "p2",
     title: "Seek out hidden speakeasy bars in the city",
-    image: "https://images.unsplash.com/photo-1470337458703-46ad1756a187",
+    image:
+      "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=600&auto=format&fit=crop&q=80",
     location: "Paris, France",
     price: 74,
     currency: "€",
@@ -151,7 +160,8 @@ const popularExperiences: ExperienceItem[] = [
   {
     id: "p3",
     title: "Versailles Food and Palace Bike Tour",
-    image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a",
+    image:
+      "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&auto=format&fit=crop&q=80",
     location: "Versailles, France",
     price: 122,
     currency: "€",
@@ -162,7 +172,8 @@ const popularExperiences: ExperienceItem[] = [
   {
     id: "p4",
     title: "Haunted Paris Tour - Ghosts, Legends, True Crime",
-    image: "https://images.unsplash.com/photo-1549144511-f099e773c147",
+    image:
+      "https://images.unsplash.com/photo-1549144511-f099e773c147?w=600&auto=format&fit=crop&q=80",
     location: "Paris, France",
     price: 25,
     currency: "€",
@@ -173,7 +184,8 @@ const popularExperiences: ExperienceItem[] = [
   {
     id: "p5",
     title: "Learn to make the French macarons with a chef",
-    image: "https://images.unsplash.com/photo-1558326567-98ae2405596b",
+    image:
+      "https://images.unsplash.com/photo-1558326567-98ae2405596b?w=600&auto=format&fit=crop&q=80",
     location: "Paris, France",
     price: 110,
     currency: "€",
@@ -184,7 +196,8 @@ const popularExperiences: ExperienceItem[] = [
   {
     id: "p6",
     title: "No Diet Club - Best food tour in Le Marais",
-    image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0",
+    image:
+      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&auto=format&fit=crop&q=80",
     location: "Paris, France",
     price: 65,
     currency: "€",
@@ -195,7 +208,8 @@ const popularExperiences: ExperienceItem[] = [
   {
     id: "p7",
     title: "Soak up the nightlife of Paris",
-    image: "https://images.unsplash.com/photo-1546636889-ba9fdd63583e",
+    image:
+      "https://images.unsplash.com/photo-1546636889-ba9fdd63583e?w=600&auto=format&fit=crop&q=80",
     location: "Paris, France",
     price: 20,
     currency: "€",
@@ -248,12 +262,13 @@ const ExperienceCard = ({
   experience: ExperienceItem;
   onToggleFavorite?: ToggleFavorite;
 }) => (
-  <Card className="group relative flex h-[320px] w-full flex-col overflow-hidden rounded-xl border-0 shadow-sm transition-shadow duration-300 hover:shadow-md">
+  <Card className="group relative flex h-[320px] w-full flex-col overflow-hidden rounded-xl border-0 shadow-sm hover:shadow-md">
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-xl">
       <Image
-        alt={experience.title}
+        alt=""
         className="object-cover transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:group-hover:scale-105"
         fill
+        sizes="(min-width: 768px) 260px, 240px"
         src={experience.image}
         unoptimized
       />
@@ -306,20 +321,51 @@ const ExperienceCard = ({
   </Card>
 );
 
-const ExperienceSection = ({
+// `aria-disabled` rather than `disabled` at the ends, so a keyboard user who
+// scrolls to the end keeps focus on the button.
+const ARROW_BUTTON_CLASS =
+  "h-7 w-7 rounded-full border-neutral-200 transition-[color,background-color,opacity,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-neutral-100 motion-safe:active:scale-[0.97] aria-disabled:pointer-events-none aria-disabled:opacity-50 dark:border-neutral-800 dark:hover:bg-neutral-900";
+
+export const ExperienceSection = ({
   title,
   items,
   viewAllHref = "#",
   onToggleFavorite,
-}: ExperienceGridProps) => {
+}: ExperienceSectionProps) => {
   const scrollContainer = React.useRef<HTMLDivElement>(null);
+  const [atStart, setAtStart] = React.useState(true);
+  const [atEnd, setAtEnd] = React.useState(false);
 
-  const scrollByCards = (left: number) => {
+  const updateEdges = React.useCallback(() => {
+    const el = scrollContainer.current;
+    if (!el) {
+      return;
+    }
+    setAtStart(el.scrollLeft <= 1);
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+  }, []);
+
+  React.useEffect(() => {
+    const el = scrollContainer.current;
+    if (!el) {
+      return;
+    }
+    updateEdges();
+    const observer = new ResizeObserver(updateEdges);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [updateEdges]);
+
+  const scrollByPage = (direction: 1 | -1) => {
+    const el = scrollContainer.current;
+    if (!el) {
+      return;
+    }
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    scrollContainer.current?.scrollBy({
-      left,
+    el.scrollBy({
+      left: direction * el.clientWidth * 0.9,
       behavior: reduceMotion ? "auto" : "smooth",
     });
   };
@@ -333,8 +379,9 @@ const ExperienceSection = ({
           </h2>
           <div className="flex items-center gap-1">
             <Button
-              className="h-7 w-7 rounded-full border-neutral-200 hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-900"
-              onClick={() => scrollByCards(-320)}
+              aria-disabled={atStart}
+              className={ARROW_BUTTON_CLASS}
+              onClick={() => scrollByPage(-1)}
               size="icon"
               variant="outline"
             >
@@ -342,8 +389,9 @@ const ExperienceSection = ({
               <span className="sr-only">Scroll left</span>
             </Button>
             <Button
-              className="h-7 w-7 rounded-full border-neutral-200 hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-900"
-              onClick={() => scrollByCards(320)}
+              aria-disabled={atEnd}
+              className={ARROW_BUTTON_CLASS}
+              onClick={() => scrollByPage(1)}
               size="icon"
               variant="outline"
             >
@@ -361,6 +409,7 @@ const ExperienceSection = ({
 
         <div
           className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onScroll={updateEdges}
           ref={scrollContainer}
         >
           {items.map((item) => (

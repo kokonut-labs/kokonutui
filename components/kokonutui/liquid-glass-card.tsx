@@ -72,8 +72,7 @@ const GlassFilter = React.memo(
             xChannelSelector="R"
             yChannelSelector="B"
           />
-          <feGaussianBlur in="displaced" result="finalBlur" stdDeviation="4" />
-          <feComposite in="finalBlur" in2="finalBlur" operator="over" />
+          <feGaussianBlur in="displaced" stdDeviation="4" />
         </filter>
       </defs>
     </svg>
@@ -100,7 +99,11 @@ const liquidButtonVariants = cva(
   }
 );
 
-export type LiquidButtonProps = React.ComponentProps<typeof Button> &
+// No `asChild`: the glass layers are extra children, which Slot rejects.
+export type LiquidButtonProps = Omit<
+  React.ComponentProps<typeof Button>,
+  "asChild"
+> &
   VariantProps<typeof liquidButtonVariants>;
 
 function LiquidButton({
@@ -117,13 +120,15 @@ function LiquidButton({
         className={cn(liquidButtonVariants({ liquidVariant }), className)}
         {...props}
       >
-        <div
+        <span
           className={cn(
             "pointer-events-none absolute inset-0 rounded-[inherit]",
             GLASS_SHADOW
           )}
         />
-        <div
+        {/* backdrop-filter: url() only renders in Chromium; other browsers
+            show the shadow layer without the refraction. */}
+        <span
           className="pointer-events-none absolute inset-0 isolate -z-10 overflow-hidden rounded-[inherit]"
           style={{ backdropFilter: `url("#${filterId}")` }}
         />
@@ -176,6 +181,7 @@ function LiquidGlassCard({
         )}
       />
 
+      {/* backdrop-filter: url() only renders in Chromium. */}
       {glassEffect && (
         <>
           <div
@@ -250,73 +256,88 @@ interface ProgressBarProps {
   onSeek: (newTime: number) => void;
 }
 
-const ProgressBar = React.memo(
-  ({ currentTime, totalDuration, onSeek }: ProgressBarProps) => {
-    const progress = currentTime / totalDuration;
+function ProgressBar({ currentTime, totalDuration, onSeek }: ProgressBarProps) {
+  const progress = currentTime / totalDuration;
 
-    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-      const bar = e.currentTarget;
-      const rect = bar.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const percent = x / rect.width;
-      const newTime = Math.min(
-        Math.max(MIN_TIME, percent * totalDuration),
-        totalDuration
-      );
-      onSeek(newTime);
-    };
+  const seekToPointer = (e: React.PointerEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    const newTime = Math.min(
+      Math.max(MIN_TIME, percent * totalDuration),
+      totalDuration
+    );
+    onSeek(newTime);
+  };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-      switch (e.key) {
-        case "ArrowRight":
-          e.preventDefault();
-          onSeek(Math.min(currentTime + SEEK_JUMP_SECONDS, totalDuration));
-          break;
-        case "ArrowLeft":
-          e.preventDefault();
-          onSeek(Math.max(currentTime - SEEK_JUMP_SECONDS, MIN_TIME));
-          break;
-        case "Home":
-          e.preventDefault();
-          onSeek(MIN_TIME);
-          break;
-        case "End":
-          e.preventDefault();
-          onSeek(totalDuration);
-          break;
-        default:
-          break;
-      }
-    };
+  // Pointer capture keeps the drag going when the pointer leaves the bar.
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) {
+      return;
+    }
+    e.currentTarget.setPointerCapture(e.pointerId);
+    seekToPointer(e);
+  };
 
-    return (
-      <>
-        <div className="flex justify-between font-medium text-xs text-zinc-500 dark:text-zinc-400">
-          <span className="tabular-nums">{formatTime(currentTime)}</span>
-          <span className="tabular-nums">{formatTime(totalDuration)}</span>
-        </div>
-        <div
-          aria-label="Seek progress bar"
-          aria-valuemax={totalDuration}
-          aria-valuemin={MIN_TIME}
-          aria-valuenow={currentTime}
-          aria-valuetext={`${formatTime(currentTime)} of ${formatTime(totalDuration)}`}
-          className="relative z-10 h-1 w-full cursor-pointer overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
-          onClick={handleClick}
-          onKeyDown={handleKeyDown}
-          role="slider"
-          tabIndex={0}
-        >
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      seekToPointer(e);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    switch (e.key) {
+      case "ArrowRight":
+        e.preventDefault();
+        onSeek(Math.min(currentTime + SEEK_JUMP_SECONDS, totalDuration));
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        onSeek(Math.max(currentTime - SEEK_JUMP_SECONDS, MIN_TIME));
+        break;
+      case "Home":
+        e.preventDefault();
+        onSeek(MIN_TIME);
+        break;
+      case "End":
+        e.preventDefault();
+        onSeek(totalDuration);
+        break;
+      default:
+        break;
+    }
+  };
+
+  return (
+    <>
+      <div className="flex justify-between font-medium text-xs text-zinc-500 dark:text-zinc-400">
+        <span className="tabular-nums">{formatTime(currentTime)}</span>
+        <span className="tabular-nums">{formatTime(totalDuration)}</span>
+      </div>
+      {/* The padding gives the 4px track a 16px hit area without moving
+            the layout; the track itself shows the focus ring. */}
+      <div
+        aria-label="Seek progress bar"
+        aria-valuemax={totalDuration}
+        aria-valuemin={MIN_TIME}
+        aria-valuenow={currentTime}
+        aria-valuetext={`${formatTime(currentTime)} of ${formatTime(totalDuration)}`}
+        className="group/seek relative z-10 -my-1.5 w-full cursor-pointer touch-pan-y py-1.5 outline-hidden"
+        onKeyDown={handleKeyDown}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        role="slider"
+        tabIndex={0}
+      >
+        <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-200 ring-[#FF2E55]/60 ring-offset-2 ring-offset-zinc-50 group-focus-visible/seek:ring-2 dark:bg-zinc-800 dark:ring-offset-zinc-900">
           <div
             className="h-full w-full origin-left bg-gradient-to-r from-[#FF2E55] to-[#FF6B88] transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
             style={{ transform: `scaleX(${progress})` }}
           />
         </div>
-      </>
-    );
-  }
-);
-ProgressBar.displayName = "ProgressBar";
+      </div>
+    </>
+  );
+}
 
 export function NotificationCenter() {
   const [isPlaying, setIsPlaying] = React.useState(true);

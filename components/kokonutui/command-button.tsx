@@ -36,7 +36,12 @@ export default function CommandButton({
     >
       <Command className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
       <span className="text-sm text-zinc-600 dark:text-zinc-400">
-        {children || "CMD + K"}
+        {/* The icon already shows ⌘, so the default label is just the key. */}
+        {children || (
+          <kbd className="font-sans">
+            <span className="sr-only">Command </span>K
+          </kbd>
+        )}
       </span>
       {/* Snaps back on leave instead of sweeping back across the label. */}
       <span
