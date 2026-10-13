@@ -11,7 +11,7 @@
  */
 
 import { UploadCloud } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   type DragEvent,
   useCallback,
@@ -48,7 +48,7 @@ interface FileUploadProps {
   maxFileSize?: number;
   currentFile?: File | null;
   onFileRemove?: () => void;
-  /** Duration in milliseconds for the upload simulation. Defaults to 2000ms (2s), 0 for no simulation */
+  /** Duration in milliseconds of the simulated upload used without `onUpload`. Defaults to 2000ms; 0 completes immediately. */
   uploadDelay?: number;
   validateFile?: (file: File) => FileError | null;
   className?: string;
@@ -88,10 +88,35 @@ const matchesAcceptedType = (file: File, acceptedType: string): boolean => {
   return fileType === accepted;
 };
 
+// Labels for the hint line: ".pdf" -> "PDF", "image/svg+xml" -> "SVG",
+// "image/*" -> "any image".
+const describeAcceptedType = (acceptedType: string): string => {
+  const accepted = acceptedType.trim();
+  if (accepted.startsWith(".")) {
+    return accepted.slice(1).toUpperCase();
+  }
+  const [kind = "", subtype = ""] = accepted.split("/");
+  if (subtype === "*") {
+    return `any ${kind.toLowerCase()}`;
+  }
+  return subtype.split("+")[0].toUpperCase();
+};
+
+const describeAcceptedTypes = (acceptedTypes: string[]): string => {
+  const labels = acceptedTypes.map(describeAcceptedType).filter(Boolean);
+  const text = labels.length ? labels.join(", ") : "any file";
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
 const clampProgress = (value: number) => Math.min(Math.max(value, 0), 100);
 
+// Module constant, so the default does not change identity every render.
+const NO_ACCEPTED_TYPES: string[] = [];
+
 const formatBytes = (bytes: number, decimals = 2): string => {
-  if (!+bytes) return "0 Bytes";
+  if (!+bytes) {
+    return "0 Bytes";
+  }
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -101,103 +126,130 @@ const formatBytes = (bytes: number, decimals = 2): string => {
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
-// SMIL animations ignore prefers-reduced-motion, so freeze them on their
-// first frame. A ref callback runs after hydration, so markup is unaffected.
-const pauseSmilForReducedMotion = (svg: SVGSVGElement | null) => {
-  if (svg && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    svg.pauseAnimations();
-    svg.setCurrentTime(0);
-  }
-};
+// The illustration rests on its first frame and only bobs while a file is
+// dragged over the card. SMIL ignores prefers-reduced-motion, so that is
+// checked here too. Pausing happens in an effect, so markup is unaffected.
+const UploadIllustration = ({ animate }: { animate: boolean }) => {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const shouldReduceMotion = useReducedMotion();
 
-const UploadIllustration = () => (
-  <div className="relative h-16 w-16">
-    <svg
-      aria-label="Upload illustration"
-      className="h-full w-full"
-      fill="none"
-      ref={pauseSmilForReducedMotion}
-      viewBox="0 0 100 100"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <title>Upload File Illustration</title>
-      <circle
-        className="stroke-gray-200 dark:stroke-gray-700"
-        cx="50"
-        cy="50"
-        r="45"
-        strokeDasharray="4 4"
-        strokeWidth="2"
-      >
-        <animateTransform
-          attributeName="transform"
-          dur="60s"
-          from="0 50 50"
-          repeatCount="indefinite"
-          to="360 50 50"
-          type="rotate"
-        />
-      </circle>
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) {
+      return;
+    }
+    if (animate && !shouldReduceMotion) {
+      svg.unpauseAnimations();
+    } else {
+      svg.pauseAnimations();
+      svg.setCurrentTime(0);
+    }
+  }, [animate, shouldReduceMotion]);
 
-      <path
-        className="fill-blue-100 stroke-blue-500 dark:fill-blue-900/30 dark:stroke-blue-400"
-        d="M30 35H70C75 35 75 40 75 40V65C75 70 70 70 70 70H30C25 70 25 65 25 65V40C25 35 30 35 30 35Z"
-        strokeWidth="2"
+  return (
+    <div className="relative h-16 w-16">
+      <svg
+        aria-hidden="true"
+        className="h-full w-full"
+        fill="none"
+        ref={svgRef}
+        viewBox="0 0 100 100"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <animate
-          attributeName="d"
-          dur="2s"
-          repeatCount="indefinite"
-          values="
+        <circle
+          className="stroke-gray-200 dark:stroke-gray-700"
+          cx="50"
+          cy="50"
+          r="45"
+          strokeDasharray="4 4"
+          strokeWidth="2"
+        >
+          <animateTransform
+            attributeName="transform"
+            dur="60s"
+            from="0 50 50"
+            repeatCount="indefinite"
+            to="360 50 50"
+            type="rotate"
+          />
+        </circle>
+
+        <path
+          className="fill-blue-100 stroke-blue-500 dark:fill-blue-900/30 dark:stroke-blue-400"
+          d="M30 35H70C75 35 75 40 75 40V65C75 70 70 70 70 70H30C25 70 25 65 25 65V40C25 35 30 35 30 35Z"
+          strokeWidth="2"
+        >
+          <animate
+            attributeName="d"
+            dur="2s"
+            repeatCount="indefinite"
+            values="
                         M30 35H70C75 35 75 40 75 40V65C75 70 70 70 70 70H30C25 70 25 65 25 65V40C25 35 30 35 30 35Z;
                         M30 38H70C75 38 75 43 75 43V68C75 73 70 73 70 73H30C25 73 25 68 25 68V43C25 38 30 38 30 38Z;
                         M30 35H70C75 35 75 40 75 40V65C75 70 70 70 70 70H30C25 70 25 65 25 65V40C25 35 30 35 30 35Z"
-        />
-      </path>
-
-      <path
-        className="stroke-blue-500 dark:stroke-blue-400"
-        d="M30 35C30 35 35 35 40 35C45 35 45 30 50 30C55 30 55 35 60 35C65 35 70 35 70 35"
-        fill="none"
-        strokeWidth="2"
-      />
-
-      <g className="translate-y-2">
-        <line
-          className="stroke-blue-500 dark:stroke-blue-400"
-          strokeLinecap="round"
-          strokeWidth="2"
-          x1="50"
-          x2="50"
-          y1="45"
-          y2="60"
-        >
-          <animate
-            attributeName="y2"
-            dur="2s"
-            repeatCount="indefinite"
-            values="60;55;60"
           />
-        </line>
-        <polyline
+        </path>
+
+        <path
           className="stroke-blue-500 dark:stroke-blue-400"
+          d="M30 35C30 35 35 35 40 35C45 35 45 30 50 30C55 30 55 35 60 35C65 35 70 35 70 35"
           fill="none"
-          points="42,52 50,45 58,52"
-          strokeLinecap="round"
-          strokeLinejoin="round"
           strokeWidth="2"
-        >
-          <animate
-            attributeName="points"
-            dur="2s"
-            repeatCount="indefinite"
-            values="42,52 50,45 58,52;42,47 50,40 58,47;42,52 50,45 58,52"
-          />
-        </polyline>
-      </g>
-    </svg>
-  </div>
-);
+        />
+
+        <g className="translate-y-2">
+          <line
+            className="stroke-blue-500 dark:stroke-blue-400"
+            strokeLinecap="round"
+            strokeWidth="2"
+            x1="50"
+            x2="50"
+            y1="45"
+            y2="60"
+          >
+            <animate
+              attributeName="y2"
+              dur="2s"
+              repeatCount="indefinite"
+              values="60;55;60"
+            />
+          </line>
+          <polyline
+            className="stroke-blue-500 dark:stroke-blue-400"
+            fill="none"
+            points="42,52 50,45 58,52"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          >
+            <animate
+              attributeName="points"
+              dur="2s"
+              repeatCount="indefinite"
+              values="42,52 50,45 58,52;42,47 50,40 58,47;42,52 50,45 58,52"
+            />
+          </polyline>
+        </g>
+      </svg>
+    </div>
+  );
+};
+
+// Concentric rings that spin in alternating directions, phase-shifted by a
+// short delay. The progress mask reveals them as the upload advances.
+const PROGRESS_RINGS = [
+  { r: 120, stroke: "#FF3D71", delay: 0 },
+  { r: 110, stroke: "#4ADE80", delay: 0.2 },
+  { r: 100, stroke: "#2196F3", delay: 0.3 },
+  { r: 90, stroke: "#FFA726", delay: 0.2 },
+  { r: 80, stroke: "#FF1493", delay: 0.5 },
+  { r: 70, stroke: "#FFEB3B", delay: 0.3 },
+  { r: 60, stroke: "#00BCD4", delay: 0.7 },
+  { r: 50, stroke: "#FF4081", delay: 0.2 },
+  { r: 40, stroke: "#76FF03", delay: 0.3 },
+  { r: 30, stroke: "#448AFF", delay: 0.5 },
+  { r: 20, stroke: "#FF3D00", delay: 0 },
+] as const;
 
 const UploadingAnimation = ({
   progress,
@@ -206,16 +258,21 @@ const UploadingAnimation = ({
   progress: number;
   maskId: string;
 }) => (
-  <div className="relative h-16 w-16">
+  <div
+    aria-label="Upload progress"
+    aria-valuemax={100}
+    aria-valuemin={0}
+    aria-valuenow={Math.round(progress)}
+    className="relative h-16 w-16"
+    role="progressbar"
+  >
     <svg
-      aria-label={`Upload progress: ${Math.round(progress)}%`}
+      aria-hidden="true"
       className="h-full w-full"
       fill="none"
       viewBox="0 0 240 240"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <title>Upload Progress Indicator</title>
-
       <defs>
         <mask id={maskId}>
           <rect fill="black" height="240" width="240" />
@@ -235,59 +292,23 @@ const UploadingAnimation = ({
         </mask>
       </defs>
 
-      <style>
-        {`
-                    @keyframes rotate-cw {
-                        from { transform: rotate(0deg); }
-                        to { transform: rotate(360deg); }
-                    }
-                    @keyframes rotate-ccw {
-                        from { transform: rotate(360deg); }
-                        to { transform: rotate(0deg); }
-                    }
-                    .g-spin circle {
-                        transform-origin: 120px 120px;
-                    }
-                    .g-spin circle:nth-child(1) { animation: rotate-cw 8s linear infinite; }
-                    .g-spin circle:nth-child(2) { animation: rotate-ccw 8s linear infinite; }
-                    .g-spin circle:nth-child(3) { animation: rotate-cw 8s linear infinite; }
-                    .g-spin circle:nth-child(4) { animation: rotate-ccw 8s linear infinite; }
-                    .g-spin circle:nth-child(5) { animation: rotate-cw 8s linear infinite; }
-                    .g-spin circle:nth-child(6) { animation: rotate-ccw 8s linear infinite; }
-                    .g-spin circle:nth-child(7) { animation: rotate-cw 8s linear infinite; }
-                    .g-spin circle:nth-child(8) { animation: rotate-ccw 8s linear infinite; }
-                    .g-spin circle:nth-child(9) { animation: rotate-cw 8s linear infinite; }
-                    .g-spin circle:nth-child(10) { animation: rotate-ccw 8s linear infinite; }
-                    .g-spin circle:nth-child(11) { animation: rotate-cw 8s linear infinite; }
-
-                    .g-spin circle:nth-child(2n) { animation-delay: 0.2s; }
-                    .g-spin circle:nth-child(3n) { animation-delay: 0.3s; }
-                    .g-spin circle:nth-child(5n) { animation-delay: 0.5s; }
-                    .g-spin circle:nth-child(7n) { animation-delay: 0.7s; }
-
-                    @media (prefers-reduced-motion: reduce) {
-                        .g-spin circle:nth-child(n) { animation: none; }
-                    }
-                `}
-      </style>
-
-      <g
-        className="g-spin"
-        mask={`url(#${maskId})`}
-        strokeDasharray="18% 40%"
-        strokeWidth="10"
-      >
-        <circle cx="120" cy="120" opacity="0.95" r="120" stroke="#FF3D71" />
-        <circle cx="120" cy="120" opacity="0.95" r="110" stroke="#4ADE80" />
-        <circle cx="120" cy="120" opacity="0.95" r="100" stroke="#2196F3" />
-        <circle cx="120" cy="120" opacity="0.95" r="90" stroke="#FFA726" />
-        <circle cx="120" cy="120" opacity="0.95" r="80" stroke="#FF1493" />
-        <circle cx="120" cy="120" opacity="0.95" r="70" stroke="#FFEB3B" />
-        <circle cx="120" cy="120" opacity="0.95" r="60" stroke="#00BCD4" />
-        <circle cx="120" cy="120" opacity="0.95" r="50" stroke="#FF4081" />
-        <circle cx="120" cy="120" opacity="0.95" r="40" stroke="#76FF03" />
-        <circle cx="120" cy="120" opacity="0.95" r="30" stroke="#448AFF" />
-        <circle cx="120" cy="120" opacity="0.95" r="20" stroke="#FF3D00" />
+      <g mask={`url(#${maskId})`} strokeDasharray="18% 40%" strokeWidth="10">
+        {PROGRESS_RINGS.map((ring, i) => (
+          <circle
+            className="origin-[120px_120px] animate-spin motion-reduce:animate-none"
+            cx="120"
+            cy="120"
+            key={ring.r}
+            opacity="0.95"
+            r={ring.r}
+            stroke={ring.stroke}
+            style={{
+              animationDelay: `${ring.delay}s`,
+              animationDirection: i % 2 === 0 ? "normal" : "reverse",
+              animationDuration: "8s",
+            }}
+          />
+        ))}
       </g>
     </svg>
   </div>
@@ -295,14 +316,14 @@ const UploadingAnimation = ({
 
 export default function FileUpload({
   onUpload,
-  onUploadSuccess = () => {},
-  onUploadError = () => {},
-  acceptedFileTypes = [],
+  onUploadSuccess,
+  onUploadError,
+  acceptedFileTypes = NO_ACCEPTED_TYPES,
   maxFileSize = DEFAULT_MAX_FILE_SIZE,
   currentFile: initialFile = null,
   onFileRemove,
   uploadDelay = 2000,
-  validateFile = () => null,
+  validateFile,
   className,
 }: FileUploadProps) {
   const [file, setFile] = useState<File | null>(initialFile);
@@ -311,7 +332,7 @@ export default function FileUpload({
   const [error, setError] = useState<FileError | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const progressMaskId = useId();
-  const uploadIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const uploadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const uploadAbortRef = useRef<AbortController | null>(null);
   const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -436,6 +457,10 @@ export default function FileUpload({
       }
 
       // Demo fallback: simulate an upload over `uploadDelay`.
+      if (uploadDelay <= 0) {
+        completeUpload();
+        return;
+      }
       let currentProgress = 0;
       uploadIntervalRef.current = setInterval(
         () => {
@@ -504,16 +529,16 @@ export default function FileUpload({
   );
 
   // The drag handlers sit on the always-mounted card so `preventDefault` runs
-  // in every state; otherwise dropping during an upload or an error makes the
-  // browser open the file.
-  const canDrop = status === "idle" || status === "dragging";
+  // in every state; otherwise dropping during an upload makes the browser
+  // open the file. The drop zone stays usable while an error shows.
+  const canDrop = status !== "uploading";
 
   const handleDragOver = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       e.stopPropagation();
       e.dataTransfer.dropEffect = canDrop ? "copy" : "none";
-      if (status === "idle") {
+      if (status === "idle" || status === "error") {
         setStatus("dragging");
       }
     },
@@ -576,11 +601,7 @@ export default function FileUpload({
   }, [cancelUpload, onFileRemove]);
 
   return (
-    <div
-      aria-label="File upload"
-      className={cn("relative mx-auto w-full max-w-sm", className)}
-      role="complementary"
-    >
+    <div className={cn("relative mx-auto w-full max-w-sm", className)}>
       {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions: pointer drop target; keyboard users have the Upload File button */}
       <div
         className="group relative w-full rounded-xl bg-white p-0.5 ring-1 ring-gray-200 dark:bg-black dark:ring-white/10"
@@ -611,11 +632,9 @@ export default function FileUpload({
               <div className="absolute inset-[20%] rounded-lg bg-blue-500/5" />
             </div>
 
-            <div className="absolute -top-4 -right-4 h-8 w-8 bg-gradient-to-br from-blue-500/20 to-transparent opacity-0 blur-md transition-opacity duration-500 group-hover:opacity-100" />
-
             <div className="relative h-[240px]">
               <AnimatePresence mode="wait">
-                {(status === "idle" || status === "dragging") && (
+                {status !== "uploading" && (
                   <motion.div
                     animate={{
                       opacity: status === "dragging" ? 0.8 : 1,
@@ -630,10 +649,10 @@ export default function FileUpload({
                     }}
                     initial={{ opacity: 0, y: 10 }}
                     key="dropzone"
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.2, ease: EASE_OUT }}
                   >
                     <div className="mb-4">
-                      <UploadIllustration />
+                      <UploadIllustration animate={status === "dragging"} />
                     </div>
 
                     <div className="mb-4 space-y-1.5 text-center">
@@ -641,13 +660,10 @@ export default function FileUpload({
                         Drag and drop or
                       </h3>
                       <p className="text-gray-500 text-xs dark:text-gray-400">
-                        {acceptedFileTypes?.length
-                          ? `${acceptedFileTypes
-                              .map((t) => t.split("/")[1])
-                              .join(", ")
-                              .toUpperCase()}`
-                          : "SVG, PNG, JPG or GIF"}{" "}
-                        {maxFileSize && `up to ${formatBytes(maxFileSize)}`}
+                        {describeAcceptedTypes(acceptedFileTypes)}
+                        {maxFileSize > 0 &&
+                          Number.isFinite(maxFileSize) &&
+                          ` up to ${formatBytes(maxFileSize)}`}
                       </p>
                     </div>
 
@@ -660,14 +676,26 @@ export default function FileUpload({
                       <UploadCloud className="h-4 w-4 transition-transform duration-200 motion-safe:group-hover/button:scale-110" />
                     </button>
 
-                    <p className="mt-3 text-gray-500 text-xs dark:text-gray-400">
-                      or drag and drop your file here
-                    </p>
+                    {/* The error replaces this line, so the drop zone stays
+                        usable and the layout does not shift. */}
+                    {error ? (
+                      <p
+                        className="mt-3 text-center text-red-500 text-xs dark:text-red-400"
+                        role="alert"
+                      >
+                        {error.message}
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-gray-500 text-xs dark:text-gray-400">
+                        or drag and drop your file here
+                      </p>
+                    )}
 
+                    {/* Hidden: the Upload File button opens it, so it adds
+                        no extra tab stop. */}
                     <input
-                      accept={acceptedFileTypes?.join(",")}
-                      aria-label="File input"
-                      className="sr-only"
+                      accept={acceptedFileTypes.join(",")}
+                      className="hidden"
                       onChange={handleFileInputChange}
                       ref={fileInputRef}
                       type="file"
@@ -719,26 +747,6 @@ export default function FileUpload({
                 )}
               </AnimatePresence>
             </div>
-
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  animate={{ opacity: 1, y: 0 }}
-                  className="motion-reduce:transform-none! absolute bottom-4 left-1/2 -translate-x-1/2 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2"
-                  exit={{
-                    opacity: 0,
-                    y: -10,
-                    transition: { duration: 0.12, ease: EASE_OUT },
-                  }}
-                  initial={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.2, ease: EASE_OUT }}
-                >
-                  <p className="text-red-500 text-sm dark:text-red-400">
-                    {error.message}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </div>
       </div>
