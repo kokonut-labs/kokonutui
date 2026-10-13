@@ -79,6 +79,33 @@ const THEMES: Record<ColorTheme, ThemeConfig> = {
 /** Simulated steps drawn up front for the still frame shown with reduced motion. */
 const STILL_FRAME_STEPS = 40;
 
+/** The field steps at 60 Hz whatever the display's refresh rate. */
+const STEP_MS = 1000 / 60;
+/** A step is taken this early, so frame jitter at 60 Hz never skips one. */
+const STEP_TOLERANCE_MS = 2;
+const MAX_STEPS_PER_FRAME = 3;
+
+// Particle colours are quantised to whole hue degrees and 1% alpha steps, and
+// each colour string is built once, instead of one new string per particle
+// per frame.
+const fillStyles = new Map<number, string>();
+const getFillStyle = (
+  hue: number,
+  saturation: number,
+  lightness: number,
+  alpha: number
+) => {
+  const h = Math.round(hue) % 360;
+  const a = Math.round(alpha * 100);
+  const key = ((h * 101 + a) * 101 + saturation) * 101 + lightness;
+  let style = fillStyles.get(key);
+  if (!style) {
+    style = `hsla(${h}, ${saturation}%, ${lightness}%, ${a / 100})`;
+    fillStyles.set(key, style);
+  }
+  return style;
+};
+
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 /**
@@ -143,8 +170,21 @@ function stepParticle(
 
   ctx.beginPath();
   ctx.arc(p.x, p.y, 1.3, 0, Math.PI * 2);
-  ctx.fillStyle = `hsla(${hueMod}, ${cfg.saturation}%, ${cfg.lightness}%, ${alpha})`;
+  ctx.fillStyle = getFillStyle(hueMod, cfg.saturation, cfg.lightness, alpha);
   ctx.fill();
+}
+
+/** Keeps each particle at the same relative position in a resized field. */
+function rescaleParticles(
+  particles: Particle[],
+  scaleX: number,
+  scaleY: number
+) {
+  for (const p of particles) {
+    p.x *= scaleX;
+    p.y *= scaleY;
+  }
+  return particles;
 }
 
 function DefaultContent() {
@@ -199,6 +239,12 @@ export default function FlowField({
       return;
     }
 
+    // Sized from the wrapper around the canvas, which fills the component.
+    const container = canvas.parentElement;
+    if (!container) {
+      return;
+    }
+
     const cfg = THEMES[theme];
     const count = PARTICLE_COUNTS[density];
     const dpr = window.devicePixelRatio ?? 1;
@@ -207,6 +253,8 @@ export default function FlowField({
     let height = 0;
     let animId = 0;
     let time = 0;
+    let lastFrameTime = 0;
+    let pendingMs = 0;
     let particles: Particle[] = [];
 
     const spawnParticle = (): Particle => {
@@ -233,38 +281,72 @@ export default function FlowField({
       }
     };
 
+    // Reduced motion: simulate a few steps up front so the still frame shows
+    // short trails, then never start the loop.
+    const drawStillFrame = () => {
+      for (let i = 0; i < STILL_FRAME_STEPS; i++) {
+        step();
+      }
+    };
+
     const resize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
+      const nextWidth = container.clientWidth;
+      const nextHeight = container.clientHeight;
+      if (nextWidth === width && nextHeight === height) {
+        return;
+      }
+
+      // An existing field is rescaled rather than re-seeded, so a resize does
+      // not reshuffle every particle.
+      const canRescale = particles.length > 0 && width > 0 && height > 0;
+      const scaleX = nextWidth / width;
+      const scaleY = nextHeight / height;
+      width = nextWidth;
+      height = nextHeight;
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
       ctx.scale(dpr, dpr);
 
       // Fill dark base on resize
       ctx.fillStyle = `rgb(${cfg.bg})`;
       ctx.fillRect(0, 0, width, height);
 
-      // Re-seed particles spread across the canvas
-      particles = Array.from({ length: count }, spawnParticle);
+      particles = canRescale
+        ? rescaleParticles(particles, scaleX, scaleY)
+        : Array.from({ length: count }, spawnParticle);
 
-      // Reduced motion: simulate a few steps up front so the still frame
-      // shows short trails, then never start the loop.
       if (shouldReduceMotion) {
-        for (let i = 0; i < STILL_FRAME_STEPS; i++) {
-          step();
-        }
+        drawStillFrame();
       }
     };
 
-    const render = () => {
-      step();
+    // Fixed 60 Hz steps: a 120 Hz display draws every other frame instead of
+    // running the field (and fading the trails) twice as fast.
+    const render = (now: number) => {
+      pendingMs = lastFrameTime
+        ? pendingMs + Math.min(now - lastFrameTime, 100)
+        : STEP_MS;
+      lastFrameTime = now;
+
+      let steps = 0;
+      while (
+        pendingMs >= STEP_MS - STEP_TOLERANCE_MS &&
+        steps < MAX_STEPS_PER_FRAME
+      ) {
+        step();
+        pendingMs -= STEP_MS;
+        steps++;
+      }
+      if (steps === MAX_STEPS_PER_FRAME) {
+        pendingMs = 0;
+      }
+
       animId = requestAnimationFrame(render);
     };
 
     resize();
-    window.addEventListener("resize", resize);
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(container);
 
     // Only animate while the field is on screen.
     const observer = shouldReduceMotion
@@ -272,6 +354,7 @@ export default function FlowField({
       : new IntersectionObserver(([entry]) => {
           cancelAnimationFrame(animId);
           if (entry?.isIntersecting) {
+            lastFrameTime = 0;
             animId = requestAnimationFrame(render);
           }
         });
@@ -280,7 +363,7 @@ export default function FlowField({
     return () => {
       cancelAnimationFrame(animId);
       observer?.disconnect();
-      window.removeEventListener("resize", resize);
+      resizeObserver.disconnect();
     };
   }, [theme, density, shouldReduceMotion]);
 
@@ -295,7 +378,7 @@ export default function FlowField({
       style={{ background: `rgb(${bgColor})` }}
     >
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <canvas ref={canvasRef} />
+        <canvas className="h-full w-full" ref={canvasRef} />
       </div>
 
       {/* Radial vignette — focuses center, dims edges */}
@@ -323,7 +406,8 @@ export default function FlowField({
         }}
       />
 
-      {children ?? <DefaultContent />}
+      {/* Pass children={null} for a bare background. */}
+      {children === undefined ? <DefaultContent /> : children}
     </div>
   );
 }
