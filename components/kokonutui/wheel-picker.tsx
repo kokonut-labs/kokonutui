@@ -413,7 +413,11 @@ function WheelColumnView({
   };
 
   // Wheel and trackpad scrolling turn the drum, then it settles on the
-  // nearest row once the scrolling stops.
+  // nearest row once the scrolling stops. The listener is attached once and
+  // reads the latest props through a ref, so a re-render mid-scroll (the
+  // drum crossing a row) can't drop the pending settle.
+  const wheel = useRef({ loop, count, goTo, clampIndex });
+  wheel.current = { loop, count, goTo, clampIndex };
   useEffect(() => {
     const node = columnRef.current;
     if (!node) {
@@ -422,23 +426,28 @@ function WheelColumnView({
     let timer: number | undefined;
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
+      const latest = wheel.current;
       animation.current?.stop();
       animation.current = null;
       pointerType.current = "mouse";
       const raw = position.get() + (event.deltaY / ITEM_HEIGHT) * 0.4;
-      position.set(loop ? raw : Math.min(Math.max(raw, -0.4), count - 1 + 0.4));
-      window.clearTimeout(timer);
-      timer = window.setTimeout(
-        () => goTo(clampIndex(Math.round(position.get()))),
-        120
+      position.set(
+        latest.loop
+          ? raw
+          : Math.min(Math.max(raw, -0.4), latest.count - 1 + 0.4)
       );
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const settled = wheel.current;
+        settled.goTo(settled.clampIndex(Math.round(position.get())));
+      }, 120);
     };
     node.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       node.removeEventListener("wheel", onWheel);
       window.clearTimeout(timer);
     };
-  });
+  }, [position]);
 
   const rows: number[] = [];
   for (let i = center - WINDOW; i <= center + WINDOW; i++) {

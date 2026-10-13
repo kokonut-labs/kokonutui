@@ -1,6 +1,6 @@
 ---
 title: Wheel Picker
-description: iOS-style 3D drum picker with flick momentum, looping columns, rubber-band ends and a selection band that recolors text exactly at its edge, built with React and Motion.
+description: iOS-style 3D drum picker with flick momentum, built with React and Motion.
 keywords: ["picker", "time picker", "date picker", "drum", "wheel", "select", "3d", "ios"]
 icon: ListOrdered
 full: false
@@ -12,7 +12,3 @@ import WheelPicker from "@/components/kokonutui/wheel-picker";
 <Preview link="wheel-picker" comment={["Motion"]}>
     <WheelPicker />
 </Preview>
-
-Each column is a real 3D cylinder: rows sit round it with `rotateX()` and `translateZ()`, and the whole drum turns with one transform. Flick a column and it spins, slows down and lands exactly on a row. Hours and minutes loop forever; AM/PM stops at its ends with a rubber-band bounce. Tap a row to turn to it, or use the scroll wheel.
-
-The drum is drawn twice: a muted copy, and a full-color copy clipped to the selection band, so each row turns dark exactly as it crosses the band's edge. With the keyboard, focus a column and use the arrow keys, Page Up/Down, Home and End.
