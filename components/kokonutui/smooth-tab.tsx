@@ -198,6 +198,7 @@ export default function SmoothTab({
   // Reference for the selected button
   const buttonRefs = React.useRef<Map<string, HTMLButtonElement>>(new Map());
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const baseId = React.useId();
 
   // Update dimensions whenever selected tab changes or on mount
   React.useLayoutEffect(() => {
@@ -234,23 +235,51 @@ export default function SmoothTab({
     onChange?.(tabId);
   };
 
+  // WAI-ARIA tabs pattern: arrows (wrapping), Home and End move focus and select
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLButtonElement>,
-    tabId: string
+    index: number
   ) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleTabClick(tabId);
+    let nextIndex: number;
+    switch (e.key) {
+      case "ArrowRight":
+        nextIndex = (index + 1) % items.length;
+        break;
+      case "ArrowLeft":
+        nextIndex = (index - 1 + items.length) % items.length;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = items.length - 1;
+        break;
+      default:
+        return;
     }
+    e.preventDefault();
+    const nextId = items[nextIndex].id;
+    buttonRefs.current.get(nextId)?.focus();
+    handleTabClick(nextId);
   };
 
   const selectedItem = items.find((item) => item.id === selected);
+  const selectedIndex = items.findIndex((item) => item.id === selected);
+  // Keep one tab reachable with Tab even if `selected` matches no item
+  const focusableIndex = Math.max(selectedIndex, 0);
+  const panelId = `${baseId}-panel`;
+  const getTabId = (index: number) => `${baseId}-tab-${index}`;
 
   return (
     <div className="flex h-full flex-col">
       {/* Card Content Area */}
       <div className="relative mb-4 flex-1">
-        <div className="relative h-[200px] w-full rounded-lg border bg-card">
+        <div
+          aria-labelledby={selectedItem ? getTabId(selectedIndex) : undefined}
+          className="relative h-[200px] w-full rounded-lg border bg-card"
+          id={panelId}
+          role="tabpanel"
+        >
           <div className="absolute inset-0 overflow-hidden rounded-lg">
             <AnimatePresence
               custom={direction}
@@ -319,11 +348,11 @@ export default function SmoothTab({
         />
 
         <div className="relative z-[2] grid w-full grid-cols-4 gap-1">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const isSelected = selected === item.id;
             return (
               <motion.button
-                aria-controls={`panel-${item.id}`}
+                aria-controls={isSelected ? panelId : undefined}
                 aria-selected={isSelected}
                 className={cn(
                   "relative flex items-center justify-center gap-0.5 rounded-lg px-2 py-1.5",
@@ -334,16 +363,16 @@ export default function SmoothTab({
                     ? "text-white"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 )}
-                id={`tab-${item.id}`}
+                id={getTabId(index)}
                 key={item.id}
                 onClick={() => handleTabClick(item.id)}
-                onKeyDown={(e) => handleKeyDown(e, item.id)}
+                onKeyDown={(e) => handleKeyDown(e, index)}
                 ref={(el) => {
                   if (el) buttonRefs.current.set(item.id, el);
                   else buttonRefs.current.delete(item.id);
                 }}
                 role="tab"
-                tabIndex={isSelected ? 0 : -1}
+                tabIndex={index === focusableIndex ? 0 : -1}
                 type="button"
               >
                 <span className="truncate">{item.title}</span>
