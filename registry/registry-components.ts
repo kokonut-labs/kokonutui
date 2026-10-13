@@ -245,6 +245,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "detent-dial",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/detent-dial.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "switch-button",
     type: "registry:component",
     dependencies: ["lucide-react"],
