@@ -104,41 +104,30 @@ const MatrixText = ({
 
   const motionVariants = useMemo(
     () => ({
-      // initial: {
-      //     color: "rgb(var(--foreground-rgb))",
-      // },
       matrix: {
         color: "#00ff00",
         textShadow: "0 2px 4px rgba(0, 255, 0, 0.5)",
       },
-      // normal: {
-      //     color: "rgb(var(--foreground-rgb))",
-      //     textShadow: "none",
-      // },
     }),
     []
   );
 
   return (
     <div
-      aria-label="Matrix text animation"
       className={cn(
         "flex min-h-screen items-center justify-center text-black dark:text-white",
         className
       )}
     >
-      <div className="flex h-24 items-center justify-center">
-        <div className="flex flex-wrap items-center justify-center">
+      <span className="sr-only">{text}</span>
+      <div aria-hidden="true" className="flex h-24 items-center justify-center">
+        <div className="flex flex-wrap items-center justify-center motion-reduce:hidden">
           {letters.map((letter, index) => (
             <motion.div
               animate={letter.isMatrix ? "matrix" : "normal"}
               className="w-[1ch] overflow-hidden text-center font-mono text-4xl md:text-6xl"
               initial="initial"
               key={`${index}-${letter.char}`}
-              style={{
-                display: "inline-block",
-                fontVariantNumeric: "tabular-nums",
-              }}
               transition={{
                 duration: 0.1,
                 ease: "easeInOut",
@@ -148,6 +137,10 @@ const MatrixText = ({
               {letter.isSpace ? "\u00A0" : letter.char}
             </motion.div>
           ))}
+        </div>
+        {/* Reduced motion shows the final text instead of the glyph flicker. */}
+        <div className="hidden whitespace-pre-wrap text-center font-mono text-4xl motion-reduce:block md:text-6xl">
+          {text}
         </div>
       </div>
     </div>

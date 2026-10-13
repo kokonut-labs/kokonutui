@@ -10,34 +10,80 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion } from "motion/react";
-import { memo, useMemo } from "react";
+import { MotionConfig, motion, useInView } from "motion/react";
+import { useId, useRef } from "react";
 
 interface Point {
   x: number;
   y: number;
 }
 
-interface PathData {
-  id: string;
-  d: string;
-  opacity: number;
-  width: number;
+interface WaveLayerConfig {
+  type: "primary" | "secondary" | "accent";
+  count: number;
+  amplitude: number;
+  segments: number;
+  /** Vertical drift of the whole layer, in viewBox units. */
+  drift: number;
+  /** Seconds per drift cycle. */
   duration: number;
-  delay: number;
+  /** Opacity of the whole layer. */
+  opacity: number;
+  opacityBase: number;
+  opacityStep: number;
+  widthBase: number;
+  widthStep: number;
 }
 
-// Path generation function
+const WAVE_LAYERS: WaveLayerConfig[] = [
+  {
+    type: "primary",
+    count: 12,
+    amplitude: 150,
+    segments: 10,
+    drift: 15,
+    duration: 8,
+    opacity: 1,
+    opacityBase: 0.15,
+    opacityStep: 0.02,
+    widthBase: 4,
+    widthStep: 0.3,
+  },
+  {
+    type: "secondary",
+    count: 15,
+    amplitude: 100,
+    segments: 8,
+    drift: 10,
+    duration: 6,
+    opacity: 0.8,
+    opacityBase: 0.12,
+    opacityStep: 0.015,
+    widthBase: 3,
+    widthStep: 0.25,
+  },
+  {
+    type: "accent",
+    count: 10,
+    amplitude: 60,
+    segments: 6,
+    drift: 5,
+    duration: 4,
+    opacity: 0.6,
+    opacityBase: 0.08,
+    opacityStep: 0.12,
+    widthBase: 2,
+    widthStep: 0.2,
+  },
+];
+
 function generateAestheticPath(
   index: number,
-  position: number,
-  type: "primary" | "secondary" | "accent"
+  baseAmplitude: number,
+  segments: number
 ): string {
-  const baseAmplitude =
-    type === "primary" ? 150 : type === "secondary" ? 100 : 60;
   const phase = index * 0.2;
   const points: Point[] = [];
-  const segments = type === "primary" ? 10 : type === "secondary" ? 8 : 6;
 
   const startX = 2400;
   const startY = 800;
@@ -63,228 +109,131 @@ function generateAestheticPath(
       (baseAmplitude * 0.2 * amplitudeFactor);
 
     points.push({
-      x: baseX * position,
+      x: baseX,
       y: baseY + wave1 + wave2 + wave3,
     });
   }
 
+  // Math.sin/cos can differ in the last digits between the server and the
+  // browser, so round the coordinates to keep the SSR markup identical.
+  const f = (n: number) => n.toFixed(1);
+
   const pathCommands = points.map((point: Point, i: number) => {
-    if (i === 0) return `M ${point.x} ${point.y}`;
+    if (i === 0) {
+      return `M ${f(point.x)} ${f(point.y)}`;
+    }
     const prevPoint = points[i - 1];
     const tension = 0.4;
     const cp1x = prevPoint.x + (point.x - prevPoint.x) * tension;
     const cp1y = prevPoint.y;
     const cp2x = prevPoint.x + (point.x - prevPoint.x) * (1 - tension);
     const cp2y = point.y;
-    return `C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${point.x} ${point.y}`;
+    return `C ${f(cp1x)} ${f(cp1y)}, ${f(cp2x)} ${f(cp2y)}, ${f(point.x)} ${f(point.y)}`;
   });
 
   return pathCommands.join(" ");
 }
 
-const generateUniqueId = (prefix: string): string =>
-  `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
+// The paths are deterministic, so they are built once for every instance.
+const LAYERS = WAVE_LAYERS.map((layer) => ({
+  ...layer,
+  paths: Array.from({ length: layer.count }, (_, i) => ({
+    id: `${layer.type}-${i}`,
+    d: generateAestheticPath(i, layer.amplitude, layer.segments),
+    opacity: Math.min(layer.opacityBase + i * layer.opacityStep, 1),
+    width: layer.widthBase + i * layer.widthStep,
+  })),
+}));
 
-// Memoized FloatingPaths component
-const FloatingPaths = memo(function FloatingPaths({
-  position,
-}: {
-  position: number;
-}) {
-  // Increased number of paths while maintaining optimization
-  const primaryPaths: PathData[] = useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, i) => ({
-        id: generateUniqueId("primary"),
-        d: generateAestheticPath(i, position, "primary"),
-        opacity: 0.15 + i * 0.02,
-        width: 4 + i * 0.3,
-        duration: 25,
-        delay: 0,
-      })),
-    [position]
-  );
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
-  const secondaryPaths: PathData[] = useMemo(
-    () =>
-      Array.from({ length: 15 }, (_, i) => ({
-        id: generateUniqueId("secondary"),
-        d: generateAestheticPath(i, position, "secondary"),
-        opacity: 0.12 + i * 0.015,
-        width: 3 + i * 0.25,
-        duration: 20,
-        delay: 0,
-      })),
-    [position]
-  );
-
-  const accentPaths: PathData[] = useMemo(
-    () =>
-      Array.from({ length: 10 }, (_, i) => ({
-        id: generateUniqueId("accent"),
-        d: generateAestheticPath(i, position, "accent"),
-        opacity: 0.08 + i * 0.12,
-        width: 2 + i * 0.2,
-        duration: 15,
-        delay: 0,
-      })),
-    [position]
-  );
-
-  // Shared animation configuration
-  const sharedAnimationProps = {
-    opacity: 1,
-    scale: 1,
-  };
-  const sharedTransition = {
-    opacity: { duration: 1 },
-    scale: { duration: 1 },
-  };
+function FloatingPaths() {
+  const ref = useRef<HTMLDivElement>(null);
+  // Drift only while on screen.
+  const drifting = useInView(ref);
+  const gradientId = useId();
 
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      ref={ref}
+    >
       <svg
-        className="h-full w-full text-slate-950/40 dark:text-white/40"
+        aria-hidden="true"
+        className="h-full w-full"
         fill="none"
         preserveAspectRatio="xMidYMid slice"
         viewBox="-2400 -800 4800 1600"
       >
-        <title>Background Paths</title>
         <defs>
-          <linearGradient id="sharedGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+          <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="0%">
             <stop offset="0%" stopColor="rgba(147, 51, 234, 0.5)" />
             <stop offset="50%" stopColor="rgba(236, 72, 153, 0.5)" />
             <stop offset="100%" stopColor="rgba(59, 130, 246, 0.5)" />
           </linearGradient>
         </defs>
 
-        <g className="primary-waves">
-          {primaryPaths.map((path) => (
-            <motion.path
-              animate={{
-                ...sharedAnimationProps,
-                y: [0, -15, 0],
-              }}
-              d={path.d}
-              initial={{ opacity: 0, scale: 0.8 }}
-              key={path.id}
-              stroke="url(#sharedGradient)"
-              strokeLinecap="round"
-              strokeWidth={path.width}
-              style={{ opacity: path.opacity }}
-              transition={{
-                ...sharedTransition,
-                y: {
-                  duration: 8,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "easeInOut",
-                  repeatType: "reverse",
-                },
-              }}
-            />
-          ))}
-        </g>
-
-        <g className="secondary-waves" style={{ opacity: 0.8 }}>
-          {secondaryPaths.map((path) => (
-            <motion.path
-              animate={{
-                ...sharedAnimationProps,
-                y: [0, -10, 0],
-              }}
-              d={path.d}
-              initial={{ opacity: 0, scale: 0.9 }}
-              key={path.id}
-              stroke="url(#sharedGradient)"
-              strokeLinecap="round"
-              strokeWidth={path.width}
-              style={{ opacity: path.opacity }}
-              transition={{
-                ...sharedTransition,
-                y: {
-                  duration: 6,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "easeInOut",
-                  repeatType: "reverse",
-                },
-              }}
-            />
-          ))}
-        </g>
-
-        <g className="accent-waves" style={{ opacity: 0.6 }}>
-          {accentPaths.map((path) => (
-            <motion.path
-              animate={{
-                ...sharedAnimationProps,
-                y: [0, -5, 0],
-              }}
-              d={path.d}
-              initial={{ opacity: 0, scale: 0.95 }}
-              key={path.id}
-              stroke="url(#sharedGradient)"
-              strokeLinecap="round"
-              strokeWidth={path.width}
-              style={{ opacity: path.opacity }}
-              transition={{
-                ...sharedTransition,
-                y: {
-                  duration: 4,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "easeInOut",
-                  repeatType: "reverse",
-                },
-              }}
-            />
-          ))}
-        </g>
+        {/* One drift loop per layer: its paths always moved in lockstep. */}
+        {LAYERS.map((layer) => (
+          <motion.g
+            animate={{
+              opacity: layer.opacity,
+              y: drifting ? [0, -layer.drift, 0] : 0,
+            }}
+            initial={{ opacity: 0 }}
+            key={layer.type}
+            transition={{
+              opacity: { duration: 1, ease: EASE_OUT },
+              y: drifting
+                ? {
+                    duration: layer.duration,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }
+                : { duration: 0 },
+            }}
+          >
+            {layer.paths.map((path) => (
+              <path
+                d={path.d}
+                key={path.id}
+                opacity={path.opacity}
+                stroke={`url(#${gradientId})`}
+                strokeLinecap="round"
+                strokeWidth={path.width}
+              />
+            ))}
+          </motion.g>
+        ))}
       </svg>
     </div>
   );
-});
+}
 
-// Memoized AnimatedTitle component
-const AnimatedTitle = memo(function AnimatedTitle({
-  title,
-}: {
-  title: string;
-}) {
-  return (
-    <motion.h1
-      animate={{ opacity: 1, y: 0 }}
-      className="mb-8 bg-gradient-to-r from-neutral-800/90 to-neutral-600/90 bg-clip-text font-bold text-3xl text-transparent tracking-tighter sm:text-5xl md:text-5xl dark:from-white/90 dark:to-white/70"
-      initial={{ opacity: 0, y: 20 }}
-      transition={{
-        duration: 1.2,
-        ease: [0.2, 0.65, 0.3, 0.9],
-      }}
-    >
-      {title}
-    </motion.h1>
-  );
-});
-
-export default memo(function BackgroundPaths({
+export default function BackgroundPaths({
   title = "Background Paths",
 }: {
   title?: string;
 }) {
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-white dark:bg-neutral-950">
-      <div className="absolute inset-0">
-        <FloatingPaths position={1} />
-      </div>
+      {/* Reduced motion skips the drift and the title's rise; fades stay. */}
+      <MotionConfig reducedMotion="user">
+        <FloatingPaths />
 
-      <div className="container relative z-10 mx-auto px-4 text-center md:px-6">
-        <motion.div
-          animate={{ opacity: 1 }}
-          className="mx-auto max-w-4xl"
-          initial={{ opacity: 0 }}
-          transition={{ duration: 2 }}
-        >
-          <AnimatedTitle title={title} />
-        </motion.div>
-      </div>
+        <div className="container relative z-10 mx-auto px-4 text-center md:px-6">
+          <div className="mx-auto max-w-4xl">
+            <motion.h1
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 bg-gradient-to-r from-neutral-800/90 to-neutral-600/90 bg-clip-text font-bold text-3xl text-transparent tracking-tighter sm:text-5xl dark:from-white/90 dark:to-white/70"
+              initial={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.7, ease: EASE_OUT }}
+            >
+              {title}
+            </motion.h1>
+          </div>
+        </div>
+      </MotionConfig>
     </div>
   );
-});
+}

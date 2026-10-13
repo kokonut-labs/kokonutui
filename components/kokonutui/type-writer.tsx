@@ -10,16 +10,16 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
-type TypewriterSequence = {
+interface TypewriterSequence {
   text: string;
   deleteAfter?: boolean;
   pauseAfter?: number;
-};
+}
 
-type TypewriterTitleProps = {
+interface TypewriterTitleProps {
   sequences?: TypewriterSequence[];
   typingSpeed?: number;
   startDelay?: number;
@@ -28,13 +28,42 @@ type TypewriterTitleProps = {
   deleteSpeed?: number;
   pauseBeforeDelete?: number;
   naturalVariance?: boolean;
-};
+}
 
 const DEFAULT_SEQUENCES: TypewriterSequence[] = [
   { text: "Typewriter", deleteAfter: true },
   { text: "Multiple Words", deleteAfter: true },
   { text: "Auto Loop", deleteAfter: false },
 ];
+
+const NEXT_SEQUENCE_DELAY = 100;
+
+// The caret blink is a CSS animation so it runs off the main thread: solid
+// for the first third of the cycle, fades out, then stays hidden.
+const CARET_KEYFRAMES =
+  "@keyframes kokonutui-typewriter-caret { 0%, 33.333% { opacity: 1; } 66.667%, 100% { opacity: 0; } }";
+
+function getTypingDelay(typingSpeed: number, naturalVariance: boolean) {
+  if (!naturalVariance) {
+    return typingSpeed;
+  }
+
+  const random = Math.random();
+
+  // 10% chance of a hesitation, 10% chance of a burst.
+  if (random < 0.1) {
+    return typingSpeed * 2;
+  }
+  if (random > 0.9) {
+    return typingSpeed * 0.5;
+  }
+
+  // Otherwise +/- 40%.
+  const variance = 0.4;
+  const min = typingSpeed * (1 - variance);
+  const max = typingSpeed * (1 + variance);
+  return Math.random() * (max - min) + min;
+}
 
 export default function TypewriterTitle({
   sequences = DEFAULT_SEQUENCES,
@@ -50,105 +79,91 @@ export default function TypewriterTitle({
   const sequenceIndexRef = useRef(0);
   const charIndexRef = useRef(0);
   const isDeletingRef = useRef(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
-  // Initialize with the sequences provided
   const sequencesRef = useRef(sequences);
   useEffect(() => {
     sequencesRef.current = sequences;
   }, [sequences]);
 
   useEffect(() => {
-    const getTypingDelay = () => {
-      if (!naturalVariance) {
-        return typingSpeed;
+    // Reduced motion: show the final phrase, no typing loop.
+    if (shouldReduceMotion) {
+      setDisplayText(sequencesRef.current.at(-1)?.text ?? "");
+      return;
+    }
+
+    function schedule(callback: () => void, delay: number) {
+      timeoutRef.current = setTimeout(callback, delay);
+    }
+
+    function goToNextSequence(delay: number) {
+      const isLastSequence =
+        sequenceIndexRef.current === sequencesRef.current.length - 1;
+      if (isLastSequence && !autoLoop) {
+        return;
       }
 
-      // More natural human typing pattern
-      const random = Math.random();
+      schedule(
+        () => {
+          sequenceIndexRef.current = isLastSequence
+            ? 0
+            : sequenceIndexRef.current + 1;
+          charIndexRef.current = 0;
+          setDisplayText("");
+          runTypewriter();
+        },
+        isLastSequence ? loopDelay : delay
+      );
+    }
 
-      // 10% chance of a longer pause (thinking/hesitation)
-      if (random < 0.1) {
-        return typingSpeed * 2;
+    function deleteStep(text: string) {
+      if (charIndexRef.current > 0) {
+        charIndexRef.current -= 1;
+        setDisplayText(text.slice(0, charIndexRef.current));
+        schedule(runTypewriter, deleteSpeed);
+        return;
       }
 
-      // 10% chance of a burst (fast typing)
-      if (random > 0.9) {
-        return typingSpeed * 0.5;
+      isDeletingRef.current = false;
+      goToNextSequence(NEXT_SEQUENCE_DELAY);
+    }
+
+    function typeStep(sequence: TypewriterSequence) {
+      if (charIndexRef.current < sequence.text.length) {
+        charIndexRef.current += 1;
+        setDisplayText(sequence.text.slice(0, charIndexRef.current));
+        schedule(runTypewriter, getTypingDelay(typingSpeed, naturalVariance));
+        return;
       }
 
-      // Standard variance (+/- 40%)
-      const variance = 0.4;
-      const min = typingSpeed * (1 - variance);
-      const max = typingSpeed * (1 + variance);
-      return Math.random() * (max - min) + min;
-    };
+      const pauseDuration = sequence.pauseAfter ?? pauseBeforeDelete;
+      if (sequence.deleteAfter) {
+        schedule(() => {
+          isDeletingRef.current = true;
+          runTypewriter();
+        }, pauseDuration);
+        return;
+      }
 
-    const runTypewriter = () => {
+      goToNextSequence(pauseDuration);
+    }
+
+    function runTypewriter() {
       const currentSequence = sequencesRef.current[sequenceIndexRef.current];
       if (!currentSequence) {
         return;
       }
 
       if (isDeletingRef.current) {
-        if (charIndexRef.current > 0) {
-          charIndexRef.current -= 1;
-          setDisplayText(currentSequence.text.slice(0, charIndexRef.current));
-          timeoutRef.current = setTimeout(runTypewriter, deleteSpeed);
-        } else {
-          isDeletingRef.current = false;
-          const isLastSequence =
-            sequenceIndexRef.current === sequencesRef.current.length - 1;
-
-          if (isLastSequence && autoLoop) {
-            timeoutRef.current = setTimeout(() => {
-              sequenceIndexRef.current = 0;
-              runTypewriter();
-            }, loopDelay);
-          } else if (!isLastSequence) {
-            timeoutRef.current = setTimeout(() => {
-              sequenceIndexRef.current += 1;
-              runTypewriter();
-            }, 100); // Quick transition to next word
-          }
-        }
-      } else if (charIndexRef.current < currentSequence.text.length) {
-        charIndexRef.current += 1;
-        setDisplayText(currentSequence.text.slice(0, charIndexRef.current));
-        timeoutRef.current = setTimeout(runTypewriter, getTypingDelay());
+        deleteStep(currentSequence.text);
       } else {
-        const pauseDuration = currentSequence.pauseAfter ?? pauseBeforeDelete;
-
-        if (currentSequence.deleteAfter) {
-          timeoutRef.current = setTimeout(() => {
-            isDeletingRef.current = true;
-            runTypewriter();
-          }, pauseDuration);
-        } else {
-          const isLastSequence =
-            sequenceIndexRef.current === sequencesRef.current.length - 1;
-
-          if (isLastSequence && autoLoop) {
-            timeoutRef.current = setTimeout(() => {
-              sequenceIndexRef.current = 0;
-              charIndexRef.current = 0;
-              setDisplayText("");
-              runTypewriter();
-            }, loopDelay);
-          } else if (!isLastSequence) {
-            timeoutRef.current = setTimeout(() => {
-              sequenceIndexRef.current += 1;
-              charIndexRef.current = 0;
-              setDisplayText("");
-              runTypewriter();
-            }, pauseDuration);
-          }
-        }
+        typeStep(currentSequence);
       }
-    };
+    }
 
-    // Start the loop
-    timeoutRef.current = setTimeout(runTypewriter, startDelay);
+    schedule(runTypewriter, startDelay);
 
     return () => {
       if (timeoutRef.current) {
@@ -165,10 +180,14 @@ export default function TypewriterTitle({
     loopDelay,
     startDelay,
     naturalVariance,
+    shouldReduceMotion,
   ]);
 
   return (
     <div className="relative mx-auto w-full max-w-4xl py-24">
+      <style href="kokonutui-type-writer" precedence="default">
+        {CARET_KEYFRAMES}
+      </style>
       <div className="relative z-10 flex flex-col items-center justify-center text-center">
         <motion.div
           animate={{ opacity: 1 }}
@@ -176,20 +195,20 @@ export default function TypewriterTitle({
           initial={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <span className="inline-block min-h-[1.2em] min-w-[0.5em]">
+          {/* Screen readers get every phrase once instead of whatever
+              partial string is on screen. */}
+          <span className="sr-only">
+            {sequences.map((sequence) => sequence.text).join(", ")}
+          </span>
+          <span
+            aria-hidden="true"
+            className="inline-block min-h-[1.2em] min-w-[0.5em]"
+          >
             {displayText}
           </span>
-          <motion.span
-            animate={{
-              opacity: [1, 1, 0, 0],
-            }}
-            className="inline-block h-[1em] w-[3px] bg-black dark:bg-white"
-            transition={{
-              duration: 1,
-              repeat: Number.POSITIVE_INFINITY,
-              repeatType: "loop",
-              ease: "linear",
-            }}
+          <span
+            aria-hidden="true"
+            className="inline-block h-[1em] w-[3px] bg-black motion-safe:animate-[kokonutui-typewriter-caret_1s_linear_infinite] dark:bg-white"
           />
         </motion.div>
       </div>

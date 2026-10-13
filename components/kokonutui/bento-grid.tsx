@@ -36,10 +36,6 @@ import OpenAI from "@/components/icons/open-ai";
 import OpenAIDark from "@/components/icons/open-ai-dark";
 import { cn } from "@/lib/utils";
 
-/* -------------------------------------------------------------------------- */
-/*                                    Types                                   */
-/* -------------------------------------------------------------------------- */
-
 export interface BentoLogo {
   name: string;
   icon: ReactNode;
@@ -75,10 +71,6 @@ export interface BentoGridProps {
   items?: BentoItem[];
   className?: string;
 }
-
-/* -------------------------------------------------------------------------- */
-/*                                  Demo data                                 */
-/* -------------------------------------------------------------------------- */
 
 const iconClass = "h-5 w-5";
 
@@ -182,10 +174,6 @@ export const defaultBentoItems: BentoItem[] = [
   },
 ];
 
-/* -------------------------------------------------------------------------- */
-/*                                   Motion                                   */
-/* -------------------------------------------------------------------------- */
-
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 const gridVariants: Variants = {
@@ -207,10 +195,6 @@ const listItemVariants: Variants = {
   hidden: { opacity: 0, x: -8 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.3, ease: EASE_OUT } },
 };
-
-/* -------------------------------------------------------------------------- */
-/*                                  Features                                  */
-/* -------------------------------------------------------------------------- */
 
 function SpotlightFeature({ items }: { items: string[] }) {
   return (
@@ -296,7 +280,13 @@ function TypingFeature({
   const [typed, setTyped] = useState(0);
 
   useEffect(() => {
-    if (!inView || reduceMotion || typed >= code.length) {
+    // Reduced motion shows the whole snippet, but only after hydration so the
+    // server and client render the same text.
+    if (reduceMotion) {
+      setTyped(code.length);
+      return;
+    }
+    if (!inView || typed >= code.length) {
       return;
     }
     const timeout = setTimeout(() => {
@@ -320,7 +310,7 @@ function TypingFeature({
       >
         <span className="sr-only">{code}</span>
         <pre aria-hidden="true" className="whitespace-pre-wrap">
-          {reduceMotion ? code : code.slice(0, typed)}
+          {code.slice(0, typed)}
           <span className="animate-pulse motion-reduce:animate-none">|</span>
         </pre>
       </div>
@@ -358,9 +348,15 @@ function VoiceFeature() {
   }, [recording]);
 
   // Self-running demo loop (record 3s, pause 1s) while visible, until the
-  // user takes over by clicking.
+  // user takes over by clicking. Leaving the viewport mid-loop stops the
+  // demo recording so the counter above doesn't keep ticking off-screen.
   useEffect(() => {
-    if (!(isDemo && inView)) {
+    if (!isDemo) {
+      return;
+    }
+    if (!inView) {
+      setRecording(false);
+      setSeconds(0);
       return;
     }
     let timeout: ReturnType<typeof setTimeout>;
@@ -388,7 +384,7 @@ function VoiceFeature() {
       <button
         aria-label={recording ? "Stop recording" : "Start recording"}
         aria-pressed={recording}
-        className="relative z-10 flex h-16 w-16 items-center justify-center rounded-xl transition-[background-color,transform] duration-150 ease-out hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 active:scale-[0.97] dark:hover:bg-white/10"
+        className="relative z-10 flex h-16 w-16 items-center justify-center rounded-xl transition-[background-color,scale] duration-150 ease-out hover:bg-black/5 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 active:scale-[0.97] dark:hover:bg-white/10"
         onClick={handleClick}
         type="button"
       >
@@ -458,10 +454,6 @@ function FeatureContent({ feature }: { feature: BentoFeature }) {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                    Card                                    */
-/* -------------------------------------------------------------------------- */
-
 const TILT_SPRING = { stiffness: 300, damping: 30 };
 const MAX_TILT_DEG = 2;
 
@@ -491,18 +483,16 @@ export function BentoCard({ item }: { item: BentoItem }) {
       className="h-full"
       onPointerLeave={resetTilt}
       onPointerMove={handlePointerMove}
-      style={
-        reduceMotion
-          ? undefined
-          : { rotateX, rotateY, transformPerspective: 1200 }
-      }
+      // Always set, so server and client agree; under reduced motion the
+      // pointer handler never moves the tilt off zero.
+      style={{ rotateX, rotateY, transformPerspective: 1200 }}
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
       whileHover={reduceMotion || !item.href ? undefined : { y: -4 }}
     >
       <div
         className={cn(
           "group relative flex h-full flex-col gap-2 rounded-xl border border-neutral-200/60 bg-gradient-to-b from-neutral-50/80 to-neutral-50 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.04)]",
-          "transition-[border-color,box-shadow,transform] duration-200 ease-out",
+          "transition-[border-color,box-shadow,scale] duration-200 ease-out",
           "hover:border-neutral-300/70 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)]",
           "dark:border-neutral-800/60 dark:from-neutral-900/80 dark:to-neutral-900 dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] dark:hover:border-neutral-700/60 dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)]",
           item.href &&
@@ -513,7 +503,7 @@ export function BentoCard({ item }: { item: BentoItem }) {
           <h3 className="font-semibold text-neutral-900 text-xl tracking-tight dark:text-neutral-100">
             {item.href ? (
               <Link
-                className="outline-none after:absolute after:inset-0 after:rounded-xl"
+                className="outline-hidden after:absolute after:inset-0 after:rounded-xl"
                 href={item.href}
               >
                 {item.title}
@@ -525,7 +515,7 @@ export function BentoCard({ item }: { item: BentoItem }) {
           {item.href && (
             <ArrowUpRight
               aria-hidden="true"
-              className="h-5 w-5 shrink-0 -translate-x-1 translate-y-1 text-neutral-400 opacity-0 transition-[opacity,transform] duration-200 ease-out group-focus-within:translate-x-0 group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:translate-x-0 motion-reduce:translate-y-0 dark:text-neutral-500"
+              className="h-5 w-5 shrink-0 -translate-x-1 translate-y-1 text-neutral-400 opacity-0 transition-[opacity,translate] duration-200 ease-out group-focus-within:translate-x-0 group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:translate-x-0 motion-reduce:translate-y-0 dark:text-neutral-500"
             />
           )}
         </div>
@@ -539,10 +529,6 @@ export function BentoCard({ item }: { item: BentoItem }) {
     </motion.div>
   );
 }
-
-/* -------------------------------------------------------------------------- */
-/*                                    Grid                                    */
-/* -------------------------------------------------------------------------- */
 
 export default function BentoGrid({
   items = defaultBentoItems,

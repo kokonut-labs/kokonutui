@@ -10,12 +10,10 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion } from "motion/react";
+import { MotionConfig, motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type ColorTheme = "aurora" | "ember" | "ocean";
 type ParticleDensity = "sparse" | "medium" | "dense";
@@ -45,13 +43,11 @@ export interface FlowFieldProps {
   density?: ParticleDensity;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const PARTICLE_COUNTS: Record<ParticleDensity, number> = {
   sparse: 600,
   medium: 1200,
   dense: 2000,
-} as const;
+};
 
 const THEMES: Record<ColorTheme, ThemeConfig> = {
   aurora: {
@@ -78,9 +74,12 @@ const THEMES: Record<ColorTheme, ThemeConfig> = {
     bg: "2, 6, 10",
     trailAlpha: 0.06,
   },
-} as const;
+};
 
-// ─── Noise / vector-field ─────────────────────────────────────────────────────
+/** Simulated steps drawn up front for the still frame shown with reduced motion. */
+const STILL_FRAME_STEPS = 40;
+
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 /**
  * Smooth organic 2D noise via a multi-octave trigonometric series.
@@ -96,38 +95,89 @@ function fieldAngle(x: number, y: number, t: number): number {
   );
 }
 
-// ─── Default hero content ─────────────────────────────────────────────────────
+const wrap = (value: number, max: number) => {
+  if (value < 0) {
+    return value + max;
+  }
+  if (value > max) {
+    return value - max;
+  }
+  return value;
+};
+
+/** Advances one particle along the field and draws it. */
+function stepParticle(
+  ctx: CanvasRenderingContext2D,
+  p: Particle,
+  time: number,
+  width: number,
+  height: number,
+  cfg: ThemeConfig
+) {
+  const angle = fieldAngle(p.x, p.y, time);
+
+  p.x += Math.cos(angle) * p.speed;
+  p.y += Math.sin(angle) * p.speed;
+  p.life++;
+
+  // Respawn aged-out particles at a random position
+  if (p.life > p.maxLife) {
+    p.x = Math.random() * width;
+    p.y = Math.random() * height;
+    p.life = 0;
+    p.hue = cfg.hueStart + Math.random() * cfg.hueRange;
+    return;
+  }
+
+  p.x = wrap(p.x, width);
+  p.y = wrap(p.y, height);
+
+  // Fade in / out over particle lifetime
+  const progress = p.life / p.maxLife;
+  const fadeIn = Math.min(progress * 8, 1);
+  const fadeOut = Math.min((1 - progress) * 6, 1);
+  const alpha = fadeIn * fadeOut * 0.9;
+
+  // Hue shifts subtly with field direction for color variety
+  const hueMod = (p.hue + (angle / (Math.PI * 2)) * 70 + 360) % 360;
+
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, 1.3, 0, Math.PI * 2);
+  ctx.fillStyle = `hsla(${hueMod}, ${cfg.saturation}%, ${cfg.lightness}%, ${alpha})`;
+  ctx.fill();
+}
 
 function DefaultContent() {
   return (
-    <div className="relative z-10 flex flex-col items-center justify-center gap-6 px-6 text-center">
-      <motion.h1
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-3xl font-bold text-5xl text-white leading-[1.08] tracking-tight sm:text-6xl md:text-7xl"
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.9, delay: 0.38, ease: [0.22, 0.61, 0.36, 1] }}
-      >
-        Chaos finds its
-        <br />
-        <span className="bg-gradient-to-r from-emerald-300 via-teal-200 to-violet-300 bg-clip-text text-transparent">
-          own beauty
-        </span>
-      </motion.h1>
+    // Reduced motion keeps the fade-in and drops the rise.
+    <MotionConfig reducedMotion="user">
+      <div className="relative z-10 flex flex-col items-center justify-center gap-6 px-6 text-center">
+        <motion.h1
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-3xl font-bold text-5xl text-white leading-[1.08] tracking-tight sm:text-6xl md:text-7xl"
+          initial={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, delay: 0.38, ease: EASE_OUT }}
+        >
+          Chaos finds its
+          <br />
+          <span className="bg-linear-to-r from-emerald-300 via-teal-200 to-violet-300 bg-clip-text text-transparent">
+            own beauty
+          </span>
+        </motion.h1>
 
-      <motion.p
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md text-base text-white/50 leading-relaxed"
-        initial={{ opacity: 0, y: 16 }}
-        transition={{ duration: 0.9, delay: 0.56, ease: "easeOut" }}
-      >
-        Thousands of particles drift through an organic noise field, painting
-        luminous trails that shift and spiral endlessly.
-      </motion.p>
-    </div>
+        <motion.p
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md text-base text-white/50 leading-relaxed"
+          initial={{ opacity: 0, y: 16 }}
+          transition={{ duration: 0.6, delay: 0.56, ease: EASE_OUT }}
+        >
+          Thousands of particles drift through an organic noise field, painting
+          luminous trails that shift and spiral endlessly.
+        </motion.p>
+      </div>
+    </MotionConfig>
   );
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function FlowField({
   className,
@@ -136,13 +186,18 @@ export default function FlowField({
   density = "medium",
 }: FlowFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     const cfg = THEMES[theme];
     const count = PARTICLE_COUNTS[density];
@@ -166,6 +221,18 @@ export default function FlowField({
       };
     };
 
+    const step = () => {
+      time++;
+
+      // Fade previous frame — each dot persists ~16 frames, creating soft trails
+      ctx.fillStyle = `rgba(${cfg.bg}, ${cfg.trailAlpha})`;
+      ctx.fillRect(0, 0, width, height);
+
+      for (const p of particles) {
+        stepParticle(ctx, p, time, width, height, cfg);
+      }
+    };
+
     const resize = () => {
       width = window.innerWidth;
       height = window.innerHeight;
@@ -181,64 +248,41 @@ export default function FlowField({
 
       // Re-seed particles spread across the canvas
       particles = Array.from({ length: count }, spawnParticle);
+
+      // Reduced motion: simulate a few steps up front so the still frame
+      // shows short trails, then never start the loop.
+      if (shouldReduceMotion) {
+        for (let i = 0; i < STILL_FRAME_STEPS; i++) {
+          step();
+        }
+      }
     };
 
     const render = () => {
-      time++;
-
-      // Fade previous frame — each dot persists ~16 frames, creating soft trails
-      ctx.fillStyle = `rgba(${cfg.bg}, ${cfg.trailAlpha})`;
-      ctx.fillRect(0, 0, width, height);
-
-      for (const p of particles) {
-        const angle = fieldAngle(p.x, p.y, time);
-
-        p.x += Math.cos(angle) * p.speed;
-        p.y += Math.sin(angle) * p.speed;
-        p.life++;
-
-        // Respawn aged-out particles at a random position
-        if (p.life > p.maxLife) {
-          p.x = Math.random() * width;
-          p.y = Math.random() * height;
-          p.life = 0;
-          p.hue = cfg.hueStart + Math.random() * cfg.hueRange;
-          continue;
-        }
-
-        // Wrap edges
-        if (p.x < 0) p.x += width;
-        else if (p.x > width) p.x -= width;
-        if (p.y < 0) p.y += height;
-        else if (p.y > height) p.y -= height;
-
-        // Fade in / out over particle lifetime
-        const progress = p.life / p.maxLife;
-        const fadeIn = Math.min(progress * 8, 1);
-        const fadeOut = Math.min((1 - progress) * 6, 1);
-        const alpha = fadeIn * fadeOut * 0.9;
-
-        // Hue shifts subtly with field direction for color variety
-        const hueMod = (p.hue + (angle / (Math.PI * 2)) * 70 + 360) % 360;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 1.3, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${hueMod}, ${cfg.saturation}%, ${cfg.lightness}%, ${alpha})`;
-        ctx.fill();
-      }
-
+      step();
       animId = requestAnimationFrame(render);
     };
 
     resize();
     window.addEventListener("resize", resize);
-    render();
+
+    // Only animate while the field is on screen.
+    const observer = shouldReduceMotion
+      ? null
+      : new IntersectionObserver(([entry]) => {
+          cancelAnimationFrame(animId);
+          if (entry?.isIntersecting) {
+            animId = requestAnimationFrame(render);
+          }
+        });
+    observer?.observe(canvas);
 
     return () => {
       cancelAnimationFrame(animId);
+      observer?.disconnect();
       window.removeEventListener("resize", resize);
     };
-  }, [theme, density]);
+  }, [theme, density, shouldReduceMotion]);
 
   const bgColor = THEMES[theme].bg;
 
@@ -250,11 +294,9 @@ export default function FlowField({
       )}
       style={{ background: `rgb(${bgColor})` }}
     >
-      <canvas
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        ref={canvasRef}
-      />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <canvas ref={canvasRef} />
+      </div>
 
       {/* Radial vignette — focuses center, dims edges */}
       <div

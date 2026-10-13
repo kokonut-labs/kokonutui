@@ -10,8 +10,9 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useInView, useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
 
 export type GlitchTextColor =
@@ -73,7 +74,15 @@ const gradient = (a: Oklch, b: Oklch, c: Oklch): Paint => ({
   stops: [a, b, c],
 });
 
+/** Animated on the text wrapper when `color="rainbow"` (and motion is allowed). */
 const RAINBOW_HUE = "var(--rainbow-hue, 270)";
+/** One full trip around the hue wheel, starting from the static 270. */
+const RAINBOW_CYCLE = { "--rainbow-hue": [270, 630] };
+const RAINBOW_TRANSITION = {
+  duration: 6,
+  ease: "linear",
+  repeat: Number.POSITIVE_INFINITY,
+} as const;
 
 const COLOR_SCHEMES: Record<GlitchTextColor, ColorScheme> = {
   rainbow: {
@@ -205,8 +214,11 @@ const GlitchText = ({
   fontWeight = 700,
   letterSpacing = 5,
 }: GlitchTextProps) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref);
   const prefersReducedMotion = useReducedMotion();
-  const animated = !(isStatic || prefersReducedMotion);
+  // Paused while offscreen so the loops don't spend frames nobody sees.
+  const animated = !(isStatic || prefersReducedMotion) && inView;
 
   const scheme = COLOR_SCHEMES[color];
   const settings = INTENSITY[glitchIntensity];
@@ -221,20 +233,16 @@ const GlitchText = ({
   };
 
   const layerClass = (paint: Paint) =>
-    cn(
-      "block will-change-transform",
-      paint.kind === "gradient" && "bg-clip-text text-transparent"
-    );
+    cn("block", paint.kind === "gradient" && "bg-clip-text text-transparent");
 
   return (
     <div
-      className={cn(
-        "relative flex items-center justify-center overflow-visible p-8",
-        className
-      )}
+      className={cn("relative flex items-center justify-center p-8", className)}
+      ref={ref}
       style={backgroundColor ? { backgroundColor } : undefined}
     >
-      <span
+      <motion.span
+        animate={color === "rainbow" && animated ? RAINBOW_CYCLE : undefined}
         className={cn(
           "relative inline-block",
           typeof size === "string" && SIZE_CLASSES[size]
@@ -244,6 +252,7 @@ const GlitchText = ({
           fontWeight,
           letterSpacing,
         }}
+        transition={RAINBOW_TRANSITION}
       >
         {/* Always rendered (hidden at rest) so server and client markup match. */}
         {(["before", "after"] as const).map((layer) => (
@@ -254,6 +263,7 @@ const GlitchText = ({
             aria-hidden="true"
             className={cn(
               "pointer-events-none absolute inset-0 select-none",
+              animated && "will-change-transform",
               layerClass(scheme[layer])
             )}
             initial={REST}
@@ -287,7 +297,7 @@ const GlitchText = ({
         >
           {text}
         </motion.span>
-      </span>
+      </motion.span>
     </div>
   );
 };

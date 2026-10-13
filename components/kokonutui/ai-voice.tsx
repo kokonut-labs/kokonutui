@@ -66,13 +66,12 @@ export default function AI_Voice({
       .padStart(2, "0")}`;
   };
 
-  /**
-   * Remove that, only used for demo
-   */
   useEffect(() => {
-    if (!isDemo) return;
+    if (!isDemo) {
+      return;
+    }
 
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     const runAnimation = () => {
       setSubmitted(true);
       timeoutId = setTimeout(() => {
@@ -107,16 +106,14 @@ export default function AI_Voice({
           aria-pressed={isListening}
           className={cn(
             "group flex h-16 w-16 items-center justify-center rounded-xl transition-colors",
-            submitted
-              ? "bg-none"
-              : "bg-none hover:bg-black/5 dark:hover:bg-white/5"
+            !submitted && "hover:bg-black/5 dark:hover:bg-white/5"
           )}
           onClick={handleClick}
           type="button"
         >
           {submitted ? (
             <div
-              className="pointer-events-auto h-6 w-6 animate-spin cursor-pointer rounded-sm bg-black dark:bg-white"
+              className="h-6 w-6 cursor-pointer rounded-sm bg-black motion-safe:animate-spin dark:bg-white"
               style={{ animationDuration: "3s" }}
             />
           ) : (
@@ -126,7 +123,7 @@ export default function AI_Voice({
 
         <span
           className={cn(
-            "font-mono text-sm transition-opacity duration-300",
+            "font-mono text-sm transition-colors duration-300",
             submitted
               ? "text-black/70 dark:text-white/70"
               : "text-black/30 dark:text-white/30"
