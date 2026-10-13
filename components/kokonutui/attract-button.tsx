@@ -14,6 +14,7 @@ import { Magnet } from "lucide-react";
 import { motion, type Transition, useReducedMotion } from "motion/react";
 import {
   type ComponentProps,
+  type FocusEvent,
   type PointerEvent,
   useEffect,
   useState,
@@ -45,9 +46,12 @@ export default function AttractButton({
   onPointerDown,
   onPointerUp,
   onPointerCancel,
+  onFocus,
+  onBlur,
   ...props
 }: AttractButtonProps) {
-  const [isAttracting, setIsAttracting] = useState(false);
+  const [isPointerAttracting, setIsPointerAttracting] = useState(false);
+  const [isFocusVisible, setIsFocusVisible] = useState(false);
   const [particles, setParticles] = useState<Particle[]>([]);
   const shouldReduceMotion = useReducedMotion();
 
@@ -66,38 +70,51 @@ export default function AttractButton({
   const handlePointerEnter = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerEnter?.(event);
     if (event.pointerType === "mouse") {
-      setIsAttracting(true);
+      setIsPointerAttracting(true);
     }
   };
 
   const handlePointerLeave = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerLeave?.(event);
     if (event.pointerType === "mouse") {
-      setIsAttracting(false);
+      setIsPointerAttracting(false);
     }
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerDown?.(event);
     if (event.pointerType !== "mouse") {
-      setIsAttracting(true);
+      setIsPointerAttracting(true);
     }
   };
 
   const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerUp?.(event);
     if (event.pointerType !== "mouse") {
-      setIsAttracting(false);
+      setIsPointerAttracting(false);
     }
   };
 
   const handlePointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerCancel?.(event);
     if (event.pointerType !== "mouse") {
-      setIsAttracting(false);
+      setIsPointerAttracting(false);
     }
   };
 
+  // Keyboard focus attracts too. Mouse clicks also focus the button, so only
+  // :focus-visible counts, which keeps a click from holding the effect on.
+  const handleFocus = (event: FocusEvent<HTMLButtonElement>) => {
+    onFocus?.(event);
+    setIsFocusVisible(event.currentTarget.matches(":focus-visible"));
+  };
+
+  const handleBlur = (event: FocusEvent<HTMLButtonElement>) => {
+    onBlur?.(event);
+    setIsFocusVisible(false);
+  };
+
+  const isAttracting = isPointerAttracting || isFocusVisible;
   const pullIn = isAttracting && !shouldReduceMotion;
 
   return (
@@ -112,6 +129,8 @@ export default function AttractButton({
         "transition-[color,background-color,border-color,scale] duration-150 ease-out active:scale-[0.97]",
         className
       )}
+      onBlur={handleBlur}
+      onFocus={handleFocus}
       onPointerCancel={handlePointerCancel}
       onPointerDown={handlePointerDown}
       onPointerEnter={handlePointerEnter}
