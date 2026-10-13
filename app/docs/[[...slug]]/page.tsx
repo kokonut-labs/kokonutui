@@ -10,6 +10,7 @@ import defaultMdxComponents, { createRelativeLink } from "fumadocs-ui/mdx";
 import { notFound } from "next/navigation";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, META, MONO } from "@/components/landing/home/styles";
+import TocProBanner from "@/components/landing/toc-pro-banner";
 import { Preview, type PreviewProps } from "@/components/mdx/preview";
 import { PreviewClient } from "@/components/mdx/preview-client";
 import PreviewTemplate from "@/components/mdx/preview-template";
@@ -113,15 +114,28 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   // A component page documents one catalog part, and its code heads the page.
   const part = getParts().find((p) => p.url === page.url);
 
-  // Component pages are a single plate with no markdown headings, so they
-  // drop the TOC column and give the demo the width.
+  // Component pages are a single plate with no markdown headings, so the
+  // default TOC would render nothing but its "No Headings" empty state. Those
+  // pages drop the heading list and show the Pro banner on its own; pages that
+  // do have headings keep the real TOC with the banner underneath.
   const hasHeadings = page.data.toc.length > 0;
+  const tableOfContent = page.data.full
+    ? undefined
+    : {
+        // Keep the TOC enabled either way — it owns the column the banner sits
+        // in — but hide the "On this page" heading and its empty state when
+        // there is nothing to list.
+        container: hasHeadings
+          ? undefined
+          : { className: "toc-headings-empty" },
+        footer: <TocProBanner />,
+      };
 
   return (
     <DocsPage
       breadcrumb={{ enabled: !part }}
       full={page.data.full}
-      tableOfContent={{ enabled: hasHeadings }}
+      tableOfContent={tableOfContent}
       tableOfContentPopover={{ enabled: hasHeadings }}
       toc={page.data.toc}
     >
