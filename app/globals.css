@@ -118,6 +118,32 @@
   }
 } */
 
+/*
+  Docs chrome in the homepage's palette: pure white and black surfaces, and
+  the same hairline the catalog draws its rules with.
+*/
+@theme {
+  --color-fd-background: #fff;
+  --color-fd-card: #fafafa;
+  --color-fd-popover: #fff;
+  --color-fd-border: rgb(0 0 0 / 0.13);
+  --color-fd-accent: rgb(0 0 0 / 0.05);
+}
+
+.dark {
+  --color-fd-background: #000;
+  --color-fd-card: #0a0a0a;
+  --color-fd-popover: #0a0a0a;
+  --color-fd-border: rgb(255 255 255 / 0.14);
+  --color-fd-accent: rgb(255 255 255 / 0.07);
+}
+
+/* Codes, labels and commands. A plain class, so cn() never mistakes it for a
+   font weight (tailwind-merge drops `font-(family-name:…)` next to one). */
+.home-mono {
+  font-family: var(--font-home-mono), ui-monospace, monospace;
+}
+
 @layer utilities {
   body {
     font-family: Arial, Helvetica, sans-serif;
@@ -206,20 +232,6 @@ button {
     padding: 0;
     min-height: 70dvh;
   }
-}
-
-/*
-  Component pages have no markdown headings, so the TOC would show only its
-  "On this page" title and a "No Headings" empty state. The column is kept for
-  the Pro banner, so hide the heading chrome and reclaim its top padding.
-*/
-.toc-headings-empty {
-  padding-top: 1rem;
-}
-
-.toc-headings-empty #toc-title,
-.toc-headings-empty #toc-title + div {
-  display: none;
 }
 
 :root {

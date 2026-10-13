@@ -23,21 +23,21 @@ import {
 } from "./data";
 import { Fit, LIVE, LiveFallback } from "./live";
 import type { Part } from "./parts";
-import { EASE_COLORS, enter, FOCUS, FOCUS_INSET } from "./styles";
+import {
+  CELL,
+  EASE_COLORS,
+  enter,
+  FOCUS,
+  FOCUS_INSET,
+  GRID,
+  INK,
+  LEAF,
+  LINE,
+  META,
+  MONO,
+  SOFT,
+} from "./styles";
 import { VideoCard } from "./video";
-
-// The catalog is drawn with rules, not cards: cells share one hairline, the
-// corners are square, and type does the decorating.
-/** A plain class (home.css), so cn() never mistakes it for a font weight. */
-const MONO = "home-mono";
-const LINE = "border-black/[0.13] dark:border-white/[0.14]";
-const GRID = "gap-px bg-black/[0.13] dark:bg-white/[0.14]";
-const CELL = "bg-white dark:bg-black";
-const META = cn(MONO, "text-[11.5px] text-black/50 dark:text-white/50");
-const INK = "text-black dark:text-white";
-const SOFT = "text-black/60 dark:text-white/60";
-/** The one color in the catalog: Kokonut's leaf, for the codes. */
-const LEAF = "text-[#1FA834] dark:text-[#3BB44B]";
 
 const FEATURED = "apple-activity-card";
 /** The featured part, asked for the way you'd ask a colleague. */

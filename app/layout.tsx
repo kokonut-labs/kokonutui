@@ -3,7 +3,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { RootProvider } from "fumadocs-ui/provider/next";
-import { Geist } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { ViewTransitions } from "next-view-transitions";
 import StaticSearchDialog from "@/components/search-dialog";
@@ -13,6 +13,13 @@ import { cn } from "@/lib/utils";
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist",
+});
+
+// Codes, labels and commands are set in a monospace face, on the homepage
+// and the docs alike.
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-home-mono",
 });
 
 export const metadata: Metadata = {
@@ -94,7 +101,14 @@ export default function RootLayout({
   return (
     <ViewTransitions>
       <html lang="en" suppressHydrationWarning>
-        <body className={cn(geist.variable, geist.className, "antialiased")}>
+        <body
+          className={cn(
+            geist.variable,
+            geistMono.variable,
+            geist.className,
+            "antialiased"
+          )}
+        >
           <script
             // biome-ignore lint/security/noDangerouslySetInnerHtml: static schema.org JSON-LD built from siteConfig
             dangerouslySetInnerHTML={{ __html: structuredData }}

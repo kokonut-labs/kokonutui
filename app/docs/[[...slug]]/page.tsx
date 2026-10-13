@@ -8,13 +8,36 @@ import {
 } from "fumadocs-ui/layouts/docs/page";
 import defaultMdxComponents, { createRelativeLink } from "fumadocs-ui/mdx";
 import { notFound } from "next/navigation";
-import TocProBanner from "@/components/landing/toc-pro-banner";
-import { Preview } from "@/components/mdx/preview";
+import { getParts } from "@/components/landing/home/parts";
+import { LEAF, META, MONO } from "@/components/landing/home/styles";
+import { Preview, type PreviewProps } from "@/components/mdx/preview";
 import { PreviewClient } from "@/components/mdx/preview-client";
 import PreviewTemplate from "@/components/mdx/preview-template";
 import WhatIncluded from "@/components/mdx/what-included";
 import { siteConfig } from "@/config/site";
 import { source } from "@/lib/source";
+import { cn } from "@/lib/utils";
+
+// Page actions drawn like the catalog's small controls: square, hairline, mono.
+const PAGE_ACTION = cn(
+  MONO,
+  "h-7 rounded-none bg-transparent px-2 font-normal text-[11.5px] text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
+);
+
+/** The packages a demo's registry entry installs, shown on its plate. */
+function plateFor(link: string) {
+  const name = link.split("/").at(-1);
+  const part = getParts().find((p) => p.name === name);
+  return part ? { dependencies: part.dependencies } : undefined;
+}
+
+function DocsPreview(props: PreviewProps) {
+  return <Preview {...props} part={plateFor(props.link)} />;
+}
+
+function DocsPreviewClient(props: PreviewProps) {
+  return <PreviewClient {...props} part={plateFor(props.link)} />;
+}
 
 function ogImagePath(slug: string[] = []) {
   return ["/docs-og", ...slug, "image.png"].join("/");
@@ -87,27 +110,19 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const markdownUrl = `${page.url}.md`;
   const githubUrl = `${siteConfig.links.github}/blob/main/content/docs/${page.path}`;
 
-  // Component pages are Preview/WhatIncluded blocks with no markdown headings,
-  // so the default TOC would render nothing but its "No Headings" empty state.
-  // Those pages drop the heading list and show the Pro banner on its own; pages
-  // that do have headings keep the real TOC with the banner underneath.
+  // A component page documents one catalog part, and its code heads the page.
+  const part = getParts().find((p) => p.url === page.url);
+
+  // Component pages are a single plate with no markdown headings, so they
+  // drop the TOC column and give the demo the width.
   const hasHeadings = page.data.toc.length > 0;
-  const tableOfContent = page.data.full
-    ? undefined
-    : {
-        // Keep the TOC enabled either way — it owns the column the banner sits
-        // in — but hide the "On this page" heading and its empty state when
-        // there is nothing to list.
-        container: hasHeadings
-          ? undefined
-          : { className: "toc-headings-empty" },
-        footer: <TocProBanner />,
-      };
 
   return (
     <DocsPage
+      breadcrumb={{ enabled: !part }}
       full={page.data.full}
-      tableOfContent={tableOfContent}
+      tableOfContent={{ enabled: hasHeadings }}
+      tableOfContentPopover={{ enabled: hasHeadings }}
       toc={page.data.toc}
     >
       <script
@@ -115,23 +130,35 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         dangerouslySetInnerHTML={{ __html: breadcrumbData }}
         type="application/ld+json"
       />
-      <DocsTitle className="font-semibold text-4xl">
+      {part ? (
+        <p className={cn(META, "flex items-baseline gap-3")}>
+          <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>
+            {part.code}
+          </span>
+          <span>{part.category}</span>
+        </p>
+      ) : null}
+      <DocsTitle className="font-semibold text-4xl tracking-[-0.03em]">
         {page.data.title}
       </DocsTitle>
-      <DocsDescription className="text-xl">
+      <DocsDescription className="max-w-[62ch] text-black/60 text-lg leading-relaxed dark:text-white/60">
         {page.data.description}
       </DocsDescription>
       <div className="flex flex-row items-center gap-2">
-        <MarkdownCopyButton markdownUrl={markdownUrl} />
-        <ViewOptionsPopover githubUrl={githubUrl} markdownUrl={markdownUrl} />
+        <MarkdownCopyButton className={PAGE_ACTION} markdownUrl={markdownUrl} />
+        <ViewOptionsPopover
+          className={PAGE_ACTION}
+          githubUrl={githubUrl}
+          markdownUrl={markdownUrl}
+        />
       </div>
       <DocsBody>
         <MDX
           components={{
             ...defaultMdxComponents,
             a: createRelativeLink(source, page),
-            Preview,
-            PreviewClient,
+            Preview: DocsPreview,
+            PreviewClient: DocsPreviewClient,
             PreviewTemplate,
             WhatIncluded,
           }}

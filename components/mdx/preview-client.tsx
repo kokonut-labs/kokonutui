@@ -1,33 +1,35 @@
 "use client";
 
-import * as React from "react";
-import { Preview } from "./preview";
-import { RefreshButton } from "./refresh-button";
+import { RotateCcwIcon } from "lucide-react";
+import { Fragment, useState } from "react";
+import { EASE_COLORS, FOCUS, META } from "@/components/landing/home/styles";
+import { cn } from "@/lib/utils";
+import { Preview, type PreviewProps } from "./preview";
 
-interface PreviewClientProps {
-  children: React.ReactNode;
-  className?: string;
-  isPremium?: boolean;
-  link: string;
-  useIframe?: boolean;
-  height?: string;
-  compact?: boolean;
-  comment?: string[];
-}
-
-export function PreviewClient(props: PreviewClientProps) {
-  const [key, setKey] = React.useState(0);
-
-  const handleRefresh = () => {
-    setKey((prev) => prev + 1);
-  };
+/** A preview whose demo plays once on mount, so it offers a Replay. */
+export function PreviewClient({ children, ...props }: PreviewProps) {
+  const [run, setRun] = useState(0);
 
   return (
-    <div className="relative">
-      <RefreshButton onRefresh={handleRefresh} />
-      <div key={key}>
-        <Preview {...props} />
-      </div>
-    </div>
+    <Preview
+      {...props}
+      actions={
+        <button
+          className={cn(
+            META,
+            "inline-flex shrink-0 items-center gap-1.5 hover:text-black dark:hover:text-white",
+            EASE_COLORS,
+            FOCUS
+          )}
+          onClick={() => setRun((r) => r + 1)}
+          type="button"
+        >
+          Replay
+          <RotateCcwIcon aria-hidden className="size-3" />
+        </button>
+      }
+    >
+      <Fragment key={run}>{children}</Fragment>
+    </Preview>
   );
 }
