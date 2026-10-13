@@ -29,8 +29,10 @@ export interface GradientButtonProps
 interface VariantClasses {
   /** Focus ring color on the button itself. */
   ring: string;
-  /** Outer 2px gradient border. */
+  /** 2px gradient border (the button's own border-box background). */
   border: string;
+  /** Solid surface under the color layers. */
+  surface: string;
   /** Soft base tint, light mode only (dark mode shows the solid surface). */
   base: string;
   /** Vertical color wash. */
@@ -56,13 +58,14 @@ const variantClasses: Record<GradientButtonVariant, VariantClasses> = {
     ring: "focus-visible:ring-emerald-500/60 dark:focus-visible:ring-[#87F6B7]/50",
     border:
       "from-emerald-400 via-emerald-300 to-emerald-200 dark:from-[#336C4F] dark:via-[#0C1F21] dark:to-[#0D6437]",
+    surface: "dark:bg-[#0C1F21]",
     base: "from-emerald-50 via-emerald-50/80 to-emerald-50/90",
     overlay:
       "from-emerald-300/30 via-emerald-200/20 to-emerald-400/20 dark:from-[#347B52]/40 dark:via-[#0C1F21] dark:to-[#0D6437]/30",
     accent:
       "from-emerald-400/20 via-emerald-300/10 to-emerald-200/30 dark:from-[#87F6B7]/10 dark:via-[#0C1F21] dark:to-[#17362A]/50",
     glow: "shadow-[inset_0_0_10px_rgba(52,211,153,0.2)] dark:shadow-[inset_0_0_10px_rgba(135,246,183,0.1)]",
-    text: "from-emerald-700 to-emerald-600 dark:from-[#8AEECA] dark:to-[#73F8A8] dark:drop-shadow-[0_0_12px_rgba(135,246,183,0.4)]",
+    text: "from-emerald-700 to-emerald-800 dark:from-[#8AEECA] dark:to-[#73F8A8] dark:drop-shadow-[0_0_12px_rgba(135,246,183,0.4)]",
     icon: "text-emerald-600 dark:text-[#73F8A8]",
     hover:
       "from-emerald-300/30 via-emerald-200/20 to-emerald-300/30 dark:from-[#17362A]/20 dark:via-[#87F6B7]/10 dark:to-[#17362A]/20",
@@ -70,14 +73,15 @@ const variantClasses: Record<GradientButtonVariant, VariantClasses> = {
   purple: {
     ring: "focus-visible:ring-purple-500/60 dark:focus-visible:ring-[#D6BCFA]/50",
     border:
-      "from-purple-400 via-purple-300 to-purple-200 dark:from-[#6B46C1] dark:via-[#0C1F21] dark:to-[#553C9A]",
+      "from-purple-400 via-purple-300 to-purple-200 dark:from-[#6B46C1] dark:via-[#150D21] dark:to-[#553C9A]",
+    surface: "dark:bg-[#150D21]",
     base: "from-purple-50 via-purple-50/80 to-purple-50/90",
     overlay:
-      "from-purple-300/30 via-purple-200/20 to-purple-400/20 dark:from-[#7E22CE]/40 dark:via-[#0C1F21] dark:to-[#6B46C1]/30",
+      "from-purple-300/30 via-purple-200/20 to-purple-400/20 dark:from-[#7E22CE]/40 dark:via-[#150D21] dark:to-[#6B46C1]/30",
     accent:
-      "from-purple-400/20 via-purple-300/10 to-purple-200/30 dark:from-[#E9D8FD]/10 dark:via-[#0C1F21] dark:to-[#44337A]/50",
+      "from-purple-400/20 via-purple-300/10 to-purple-200/30 dark:from-[#E9D8FD]/10 dark:via-[#150D21] dark:to-[#44337A]/50",
     glow: "shadow-[inset_0_0_10px_rgba(159,122,234,0.2)] dark:shadow-[inset_0_0_10px_rgba(159,122,234,0.1)]",
-    text: "from-purple-700 to-purple-600 dark:from-[#E9D8FD] dark:to-[#D6BCFA] dark:drop-shadow-[0_0_12px_rgba(159,122,234,0.4)]",
+    text: "from-purple-700 to-purple-800 dark:from-[#E9D8FD] dark:to-[#D6BCFA] dark:drop-shadow-[0_0_12px_rgba(159,122,234,0.4)]",
     icon: "text-purple-600 dark:text-[#D6BCFA]",
     hover:
       "from-purple-300/30 via-purple-200/20 to-purple-300/30 dark:from-[#44337A]/20 dark:via-[#B794F4]/10 dark:to-[#44337A]/20",
@@ -85,22 +89,37 @@ const variantClasses: Record<GradientButtonVariant, VariantClasses> = {
   orange: {
     ring: "focus-visible:ring-orange-500/60 dark:focus-visible:ring-[#FBD38D]/50",
     border:
-      "from-orange-400 via-orange-300 to-orange-200 dark:from-[#C05621] dark:via-[#0C1F21] dark:to-[#9C4221]",
+      "from-orange-400 via-orange-300 to-orange-200 dark:from-[#C05621] dark:via-[#1F120A] dark:to-[#9C4221]",
+    surface: "dark:bg-[#1F120A]",
     base: "from-orange-50 via-orange-50/80 to-orange-50/90",
     overlay:
-      "from-orange-300/30 via-orange-200/20 to-orange-400/20 dark:from-[#DD6B20]/40 dark:via-[#0C1F21] dark:to-[#C05621]/30",
+      "from-orange-300/30 via-orange-200/20 to-orange-400/20 dark:from-[#DD6B20]/40 dark:via-[#1F120A] dark:to-[#C05621]/30",
     accent:
-      "from-orange-400/20 via-orange-300/10 to-orange-200/30 dark:from-[#FED7AA]/10 dark:via-[#0C1F21] dark:to-[#7B341E]/50",
+      "from-orange-400/20 via-orange-300/10 to-orange-200/30 dark:from-[#FED7AA]/10 dark:via-[#1F120A] dark:to-[#7B341E]/50",
     glow: "shadow-[inset_0_0_10px_rgba(237,137,54,0.2)] dark:shadow-[inset_0_0_10px_rgba(237,137,54,0.1)]",
-    text: "from-orange-700 to-orange-600 dark:from-[#FED7AA] dark:to-[#FBD38D] dark:drop-shadow-[0_0_12px_rgba(237,137,54,0.4)]",
+    text: "from-orange-700 to-orange-800 dark:from-[#FED7AA] dark:to-[#FBD38D] dark:drop-shadow-[0_0_12px_rgba(237,137,54,0.4)]",
     icon: "text-orange-600 dark:text-[#FBD38D]",
     hover:
       "from-orange-300/30 via-orange-200/20 to-orange-300/30 dark:from-[#7B341E]/20 dark:via-[#ED8936]/10 dark:to-[#7B341E]/20",
   },
 };
 
-/** Shared classes for the decorative layers sitting inside the 2px border. */
-const innerLayer = "pointer-events-none absolute inset-[2px] rounded-[6px]";
+/**
+ * Shared classes for the decorative layers inside the 2px border. They fill
+ * the padding box and the button's overflow-hidden clips them to its inner
+ * curve, so any radius passed through className (rounded-full too) works.
+ */
+const innerLayer = "pointer-events-none absolute inset-0";
+
+// bg-clip-text makes the text transparent, which would also hide element
+// children drawn with currentColor (an svg, a <kbd>), so only plain text gets
+// the gradient.
+function isPlainText(node: ReactNode): boolean {
+  if (typeof node === "string" || typeof node === "number") {
+    return true;
+  }
+  return Array.isArray(node) && node.every(isPlainText);
+}
 
 export default function GradientButton({
   children,
@@ -111,11 +130,13 @@ export default function GradientButton({
   ...props
 }: GradientButtonProps) {
   const colors = variantClasses[variant];
+  const content = children ?? label;
 
   return (
     <Button
       className={cn(
-        "group relative h-12 overflow-hidden rounded-lg px-4",
+        "group relative h-12 overflow-hidden rounded-lg border-2 border-transparent bg-linear-to-b bg-origin-border px-3.5",
+        colors.border,
         // Ghost variant adds a hover background; the layers below own the look.
         "hover:bg-transparent dark:hover:bg-transparent",
         // Press feedback: transform only, short strong ease-out.
@@ -127,19 +148,10 @@ export default function GradientButton({
       variant="ghost"
       {...props}
     >
-      {/* Gradient border (visible as the 2px ring around the inner layers) */}
-      <span
-        aria-hidden="true"
-        className={cn(
-          "pointer-events-none absolute inset-0 rounded-lg bg-linear-to-b",
-          colors.border
-        )}
-      />
-
       {/* Surface */}
       <span
         aria-hidden="true"
-        className={cn(innerLayer, "bg-white dark:bg-[#0C1F21]")}
+        className={cn(innerLayer, "bg-white", colors.surface)}
       />
       <span
         aria-hidden="true"
@@ -178,14 +190,25 @@ export default function GradientButton({
             {icon}
           </span>
         ) : null}
-        <span
-          className={cn(
-            "bg-linear-to-b bg-clip-text font-light text-lg text-transparent tracking-tighter",
-            colors.text
-          )}
-        >
-          {children ?? label}
-        </span>
+        {isPlainText(content) ? (
+          <span
+            className={cn(
+              "bg-linear-to-b bg-clip-text font-light text-lg text-transparent tracking-tighter",
+              colors.text
+            )}
+          >
+            {content}
+          </span>
+        ) : (
+          <span
+            className={cn(
+              "flex items-center gap-2 font-light text-lg tracking-tighter",
+              colors.icon
+            )}
+          >
+            {content}
+          </span>
+        )}
       </span>
     </Button>
   );
