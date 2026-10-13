@@ -19,9 +19,10 @@ const ORBS = Array.from({ length: 10 }, (_, i) => ({
   delay: `${i * 0.3}s`,
 }));
 
-// A plain <style> works in any React app (styled-jsx is Next-only). The
-// prefixed name avoids clashing with other keyframes, and only transform and
-// opacity animate: the glow is a static shadow.
+// A React 19 <style> (hoisted and shared by every card) works in any React
+// app, unlike styled-jsx. The prefixed name avoids clashing with other
+// keyframes, and only transform and opacity animate: the glow is a static
+// shadow.
 const ORB_KEYFRAMES = `
 @keyframes kokonutui-card-flip-orb {
   0% { transform: scale(2); opacity: 0; }
@@ -244,7 +245,9 @@ export default function CardFlip({
         </div>
       </div>
 
-      <style>{ORB_KEYFRAMES}</style>
+      <style href="kokonutui-card-flip" precedence="default">
+        {ORB_KEYFRAMES}
+      </style>
     </div>
   );
 }
