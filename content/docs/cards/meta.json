@@ -10,6 +10,7 @@
     "bento-grid",
     "spotlight-cards",
     "currency-transfer",
-    "carousel-cards"
+    "carousel-cards",
+    "notification-stack"
   ]
 }
