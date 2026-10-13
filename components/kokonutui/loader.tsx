@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 interface LoaderProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, "title" | "children"> {
   title?: string;
+  /** Pass an empty string to show the title alone. */
   subtitle?: string;
   size?: "sm" | "md" | "lg";
 }
@@ -139,14 +140,16 @@ export default function Loader({
         >
           {title}
         </span>
-        <span
-          className={cn(
-            config.subtitleClass,
-            "block font-normal text-black/60 leading-[1.45] tracking-[-0.01em] antialiased dark:text-white/60"
-          )}
-        >
-          {subtitle}
-        </span>
+        {subtitle && (
+          <span
+            className={cn(
+              config.subtitleClass,
+              "block font-normal text-black/60 leading-[1.45] tracking-[-0.01em] antialiased dark:text-white/60"
+            )}
+          >
+            {subtitle}
+          </span>
+        )}
       </output>
     </div>
   );
