@@ -795,6 +795,52 @@
       ]
     },
     {
+      "name": "elastic-slider",
+      "type": "registry:component",
+      "title": "Elastic Slider",
+      "description": "Range slider that stretches like a rubber band when dragged past either end and springs back on release, with keyboard support, built with React and Motion.",
+      "dependencies": [
+        "motion",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/elastic-slider.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "clip-tabs",
+      "type": "registry:component",
+      "title": "Clip Tabs",
+      "description": "Segmented tab control whose active pill is a clip-path over a second, inverted copy of the tabs, so text and icons change color exactly at the pill's edge, built with React and Tailwind CSS.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/clip-tabs.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "notification-stack",
+      "type": "registry:component",
+      "title": "Notification Stack",
+      "description": "Stacked notification cards that fan out on hover and dismiss with a swipe or a quick flick, with keyboard and button fallbacks, built with React and Tailwind CSS.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/notification-stack.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "use-auto-resize-textarea",
       "type": "registry:hook",
       "title": "Use Auto Resize Textarea",

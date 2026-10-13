@@ -3,6 +3,7 @@
   "pages": [
     "card-flip",
     "card-stack",
+    "notification-stack",
     "liquid-glass-card",
     "apple-activity-card",
     "mouse-effect-card",

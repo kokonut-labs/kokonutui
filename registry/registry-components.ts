@@ -561,4 +561,37 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "elastic-slider",
+    type: "registry:component",
+    dependencies: ["motion", "lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/elastic-slider.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "clip-tabs",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/clip-tabs.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "notification-stack",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/notification-stack.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];

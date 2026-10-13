@@ -4,6 +4,7 @@
     "morphic-navbar",
     "toolbar",
     "smooth-tab",
+    "clip-tabs",
     "profile-dropdown",
     "action-search-bar",
     "smooth-drawer"

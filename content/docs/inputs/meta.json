@@ -1,4 +1,10 @@
 {
   "title": "Inputs",
-  "pages": ["file-upload", "avatar-picker", "team-selector", "loader"]
+  "pages": [
+    "file-upload",
+    "avatar-picker",
+    "team-selector",
+    "elastic-slider",
+    "loader"
+  ]
 }
