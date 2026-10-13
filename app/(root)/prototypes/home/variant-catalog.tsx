@@ -48,6 +48,9 @@ const SOFT = "text-black/60 dark:text-white/60";
 const LEAF = "text-[#1FA834] dark:text-[#3BB44B]";
 
 const FEATURED = "hold-button";
+/** The featured part, asked for the way you'd ask a colleague. */
+const AGENT_PROMPT =
+  "Add @kokonutui/hold-button to the danger zone in settings";
 const PLATES = [
   "ai-prompt",
   "apple-activity-card",
@@ -150,19 +153,20 @@ function Cover({ featured }: { featured?: Part }) {
           )}
           style={enter(7)}
         >
-          <p className={META}>Install any part</p>
-          <InstallLine command={installCommand("hold-button")} />
+          <p className={META}>Ask your agent</p>
+          <PromptLine prompt={AGENT_PROMPT} />
         </div>
+        <ConnectEditor />
         <Link
           className={cn(
-            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-3",
+            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-1",
             CELL,
             "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
             EASE_COLORS,
             FOCUS_INSET
           )}
           href="#index"
-          style={enter(8)}
+          style={enter(9)}
         >
           <span className="flex flex-col gap-1">
             <span className={META}>Contents</span>
@@ -177,7 +181,7 @@ function Cover({ featured }: { featured?: Part }) {
         </Link>
         <a
           className={cn(
-            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-2",
+            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-2",
             CELL,
             "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
             EASE_COLORS,
@@ -185,18 +189,18 @@ function Cover({ featured }: { featured?: Part }) {
           )}
           href={VERCEL_OSS_URL}
           rel="noreferrer"
-          style={enter(9)}
+          style={enter(10)}
           target="_blank"
         >
           <span className="flex flex-col gap-1">
             <span className={META}>Backed by</span>
-            <span className={cn("font-medium text-[15px]", INK)}>
+            <span className={cn("font-medium text-[17px]", INK)}>
               Vercel OSS
             </span>
           </span>
           <svg
             aria-hidden="true"
-            className="size-3.5 text-black/40 transition-colors duration-150 ease-out group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
+            className="size-4 text-black/40 transition-colors duration-150 ease-out group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
             fill="currentColor"
             viewBox="0 0 76 65"
           >
@@ -231,29 +235,65 @@ function FeaturedPlate({ part }: { part: Part }) {
   );
 }
 
-function InstallLine({ command }: { command: string }) {
+/** What you'd type into Claude Code, Cursor or Codex to get the featured part. */
+function PromptLine({ prompt }: { prompt: string }) {
   const { copied, copy } = useCopy();
   return (
     <button
-      aria-label={copied ? "Copied" : `Copy ${command}`}
+      aria-label={copied ? "Copied" : `Copy the prompt: ${prompt}`}
       className={cn(
-        "group flex min-w-0 items-center gap-3 text-left text-[clamp(13px,1.5vw,17px)]",
+        "group flex min-w-0 items-start gap-3 text-left text-[clamp(14px,1.5vw,17px)] leading-snug",
         MONO,
         INK,
         FOCUS
       )}
-      onClick={() => copy(command)}
+      onClick={() => copy(prompt)}
       type="button"
     >
-      <span aria-hidden className="text-black/30 dark:text-white/30">
-        $
+      <span aria-hidden className={LEAF}>
+        &rsaquo;
       </span>
-      <span className="wrap-anywhere min-w-0 flex-1">{command}</span>
+      <span className="min-w-0 flex-1 text-pretty">{prompt}</span>
       <CopyIconSwap
-        className="size-4 text-black/40 group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
+        className="mt-0.5 size-4 text-black/40 group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
         copied={copied}
       />
     </button>
+  );
+}
+
+/** One command connects the editor to the registry over the shadcn MCP server. */
+function ConnectEditor() {
+  const [client, setClient] = useState<McpClient>("claude");
+  return (
+    <div
+      className={cn(
+        "home-enter flex flex-col gap-3 p-5 sm:p-6 md:col-span-7 md:row-start-2",
+        CELL
+      )}
+      style={enter(8)}
+    >
+      <p className="flex items-baseline justify-between gap-4">
+        <span className={META}>Connect your editor once</span>
+        <span className={cn(MONO, "text-[11.5px]", LEAF)}>shadcn MCP</span>
+      </p>
+      <ClientPicker
+        className={cn(
+          "grid grid-cols-2 border sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4",
+          GRID,
+          LINE
+        )}
+        itemClassName={cn("h-9 justify-start px-3", CELL)}
+        onChange={setClient}
+        selectedClassName="bg-[#f4f4f4] dark:bg-[#161616]"
+        value={client}
+      />
+      <CopyLine
+        className={cn("text-[13px]", INK)}
+        prefix="$"
+        value={mcpCommand(client)}
+      />
+    </div>
   );
 }
 
@@ -491,7 +531,6 @@ function Index({ parts }: { parts: Part[] }) {
 /* Ordering -------------------------------------------------------------- */
 
 function Ordering() {
-  const [client, setClient] = useState<McpClient>("claude");
   return (
     <section aria-labelledby="ordering" className="pt-24 md:pt-32">
       <SectionHead
@@ -501,7 +540,19 @@ function Ordering() {
         title="Three ways in"
       />
       <ol className={cn("grid grid-cols-1 border md:grid-cols-3", GRID, LINE)}>
-        <Method code="A" title="Command line">
+        <Method code="A" title="Agent">
+          <p className={cn("text-[14px] leading-relaxed", SOFT)}>
+            Name a part, or describe what you need. Your agent finds it in the
+            registry and installs it with its dependencies.
+          </p>
+          <CopyLine
+            className={cn("mt-auto", INK)}
+            label="prompt"
+            prefix="›"
+            value="Add an AI chat input with a model picker to the home page"
+          />
+        </Method>
+        <Method code="B" title="Command line">
           <p className={cn("text-[14px] leading-relaxed", SOFT)}>
             Name the part. The shadcn CLI writes the file and installs what it
             needs.
@@ -512,7 +563,7 @@ function Ordering() {
             value={installCommand("particle-button")}
           />
         </Method>
-        <Method code="B" title="Registry">
+        <Method code="C" title="Registry">
           <p className={cn("text-[14px] leading-relaxed", SOFT)}>
             Add the namespace to components.json once, then use the short names
             everywhere.
@@ -521,20 +572,6 @@ function Ordering() {
             className={cn("mt-auto", INK)}
             label="registry entry"
             value={REGISTRY_ENTRY}
-          />
-        </Method>
-        <Method code="C" title="Agent">
-          <ClientPicker
-            className={cn("grid grid-cols-2 border", GRID, LINE)}
-            itemClassName={cn("h-9 justify-start px-3", CELL)}
-            onChange={setClient}
-            selectedClassName="bg-black/[0.04] dark:bg-white/[0.07]"
-            value={client}
-          />
-          <CopyLine
-            className={cn("mt-auto", INK)}
-            prefix="$"
-            value={mcpCommand(client)}
           />
         </Method>
       </ol>
