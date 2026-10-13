@@ -1,74 +1,88 @@
-import { Suspense } from "react";
+import { type ReactNode, Suspense } from "react";
+import Loader from "@/components/kokonutui/loader";
+import { CELL, LINE, META } from "@/components/landing/home/styles";
 import { cn } from "@/lib/utils";
-import Loader from "../kokonutui/loader";
-import PreviewContent from "./preview-content";
+import { InstallBar } from "./install-bar";
 
-type PreviewProps = {
-  children: React.ReactNode;
+/** What the page knows about the part it documents, from the catalog. */
+export interface PreviewPart {
+  dependencies: string[];
+}
+
+export interface PreviewProps {
+  children: ReactNode;
   className?: string;
   isPremium?: boolean;
   link: string;
   useIframe?: boolean;
   height?: string;
   compact?: boolean;
+  /** Superseded by the registry's own dependency list; kept so MDX still parses. */
   comment?: string[];
   isBlock?: boolean;
-};
+  /** Filled in by the docs page from the registry entry. */
+  part?: PreviewPart;
+  /** Controls for the demo's head row, such as Replay. */
+  actions?: ReactNode;
+}
 
 const PRE_PATH = "@kokonutui";
 
+/**
+ * A component page's plate, drawn like the homepage's: one hairline frame
+ * with the install row on top, then the packages it brings, then the live
+ * demo.
+ */
 export function Preview({
   children,
-  className = "",
+  className,
   link,
   useIframe = false,
   compact = false,
-  comment = [],
   isBlock = false,
+  part,
+  actions,
 }: PreviewProps) {
-  return (
-    <div className={cn("w-full overflow-hidden", className)}>
-      <PreviewContent isBlock={isBlock} link={link} prePath={PRE_PATH} />
+  const name = link.split("/").at(-1) ?? link;
+  let spec: string | undefined;
+  if (part) {
+    spec = part.dependencies.length
+      ? part.dependencies.join(", ")
+      : "no extra packages";
+  }
 
+  return (
+    <figure
+      className={cn("not-prose my-6 w-full border", LINE, CELL, className)}
+    >
+      <InstallBar name={name} prePath={PRE_PATH} showSource={!isBlock} />
+      {spec || actions ? (
+        <div className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
+          <span className={cn(META, "truncate")}>{spec}</span>
+          {actions}
+        </div>
+      ) : null}
       {useIframe ? (
-        <div className="my-4 w-full rounded-md border border-zinc-400 dark:border-zinc-700">
-          <div className="relative h-[100dvh] w-full overflow-hidden">
-            <iframe
-              className="h-full w-full list-none overflow-y-auto"
-              src={`${PRE_PATH}/preview/${link}`}
-              style={{
-                border: "none",
-                transform: "scale(0.95)",
-              }}
-              title={link}
-            />
-          </div>
+        <div className="relative h-[100dvh] w-full overflow-hidden">
+          <iframe
+            className="h-full w-full border-0"
+            src={`${PRE_PATH}/preview/${link}`}
+            title={link}
+          />
         </div>
       ) : (
         <div
           className={cn(
             // `preview-surface` is the hook `globals.css` uses to let the
             // preview fill the page on `full: true` docs pages.
-            "preview-surface not-prose relative my-4 flex items-center justify-center rounded-md border border-zinc-400 p-2 md:p-8 dark:border-zinc-800",
+            "preview-surface relative flex items-center justify-center p-2 md:p-8",
             compact ? "preview-surface-compact min-h-[100px]" : "min-h-[400px]",
-            isBlock ? "md:p-0" : ""
+            isBlock && "md:p-0"
           )}
         >
           <Suspense fallback={<Loader />}>{children}</Suspense>
         </div>
       )}
-      {comment.length > 0 && (
-        <div className="mt-6 mb-4 flex flex-wrap gap-3">
-          {comment.map((text) => (
-            <div
-              className="rounded-md border border-purple-200 bg-purple-100 px-4 py-2 font-medium text-purple-700 text-sm shadow-xs transition-colors hover:bg-purple-200/70 dark:border-purple-800/50 dark:bg-purple-950/30 dark:text-purple-300 dark:hover:bg-purple-950/50"
-              key={text}
-            >
-              {text}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    </figure>
   );
 }

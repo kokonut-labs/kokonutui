@@ -4,10 +4,6 @@
    thread is busy hydrating the page, and CSS keeps them off it. The curve is
    the project's strong ease-out (EASE_OUT in lib/animation-presets). */
 
-.home-mono {
-  font-family: var(--font-home-mono), ui-monospace, monospace;
-}
-
 @keyframes home-enter {
   from {
     opacity: 0;

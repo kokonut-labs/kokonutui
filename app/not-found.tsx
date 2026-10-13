@@ -1,29 +1,62 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
+import {
+  CELL,
+  EASE_COLORS,
+  FOCUS,
+  INK,
+  LEAF,
+  LINE,
+  META,
+  MONO,
+  SOFT,
+} from "@/components/landing/home/styles";
+import { cn } from "@/lib/utils";
+
+const LINK = cn(
+  "group flex items-center justify-between gap-4 px-5 py-4 font-medium text-[15px] hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
+  INK,
+  CELL,
+  EASE_COLORS,
+  FOCUS
+);
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
-      <div className="flex flex-col items-center gap-2">
-        <h1 className="bg-linear-to-r from-zinc-800 to-zinc-600 bg-clip-text font-bold text-4xl text-transparent tracking-tight dark:from-zinc-100 dark:to-zinc-400">
-          404 Not Found
-        </h1>
-        <div className="mt-2 h-[0.5px] w-full rounded-full bg-linear-to-r from-zinc-400 to-zinc-200 dark:from-zinc-600 dark:to-zinc-800" />
+    <main className="flex min-h-dvh items-center justify-center bg-white px-4 dark:bg-black">
+      <div className={cn("w-full max-w-md border", LINE)}>
+        <div className={cn("flex flex-col gap-3 p-6", CELL)}>
+          <p className="flex items-baseline justify-between gap-4">
+            <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>
+              404
+            </span>
+            <span className={META}>Not in the catalog</span>
+          </p>
+          <h1 className={cn("font-semibold text-3xl tracking-[-0.03em]", INK)}>
+            No part here.
+          </h1>
+          <p className={cn("text-[15px] leading-relaxed", SOFT)}>
+            This page doesn&apos;t exist or has moved. Every component is listed
+            in the docs.
+          </p>
+        </div>
+        <nav aria-label="Where to go" className={cn("border-t", LINE)}>
+          <Link className={cn(LINK, "border-b", LINE)} href="/docs">
+            Browse the components
+            <ArrowRightIcon
+              aria-hidden
+              className="size-4 text-black/40 group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
+            />
+          </Link>
+          <Link className={LINK} href="/">
+            Back to the homepage
+            <ArrowRightIcon
+              aria-hidden
+              className="size-4 text-black/40 group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
+            />
+          </Link>
+        </nav>
       </div>
-
-      <p className="max-w-md text-center text-lg text-zinc-600 leading-relaxed dark:text-zinc-400">
-        The page you are looking for doesn't exist or has been moved.
-      </p>
-
-      <Link
-        className={
-          "group relative z-10 flex cursor-pointer items-center gap-2 rounded-full bg-linear-to-b from-zinc-800 via-zinc-900 to-zinc-800 px-4 py-2 text-white shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12),inset_0_1px_0.5px_0.5px_rgba(255,255,255,0.15)] transition-all duration-300 hover:from-zinc-900 hover:via-zinc-800 hover:to-zinc-900 hover:shadow-[0_2px_12px_-2px_rgba(0,0,0,0.2),inset_0_1px_0.5px_0.5px_rgba(255,255,255,0.15)] dark:from-gray-50 dark:via-white dark:to-gray-50 dark:text-zinc-900 dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08),inset_0_1px_0.5px_0.5px_rgba(255,255,255,0.6)] dark:hover:from-white dark:hover:via-gray-50 dark:hover:to-white"
-        }
-        href="/"
-      >
-        <span className="font-medium text-sm">Back to Home</span>
-        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-      </Link>
-    </div>
+    </main>
   );
 }
