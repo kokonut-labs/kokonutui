@@ -16,14 +16,8 @@ import {
   useReducedMotion,
   type Variants,
 } from "motion/react";
-import { Pacifico } from "next/font/google";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-
-const pacifico = Pacifico({
-  subsets: ["latin"],
-  weight: ["400"],
-});
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
@@ -207,12 +201,18 @@ export default function ShapeHero({
   title1 = "Elevate Your",
   title2 = "Digital Vision",
   subtitle = "UI Components built with Tailwind CSS.",
+  title2ClassName,
   className,
   children,
 }: {
   title1?: string;
   title2?: string;
   subtitle?: string;
+  /**
+   * Extra classes for the second title line, such as a script font's
+   * `className` from next/font. Without it the line uses the inherited font.
+   */
+  title2ClassName?: string;
   className?: string;
   /** Rendered under the subtitle, e.g. call-to-action buttons. */
   children?: ReactNode;
@@ -252,7 +252,7 @@ export default function ShapeHero({
               <span
                 className={cn(
                   "bg-linear-to-r from-indigo-500 via-black/90 to-rose-500 bg-clip-text text-transparent dark:from-indigo-300 dark:via-white/90 dark:to-rose-300",
-                  pacifico.className
+                  title2ClassName
                 )}
               >
                 {title2}
