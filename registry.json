@@ -123,10 +123,7 @@
       "name": "shimmer-text",
       "type": "registry:component",
       "title": "Shimmer Text",
-      "description": "Animated shimmer text with a looping gradient sweep across the letters, built with React, Tailwind CSS gradients and Motion animations.",
-      "dependencies": [
-        "motion"
-      ],
+      "description": "Animated shimmer text with a looping gradient sweep across the letters, built with React and Tailwind CSS gradients and keyframes.",
       "files": [
         {
           "path": "components/kokonutui/shimmer-text.tsx",
@@ -450,8 +447,8 @@
       "title": "Hold Button",
       "description": "Press-and-hold confirmation button with an animated progress fill, configurable hold duration, and color variants, built with React and Motion.",
       "dependencies": [
-        "lucide-react",
-        "motion"
+        "class-variance-authority",
+        "lucide-react"
       ],
       "registryDependencies": [
         "button"
@@ -595,10 +592,7 @@
       "name": "swoosh-text",
       "type": "registry:component",
       "title": "Swoosh Text",
-      "description": "Hover text effect with layered colorful shadows that snap flat on mouseover, built with React, Tailwind CSS and Motion hover animations.",
-      "dependencies": [
-        "motion"
-      ],
+      "description": "Hover text effect with layered colorful shadows that snap flat on mouseover, built with React and Tailwind CSS transitions.",
       "files": [
         {
           "path": "components/kokonutui/swoosh-text.tsx",
@@ -761,10 +755,7 @@
       "name": "loader",
       "type": "registry:component",
       "title": "Loader",
-      "description": "Animated loading indicator with rotating gradient rings, size variants and customizable title text. Built with React, Tailwind CSS and Motion.",
-      "dependencies": [
-        "motion"
-      ],
+      "description": "Animated loading indicator with rotating gradient rings, size variants and customizable title text. Built with React and Tailwind CSS.",
       "files": [
         {
           "path": "components/kokonutui/loader.tsx",
