@@ -55,7 +55,10 @@ const SlicedText: React.FC<SlicedTextProps> = ({
         <motion.span
           aria-hidden="true"
           // -ml-0.5 nudges the top half left, so the cut reads as a slice.
-          className={cn("absolute -ml-0.5 w-full text-4xl", className)}
+          className={cn(
+            "absolute top-0 left-0 -ml-0.5 w-full text-4xl",
+            className
+          )}
           transition={{ duration: 0.1 }}
           variants={{
             default: {
@@ -74,7 +77,7 @@ const SlicedText: React.FC<SlicedTextProps> = ({
         </motion.span>
         <motion.span
           aria-hidden="true"
-          className={cn("absolute w-full text-4xl", className)}
+          className={cn("absolute top-0 left-0 w-full text-4xl", className)}
           transition={{ duration: 0.1 }}
           variants={{
             default: {
