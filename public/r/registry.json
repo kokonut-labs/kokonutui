@@ -569,6 +569,21 @@
       ]
     },
     {
+      "name": "wheel-picker",
+      "type": "registry:component",
+      "title": "Wheel Picker",
+      "description": "iOS-style 3D drum picker with flick momentum, looping columns, rubber-band ends and a selection band that recolors text exactly at its edge, built with React and Motion.",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/wheel-picker.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "type-writer",
       "type": "registry:component",
       "title": "Typing Text",

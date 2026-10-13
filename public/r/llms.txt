@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 46 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 47 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -57,6 +57,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Toolbar](https://kokonutui.com/docs/navigation/toolbar.md): Figma-inspired toolbar where the selected tool expands to reveal its label with spring animations, built with React, Motion, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/toolbar`
 - [Typing Text](https://kokonutui.com/docs/texts/type-writer.md): Typewriter text animation that types and deletes multiple sequences with a blinking cursor and auto loop, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/type-writer`
 - [V0 Button](https://kokonutui.com/docs/buttons/v0-button.md): Open in v0 button that sends a component registry JSON to v0.dev for instant editing, built with React, the shadcn Button, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/v0-button`
+- [Wheel Picker](https://kokonutui.com/docs/inputs/wheel-picker.md): iOS-style 3D drum picker with flick momentum, looping columns, rubber-band ends and a selection band that recolors text exactly at its edge, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/wheel-picker`
 - [X Card](https://kokonutui.com/docs/cards/tweet-card.md): X (Twitter) style post card with author details, verified badge, reply thread and hover gradient, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/tweet-card`
 
 ## Templates and Premium Components (Kokonut UI Pro)
