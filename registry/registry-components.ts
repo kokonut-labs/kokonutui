@@ -398,6 +398,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "wheel-picker",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/wheel-picker.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "type-writer",
     type: "registry:component",
     dependencies: ["motion"],
