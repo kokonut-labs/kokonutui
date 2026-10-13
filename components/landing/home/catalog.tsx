@@ -129,8 +129,8 @@ function Cover({ featured }: { featured?: Part }) {
             )}
             style={enter(0)}
           >
-            Components
-            <br />
+            {/* The space keeps the words apart for crawlers and screen readers. */}
+            Components <br />
             that feel right.
           </h1>
           <p
@@ -140,9 +140,9 @@ function Cover({ featured }: { featured?: Part }) {
             )}
             style={enter(1)}
           >
-            A catalog of React components built with Tailwind CSS and Motion.
-            Every part on this page is live: try it, then install it with one
-            command or one prompt.
+            Open-source React components built with Tailwind CSS, Motion and
+            shadcn/ui. Every component on this page is live: try it, then
+            install it with one command or one prompt.
           </p>
         </div>
         {featured ? <FeaturedPlate part={featured} /> : null}
@@ -168,13 +168,13 @@ function Cover({ featured }: { featured?: Part }) {
             EASE_COLORS,
             FOCUS_INSET
           )}
-          href="#index"
+          href="#all-components"
           style={enter(2)}
         >
           <span className="flex flex-col gap-1">
-            <span className={META}>Contents</span>
+            <span className={META}>Library</span>
             <span className={cn("font-medium text-[17px]", INK)}>
-              Browse the index
+              Browse all components
             </span>
           </span>
           <ArrowDownIcon
@@ -326,12 +326,12 @@ function ConnectEditor() {
 
 function Plates({ plates }: { plates: Part[] }) {
   return (
-    <section aria-labelledby="plates" className="pt-24 md:pt-32">
+    <section aria-labelledby="featured" className="pt-24 md:pt-32">
       <SectionHead
-        aside="Selected parts, running live. Each one installs as a single file you own."
-        id="plates"
+        aside="Live demos, not screenshots. Each component installs as a single file you own."
+        id="featured"
         number="01"
-        title="Plates"
+        title="Animated React components"
       />
       <div
         className={cn(
@@ -473,12 +473,16 @@ function Index({ parts }: { parts: Part[] }) {
   }
 
   return (
-    <section aria-labelledby="index" className="scroll-mt-24 pt-24 md:pt-32">
+    <section
+      aria-labelledby="all-components-title"
+      className="scroll-mt-24 pt-24 md:pt-32"
+      id="all-components"
+    >
       <SectionHead
-        aside="Every part, by section. Codes match the plates; each name opens its page in the docs."
-        id="index"
+        aside="Every Kokonut UI component by category, from AI chat inputs to text effects. Each name opens its docs page."
+        id="all-components-title"
         number="02"
-        title="Index"
+        title="All components"
       />
       <div
         className={cn(
@@ -540,7 +544,7 @@ function Index({ parts }: { parts: Part[] }) {
             Something missing?
           </span>
           <span className={cn("text-[14px] leading-relaxed", SOFT)}>
-            The catalog grows in the open. Ask for a part, or send one, on
+            The library grows in the open. Ask for a component, or send one, on
             GitHub.
           </span>
           <ArrowUpRightIcon
@@ -559,16 +563,16 @@ function Ordering() {
   return (
     <section aria-labelledby="ordering" className="pt-24 md:pt-32">
       <SectionHead
-        aside="Kokonut UI is a shadcn registry, so every part arrives as source in your repo, with its dependencies installed."
+        aside="Kokonut UI is a shadcn/ui registry, so every component arrives as source in your repo, with its dependencies installed."
         id="ordering"
         number="03"
-        title="Three ways in"
+        title="How to install"
       />
       <ol className={cn("grid grid-cols-1 border md:grid-cols-3", GRID, LINE)}>
-        <Method code="A" title="Agent">
+        <Method code="A" title="AI agent">
           <p className={cn("text-[14px] leading-relaxed", SOFT)}>
-            Name a part, or describe what you need. Your agent finds it in the
-            registry and installs it with its dependencies.
+            Name a component, or describe what you need. Your agent finds it in
+            the registry and installs it with its dependencies.
           </p>
           <CopyLine
             className={cn("mt-auto", INK)}
@@ -577,10 +581,10 @@ function Ordering() {
             value="Add an AI chat input with a model picker to the home page"
           />
         </Method>
-        <Method code="B" title="Command line">
+        <Method code="B" title="shadcn CLI">
           <p className={cn("text-[14px] leading-relaxed", SOFT)}>
-            Name the part. The shadcn CLI writes the file and installs what it
-            needs.
+            Name the component. The shadcn CLI writes the file and installs what
+            it needs.
           </p>
           <CopyLine
             className={cn("mt-auto", INK)}
@@ -640,7 +644,7 @@ function References() {
         aside="What developers said when they found it, including the person behind shadcn/ui."
         id="references"
         number="04"
-        title="References"
+        title="What developers say"
       />
       <div
         className={cn("grid grid-cols-1 border lg:grid-cols-12", GRID, LINE)}
@@ -726,10 +730,10 @@ function Supplement() {
   return (
     <section aria-labelledby="supplement" className="pt-24 md:pt-32">
       <SectionHead
-        aside="Complete pages and premium sections, on the same stack and to the same standard."
+        aside="Complete website templates and premium sections, on the same stack: Next.js, Tailwind CSS, Motion and shadcn/ui."
         id="supplement"
         number="05"
-        title="Supplement: Pro"
+        title="Kokonut UI Pro"
       />
       <div className={cn("grid grid-cols-1 border md:grid-cols-3", GRID, LINE)}>
         {PRO_TEMPLATES.map((t, i) => (
