@@ -18,8 +18,7 @@ import {
   Trash2Icon,
   XCircleIcon,
 } from "lucide-react";
-import { motion, useAnimation } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -67,67 +66,159 @@ interface HoldButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof holdButtonVariants> {
   holdDuration?: number;
+  /**
+   * Called once the button has been held for the full `holdDuration`.
+   * A short click or an early release never calls it.
+   */
+  onHoldComplete?: () => void;
 }
+
+const HOLD_KEYS = new Set([" ", "Enter"]);
+
+const holdFeedbackClassName = cn(
+  "select-none [-webkit-touch-callout:none]",
+  "transition-[color,background-color,border-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
+  "active:scale-[0.97] motion-reduce:active:scale-100"
+);
 
 export default function HoldButton({
   className,
   variant = "red",
   holdDuration = 3000,
+  onHoldComplete,
+  children,
+  type = "button",
   ...props
 }: HoldButtonProps) {
   const [isHolding, setIsHolding] = useState(false);
-  const controls = useAnimation();
+  const holdingRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onHoldCompleteRef = useRef(onHoldComplete);
 
-  async function handleHoldStart() {
+  useEffect(() => {
+    onHoldCompleteRef.current = onHoldComplete;
+  }, [onHoldComplete]);
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    },
+    []
+  );
+
+  function handleHoldStart() {
+    if (holdingRef.current) {
+      return;
+    }
+    holdingRef.current = true;
     setIsHolding(true);
-    controls.set({ width: "0%" });
-    await controls.start({
-      width: "100%",
-      transition: {
-        duration: holdDuration / 1000,
-        ease: "linear",
-      },
-    });
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      if (holdingRef.current) {
+        onHoldCompleteRef.current?.();
+      }
+    }, holdDuration);
   }
 
   function handleHoldEnd() {
+    if (!holdingRef.current) {
+      return;
+    }
+    holdingRef.current = false;
     setIsHolding(false);
-    controls.stop();
-    controls.start({
-      width: "0%",
-      transition: { duration: 0.1 },
-    });
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }
+
+  function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+    props.onPointerDown?.(e);
+    if (e.button !== 0) {
+      return;
+    }
+    // Touch pointers are captured implicitly, which would keep the hold
+    // going after the finger slides off. Release so pointerleave cancels it.
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    handleHoldStart();
   }
 
   return (
     <Button
-      className={cn(holdButtonVariants({ variant, className }))}
-      onMouseDown={handleHoldStart}
-      onMouseLeave={handleHoldEnd}
-      onMouseUp={handleHoldEnd}
-      onTouchCancel={handleHoldEnd}
-      onTouchEnd={handleHoldEnd}
-      onTouchStart={handleHoldStart}
       {...props}
+      className={cn(
+        holdButtonVariants({ variant }),
+        holdFeedbackClassName,
+        className
+      )}
+      onBlur={(e) => {
+        props.onBlur?.(e);
+        handleHoldEnd();
+      }}
+      onKeyDown={(e) => {
+        props.onKeyDown?.(e);
+        if (!e.repeat && HOLD_KEYS.has(e.key)) {
+          handleHoldStart();
+        }
+      }}
+      onKeyUp={(e) => {
+        props.onKeyUp?.(e);
+        if (HOLD_KEYS.has(e.key)) {
+          handleHoldEnd();
+        }
+      }}
+      onPointerCancel={(e) => {
+        props.onPointerCancel?.(e);
+        handleHoldEnd();
+      }}
+      onPointerDown={handlePointerDown}
+      onPointerLeave={(e) => {
+        props.onPointerLeave?.(e);
+        handleHoldEnd();
+      }}
+      onPointerUp={(e) => {
+        props.onPointerUp?.(e);
+        handleHoldEnd();
+      }}
+      type={type}
     >
-      <motion.div
-        animate={controls}
-        className={cn("absolute top-0 left-0 h-full", {
-          "bg-red-200/30 dark:bg-red-300/30": variant === "red",
-          "bg-green-200/30 dark:bg-green-300/30": variant === "green",
-          "bg-blue-200/30 dark:bg-blue-300/30": variant === "blue",
-          "bg-orange-200/30 dark:bg-orange-300/30": variant === "orange",
-          "bg-gray-200/30 dark:bg-gray-300/30": variant === "grey",
-        })}
-        initial={{ width: "0%" }}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-0 transition-[clip-path]",
+          "motion-reduce:transition-opacity motion-reduce:[clip-path:none]",
+          isHolding
+            ? "ease-linear [clip-path:inset(0_0_0_0)] motion-reduce:opacity-100"
+            : "duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] [clip-path:inset(0_100%_0_0)] motion-reduce:opacity-0",
+          {
+            "bg-red-200/30 dark:bg-red-300/30": variant === "red",
+            "bg-green-200/30 dark:bg-green-300/30": variant === "green",
+            "bg-blue-200/30 dark:bg-blue-300/30": variant === "blue",
+            "bg-orange-200/30 dark:bg-orange-300/30": variant === "orange",
+            "bg-gray-200/30 dark:bg-gray-300/30": variant === "grey",
+          }
+        )}
+        style={
+          isHolding ? { transitionDuration: `${holdDuration}ms` } : undefined
+        }
       />
       <span className="relative z-10 flex w-full items-center justify-center gap-2">
-        {(variant === "red" || !variant) && <Trash2Icon className="h-4 w-4" />}
-        {variant === "green" && <ArchiveXIcon className="h-4 w-4" />}
-        {variant === "blue" && <XCircleIcon className="h-4 w-4" />}
-        {variant === "orange" && <AlertCircleIcon className="h-4 w-4" />}
-        {variant === "grey" && <BanIcon className="h-4 w-4" />}
-        {isHolding ? "Release" : "Hold me"}
+        {children ?? (
+          <>
+            {(variant === "red" || !variant) && (
+              <Trash2Icon className="h-4 w-4" />
+            )}
+            {variant === "green" && <ArchiveXIcon className="h-4 w-4" />}
+            {variant === "blue" && <XCircleIcon className="h-4 w-4" />}
+            {variant === "orange" && <AlertCircleIcon className="h-4 w-4" />}
+            {variant === "grey" && <BanIcon className="h-4 w-4" />}
+            {isHolding ? "Release" : "Hold me"}
+          </>
+        )}
       </span>
     </Button>
   );

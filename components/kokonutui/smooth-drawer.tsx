@@ -61,6 +61,8 @@ interface DrawerDemoProps extends React.HTMLAttributes<HTMLDivElement> {
   primaryButtonText?: string;
   secondaryButtonText?: string;
   onPrimaryAction?: () => void;
+  /** Link for the primary button. Defaults to the demo's pricing page. */
+  primaryHref?: string;
   onSecondaryAction?: () => void;
   price?: number;
   discountedPrice?: number;
@@ -119,6 +121,8 @@ export default function SmoothDrawer({
   description = "100+ collection of UI Components and templates built for React, Next.js, and Tailwind CSS. Spend no time on design and focus on shipping.",
   primaryButtonText = "Buy Now",
   secondaryButtonText = "Maybe Later",
+  onPrimaryAction,
+  primaryHref = "https://kokonutui.pro/#pricing",
   onSecondaryAction,
   price = 169,
   discountedPrice = 99,
@@ -174,7 +178,8 @@ export default function SmoothDrawer({
               <div className="w-full">
                 <Link
                   className="group relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 font-semibold text-sm text-white tracking-wide shadow-lg shadow-rose-500/20 transition-all duration-500 hover:from-rose-600 hover:to-pink-600 hover:shadow-rose-500/30 hover:shadow-xl dark:from-rose-600 dark:to-pink-600 dark:hover:from-rose-500 dark:hover:to-pink-500"
-                  href="https://kokonutui.pro/#pricing"
+                  href={primaryHref}
+                  onClick={onPrimaryAction}
                   target="_blank"
                 >
                   <motion.span

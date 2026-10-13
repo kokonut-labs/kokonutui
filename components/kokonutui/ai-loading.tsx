@@ -10,7 +10,7 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 const TASK_SEQUENCES = [
   {
@@ -52,7 +52,16 @@ const TASK_SEQUENCES = [
   },
 ];
 
-const LoadingAnimation = ({ progress }: { progress: number }) => (
+const PROGRESS_MASK_RADIUS = 60;
+const PROGRESS_MASK_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_MASK_RADIUS;
+
+const LoadingAnimation = ({
+  progress,
+  maskId,
+}: {
+  progress: number;
+  maskId: string;
+}) => (
   <div className="relative h-6 w-6">
     <svg
       aria-label={`Loading progress: ${Math.round(progress)}%`}
@@ -64,14 +73,19 @@ const LoadingAnimation = ({ progress }: { progress: number }) => (
       <title>Loading Progress Indicator</title>
 
       <defs>
-        <mask id="progress-mask">
+        <mask id={maskId}>
           <rect fill="black" height="240" width="240" />
+          {/* Dim track so the rings stay visible at 0% */}
+          <circle cx="120" cy="120" fill="white" opacity="0.2" r="120" />
+          {/* A stroke as wide as the disk turns the dash into a growing pie slice */}
           <circle
             cx="120"
             cy="120"
-            fill="white"
-            r="120"
-            strokeDasharray={`${(progress / 100) * 754}, 754`}
+            fill="none"
+            r={PROGRESS_MASK_RADIUS}
+            stroke="white"
+            strokeDasharray={`${(progress / 100) * PROGRESS_MASK_CIRCUMFERENCE} ${PROGRESS_MASK_CIRCUMFERENCE}`}
+            strokeWidth={PROGRESS_MASK_RADIUS * 2}
             transform="rotate(-90 120 120)"
           />
         </mask>
@@ -94,8 +108,6 @@ const LoadingAnimation = ({ progress }: { progress: number }) => (
                     .g-spin circle:nth-child(2) { animation: rotate-ccw 8s linear infinite; }
                     .g-spin circle:nth-child(3) { animation: rotate-cw 8s linear infinite; }
                     .g-spin circle:nth-child(4) { animation: rotate-ccw 8s linear infinite; }
-                    .g-spin circle:nth-child(5) { animation: rotate-cw 8s linear infinite; }
-                    .g-spin circle:nth-child(6) { animation: rotate-ccw 8s linear infinite; }
 
                     .g-spin circle:nth-child(2n) { animation-delay: 0.2s; }
                     .g-spin circle:nth-child(3n) { animation-delay: 0.3s; }
@@ -104,12 +116,10 @@ const LoadingAnimation = ({ progress }: { progress: number }) => (
 
       <g
         className="g-spin"
-        mask="url(#progress-mask)"
+        mask={`url(#${maskId})`}
         strokeDasharray="18% 40%"
         strokeWidth="16"
       >
-        <circle cx="120" cy="120" opacity="0.95" r="150" stroke="#FF2E7E" />
-        <circle cx="120" cy="120" opacity="0.95" r="130" stroke="#00E5FF" />
         <circle cx="120" cy="120" opacity="0.95" r="110" stroke="#4ADE80" />
         <circle cx="120" cy="120" opacity="0.95" r="90" stroke="#FFA726" />
         <circle cx="120" cy="120" opacity="0.95" r="70" stroke="#FFEB3B" />
@@ -128,6 +138,7 @@ export default function AILoadingState() {
   const codeContainerRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
+  const progressMaskId = useId();
   const lineHeight = 28;
 
   // Only animate while on screen — an off-screen interval keeps waking the
@@ -222,7 +233,8 @@ export default function AILoadingState() {
       <div className="w-auto space-y-4">
         <div className="ml-2 flex items-center space-x-2 font-medium text-gray-600 dark:text-gray-300">
           <LoadingAnimation
-            progress={(sequenceIndex / TASK_SEQUENCES.length) * 100}
+            maskId={progressMaskId}
+            progress={((sequenceIndex + 1) / TASK_SEQUENCES.length) * 100}
           />
           <span className="text-sm">{currentSequence.status}...</span>
         </div>

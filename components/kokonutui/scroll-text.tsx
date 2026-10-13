@@ -19,25 +19,27 @@ interface ScrollTextProps {
   className?: string;
 }
 
+// Module scope keeps the default array stable, so the observer effect below
+// does not re-run on every render.
+const DEFAULT_TEXTS = [
+  "TailwindCSS",
+  "Kokonut UI",
+  "shadcn/ui",
+  "Next.js",
+  "Vercel",
+  "Motion",
+  "React",
+  "Resend",
+  "TypeScript",
+  "Fumadocs",
+  "Supabase",
+];
+
 export default function ScrollText({
-  texts = [
-    "TailwindCSS",
-    "Kokonut UI",
-    "shadcn/ui",
-    "Next.js",
-    "Vercel",
-    "Motion",
-    "React",
-    "Resend",
-    "TypeScript",
-    "Fumadocs",
-    "Supabase",
-    "Vercel",
-  ],
+  texts = DEFAULT_TEXTS,
   className,
 }: ScrollTextProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const observerRef = useRef<IntersectionObserver | null>(null);
   const itemsRef = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -48,33 +50,40 @@ export default function ScrollText({
     }
   }, []);
 
-  const handleIntersection = (entries: IntersectionObserverEntry[]) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const index = itemsRef.current.findIndex(
-          (item) => item === entry.target
-        );
-        setActiveIndex(index);
-      }
-    });
-  };
-
-  // Setup intersection observer
-  const setupObserver = (element: HTMLDivElement | null, index: number) => {
-    if (element && !itemsRef.current[index]) {
-      itemsRef.current[index] = element;
-
-      if (!observerRef.current) {
-        observerRef.current = new IntersectionObserver(handleIntersection, {
-          threshold: 0.7,
-          root: containerRef.current,
-          rootMargin: "-45% 0px -45% 0px",
-        });
-      }
-
-      observerRef.current.observe(element);
+  // Highlight the item crossing the middle band of the scroll container. This
+  // runs in an effect because item refs attach before the container ref, so
+  // `containerRef.current` is still null inside the item ref callbacks.
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) {
+      return;
     }
-  };
+
+    const indexByItem = new Map<Element, number>();
+    // The band is 10% of the container, shorter than an item, so any overlap
+    // counts (a 0.7 ratio could never be reached).
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const index = indexByItem.get(entry.target);
+          if (entry.isIntersecting && index !== undefined) {
+            setActiveIndex(index);
+          }
+        }
+      },
+      { root, rootMargin: "-45% 0px -45% 0px", threshold: 0 }
+    );
+
+    const items = itemsRef.current.slice(0, texts.length);
+    for (const [index, item] of items.entries()) {
+      if (item) {
+        indexByItem.set(item, index);
+        observer.observe(item);
+      }
+    }
+
+    return () => observer.disconnect();
+  }, [texts]);
 
   // Animation variants for the reveal effect
   const containerVariants: Variants = {
@@ -134,8 +143,10 @@ export default function ScrollText({
               )}
               custom={index}
               initial="hidden"
-              key={text}
-              ref={(el) => setupObserver(el, index)}
+              key={`${index}-${text}`}
+              ref={(el) => {
+                itemsRef.current[index] = el;
+              }}
               variants={itemVariants}
               viewport={{
                 once: false,

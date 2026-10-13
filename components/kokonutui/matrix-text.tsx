@@ -11,7 +11,7 @@
  */
 
 import { motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface LetterState {
@@ -19,6 +19,11 @@ interface LetterState {
   isMatrix: boolean;
   isSpace: boolean;
 }
+
+// Stable empty value, so resetting an already-idle animation does not re-render.
+const NO_MATRIX_CHARS: ReadonlyMap<number, string> = new Map();
+
+const getRandomChar = () => (Math.random() > 0.5 ? "1" : "0");
 
 interface MatrixTextProps {
   text?: string;
@@ -35,77 +40,67 @@ const MatrixText = ({
   letterAnimationDuration = 500,
   letterInterval = 100,
 }: MatrixTextProps) => {
-  const [letters, setLetters] = useState<LetterState[]>(() =>
-    text.split("").map((char) => ({
-      char,
-      isMatrix: false,
+  // Binary characters currently shown in place of the letter at each index.
+  const [matrixChars, setMatrixChars] = useState(NO_MATRIX_CHARS);
+
+  const letters: LetterState[] = text.split("").map((char, index) => {
+    const matrixChar = matrixChars.get(index);
+    return {
+      char: matrixChar ?? char,
+      isMatrix: matrixChar !== undefined,
       isSpace: char === " ",
-    }))
-  );
-  const [isAnimating, setIsAnimating] = useState(false);
+    };
+  });
 
-  const getRandomChar = useCallback(
-    () => (Math.random() > 0.5 ? "1" : "0"),
-    []
-  );
+  // Restart whenever `text` or the timings change, and cancel every pending
+  // timer on cleanup so nothing updates state after unmount.
+  useEffect(() => {
+    setMatrixChars(NO_MATRIX_CHARS);
 
-  const animateLetter = useCallback(
-    (index: number) => {
-      if (index >= text.length) return;
+    const timeouts = new Set<ReturnType<typeof setTimeout>>();
+    const schedule = (callback: () => void, delay: number) => {
+      const timeout = setTimeout(() => {
+        timeouts.delete(timeout);
+        callback();
+      }, delay);
+      timeouts.add(timeout);
+    };
 
-      requestAnimationFrame(() => {
-        setLetters((prev) => {
-          const newLetters = [...prev];
-          if (!newLetters[index].isSpace) {
-            newLetters[index] = {
-              ...newLetters[index],
-              char: getRandomChar(),
-              isMatrix: true,
-            };
-          }
-          return newLetters;
+    const animateLetter = (index: number) => {
+      if (text[index] === " ") {
+        return;
+      }
+
+      const matrixChar = getRandomChar();
+      setMatrixChars((prev) => new Map(prev).set(index, matrixChar));
+      schedule(() => {
+        setMatrixChars((prev) => {
+          const next = new Map(prev);
+          next.delete(index);
+          return next;
         });
+      }, letterAnimationDuration);
+    };
 
-        setTimeout(() => {
-          setLetters((prev) => {
-            const newLetters = [...prev];
-            newLetters[index] = {
-              ...newLetters[index],
-              char: text[index],
-              isMatrix: false,
-            };
-            return newLetters;
-          });
-        }, letterAnimationDuration);
-      });
-    },
-    [getRandomChar, text, letterAnimationDuration]
-  );
-
-  const startAnimation = useCallback(() => {
-    if (isAnimating) return;
-
-    setIsAnimating(true);
     let currentIndex = 0;
-
     const animate = () => {
       if (currentIndex >= text.length) {
-        setIsAnimating(false);
         return;
       }
 
       animateLetter(currentIndex);
       currentIndex++;
-      setTimeout(animate, letterInterval);
+      schedule(animate, letterInterval);
     };
 
-    animate();
-  }, [animateLetter, text, isAnimating, letterInterval]);
+    schedule(animate, initialDelay);
 
-  useEffect(() => {
-    const timer = setTimeout(startAnimation, initialDelay);
-    return () => clearTimeout(timer);
-  }, []);
+    return () => {
+      for (const timeout of timeouts) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [text, initialDelay, letterAnimationDuration, letterInterval]);
 
   const motionVariants = useMemo(
     () => ({

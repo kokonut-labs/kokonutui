@@ -345,35 +345,38 @@ export function NotificationCenter() {
     return () => observer.disconnect();
   }, []);
 
+  // One tick per second; the tick that reaches the end also stops playback.
   React.useEffect(() => {
     if (!(isPlaying && isVisible)) {
       return;
     }
 
-    const intervalId = setInterval(() => {
-      setCurrentTime((prev) =>
-        prev + 1 >= TOTAL_DURATION ? TOTAL_DURATION : prev + 1
-      );
+    const timeoutId = setTimeout(() => {
+      const nextTime = Math.min(currentTime + 1, TOTAL_DURATION);
+      setCurrentTime(nextTime);
+      if (nextTime >= TOTAL_DURATION) {
+        setIsPlaying(false);
+      }
     }, TIMER_INTERVAL_MS);
 
-    return () => clearInterval(intervalId);
-  }, [isPlaying, isVisible]);
-
-  React.useEffect(() => {
-    if (currentTime >= TOTAL_DURATION) {
-      setIsPlaying(false);
-    }
-  }, [currentTime]);
+    return () => clearTimeout(timeoutId);
+  }, [currentTime, isPlaying, isVisible]);
 
   const handlePlayPause = () => {
-    setIsPlaying((prev) => !prev);
+    if (isPlaying) {
+      setIsPlaying(false);
+      return;
+    }
+    // Pressing Play at the end restarts the track.
+    if (currentTime >= TOTAL_DURATION) {
+      setCurrentTime(MIN_TIME);
+    }
+    setIsPlaying(true);
   };
 
   const handleSeek = (newTime: number) => {
     setCurrentTime(newTime);
-    if (newTime < TOTAL_DURATION && !isPlaying) {
-      setIsPlaying(true);
-    }
+    setIsPlaying(newTime < TOTAL_DURATION);
   };
 
   return (

@@ -20,21 +20,17 @@ import {
   Video,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import useDebounce from "@/hooks/use-debounce";
 
-interface Action {
+export interface Action {
   id: string;
   label: string;
   icon: React.ReactNode;
   description?: string;
   short?: string;
   end?: string;
-}
-
-interface SearchResult {
-  actions: Action[];
 }
 
 const ANIMATION_VARIANTS = {
@@ -118,20 +114,27 @@ const allActionsSample = [
 function ActionSearchBar({
   actions = allActionsSample,
   defaultOpen = false,
+  onSelect,
 }: {
   actions?: Action[];
   defaultOpen?: boolean;
+  /** Called with the chosen action, from Enter or a click. */
+  onSelect?: (action: Action) => void;
 }) {
+  const id = useId();
+  const inputId = `${id}-input`;
+  const listboxId = `${id}-listbox`;
+  const getOptionId = (actionId: string) => `${id}-option-${actionId}`;
+
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState<SearchResult | null>(null);
-  const [isFocused, setIsFocused] = useState(defaultOpen);
-  const [isTyping, setIsTyping] = useState(false);
-  const [selectedAction, setSelectedAction] = useState<Action | null>(null);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [activeIndex, setActiveIndex] = useState(-1);
   const debouncedQuery = useDebounce(query, 200);
 
   const filteredActions = useMemo(() => {
-    if (!debouncedQuery) return actions;
+    if (!debouncedQuery) {
+      return actions;
+    }
 
     const normalizedQuery = debouncedQuery.toLowerCase().trim();
     return actions.filter((action) => {
@@ -141,74 +144,70 @@ function ActionSearchBar({
     });
   }, [debouncedQuery, actions]);
 
-  useEffect(() => {
-    if (!isFocused) {
-      setResult(null);
-      setActiveIndex(-1);
-      return;
-    }
-
-    setResult({ actions: filteredActions });
+  // The list updates after the debounce, so drop the highlight whenever the
+  // visible list changes, not only on keystrokes.
+  const [highlightedList, setHighlightedList] = useState(filteredActions);
+  if (highlightedList !== filteredActions) {
+    setHighlightedList(filteredActions);
     setActiveIndex(-1);
-  }, [filteredActions, isFocused]);
+  }
 
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setQuery(e.target.value);
-      setIsTyping(true);
-      setActiveIndex(-1);
-    },
-    []
-  );
+  const activeAction: Action | undefined = isOpen
+    ? filteredActions[activeIndex]
+    : undefined;
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (!result?.actions.length) return;
+  const openList = () => {
+    setIsOpen(true);
+    setActiveIndex(-1);
+  };
 
-      switch (e.key) {
-        case "ArrowDown":
+  const closeList = () => {
+    setIsOpen(false);
+    setActiveIndex(-1);
+  };
+
+  const selectAction = (action: Action) => {
+    closeList();
+    onSelect?.(action);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    openList();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const count = filteredActions.length;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setIsOpen(true);
+        if (count > 0) {
+          setActiveIndex((prev) => (prev < count - 1 ? prev + 1 : 0));
+        }
+        break;
+      case "ArrowUp":
+        if (isOpen && count > 0) {
           e.preventDefault();
-          setActiveIndex((prev) =>
-            prev < result.actions.length - 1 ? prev + 1 : 0
-          );
-          break;
-        case "ArrowUp":
+          setActiveIndex((prev) => (prev > 0 ? prev - 1 : count - 1));
+        }
+        break;
+      case "Enter":
+        if (isOpen) {
           e.preventDefault();
-          setActiveIndex((prev) =>
-            prev > 0 ? prev - 1 : result.actions.length - 1
-          );
-          break;
-        case "Enter":
-          e.preventDefault();
-          if (activeIndex >= 0 && result.actions[activeIndex]) {
-            setSelectedAction(result.actions[activeIndex]);
+          if (activeAction) {
+            selectAction(activeAction);
           }
-          break;
-        case "Escape":
-          setIsFocused(false);
-          setActiveIndex(-1);
-          break;
-      }
-    },
-    [result?.actions, activeIndex]
-  );
-
-  const handleActionClick = useCallback((action: Action) => {
-    setSelectedAction(action);
-  }, []);
-
-  const handleFocus = useCallback(() => {
-    setSelectedAction(null);
-    setIsFocused(true);
-    setActiveIndex(-1);
-  }, []);
-
-  const handleBlur = useCallback(() => {
-    setTimeout(() => {
-      setIsFocused(false);
-      setActiveIndex(-1);
-    }, 200);
-  }, []);
+        }
+        break;
+      case "Escape":
+        closeList();
+        break;
+      default:
+        break;
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-xl">
@@ -216,25 +215,24 @@ function ActionSearchBar({
         <div className="sticky top-0 z-10 w-full max-w-sm bg-background pt-4 pb-1">
           <label
             className="mb-1 block font-medium text-gray-500 text-xs dark:text-gray-400"
-            htmlFor="search"
+            htmlFor={inputId}
           >
             Search Commands
           </label>
           <div className="relative">
             <Input
               aria-activedescendant={
-                activeIndex >= 0
-                  ? `action-${result?.actions[activeIndex]?.id}`
-                  : undefined
+                activeAction ? getOptionId(activeAction.id) : undefined
               }
               aria-autocomplete="list"
-              aria-expanded={isFocused && !!result}
+              aria-controls={isOpen ? listboxId : undefined}
+              aria-expanded={isOpen}
               autoComplete="off"
               className="h-9 rounded-lg py-1.5 pr-9 pl-3 text-sm focus-visible:ring-offset-0"
-              id="search"
-              onBlur={handleBlur}
+              id={inputId}
+              onBlur={closeList}
               onChange={handleInputChange}
-              onFocus={handleFocus}
+              onFocus={openList}
               onKeyDown={handleKeyDown}
               placeholder="What's up?"
               role="combobox"
@@ -271,31 +269,34 @@ function ActionSearchBar({
 
         <div className="w-full max-w-sm">
           <AnimatePresence>
-            {isFocused && result && !selectedAction && (
+            {isOpen && (
               <motion.div
                 animate="show"
-                aria-label="Search results"
                 className="mt-1 w-full overflow-hidden rounded-md border bg-white shadow-xs dark:border-gray-800 dark:bg-black"
                 exit="exit"
                 initial="hidden"
-                role="listbox"
+                // Keep focus in the input while pressing inside the list, so
+                // its blur never closes the list before the click lands.
+                onMouseDown={(e) => e.preventDefault()}
                 variants={ANIMATION_VARIANTS.container}
               >
-                <motion.ul role="none">
-                  {result.actions.map((action) => (
+                <motion.ul
+                  aria-label="Search results"
+                  id={listboxId}
+                  role="listbox"
+                >
+                  {filteredActions.map((action, index) => (
                     <motion.li
-                      aria-selected={
-                        activeIndex === result.actions.indexOf(action)
-                      }
+                      aria-selected={activeIndex === index}
                       className={`flex cursor-pointer items-center justify-between rounded-md px-3 py-2 hover:bg-gray-200 dark:hover:bg-zinc-900 ${
-                        activeIndex === result.actions.indexOf(action)
+                        activeIndex === index
                           ? "bg-gray-100 dark:bg-zinc-800"
                           : ""
                       }`}
-                      id={`action-${action.id}`}
+                      id={getOptionId(action.id)}
                       key={action.id}
                       layout
-                      onClick={() => handleActionClick(action)}
+                      onClick={() => selectAction(action)}
                       role="option"
                       variants={ANIMATION_VARIANTS.item}
                     >
