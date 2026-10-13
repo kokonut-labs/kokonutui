@@ -1,14 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const prePath = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : `https://${process.env.NEXT_PUBLIC_SITE_URL}`;
+const REGISTRY_URL = "https://kokonutui.com/r";
 
 export default function V0Button({
   name = "liquid-glass-card",
+  url = `${REGISTRY_URL}/${name}.json`,
   className,
-}: { name?: string } & React.ComponentProps<typeof Button>) {
+}: {
+  name?: string;
+  /** Registry item JSON to open in v0. Defaults to the KokonutUI entry for `name`. */
+  url?: string;
+} & React.ComponentProps<typeof Button>) {
   return (
     <Button
       aria-label="Open in v0"
@@ -19,7 +22,7 @@ export default function V0Button({
       )}
     >
       <a
-        href={`https://v0.dev/chat/api/open?url=${prePath}/r/${name}.json`}
+        href={`https://v0.dev/chat/api/open?url=${encodeURIComponent(url)}`}
         rel="noreferrer"
         target="_blank"
       >

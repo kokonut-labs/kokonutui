@@ -208,6 +208,7 @@ const ExperienceCard = ({ experience }: { experience: ExperienceItem }) => (
         className="object-cover transition-transform duration-300 group-hover:scale-105"
         fill
         src={experience.image}
+        unoptimized
       />
       <Button
         className="absolute top-2 right-2 z-10 rounded-full bg-white/80 text-neutral-700 backdrop-blur-sm hover:bg-white/90 hover:text-black"

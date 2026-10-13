@@ -4,6 +4,7 @@ import { CreditCard, FileText, LogOut, Settings, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
+import Gemini from "@/components/icons/gemini";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import Gemini from "../icons/gemini";
 
 interface Profile {
   name: string;
@@ -106,6 +106,7 @@ export default function ProfileDropdown({
                       className="h-full w-full rounded-full object-cover"
                       height={36}
                       src={data.avatar}
+                      unoptimized
                       width={36}
                     />
                   </div>

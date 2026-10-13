@@ -48,14 +48,28 @@ const WaveformPath = () => (
   />
 );
 
+// Tailwind never generates classes built at runtime (`fill-${name}`), so the
+// waveform colour comes from the tab's bg-* class: palette colours resolve
+// through Tailwind v4's theme variables, arbitrary values are used as is.
+function getWaveFill(colorClass: string): string {
+  const value = colorClass.split(" ").at(0)?.replace("bg-", "");
+  if (!value) {
+    return "currentColor";
+  }
+  if (value.startsWith("[") && value.endsWith("]")) {
+    return value.slice(1, -1).replaceAll("_", " ");
+  }
+  return `var(--color-${value.split("/").at(0)}, currentColor)`;
+}
+
 function TabCardContent({
   title,
   description,
-  fillClass,
+  fill,
 }: {
   title: string;
   description: string;
-  fillClass: string;
+  fill: string;
 }) {
   return (
     <div className="relative h-full">
@@ -69,18 +83,21 @@ function TabCardContent({
         >
           <motion.g
             animate={{ opacity: 0.15 }}
-            className={`fill-${fillClass} stroke-${fillClass}`}
             initial={{ opacity: 0 }}
-            style={{ strokeWidth: 1 }}
+            style={{ fill, stroke: fill, strokeWidth: 1 }}
             transition={{ duration: 0.5 }}
           >
             <WaveformPath />
           </motion.g>
           <motion.g
             animate={{ opacity: 0.1 }}
-            className={`fill-${fillClass} stroke-${fillClass}`}
             initial={{ opacity: 0 }}
-            style={{ strokeWidth: 1, transform: "translateY(10px)" }}
+            style={{
+              fill,
+              stroke: fill,
+              strokeWidth: 1,
+              transform: "translateY(10px)",
+            }}
             transition={{ duration: 0.5 }}
           >
             <WaveformPath />
@@ -89,7 +106,7 @@ function TabCardContent({
       </div>
       <div className="relative flex h-full flex-col p-6">
         <div className="space-y-2">
-          <h3 className="bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 font-semibold text-2xl tracking-tight [text-shadow:_0_1px_1px_rgb(0_0_0_/_10%)]">
+          <h3 className="bg-gradient-to-r from-black via-black/90 to-black/70 bg-clip-text font-semibold text-2xl text-transparent tracking-tight dark:from-white dark:via-white/90 dark:to-white/70">
             {title}
           </h3>
           <p className="max-w-[90%] text-black/50 text-sm leading-relaxed dark:text-white/50">
@@ -256,12 +273,7 @@ export default function SmoothTab({
                   (selectedItem && (
                     <TabCardContent
                       description={selectedItem.description ?? ""}
-                      fillClass={
-                        selectedItem.color
-                          .split(" ")
-                          .at(0)
-                          ?.replace("bg-", "") ?? "blue-500"
-                      }
+                      fill={getWaveFill(selectedItem.color)}
                       title={selectedItem.title}
                     />
                   ))}

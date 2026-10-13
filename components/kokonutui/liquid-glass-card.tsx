@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import React from "react";
-import { Button, type ButtonProps } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -101,7 +101,7 @@ const liquidButtonVariants = cva(
   }
 );
 
-export type LiquidButtonProps = ButtonProps &
+export type LiquidButtonProps = React.ComponentProps<typeof Button> &
   VariantProps<typeof liquidButtonVariants>;
 
 function LiquidButton({
@@ -200,7 +200,7 @@ const TOTAL_DURATION = 45;
 const VOLUME_BAR_COUNT = 8;
 const SEEK_JUMP_SECONDS = 5;
 const TIMER_INTERVAL_MS = 1000;
-const STATIC_BAR_HEIGHT = "6px";
+const STATIC_BAR_SCALE = "scaleY(0.23)";
 const MIN_TIME = 0;
 const BAR_DELAY_INCREMENT = 0.1;
 const PROGRESS_PERCENTAGE_MULTIPLIER = 100;
@@ -215,6 +215,9 @@ interface VolumeBarsProps {
   isPlaying: boolean;
 }
 
+// Shipped with the component so it works without adding keyframes to globals.css.
+const VOLUME_BAR_KEYFRAMES = `@keyframes liquid-glass-volume-bar{0%,100%{transform:${STATIC_BAR_SCALE}}50%{transform:scaleY(1)}}`;
+
 const VolumeBars = React.memo(({ isPlaying }: VolumeBarsProps) => {
   const bars = Array.from({ length: VOLUME_BAR_COUNT }, (_, i) => ({
     id: `bar-${i}`,
@@ -223,15 +226,17 @@ const VolumeBars = React.memo(({ isPlaying }: VolumeBarsProps) => {
 
   return (
     <div className="pointer-events-none flex h-8 w-10 items-end gap-0.5">
+      <style>{VOLUME_BAR_KEYFRAMES}</style>
       {bars.map((bar) => (
         <div
           className={cn(
-            "w-[3px] rounded-sm",
-            isPlaying && "animate-bounce-music motion-reduce:animate-none"
+            "h-[26px] w-[3px] origin-bottom rounded-sm",
+            isPlaying &&
+              "motion-safe:animate-[liquid-glass-volume-bar_0.8s_ease-in-out_infinite]"
           )}
           key={bar.id}
           style={{
-            height: isPlaying ? undefined : STATIC_BAR_HEIGHT,
+            transform: STATIC_BAR_SCALE,
             animationDelay: `${bar.delay}s`,
             background: "linear-gradient(to top, #FF2E55, #FF6B88)",
           }}
@@ -382,6 +387,7 @@ export function NotificationCenter() {
               height={64}
               sizes="64px"
               src="https://ferf1mheo22r9ira.public.blob.vercel-storage.com/portrait2-x5MjJSaQ9ed0HZrewEhH7TkZwjZ66K.jpeg"
+              unoptimized
               width={64}
             />
           </div>

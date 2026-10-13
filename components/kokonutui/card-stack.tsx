@@ -36,7 +36,7 @@ const products: Product[] = [
     subtitle: "Instant Transfers",
     description:
       "Move money in seconds with bank-grade security and zero surprises.",
-    image: "/undraw.svg",
+    image: "https://kokonutui.com/undraw.svg",
     specs: [
       { label: "Speed", value: "Instant" },
       { label: "Security", value: "256-bit" },
@@ -136,8 +136,6 @@ const Card = ({
     scale: 1,
   };
 
-  const isSvg = product.image.endsWith(".svg");
-
   return (
     <motion.div
       animate={{
@@ -204,7 +202,7 @@ const Card = ({
             fill
             sizes="320px"
             src={product.image}
-            unoptimized={isSvg}
+            unoptimized
           />
         </div>
 
