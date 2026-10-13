@@ -134,13 +134,21 @@ export const VIDEO_ID = "2Fj3WewGRow";
 export const PRO_TEMPLATES = [
   {
     name: "Agenta",
+    blurb: "Futuristic, rich in small details",
     image: "/landing/pro-agenta.webp",
     width: 630,
     height: 331,
   },
-  { name: "Lume", image: "/landing/pro-lume.webp", width: 623, height: 383 },
+  {
+    name: "Lume",
+    blurb: "For startups building AI and SaaS",
+    image: "/landing/pro-lume.webp",
+    width: 623,
+    height: 383,
+  },
   {
     name: "Sonae",
+    blurb: "Clean and modern, for AI agents",
     image: "/landing/pro-sonae.webp",
     width: 630,
     height: 345,

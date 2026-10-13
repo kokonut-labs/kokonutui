@@ -3,57 +3,35 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CommandChip } from "./client";
 import { installCommand, VERCEL_OSS_URL } from "./data";
-import { enter, FOCUS, PRESS, PRIMARY_BUTTON } from "./styles";
+import { EASE_COLORS, enter, FOCUS, PRIMARY_BUTTON } from "./styles";
 
 export function Hero() {
   return (
-    <header className="flex flex-col items-center pt-16 pb-12 text-center md:pt-24 md:pb-16">
-      <Link
-        className={cn(
-          "home-enter group mb-7 inline-flex h-8 items-center gap-2.5 rounded-full border border-black/[0.08] bg-white py-1 pr-3 pl-1 text-[13px] text-black/70 hover:border-black/15 hover:text-black dark:border-white/[0.1] dark:bg-black dark:text-white/70 dark:hover:border-white/20 dark:hover:text-white",
-          PRESS,
-          FOCUS
-        )}
-        href="/docs/mcp"
+    <header className="flex flex-col items-center pt-20 pb-14 text-center md:pt-28 md:pb-20">
+      <h1
+        className="home-enter text-balance font-semibold text-[clamp(40px,7vw,72px)] text-black leading-[1.02] tracking-[-0.045em] dark:text-white"
         style={enter(0)}
       >
-        <span className="rounded-full bg-black px-2 py-0.5 font-medium text-[11px] text-white tracking-wide dark:bg-white dark:text-black">
-          MCP
-        </span>
-        Install with Claude Code, Cursor or Codex
-        <ArrowRightIcon
-          aria-hidden
-          className="size-3.5 opacity-50 transition-transform duration-150 ease-out group-hover:translate-x-0.5"
-        />
-      </Link>
-
-      <h1
-        className="home-enter text-balance font-semibold text-[clamp(38px,6.4vw,64px)] text-black leading-[1.04] tracking-[-0.045em] dark:text-white"
-        style={enter(1)}
-      >
         Components that feel right.
-        <span className="block text-black/45 dark:text-white/45">
-          Install in one line, or one prompt.
-        </span>
       </h1>
 
       <p
-        className="home-enter mt-6 max-w-[540px] text-pretty text-[17px] text-black/60 leading-relaxed dark:text-white/60"
-        style={enter(2)}
+        className="home-enter mt-6 max-w-[620px] text-balance text-[18px] text-black/60 leading-relaxed dark:text-white/60"
+        style={enter(1)}
       >
-        Open-source React components built with Tailwind CSS and Motion.
-        Everything below is live, so try it before you install it.
+        Free, open-source React components built with Tailwind CSS and Motion.
+        Try them here, then install with one command or one prompt.
       </p>
 
       <div
         className="home-enter mt-9 flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:items-center"
-        style={enter(3)}
+        style={enter(2)}
       >
         <Link
           className={cn(
             PRIMARY_BUTTON,
             "h-11 justify-center px-6",
-            PRESS,
+            EASE_COLORS,
             FOCUS
           )}
           href="/docs"
@@ -75,7 +53,7 @@ export function Hero() {
         )}
         href={VERCEL_OSS_URL}
         rel="noreferrer"
-        style={enter(4)}
+        style={enter(3)}
         target="_blank"
       >
         Part of the

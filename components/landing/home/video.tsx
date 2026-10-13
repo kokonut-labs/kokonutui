@@ -47,25 +47,19 @@ export function VideoCard({
           {thumbFailed ? null : (
             <Image
               alt=""
-              className="object-cover opacity-75 transition-opacity duration-200 ease-out group-hover:opacity-90"
+              className="object-cover"
               fill
               onError={() => setThumbFailed(true)}
               sizes="(min-width: 1024px) 480px, 100vw"
               src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`}
             />
           )}
-          <span
-            aria-hidden
-            className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"
-          />
           <span className="absolute inset-0 flex items-center justify-center">
-            <span className="flex size-14 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-transform duration-150 ease-out group-active:scale-[0.95]">
+            <span className="flex size-14 items-center justify-center rounded-full bg-white text-black shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.2)] transition-colors duration-150 ease-out group-hover:bg-white/90">
               <PlayIcon aria-hidden className="ml-0.5 size-5 fill-current" />
             </span>
           </span>
-          <span className="absolute bottom-5 left-5 font-medium text-[14px] text-white">
-            Play video
-          </span>
+          <span className="sr-only">Play video</span>
         </button>
       )}
     </div>

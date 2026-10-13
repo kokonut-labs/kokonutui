@@ -44,21 +44,6 @@
   }
 }
 
-@keyframes home-marquee {
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-@keyframes home-shimmer {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: 0% 0;
-  }
-}
-
 /* Hero copy and tiles fade up as one cascade: 50ms apart, 500ms each. */
 .home-enter {
   animation: home-enter 500ms cubic-bezier(0.23, 1, 0.32, 1) both;
@@ -82,48 +67,6 @@
   animation: home-caret 1s linear infinite;
 }
 
-/* Sections below the fold rise in once, the first time they're reached. */
-.home-reveal[data-reveal="hidden"] {
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.home-reveal[data-reveal="shown"] {
-  transition:
-    opacity 600ms cubic-bezier(0.23, 1, 0.32, 1),
-    transform 600ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-/* Constant motion is linear. Hovering or focusing a post stops the belt so
-   it can be read and clicked. */
-.home-marquee {
-  animation: home-marquee var(--marquee-duration, 60s) linear infinite;
-}
-
-.home-marquee-track:hover .home-marquee,
-.home-marquee-track:focus-within .home-marquee {
-  animation-play-state: paused;
-}
-
-/* One sweep of light across the quote when it's revealed, then it rests. */
-.home-shimmer {
-  background-image: linear-gradient(
-    100deg,
-    var(--shimmer-base) 40%,
-    var(--shimmer-light) 50%,
-    var(--shimmer-base) 60%
-  );
-  background-size: 300% 100%;
-  background-position: 0% 0;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-}
-
-.home-reveal[data-reveal="shown"] .home-shimmer {
-  animation: home-shimmer 1600ms cubic-bezier(0.23, 1, 0.32, 1) 250ms both;
-}
-
 /* Reduced motion: keep the fades that aid comprehension, drop movement. */
 @media (prefers-reduced-motion: reduce) {
   .home-enter,
@@ -132,41 +75,7 @@
     animation: home-fade 200ms ease both;
   }
 
-  .home-caret,
-  .home-reveal[data-reveal="shown"] .home-shimmer {
+  .home-caret {
     animation: none;
-  }
-
-  .home-reveal[data-reveal="hidden"] {
-    transform: none;
-  }
-
-  .home-reveal[data-reveal="shown"] {
-    transition: opacity 300ms ease;
-  }
-}
-
-/* The belt becomes a row you swipe when motion is reduced, and on touch
-   screens, where there's no hover to stop it. Only the far edge fades, as a
-   hint there's more. */
-@media (prefers-reduced-motion: reduce), (pointer: coarse) {
-  .home-marquee-track {
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    mask-image: linear-gradient(to right, black calc(100% - 48px), transparent);
-  }
-
-  .home-marquee {
-    animation: none;
-  }
-
-  .home-marquee > [aria-hidden="true"] {
-    display: none;
-  }
-
-  .home-marquee > :first-child > * {
-    scroll-snap-align: start;
   }
 }

@@ -2,15 +2,9 @@
 
 import { CheckIcon, CopyIcon } from "lucide-react";
 import Image from "next/image";
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { FOCUS, PRESS } from "./styles";
+import { EASE_COLORS, FOCUS } from "./styles";
 
 const COPIED_MS = 1600;
 
@@ -48,7 +42,7 @@ export function useCopy() {
 }
 
 const ICON_SWAP =
-  "absolute inset-0 size-full transition-[opacity,scale,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-opacity";
+  "absolute inset-0 size-full transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-opacity";
 
 /**
  * Copy and check icons stacked in one box. They cross-fade with a 2px blur so
@@ -70,8 +64,8 @@ export function CopyIconSwap({
         className={cn(
           ICON_SWAP,
           copied
-            ? "scale-[0.8] opacity-0 blur-[2px] motion-reduce:scale-100 motion-reduce:blur-none"
-            : "scale-100 opacity-100 blur-none"
+            ? "opacity-0 blur-[2px] motion-reduce:blur-none"
+            : "opacity-100 blur-none"
         )}
       />
       <CheckIcon
@@ -79,8 +73,8 @@ export function CopyIconSwap({
           ICON_SWAP,
           "text-[#2CD242] dark:text-[#3BB44B]",
           copied
-            ? "scale-100 opacity-100 blur-none"
-            : "scale-[0.8] opacity-0 blur-[2px] motion-reduce:scale-100 motion-reduce:blur-none"
+            ? "opacity-100 blur-none"
+            : "opacity-0 blur-[2px] motion-reduce:blur-none"
         )}
       />
     </span>
@@ -106,8 +100,8 @@ export function CommandChip({
     <button
       aria-label={copied ? "Copied" : `Copy ${label ?? command}`}
       className={cn(
-        "group flex min-h-11 w-full min-w-0 items-center gap-3 rounded-xl border border-black/[0.08] bg-white px-4 py-2.5 text-left font-mono text-[13px] text-black/80 hover:border-black/15 dark:border-white/[0.1] dark:bg-black dark:text-white/80 dark:hover:border-white/20",
-        PRESS,
+        "group flex min-h-11 w-full min-w-0 items-center gap-3 rounded-xl border border-black/[0.08] bg-white px-4 py-2.5 text-left font-mono text-[13px] text-black/80 hover:border-black/15 active:bg-black/[0.02] dark:border-white/[0.1] dark:bg-black dark:text-white/80 dark:active:bg-white/[0.03] dark:hover:border-white/20",
+        EASE_COLORS,
         FOCUS,
         className
       )}
@@ -169,48 +163,5 @@ export function Avatar({
         />
       )}
     </span>
-  );
-}
-
-type RevealState = "idle" | "hidden" | "shown";
-
-/**
- * Fades a section up the first time it scrolls into view. Anything already on
- * screen at load is left alone, so nothing visible ever blinks out, and the
- * content is in the HTML whether or not this runs.
- */
-export function Reveal({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [state, setState] = useState<RevealState>("idle");
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || el.getBoundingClientRect().top < window.innerHeight) {
-      return;
-    }
-    setState("hidden");
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setState("shown");
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "0px 0px -12% 0px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div className={cn("home-reveal", className)} data-reveal={state} ref={ref}>
-      {children}
-    </div>
   );
 }

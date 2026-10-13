@@ -2,7 +2,6 @@
 
 import {
   BookOpenIcon,
-  BotIcon,
   BracesIcon,
   FileTextIcon,
   type LucideIcon,
@@ -26,7 +25,7 @@ import ActionSearchBar from "@/components/kokonutui/action-search-bar";
 import AI_Voice from "@/components/kokonutui/ai-voice";
 import TeamSelector from "@/components/kokonutui/team-selector";
 import { cn } from "@/lib/utils";
-import { CommandChip, Reveal } from "./client";
+import { CommandChip } from "./client";
 import {
   installCommand,
   MCP_CLIENTS,
@@ -35,90 +34,73 @@ import {
   REGISTRY_ENTRY,
 } from "./data";
 import { ClaudeMark, CursorMark, OpenAIMark, VSCodeMark } from "./logos";
-import { FOCUS, PRESS } from "./styles";
+import { EASE_COLORS, FOCUS } from "./styles";
 
 export function Agents() {
   return (
     <section className="scroll-mt-28 pt-28 md:pt-36" id="agents">
-      <Reveal>
-        <div className="relative isolate overflow-hidden rounded-3xl border border-black/[0.07] bg-[#fcfdfc] p-5 sm:p-8 lg:p-12 dark:border-white/[0.08] dark:bg-white/[0.015]">
-          {/* Two soft lights: the registry's green, and a warm one from the
-              agent's side. Color for the section, kept behind the content. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-56 -left-40 -z-10 size-[640px] rounded-full bg-[radial-gradient(closest-side,rgba(59,180,75,0.16),transparent)] dark:bg-[radial-gradient(closest-side,rgba(59,180,75,0.13),transparent)]"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-48 -bottom-64 -z-10 size-[720px] rounded-full bg-[radial-gradient(closest-side,rgba(217,119,87,0.12),transparent)] dark:bg-[radial-gradient(closest-side,rgba(217,119,87,0.1),transparent)]"
-          />
+      <div className="rounded-3xl border border-black/[0.07] bg-black/[0.015] p-5 sm:p-8 lg:p-12 dark:border-white/[0.08] dark:bg-white/[0.02]">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12">
+          <div className="min-w-0">
+            <h2 className="text-balance font-semibold text-[32px] text-black leading-[1.1] tracking-[-0.035em] sm:text-[40px] dark:text-white">
+              Just ask your agent.
+            </h2>
+            <p className="mt-4 max-w-[460px] text-pretty text-[16px] text-black/60 leading-relaxed dark:text-white/60">
+              KokonutUI is a shadcn registry. Connect it once, and your agent
+              can find any component and install it, with its dependencies, as
+              code you own.
+            </p>
 
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12">
-            <div className="min-w-0">
-              <p className="mb-5 inline-flex h-7 items-center gap-1.5 rounded-full bg-[#3BB44B]/10 pr-3 pl-2 font-medium text-[#1f7a2c] text-[12px] dark:bg-[#3BB44B]/15 dark:text-[#6bd679]">
-                <BotIcon aria-hidden className="size-3.5" />
-                For agents
-              </p>
-              <h2 className="text-balance font-semibold text-[32px] text-black leading-[1.1] tracking-[-0.035em] sm:text-[40px] dark:text-white">
-                Just ask your agent.
-              </h2>
-              <p className="mt-4 max-w-[460px] text-pretty text-[16px] text-black/60 leading-relaxed dark:text-white/60">
-                KokonutUI is a shadcn registry. Any agent with the shadcn MCP
-                server can find a component and install it, with its
-                dependencies, as code you own.
-              </p>
-
-              <ol className="mt-9 flex flex-col">
-                <Step icon={BracesIcon} title="Add the registry">
-                  <p className="mb-2.5 text-[14px] text-black/55 dark:text-white/55">
-                    One line in components.json, under{" "}
-                    <code className="font-mono text-[13px] text-black/75 dark:text-white/75">
-                      registries
-                    </code>
-                    .
-                  </p>
-                  <CommandChip
-                    className="text-[12px]"
-                    command={REGISTRY_ENTRY}
-                    label="the registry entry for components.json"
-                    prefix={null}
-                  />
-                </Step>
-                <Step icon={PlugIcon} title="Connect your editor">
-                  <McpSetup />
-                </Step>
-                <Step
-                  icon={MessageSquareTextIcon}
-                  last
-                  title="Ask in plain words"
-                >
-                  <p className="inline-block rounded-2xl rounded-tl-md bg-black/[0.045] px-4 py-2.5 text-[14px] text-black/80 dark:bg-white/[0.07] dark:text-white/85">
-                    Add @kokonutui/particle-button to my project
-                  </p>
-                </Step>
-              </ol>
-
-              <nav
-                aria-label="Agent resources"
-                className="mt-9 flex flex-wrap items-center gap-2"
+            <ol className="mt-9 flex flex-col">
+              <Step icon={BracesIcon} title="Add the registry">
+                <p className="mb-2.5 text-[14px] text-black/55 dark:text-white/55">
+                  One line in components.json, under{" "}
+                  <code className="font-mono text-[13px] text-black/75 dark:text-white/75">
+                    registries
+                  </code>
+                  .
+                </p>
+                <CommandChip
+                  className="text-[12px]"
+                  command={REGISTRY_ENTRY}
+                  label="the registry entry for components.json"
+                  prefix={null}
+                />
+              </Step>
+              <Step icon={PlugIcon} title="Connect your editor">
+                <McpSetup />
+              </Step>
+              <Step
+                icon={MessageSquareTextIcon}
+                last
+                title="Ask in plain words"
               >
-                <ResourceLink href="/docs/mcp" icon={BookOpenIcon}>
-                  MCP guide
-                </ResourceLink>
-                <ResourceLink href="/llms.txt" icon={FileTextIcon} mono>
-                  llms.txt
-                </ResourceLink>
-                <ResourceLink href="/r/registry.json" icon={BracesIcon} mono>
-                  registry.json
-                </ResourceLink>
-              </nav>
-            </div>
-            <div className="min-w-0">
-              <Demo />
-            </div>
+                <p className="inline-block rounded-2xl rounded-tl-md bg-black/[0.045] px-4 py-2.5 text-[14px] text-black/80 dark:bg-white/[0.07] dark:text-white/85">
+                  Add @kokonutui/particle-button to my project
+                </p>
+              </Step>
+            </ol>
+
+            <nav
+              aria-label="Agent resources"
+              className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-2"
+            >
+              <ResourceLink href="/docs/mcp" icon={BookOpenIcon}>
+                MCP guide
+              </ResourceLink>
+              <ResourceLink href="/llms.txt" icon={FileTextIcon} mono>
+                llms.txt
+              </ResourceLink>
+              <ResourceLink href="/r/registry.json" icon={BracesIcon} mono>
+                registry.json
+              </ResourceLink>
+            </nav>
+          </div>
+          <div className="min-w-0">
+            <Demo />
           </div>
         </div>
-      </Reveal>
+      </div>
     </section>
   );
 }
@@ -140,10 +122,10 @@ function Step({
       {last ? null : (
         <span
           aria-hidden
-          className="absolute top-11 bottom-2 left-[17.5px] w-px bg-gradient-to-b from-[#3BB44B]/45 to-black/[0.08] dark:to-white/[0.1]"
+          className="absolute top-11 bottom-2 left-[17.5px] w-px bg-black/[0.08] dark:bg-white/[0.1]"
         />
       )}
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#2a9d3c] shadow-[0_0_0_1px_rgba(59,180,75,0.28),0_2px_6px_-2px_rgba(59,180,75,0.25)] dark:bg-[#0c160d] dark:text-[#6bd679] dark:shadow-[0_0_0_1px_rgba(59,180,75,0.35)]">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-black/[0.08] bg-white text-black/70 dark:border-white/[0.1] dark:bg-black dark:text-white/75">
         <Icon aria-hidden className="size-4" />
       </span>
       <div className="min-w-0 flex-1">
@@ -170,9 +152,9 @@ function ResourceLink({
   return (
     <Link
       className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-full border border-black/[0.08] bg-white/70 px-3 text-[13px] text-black/70 hover:border-black/15 hover:text-black dark:border-white/[0.1] dark:bg-white/[0.03] dark:text-white/70 dark:hover:border-white/20 dark:hover:text-white",
-        mono && "font-mono text-[12px]",
-        PRESS,
+        "inline-flex items-center gap-1.5 rounded-sm text-[14px] text-black/65 underline-offset-4 hover:text-black hover:underline dark:text-white/65 dark:hover:text-white",
+        mono && "font-mono text-[13px]",
+        EASE_COLORS,
         FOCUS
       )}
       href={href}
@@ -248,7 +230,7 @@ function McpSetup() {
             <button
               aria-pressed={selected}
               className={cn(
-                "relative inline-flex h-8 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 font-medium text-[13px] transition-[color,scale] duration-150 ease-out active:scale-[0.97] sm:flex-none",
+                "relative inline-flex h-8 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 font-medium text-[13px] transition-colors duration-150 ease-out sm:flex-none",
                 selected
                   ? "text-black dark:text-white"
                   : "text-black/55 hover:text-black/80 dark:text-white/55 dark:hover:text-white/80",
@@ -535,21 +517,13 @@ function Demo() {
 
   return (
     <div
-      className="overflow-hidden rounded-2xl bg-[#0a0a0a] shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_24px_48px_-16px_rgba(0,0,0,0.25)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_24px_48px_-16px_rgba(0,0,0,0.8)]"
+      className="overflow-hidden rounded-2xl bg-[#0a0a0a] shadow-[0_0_0_1px_rgba(0,0,0,0.08)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]"
       ref={rootRef}
     >
       <div className="flex h-10 items-center gap-3 border-white/[0.08] border-b px-4">
-        <span aria-hidden className="flex gap-1.5">
-          <span className="size-2.5 rounded-full bg-white/[0.14]" />
-          <span className="size-2.5 rounded-full bg-white/[0.14]" />
-          <span className="size-2.5 rounded-full bg-white/[0.14]" />
-        </span>
         <span className="font-mono text-[12px] text-white/55">~/my-app</span>
         <span className="ml-auto inline-flex items-center gap-2 text-[12px] text-white/60">
-          <span
-            aria-hidden
-            className="size-1.5 rounded-full bg-[#3BB44B] shadow-[0_0_0_3px_rgba(59,180,75,0.18),0_0_10px_rgba(59,180,75,0.7)]"
-          />
+          <span aria-hidden className="size-1.5 rounded-full bg-[#3BB44B]" />
           <span>
             <span className="max-sm:hidden">shadcn </span>MCP connected
           </span>

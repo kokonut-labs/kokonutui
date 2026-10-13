@@ -12,7 +12,7 @@ import Toolbar from "@/components/kokonutui/toolbar";
 import { cn } from "@/lib/utils";
 import { CopyIconSwap, useCopy } from "./client";
 import { type Category, docsUrl, installCommand } from "./data";
-import { enter, FOCUS, PRESS } from "./styles";
+import { EASE_COLORS, enter, FOCUS } from "./styles";
 
 const HOLD_MS = 2000;
 
@@ -81,7 +81,7 @@ export function Bento({ categories }: { categories: Category[] }) {
             : "Type, then press Enter"
         }
         href={href("ai-prompt")}
-        index={5}
+        index={4}
         name="ai-prompt"
       >
         <AIPrompt
@@ -98,7 +98,7 @@ export function Bento({ categories }: { categories: Category[] }) {
         className="md:col-span-5"
         hint="Rings fill as it mounts"
         href={href("apple-activity-card")}
-        index={6}
+        index={5}
         name="apple-activity-card"
       >
         {/* Zoom, not scale, so the tile shrinks with the card. */}
@@ -113,7 +113,7 @@ export function Bento({ categories }: { categories: Category[] }) {
           </>
         }
         href={href("card-flip")}
-        index={7}
+        index={6}
         name="card-flip"
       >
         {/* Zoomed down so this column doesn't set the height of the row. */}
@@ -125,7 +125,7 @@ export function Bento({ categories }: { categories: Category[] }) {
         className="md:col-span-4 md:row-span-2"
         hint={upload ?? "Drop any image"}
         href={href("file-upload")}
-        index={8}
+        index={7}
         name="file-upload"
       >
         <FileUpload
@@ -141,7 +141,7 @@ export function Bento({ categories }: { categories: Category[] }) {
         className="md:col-span-4"
         hint={HOLD_HINTS[hold]}
         href={href("hold-button")}
-        index={9}
+        index={8}
         name="hold-button"
         stageClassName="min-h-[128px]"
       >
@@ -161,7 +161,7 @@ export function Bento({ categories }: { categories: Category[] }) {
             : "Click to send"
         }
         href={href("particle-button")}
-        index={10}
+        index={9}
         name="particle-button"
         stageClassName="min-h-[128px]"
       >
@@ -173,7 +173,7 @@ export function Bento({ categories }: { categories: Category[] }) {
         className="hidden md:col-span-12 md:flex"
         hint={tool ? `${titleCase(tool)} selected` : "Pick a tool"}
         href={href("toolbar")}
-        index={11}
+        index={10}
         name="toolbar"
         stageClassName="min-h-[104px]"
       >
@@ -237,8 +237,8 @@ function Tile({
         <button
           aria-label={copied ? "Copied" : `Copy install command for ${name}`}
           className={cn(
-            "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 font-mono text-[11px] text-black/55 hover:bg-black/[0.05] hover:text-black dark:text-white/55 dark:hover:bg-white/[0.07] dark:hover:text-white",
-            PRESS,
+            "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 font-mono text-[11px] text-black/55 hover:bg-black/[0.05] hover:text-black active:bg-black/[0.08] dark:text-white/55 dark:active:bg-white/[0.1] dark:hover:bg-white/[0.07] dark:hover:text-white",
+            EASE_COLORS,
             FOCUS
           )}
           onClick={() => copy(installCommand(name))}

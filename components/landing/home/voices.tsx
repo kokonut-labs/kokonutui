@@ -1,7 +1,7 @@
 import { ArrowUpRightIcon } from "lucide-react";
 import XIcon from "@/components/icons/x-icon";
 import { cn } from "@/lib/utils";
-import { Avatar, Reveal } from "./client";
+import { Avatar } from "./client";
 import { POSTS, type Post, V0_THREAD, VIDEO_ID } from "./data";
 import { SectionHeading } from "./section-heading";
 import { FOCUS, FOCUS_INSET } from "./styles";
@@ -30,29 +30,30 @@ function RichText({ text }: { text: string }) {
 }
 
 export function Voices() {
-  // OrcDev's post sits with the video; the rest ride the belt.
-  const [featured, ...belt] = [
+  // OrcDev's post sits with the video; the rest share a row underneath.
+  const [featured, ...rest] = [
     POSTS.find((p) => p.handle === "orcdev") ?? POSTS[0],
     ...POSTS.filter((p) => p.handle !== "orcdev"),
   ];
 
   return (
     <section className="scroll-mt-28 pt-28 md:pt-36" id="testimonials">
-      <Reveal>
-        <SectionHeading
-          description="What developers say when they find KokonutUI, including the person behind shadcn/ui."
-          eyebrow="Testimonials"
-          title="From the timeline"
-        />
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-          <Thread className="lg:col-span-7" />
-          <div className="flex flex-col gap-3 lg:col-span-5">
-            <VideoCard className="aspect-video w-full" id={VIDEO_ID} />
-            <PostCard className="flex-1" post={featured} />
-          </div>
+      <SectionHeading
+        description="What developers say when they find KokonutUI, including the person behind shadcn/ui."
+        title="From the timeline"
+      />
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+        <Thread className="lg:col-span-7" />
+        <div className="flex flex-col gap-3 lg:col-span-5">
+          <VideoCard className="aspect-video w-full" id={VIDEO_ID} />
+          <PostCard className="flex-1" post={featured} />
         </div>
-        <Belt posts={belt} />
-      </Reveal>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {rest.map((post) => (
+          <PostCard key={post.handle} post={post} />
+        ))}
+      </div>
     </section>
   );
 }
@@ -103,9 +104,7 @@ function Thread({ className }: { className?: string }) {
             marks are quieter than the word they hold. */}
         <p className="whitespace-nowrap font-semibold text-[min(17cqi,128px)] leading-[0.95] tracking-[-0.055em]">
           <span className="text-black/20 dark:text-white/25">“</span>
-          <span className="home-shimmer [--shimmer-base:#0a0a0a] [--shimmer-light:#b8b8b8] dark:[--shimmer-base:#fafafa] dark:[--shimmer-light:#5e5e5e]">
-            {reply.text}
-          </span>
+          <span className="text-black dark:text-white">{reply.text}</span>
           <span className="text-black/20 dark:text-white/25">”</span>
         </p>
         <footer className="mt-4 text-[14px] text-black/55 dark:text-white/55">
@@ -192,36 +191,5 @@ function PostCard({ post, className }: { post: Post; className?: string }) {
         </span>
       ) : null}
     </a>
-  );
-}
-
-/**
- * The rest of the posts drift past on a belt. Two identical copies make the
- * loop seamless; the second is hidden from assistive tech and the tab order.
- */
-function Belt({ posts }: { posts: Post[] }) {
-  const copy = (hidden: boolean) => (
-    <div
-      aria-hidden={hidden || undefined}
-      className="flex shrink-0 gap-3 pr-3"
-      inert={hidden || undefined}
-    >
-      {posts.map((post) => (
-        <PostCard
-          className="w-[300px] shrink-0 sm:w-[340px]"
-          key={post.handle}
-          post={post}
-        />
-      ))}
-    </div>
-  );
-
-  return (
-    <div className="home-marquee-track relative mt-2 -mb-1 overflow-hidden py-1 [mask-image:linear-gradient(to_right,transparent,black_64px,black_calc(100%-64px),transparent)]">
-      <div className="home-marquee flex w-max [--marquee-duration:55s]">
-        {copy(false)}
-        {copy(true)}
-      </div>
-    </div>
   );
 }
