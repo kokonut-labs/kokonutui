@@ -43,6 +43,8 @@ interface ToolbarProps {
   className?: string;
   activeColor?: string;
   onSelect?: (itemId: string) => void;
+  /** Accessible name for the toolbar */
+  ariaLabel?: string;
 }
 
 const DEFAULT_TOOLBAR_ITEMS: ToolbarItem[] = [
@@ -106,6 +108,7 @@ export function Toolbar({
   className,
   activeColor = "text-primary",
   onSelect,
+  ariaLabel = "Tools",
 }: ToolbarProps) {
   const [selected, setSelected] = React.useState<string | null>(
     defaultSelected
@@ -126,6 +129,7 @@ export function Toolbar({
   return (
     <div className="space-y-2">
       <div
+        aria-label={ariaLabel}
         className={cn(
           "relative flex items-center gap-3 p-2",
           "bg-background",
@@ -134,6 +138,7 @@ export function Toolbar({
           className
         )}
         ref={outsideClickRef}
+        role="toolbar"
       >
         <AnimatePresence>
           {activeNotification && (
@@ -164,6 +169,8 @@ export function Toolbar({
           {items.map((item) => (
             <motion.button
               animate="animate"
+              aria-label={item.title}
+              aria-pressed={selected === item.id}
               className={cn(
                 "relative flex items-center rounded-none px-3 py-2",
                 "font-medium text-sm transition-colors duration-300",
@@ -175,7 +182,9 @@ export function Toolbar({
               initial={false}
               key={item.id}
               onClick={() => handleItemClick(item.id)}
+              title={item.title}
               transition={transition as any}
+              type="button"
               variants={buttonVariants as any}
             >
               <item.icon
@@ -220,6 +229,7 @@ export function Toolbar({
                   ]
             )}
             onClick={() => setIsToggled(!isToggled)}
+            type="button"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >

@@ -87,7 +87,7 @@ export default function ProfileDropdown({
         <div className="group relative">
           <DropdownMenuTrigger asChild>
             <button
-              className="flex items-center gap-16 rounded-2xl border border-zinc-200/60 bg-white p-3 transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-50/80 hover:shadow-sm focus:outline-none dark:border-zinc-800/60 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:bg-zinc-800/40"
+              className="flex items-center gap-16 rounded-2xl border border-zinc-200/60 bg-white p-3 outline-hidden transition-[background-color,border-color,box-shadow,scale] duration-200 hover:border-zinc-300 hover:bg-zinc-50/80 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white motion-safe:active:scale-[0.97] dark:border-zinc-800/60 dark:bg-zinc-900 dark:focus-visible:ring-zinc-400 dark:focus-visible:ring-offset-zinc-950 dark:hover:border-zinc-700 dark:hover:bg-zinc-800/40"
               type="button"
             >
               <div className="flex-1 text-left">
