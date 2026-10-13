@@ -1,11 +1,20 @@
 "use client";
 
-import { ArrowRightIcon } from "lucide-react";
+import {
+  BookOpenIcon,
+  BotIcon,
+  BracesIcon,
+  FileTextIcon,
+  type LucideIcon,
+  MessageSquareTextIcon,
+  PlugIcon,
+} from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import Link from "next/link";
 import {
   memo,
   type ReactNode,
+  type SVGProps,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -23,83 +32,169 @@ import {
   MCP_CLIENTS,
   type McpClient,
   mcpCommand,
+  REGISTRY_ENTRY,
 } from "./data";
-import { FOCUS } from "./styles";
+import { ClaudeMark, CursorMark, OpenAIMark, VSCodeMark } from "./logos";
+import { FOCUS, PRESS } from "./styles";
 
 export function Agents() {
   return (
     <section className="scroll-mt-28 pt-28 md:pt-36" id="agents">
-      <Reveal className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10">
-        <div className="min-w-0 lg:col-span-5">
-          <p className="mb-4 font-mono text-[12px] text-black/55 uppercase tracking-[0.08em] dark:text-white/55">
-            For agents
-          </p>
-          <h2 className="text-balance font-semibold text-[32px] text-black leading-[1.1] tracking-[-0.035em] sm:text-[40px] dark:text-white">
-            Just ask your agent.
-          </h2>
-          <p className="mt-4 max-w-[460px] text-pretty text-[16px] text-black/60 leading-relaxed dark:text-white/60">
-            KokonutUI is a shadcn registry. Add it to your components.json and
-            connect the shadcn MCP server once, then ask for what you need in
-            plain words. Your agent installs the component, its dependencies and
-            the primitives it uses, as code you own.
-          </p>
-          <McpSetup />
-          <p className="mt-6 text-[14px] text-black/55 leading-relaxed dark:text-white/55">
-            Then ask{" "}
-            <span className="text-black/80 dark:text-white/80">
-              “Add @kokonutui/particle-button to my project”
-            </span>
-            .
-          </p>
-          <nav
-            aria-label="Agent resources"
-            className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px]"
-          >
-            <ResourceLink href="/docs/mcp">MCP guide</ResourceLink>
-            <ResourceLink href="/llms.txt" mono>
-              /llms.txt
-            </ResourceLink>
-            <ResourceLink href="/r/registry.json" mono>
-              /r/registry.json
-            </ResourceLink>
-          </nav>
-        </div>
-        <div className="min-w-0 lg:col-span-7">
-          <Demo />
+      <Reveal>
+        <div className="relative isolate overflow-hidden rounded-3xl border border-black/[0.07] bg-[#fcfdfc] p-5 sm:p-8 lg:p-12 dark:border-white/[0.08] dark:bg-white/[0.015]">
+          {/* Two soft lights: the registry's green, and a warm one from the
+              agent's side. Color for the section, kept behind the content. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-56 -left-40 -z-10 size-[640px] rounded-full bg-[radial-gradient(closest-side,rgba(59,180,75,0.16),transparent)] dark:bg-[radial-gradient(closest-side,rgba(59,180,75,0.13),transparent)]"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-48 -bottom-64 -z-10 size-[720px] rounded-full bg-[radial-gradient(closest-side,rgba(217,119,87,0.12),transparent)] dark:bg-[radial-gradient(closest-side,rgba(217,119,87,0.1),transparent)]"
+          />
+
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12">
+            <div className="min-w-0">
+              <p className="mb-5 inline-flex h-7 items-center gap-1.5 rounded-full bg-[#3BB44B]/10 pr-3 pl-2 font-medium text-[#1f7a2c] text-[12px] dark:bg-[#3BB44B]/15 dark:text-[#6bd679]">
+                <BotIcon aria-hidden className="size-3.5" />
+                For agents
+              </p>
+              <h2 className="text-balance font-semibold text-[32px] text-black leading-[1.1] tracking-[-0.035em] sm:text-[40px] dark:text-white">
+                Just ask your agent.
+              </h2>
+              <p className="mt-4 max-w-[460px] text-pretty text-[16px] text-black/60 leading-relaxed dark:text-white/60">
+                KokonutUI is a shadcn registry. Any agent with the shadcn MCP
+                server can find a component and install it, with its
+                dependencies, as code you own.
+              </p>
+
+              <ol className="mt-9 flex flex-col">
+                <Step icon={BracesIcon} title="Add the registry">
+                  <p className="mb-2.5 text-[14px] text-black/55 dark:text-white/55">
+                    One line in components.json, under{" "}
+                    <code className="font-mono text-[13px] text-black/75 dark:text-white/75">
+                      registries
+                    </code>
+                    .
+                  </p>
+                  <CommandChip
+                    className="text-[12px]"
+                    command={REGISTRY_ENTRY}
+                    label="the registry entry for components.json"
+                    prefix={null}
+                  />
+                </Step>
+                <Step icon={PlugIcon} title="Connect your editor">
+                  <McpSetup />
+                </Step>
+                <Step
+                  icon={MessageSquareTextIcon}
+                  last
+                  title="Ask in plain words"
+                >
+                  <p className="inline-block rounded-2xl rounded-tl-md bg-black/[0.045] px-4 py-2.5 text-[14px] text-black/80 dark:bg-white/[0.07] dark:text-white/85">
+                    Add @kokonutui/particle-button to my project
+                  </p>
+                </Step>
+              </ol>
+
+              <nav
+                aria-label="Agent resources"
+                className="mt-9 flex flex-wrap items-center gap-2"
+              >
+                <ResourceLink href="/docs/mcp" icon={BookOpenIcon}>
+                  MCP guide
+                </ResourceLink>
+                <ResourceLink href="/llms.txt" icon={FileTextIcon} mono>
+                  llms.txt
+                </ResourceLink>
+                <ResourceLink href="/r/registry.json" icon={BracesIcon} mono>
+                  registry.json
+                </ResourceLink>
+              </nav>
+            </div>
+            <div className="min-w-0">
+              <Demo />
+            </div>
+          </div>
         </div>
       </Reveal>
     </section>
   );
 }
 
+/** A setup step: an icon on a rail, so the three read as one path. */
+function Step({
+  icon: Icon,
+  title,
+  last,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  last?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <li className={cn("relative flex gap-4", !last && "pb-8")}>
+      {last ? null : (
+        <span
+          aria-hidden
+          className="absolute top-11 bottom-2 left-[17.5px] w-px bg-gradient-to-b from-[#3BB44B]/45 to-black/[0.08] dark:to-white/[0.1]"
+        />
+      )}
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#2a9d3c] shadow-[0_0_0_1px_rgba(59,180,75,0.28),0_2px_6px_-2px_rgba(59,180,75,0.25)] dark:bg-[#0c160d] dark:text-[#6bd679] dark:shadow-[0_0_0_1px_rgba(59,180,75,0.35)]">
+        <Icon aria-hidden className="size-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <h3 className="flex h-9 items-center font-medium text-[15px] text-black dark:text-white">
+          {title}
+        </h3>
+        <div className="mt-1">{children}</div>
+      </div>
+    </li>
+  );
+}
+
 function ResourceLink({
   href,
+  icon: Icon,
   mono,
   children,
 }: {
   href: string;
+  icon: LucideIcon;
   mono?: boolean;
   children: ReactNode;
 }) {
   return (
     <Link
       className={cn(
-        "group inline-flex items-center gap-1 rounded-sm text-black/65 hover:text-black dark:text-white/65 dark:hover:text-white",
-        mono && "font-mono text-[13px]",
+        "inline-flex h-8 items-center gap-1.5 rounded-full border border-black/[0.08] bg-white/70 px-3 text-[13px] text-black/70 hover:border-black/15 hover:text-black dark:border-white/[0.1] dark:bg-white/[0.03] dark:text-white/70 dark:hover:border-white/20 dark:hover:text-white",
+        mono && "font-mono text-[12px]",
+        PRESS,
         FOCUS
       )}
       href={href}
     >
+      <Icon aria-hidden className="size-3.5 text-black/45 dark:text-white/45" />
       {children}
-      <ArrowRightIcon
-        aria-hidden
-        className="size-3.5 opacity-50 transition-transform duration-150 ease-out group-hover:translate-x-0.5"
-      />
     </Link>
   );
 }
 
-/** Client picker and the matching `mcp init` command. */
+// Each editor's mark takes its own color once picked.
+const CLIENT_MARKS: Record<
+  McpClient,
+  { Mark: (props: SVGProps<SVGSVGElement>) => ReactNode; color: string }
+> = {
+  claude: { Mark: ClaudeMark, color: "text-[#D97757]" },
+  cursor: { Mark: CursorMark, color: "text-black dark:text-white" },
+  vscode: { Mark: VSCodeMark, color: "text-[#0078D4] dark:text-[#3EA2FF]" },
+  codex: { Mark: OpenAIMark, color: "text-black dark:text-white" },
+};
+
+/** Editor picker and the matching `mcp init` command. */
 function McpSetup() {
   const [client, setClient] = useState<McpClient>("claude");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -134,8 +229,8 @@ function McpSetup() {
   }, []);
 
   return (
-    <div className="mt-8 flex max-w-[460px] flex-col gap-2">
-      <fieldset className="relative m-0 flex w-full min-w-0 rounded-lg border-0 bg-black/[0.04] p-1 sm:w-fit dark:bg-white/[0.06]">
+    <div className="flex flex-col gap-2">
+      <fieldset className="relative m-0 flex w-full min-w-0 rounded-lg border-0 bg-black/[0.045] p-1 sm:w-fit dark:bg-white/[0.06]">
         <legend className="sr-only">Your editor</legend>
         <span
           aria-hidden
@@ -146,29 +241,44 @@ function McpSetup() {
           )}
           ref={highlightRef}
         />
-        {MCP_CLIENTS.map((c, i) => (
-          <button
-            aria-pressed={c.id === client}
-            className={cn(
-              "relative h-8 flex-1 whitespace-nowrap rounded-md px-3 font-medium text-[13px] transition-[color,scale] duration-150 ease-out active:scale-[0.97] sm:flex-none",
-              c.id === client
-                ? "text-black dark:text-white"
-                : "text-black/55 hover:text-black/80 dark:text-white/55 dark:hover:text-white/80",
-              FOCUS
-            )}
-            key={c.id}
-            onClick={() => setClient(c.id)}
-            ref={(el) => {
-              tabRefs.current[i] = el;
-            }}
-            type="button"
-          >
-            {c.label}
-          </button>
-        ))}
+        {MCP_CLIENTS.map((c, i) => {
+          const { Mark, color } = CLIENT_MARKS[c.id];
+          const selected = c.id === client;
+          return (
+            <button
+              aria-pressed={selected}
+              className={cn(
+                "relative inline-flex h-8 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 font-medium text-[13px] transition-[color,scale] duration-150 ease-out active:scale-[0.97] sm:flex-none",
+                selected
+                  ? "text-black dark:text-white"
+                  : "text-black/55 hover:text-black/80 dark:text-white/55 dark:hover:text-white/80",
+                FOCUS
+              )}
+              key={c.id}
+              onClick={() => setClient(c.id)}
+              ref={(el) => {
+                tabRefs.current[i] = el;
+              }}
+              type="button"
+            >
+              <Mark
+                className={cn(
+                  "size-3.5 shrink-0 transition-colors duration-150",
+                  selected && color
+                )}
+              />
+              {/* Marks alone where four labels don't fit (phones, and the
+                  two-column layout before it gets wide); screen readers
+                  always get the label. */}
+              <span className="max-sm:sr-only lg:max-xl:sr-only">
+                {c.label}
+              </span>
+            </button>
+          );
+        })}
       </fieldset>
       {/* Clients get compared back and forth, so the command swaps instantly. */}
-      <CommandChip command={mcpCommand(client)} />
+      <CommandChip className="text-[12px]" command={mcpCommand(client)} />
     </div>
   );
 }
@@ -428,6 +538,23 @@ function Demo() {
       className="overflow-hidden rounded-2xl bg-[#0a0a0a] shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_24px_48px_-16px_rgba(0,0,0,0.25)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_24px_48px_-16px_rgba(0,0,0,0.8)]"
       ref={rootRef}
     >
+      <div className="flex h-10 items-center gap-3 border-white/[0.08] border-b px-4">
+        <span aria-hidden className="flex gap-1.5">
+          <span className="size-2.5 rounded-full bg-white/[0.14]" />
+          <span className="size-2.5 rounded-full bg-white/[0.14]" />
+          <span className="size-2.5 rounded-full bg-white/[0.14]" />
+        </span>
+        <span className="font-mono text-[12px] text-white/55">~/my-app</span>
+        <span className="ml-auto inline-flex items-center gap-2 text-[12px] text-white/60">
+          <span
+            aria-hidden
+            className="size-1.5 rounded-full bg-[#3BB44B] shadow-[0_0_0_3px_rgba(59,180,75,0.18),0_0_10px_rgba(59,180,75,0.7)]"
+          />
+          <span>
+            <span className="max-sm:hidden">shadcn </span>MCP connected
+          </span>
+        </span>
+      </div>
       {/* Tabs double as the timeline: the active one fills as it plays. */}
       <fieldset className="m-0 flex min-w-0 border-0 border-white/[0.08] border-b p-0">
         <legend className="sr-only">Demo scenarios</legend>

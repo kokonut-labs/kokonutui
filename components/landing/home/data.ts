@@ -25,6 +25,9 @@ export const PRO_URL =
 export const PRO_TEMPLATES_URL =
   "https://kokonutui.pro/templates?utm_source=kokonutui.com&utm_medium=landing";
 
+// The one line people add to components.json (see /docs).
+export const REGISTRY_ENTRY = `"${REGISTRY_NAMESPACE}": "https://kokonutui.com/r/{name}.json"`;
+
 export const installCommand = (name: string) =>
   `npx shadcn@latest add ${REGISTRY_NAMESPACE}/${name}`;
 

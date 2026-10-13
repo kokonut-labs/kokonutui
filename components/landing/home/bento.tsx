@@ -81,7 +81,7 @@ export function Bento({ categories }: { categories: Category[] }) {
             : "Type, then press Enter"
         }
         href={href("ai-prompt")}
-        index={4}
+        index={5}
         name="ai-prompt"
       >
         <AIPrompt
@@ -98,11 +98,11 @@ export function Bento({ categories }: { categories: Category[] }) {
         className="md:col-span-5"
         hint="Rings fill as it mounts"
         href={href("apple-activity-card")}
-        index={5}
+        index={6}
         name="apple-activity-card"
       >
-        {/* The card is wider than a phone-width tile; scale it to fit. */}
-        <AppleActivityCard className="p-0 max-sm:scale-[0.82]" title="Today" />
+        {/* Zoom, not scale, so the tile shrinks with the card. */}
+        <AppleActivityCard className="p-0 [zoom:0.78]" title="Today" />
       </Tile>
       <Tile
         className="md:col-span-4 md:row-span-2"
@@ -113,16 +113,19 @@ export function Bento({ categories }: { categories: Category[] }) {
           </>
         }
         href={href("card-flip")}
-        index={6}
+        index={7}
         name="card-flip"
       >
-        <CardFlip />
+        {/* Zoomed down so this column doesn't set the height of the row. */}
+        <div className="w-[280px] max-w-full [zoom:0.8]">
+          <CardFlip />
+        </div>
       </Tile>
       <Tile
         className="md:col-span-4 md:row-span-2"
         hint={upload ?? "Drop any image"}
         href={href("file-upload")}
-        index={7}
+        index={8}
         name="file-upload"
       >
         <FileUpload
@@ -138,9 +141,9 @@ export function Bento({ categories }: { categories: Category[] }) {
         className="md:col-span-4"
         hint={HOLD_HINTS[hold]}
         href={href("hold-button")}
-        index={8}
+        index={9}
         name="hold-button"
-        stageClassName="min-h-[176px]"
+        stageClassName="min-h-[128px]"
       >
         <HoldButton
           holdDuration={HOLD_MS}
@@ -158,9 +161,9 @@ export function Bento({ categories }: { categories: Category[] }) {
             : "Click to send"
         }
         href={href("particle-button")}
-        index={9}
+        index={10}
         name="particle-button"
-        stageClassName="min-h-[176px]"
+        stageClassName="min-h-[128px]"
       >
         <ParticleButton onSuccess={() => setBursts((n) => n + 1)}>
           Send
@@ -170,9 +173,9 @@ export function Bento({ categories }: { categories: Category[] }) {
         className="hidden md:col-span-12 md:flex"
         hint={tool ? `${titleCase(tool)} selected` : "Pick a tool"}
         href={href("toolbar")}
-        index={10}
+        index={11}
         name="toolbar"
-        stageClassName="min-h-[150px]"
+        stageClassName="min-h-[104px]"
       >
         <Toolbar onSelect={setTool} />
       </Tile>
@@ -209,19 +212,13 @@ function Tile({
     >
       <div
         className={cn(
-          "relative isolate flex flex-1 items-center justify-center p-6",
+          "relative isolate flex flex-1 items-center justify-center p-4 sm:p-5",
           stageClassName
         )}
       >
-        {/* A faint dot grid marks the stage as a canvas you can touch. It
-            fades toward the edges so the component, not the grid, is framed. */}
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-[radial-gradient(circle,rgba(0,0,0,0.08)_1px,transparent_1px)] bg-[size:16px_16px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_80%)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.08)_1px,transparent_1px)]"
-        />
         {children}
       </div>
-      <figcaption className="flex h-11 items-center gap-3 border-black/[0.06] border-t px-4 dark:border-white/[0.07]">
+      <figcaption className="flex h-10 items-center gap-3 border-black/[0.06] border-t px-4 dark:border-white/[0.07]">
         <Link
           className={cn(
             "rounded-sm font-mono text-[12px] text-black/70 underline-offset-4 hover:text-black hover:underline dark:text-white/70 dark:hover:text-white",

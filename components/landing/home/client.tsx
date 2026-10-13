@@ -90,15 +90,21 @@ export function CopyIconSwap({
 /** A copyable shell command. The whole chip is the button. */
 export function CommandChip({
   command,
+  prefix = "$",
+  label,
   className,
 }: {
   command: string;
+  /** Shell prompt shown before the command; null for a code snippet. */
+  prefix?: string | null;
+  /** Accessible name when the command alone doesn't say what it is. */
+  label?: string;
   className?: string;
 }) {
   const { copied, copy } = useCopy();
   return (
     <button
-      aria-label={copied ? "Copied" : `Copy ${command}`}
+      aria-label={copied ? "Copied" : `Copy ${label ?? command}`}
       className={cn(
         "group flex min-h-11 w-full min-w-0 items-center gap-3 rounded-xl border border-black/[0.08] bg-white px-4 py-2.5 text-left font-mono text-[13px] text-black/80 hover:border-black/15 dark:border-white/[0.1] dark:bg-black dark:text-white/80 dark:hover:border-white/20",
         PRESS,
@@ -108,11 +114,14 @@ export function CommandChip({
       onClick={() => copy(command)}
       type="button"
     >
-      <span aria-hidden className="text-black/30 dark:text-white/30">
-        $
-      </span>
-      {/* Wraps on narrow screens rather than hiding the flag you came for. */}
-      <span className="min-w-0 flex-1 break-all leading-snug sm:truncate sm:break-normal">
+      {prefix ? (
+        <span aria-hidden className="text-black/30 dark:text-white/30">
+          {prefix}
+        </span>
+      ) : null}
+      {/* Wraps on narrow screens (at spaces first) rather than hiding the
+          flag you came for. */}
+      <span className="wrap-anywhere min-w-0 flex-1 leading-snug sm:truncate">
         {command}
       </span>
       <CopyIconSwap

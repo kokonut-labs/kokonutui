@@ -26,7 +26,7 @@ export function Categories({ categories }: { categories: Category[] }) {
               />
             </Link>
           }
-          description="Every component is free and MIT licensed, grouped the way the docs are."
+          description="Every component is free and open source, grouped the way the docs are."
           eyebrow="Components"
           title="Browse by category"
         />
