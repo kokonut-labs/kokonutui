@@ -397,6 +397,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "notification-stack",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/notification-stack.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
@@ -404,6 +415,17 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/avatar-picker.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "wheel-picker",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/wheel-picker.tsx",
         type: "registry:component",
       },
     ],

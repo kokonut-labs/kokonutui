@@ -548,6 +548,21 @@
       ]
     },
     {
+      "name": "notification-stack",
+      "type": "registry:component",
+      "title": "Notification Stack",
+      "description": "Stacked notification cards that fan out on hover and dismiss with a swipe or a quick flick, with keyboard and button fallbacks, built with React and Tailwind CSS.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/notification-stack.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",
@@ -564,6 +579,21 @@
       "files": [
         {
           "path": "components/kokonutui/avatar-picker.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "wheel-picker",
+      "type": "registry:component",
+      "title": "Wheel Picker",
+      "description": "iOS-style 3D drum picker with flick momentum, looping columns, rubber-band ends and a selection band that recolors text exactly at its edge, built with React and Motion.",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/wheel-picker.tsx",
           "type": "registry:component"
         }
       ]
