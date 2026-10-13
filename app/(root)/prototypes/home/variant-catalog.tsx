@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownIcon, ArrowUpRightIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, Suspense, useState } from "react";
@@ -47,17 +47,16 @@ const SOFT = "text-black/60 dark:text-white/60";
 /** The one color in the catalog: Kokonut's leaf, for the codes. */
 const LEAF = "text-[#1FA834] dark:text-[#3BB44B]";
 
-const FEATURED = "hold-button";
+const FEATURED = "apple-activity-card";
 /** The featured part, asked for the way you'd ask a colleague. */
-const AGENT_PROMPT =
-  "Add @kokonutui/hold-button to the danger zone in settings";
+const AGENT_PROMPT = "Add @kokonutui/apple-activity-card to my dashboard";
 const PLATES = [
   "ai-prompt",
-  "apple-activity-card",
+  "team-selector",
   "particle-button",
   "currency-transfer",
   "smooth-tab",
-  "team-selector",
+  "hold-button",
   "card-flip",
   "file-upload",
   "dynamic-text",
@@ -213,7 +212,9 @@ function Cover({ featured }: { featured?: Part }) {
 }
 
 function FeaturedPlate({ part }: { part: Part }) {
-  const Demo = LIVE[part.name].Component;
+  const { Component: Demo, hint } = LIVE[part.name];
+  // The rings only fill on mount, so the cover offers a way to see it again.
+  const [run, setRun] = useState(0);
   return (
     <figure
       className={cn(
@@ -222,11 +223,31 @@ function FeaturedPlate({ part }: { part: Part }) {
       )}
       style={enter(6)}
     >
-      <PlateHead code={part.code} note={LIVE[part.name].hint} />
+      <div className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
+        <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>
+          {part.code}
+        </span>
+        <span className="flex min-w-0 items-baseline gap-3">
+          <span className={cn(META, "truncate")}>{hint}</span>
+          <button
+            className={cn(
+              META,
+              "inline-flex shrink-0 items-center gap-1.5 hover:text-black dark:hover:text-white",
+              EASE_COLORS,
+              FOCUS
+            )}
+            onClick={() => setRun((r) => r + 1)}
+            type="button"
+          >
+            Replay
+            <RotateCcwIcon aria-hidden className="size-3" />
+          </button>
+        </span>
+      </div>
       <div className="relative min-h-[260px] flex-1">
         <Fit className="p-6">
           <Suspense fallback={<LiveFallback />}>
-            <Demo />
+            <Demo key={run} />
           </Suspense>
         </Fit>
       </div>
