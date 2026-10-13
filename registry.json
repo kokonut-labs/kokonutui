@@ -356,6 +356,21 @@
       ]
     },
     {
+      "name": "detent-dial",
+      "type": "registry:component",
+      "title": "Detent Dial",
+      "description": "Rotary knob that clicks from notch to notch, coasts when flicked, winds past its ends like a rubber band and rolls its readout digit by digit, built with React and Motion.",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/detent-dial.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "switch-button",
       "type": "registry:component",
       "title": "Switch Button",
