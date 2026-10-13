@@ -126,20 +126,20 @@ export default function ParticleButton({
     onSuccess?.();
   };
 
+  // The particle layer sits inside the Button (absolute, so it skips the flex
+  // gap) so `className` lands on the root and the burst paints above the face.
   return (
-    <span className="relative inline-flex">
+    <Button
+      className={cn(
+        "relative transition-[scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:transition-none",
+        className
+      )}
+      onClick={handleClick}
+      {...props}
+    >
       {burst && <SuccessParticles key={burst.id} particles={burst.particles} />}
-      <Button
-        className={cn(
-          "relative transition-[transform,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:transition-none",
-          className
-        )}
-        onClick={handleClick}
-        {...props}
-      >
-        {children}
-        {icon}
-      </Button>
-    </span>
+      {children}
+      {icon}
+    </Button>
   );
 }

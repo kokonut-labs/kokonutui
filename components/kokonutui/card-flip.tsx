@@ -14,6 +14,11 @@ import { ArrowRight, Repeat2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
+const ORBS = Array.from({ length: 10 }, (_, i) => ({
+  id: `orb-${i}`,
+  delay: `${i * 0.3}s`,
+}));
+
 export interface CardFlipProps {
   title?: string;
   subtitle?: string;
@@ -84,20 +89,21 @@ export default function CardFlip({
               className="absolute inset-0 flex items-start justify-center pt-24"
             >
               <div className="relative flex h-[100px] w-[200px] items-center justify-center">
-                {[...Array(10)].map((_, i) => (
+                {ORBS.map((orb) => (
                   <div
                     className={cn(
                       "absolute h-[50px] w-[50px]",
                       "rounded-[140px]",
-                      "animate-[scale_3s_linear_infinite]",
-                      "motion-reduce:animate-none",
+                      // motion-safe on both: a plain group-hover:animate-*
+                      // outranks motion-reduce:animate-none.
+                      "motion-safe:animate-[scale_3s_linear_infinite]",
                       "opacity-0",
                       "shadow-[0_0_50px_rgba(255,165,0,0.5)]",
-                      "group-hover:animate-[scale_2s_linear_infinite]"
+                      "motion-safe:group-hover:animate-[scale_2s_linear_infinite]"
                     )}
-                    key={i}
+                    key={orb.id}
                     style={{
-                      animationDelay: `${i * 0.3}s`,
+                      animationDelay: orb.delay,
                     }}
                   />
                 ))}
@@ -108,17 +114,17 @@ export default function CardFlip({
           <div className="absolute right-0 bottom-0 left-0 p-5">
             <div className="flex items-center justify-between gap-3">
               <div className="space-y-1.5">
-                <h3 className="font-semibold text-lg text-zinc-900 leading-snug tracking-tighter transition-transform duration-500 ease-out-expo group-hover:translate-y-[-4px] dark:text-white">
+                <h3 className="font-semibold text-lg text-zinc-900 leading-snug tracking-tighter transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-[-4px] dark:text-white">
                   {title}
                 </h3>
-                <p className="line-clamp-2 text-sm text-zinc-600 tracking-tight transition-transform delay-[50ms] duration-500 ease-out-expo group-hover:translate-y-[-4px] dark:text-zinc-200">
+                <p className="line-clamp-2 text-sm text-zinc-600 tracking-tight transition-transform delay-[50ms] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-[-4px] dark:text-zinc-200">
                   {subtitle}
                 </p>
               </div>
               <div className="group/icon relative">
                 <div
                   className={cn(
-                    "absolute inset-[-8px] rounded-lg transition-opacity duration-300",
+                    "absolute inset-[-8px] rounded-lg",
                     "bg-gradient-to-br from-orange-500/20 via-orange-500/10 to-transparent"
                   )}
                 />
@@ -149,10 +155,10 @@ export default function CardFlip({
         >
           <div className="flex-1 space-y-6">
             <div className="space-y-2">
-              <h3 className="font-semibold text-lg text-zinc-900 leading-snug tracking-tight transition-transform duration-500 ease-out-expo group-hover:translate-y-[-2px] dark:text-white">
+              <h3 className="font-semibold text-lg text-zinc-900 leading-snug tracking-tight transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-[-2px] dark:text-white">
                 {title}
               </h3>
-              <p className="line-clamp-2 text-sm text-zinc-600 tracking-tight transition-transform duration-500 ease-out-expo group-hover:translate-y-[-2px] dark:text-zinc-400">
+              <p className="line-clamp-2 text-sm text-zinc-600 tracking-tight transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-y-[-2px] dark:text-zinc-400">
                 {description}
               </p>
             </div>
@@ -160,7 +166,7 @@ export default function CardFlip({
             <div className="space-y-2">
               {features.map((feature, index) => (
                 <div
-                  className="flex items-center gap-2 text-sm text-zinc-700 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] dark:text-zinc-300"
+                  className="motion-reduce:transform-none! flex items-center gap-2 text-sm text-zinc-700 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] dark:text-zinc-300"
                   key={feature}
                   style={{
                     transform: isFlipped
@@ -186,13 +192,13 @@ export default function CardFlip({
                 "group/start relative w-full",
                 "flex items-center justify-between",
                 "-m-3 rounded-xl p-3",
-                "transition-[transform,background] duration-300",
+                "transition-[scale,--tw-gradient-from,--tw-gradient-via,--tw-gradient-to,--tw-gradient-via-position] duration-300",
                 "bg-gradient-to-r from-zinc-100 via-zinc-100 to-zinc-100",
                 "dark:from-zinc-800 dark:via-zinc-800 dark:to-zinc-800",
                 "hover:from-0% hover:from-orange-500/10 hover:via-100% hover:via-orange-500/5 hover:to-100% hover:to-transparent",
                 "dark:hover:from-0% dark:hover:from-orange-500/20 dark:hover:via-100% dark:hover:via-orange-500/10 dark:hover:to-100% dark:hover:to-transparent",
                 "hover:scale-[1.02] active:scale-[0.98]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-900"
+                "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-900"
               )}
               type="button"
             >
@@ -202,7 +208,7 @@ export default function CardFlip({
               <div className="group/icon relative">
                 <div
                   className={cn(
-                    "absolute inset-[-6px] rounded-lg transition-[transform,opacity] duration-300",
+                    "absolute inset-[-6px] rounded-lg transition-[scale,opacity] duration-300",
                     "bg-gradient-to-br from-orange-500/20 via-orange-500/10 to-transparent",
                     "scale-90 opacity-0 group-hover/start:scale-100 group-hover/start:opacity-100"
                   )}

@@ -10,16 +10,24 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
+import {
+  type MotionStyle,
+  type MotionValue,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const SPRING_CONFIG = { stiffness: 300, damping: 30, mass: 0.5 };
+const BOOST_SPRING_CONFIG = { stiffness: 150, damping: 25 };
 const OPACITY_DURATION_BASE = 0.8;
 const OPACITY_DURATION_VARIATION = 0.2;
-const OPACITY_EASE = [0.4, 0, 0.2, 1] as const;
 const OPACITY_DELAY_CYCLE = 1.5;
 const OPACITY_DELAY_STEP = 0.02;
 const MIN_OPACITY_MULTIPLIER = 0.5;
@@ -27,6 +35,12 @@ const MAX_OPACITY_MULTIPLIER = 1.5;
 const MIN_OPACITY_FALLBACK = 0.3;
 const PROXIMITY_MULTIPLIER = 1.2;
 const PROXIMITY_OPACITY_BOOST = 0.8;
+
+// The twinkle runs in CSS on each dot's ::before (off the main thread). It
+// only defines the midpoint, so it goes from the dot's resting opacity
+// (`--dot-rest`) to `--dot-peak` and back.
+const TWINKLE_KEYFRAMES =
+  "@keyframes kokonutui-dot-twinkle { 50% { opacity: var(--dot-peak); } }";
 
 export interface MouseEffectCardProps {
   className?: string;
@@ -44,37 +58,63 @@ export interface MouseEffectCardProps {
   secondaryCtaText?: string;
   secondaryCtaUrl?: string;
   footerText?: string;
+  /**
+   * @deprecated The dot pattern is decorative and no longer focusable, so
+   * there is nothing to label. This prop is ignored.
+   */
   ariaLabel?: string;
 }
 
 interface Dot {
   id: string;
-  x: number;
-  y: number;
   baseX: number;
   baseY: number;
   opacity: number;
+}
+
+interface Force {
+  x: number;
+  y: number;
+  boost: number;
 }
 
 interface DotComponentProps {
   dot: Dot;
   index: number;
   dotSize: number;
-  mouseX: ReturnType<typeof useMotionValue<number>>;
-  mouseY: ReturnType<typeof useMotionValue<number>>;
+  mouseX: MotionValue<number>;
+  mouseY: MotionValue<number>;
   repulsionRadius: number;
   repulsionStrength: number;
 }
 
-function calculateDistance(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number
-): number {
-  const dx = x1 - x2;
-  const dy = y1 - y2;
-  return Math.sqrt(dx * dx + dy * dy);
+const NO_FORCE: Force = { x: 0, y: 0, boost: 0 };
+
+function getForce(
+  dot: Dot,
+  mouseX: number,
+  mouseY: number,
+  repulsionRadius: number,
+  repulsionStrength: number
+): Force {
+  const dx = dot.baseX - mouseX;
+  const dy = dot.baseY - mouseY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const boostRadius = repulsionRadius * PROXIMITY_MULTIPLIER;
+
+  // Also catches the pointer being off the card (coordinates at Infinity).
+  if (!(distance < boostRadius)) {
+    return NO_FORCE;
+  }
+
+  const boost = (1 - distance / boostRadius) * PROXIMITY_OPACITY_BOOST;
+  if (distance >= repulsionRadius || distance === 0) {
+    return { x: 0, y: 0, boost };
+  }
+
+  const push =
+    ((1 - distance / repulsionRadius) * repulsionStrength) / distance;
+  return { x: dx * push, y: dy * push, boost };
 }
 
 function generateDots(width: number, height: number, spacing: number): Dot[] {
@@ -90,15 +130,15 @@ function generateDots(width: number, height: number, spacing: number): Dot[] {
       const x = col * spacing;
       const y = row * spacing;
 
-      // Calculate distance from center
       const dx = x - centerX;
       const dy = y - centerY;
       const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
 
-      // Calculate edge factor (0 at edges, 1 at center)
+      // 0 at the center, rising to 1 at 70% of the way to the corners.
       const edgeFactor = Math.min(distanceFromCenter / (maxDistance * 0.7), 1);
 
-      // Skip dots near edges with probability based on distance
+      // Randomly drop dots, more of them towards the center, to keep the
+      // area behind the text clear.
       if (Math.random() > edgeFactor) {
         continue;
       }
@@ -109,8 +149,6 @@ function generateDots(width: number, height: number, spacing: number): Dot[] {
 
       dots.push({
         id: `dot-${row}-${col}`,
-        x,
-        y,
         baseX: x,
         baseY: y,
         opacity,
@@ -130,109 +168,58 @@ function DotComponent({
   repulsionRadius,
   repulsionStrength,
 }: DotComponentProps) {
-  const posX = useTransform([mouseX, mouseY], () => {
-    const mx = mouseX.get();
-    const my = mouseY.get();
+  const force = useTransform<number, Force>([mouseX, mouseY], ([mx, my]) =>
+    getForce(dot, mx, my, repulsionRadius, repulsionStrength)
+  );
 
-    if (!(Number.isFinite(mx) && Number.isFinite(my))) {
-      return 0;
-    }
-
-    const dx = dot.baseX - mx;
-    const dy = dot.baseY - my;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < repulsionRadius) {
-      const force = (1 - distance / repulsionRadius) * repulsionStrength;
-      const angle = Math.atan2(dy, dx);
-      return Math.cos(angle) * force;
-    }
-
-    return 0;
-  });
-
-  const posY = useTransform([mouseX, mouseY], () => {
-    const mx = mouseX.get();
-    const my = mouseY.get();
-
-    if (!(Number.isFinite(mx) && Number.isFinite(my))) {
-      return 0;
-    }
-
-    const dx = dot.baseX - mx;
-    const dy = dot.baseY - my;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < repulsionRadius) {
-      const force = (1 - distance / repulsionRadius) * repulsionStrength;
-      const angle = Math.atan2(dy, dx);
-      return Math.sin(angle) * force;
-    }
-
-    return 0;
-  });
-
-  const opacityBoost = useTransform([mouseX, mouseY], () => {
-    const mx = mouseX.get();
-    const my = mouseY.get();
-
-    if (!(Number.isFinite(mx) && Number.isFinite(my))) return 0;
-
-    const distance = calculateDistance(dot.baseX, dot.baseY, mx, my);
-    const maxDistance = repulsionRadius * PROXIMITY_MULTIPLIER;
-
-    if (distance < maxDistance) {
-      const proximityFactor = 1 - distance / maxDistance;
-      return proximityFactor * PROXIMITY_OPACITY_BOOST;
-    }
-
-    return 0;
-  });
-
-  const x = useSpring(posX, SPRING_CONFIG);
-  const y = useSpring(posY, SPRING_CONFIG);
+  const x = useSpring(
+    useTransform(force, (f) => f.x),
+    SPRING_CONFIG
+  );
+  const y = useSpring(
+    useTransform(force, (f) => f.y),
+    SPRING_CONFIG
+  );
 
   const baseMinOpacity = Math.max(
     dot.opacity * MIN_OPACITY_MULTIPLIER,
     MIN_OPACITY_FALLBACK
   );
   const baseMaxOpacity = Math.min(dot.opacity * MAX_OPACITY_MULTIPLIER, 1);
+  // Faint dots hit the 0.3 floor, so "min" can be the brighter of the two.
+  const brightestOpacity = Math.max(baseMinOpacity, baseMaxOpacity);
 
-  const minOpacityWithBoost = useTransform(opacityBoost, (boost) =>
-    Math.min(baseMinOpacity + boost, 1)
+  // The dot's own opacity carries the pointer boost, its ::before carries the
+  // twinkle (as fractions of the brightest value), and the two multiply: at
+  // rest the dot twinkles from baseMinOpacity to baseMaxOpacity and back, and
+  // near the pointer it brightens.
+  const opacity = useSpring(
+    useTransform(force, (f) => Math.min(brightestOpacity + f.boost, 1)),
+    BOOST_SPRING_CONFIG
   );
 
+  const duration =
+    OPACITY_DURATION_BASE + (index % 4) * OPACITY_DURATION_VARIATION;
   const delay = (index * OPACITY_DELAY_STEP) % OPACITY_DELAY_CYCLE;
+
+  const style: MotionStyle & Record<`--${string}`, string> = {
+    width: dotSize,
+    height: dotSize,
+    left: dot.baseX,
+    top: dot.baseY,
+    x,
+    y,
+    opacity,
+    "--dot-rest": String(baseMinOpacity / brightestOpacity),
+    "--dot-peak": String(baseMaxOpacity / brightestOpacity),
+    "--dot-duration": `${duration}s`,
+    "--dot-delay": `${delay}s`,
+  };
 
   return (
     <motion.div
-      animate={{
-        opacity: [baseMinOpacity, baseMaxOpacity, baseMinOpacity],
-      }}
-      className="absolute rounded-full bg-zinc-400 will-change-transform dark:bg-zinc-600"
-      initial={{ opacity: baseMinOpacity }}
-      style={{
-        width: dotSize,
-        height: dotSize,
-        left: dot.baseX,
-        top: dot.baseY,
-        x,
-        y,
-        opacity: useSpring(minOpacityWithBoost, {
-          stiffness: 150,
-          damping: 25,
-        }),
-      }}
-      transition={{
-        opacity: {
-          duration:
-            OPACITY_DURATION_BASE + (index % 4) * OPACITY_DURATION_VARIATION,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: OPACITY_EASE,
-          delay,
-          times: [0, 0.5, 1],
-        },
-      }}
+      className="absolute rounded-full before:absolute before:inset-0 before:rounded-full before:bg-zinc-400 before:opacity-(--dot-rest) motion-safe:before:animate-[kokonutui-dot-twinkle_var(--dot-duration)_cubic-bezier(0.4,0,0.2,1)_var(--dot-delay)_infinite] dark:before:bg-zinc-600"
+      style={style}
     />
   );
 }
@@ -253,16 +240,18 @@ export default function MouseEffectCard({
   secondaryCtaText = "View Docs",
   secondaryCtaUrl = "#",
   footerText = "We do it all",
-  ariaLabel,
 }: MouseEffectCardProps) {
   const innerContainerRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(Number.POSITIVE_INFINITY);
   const mouseY = useMotionValue(Number.POSITIVE_INFINITY);
   const [dots, setDots] = useState<Dot[]>([]);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     const updateDots = () => {
-      if (!innerContainerRef.current) return;
+      if (!innerContainerRef.current) {
+        return;
+      }
       const rect = innerContainerRef.current.getBoundingClientRect();
       const newDots = generateDots(rect.width, rect.height, dotSpacing);
       setDots(newDots);
@@ -280,67 +269,21 @@ export default function MouseEffectCard({
     };
   }, [dotSpacing]);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!innerContainerRef.current) return;
-
-    const rect = innerContainerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    mouseX.set(x);
-    mouseY.set(y);
-  };
-
-  const handleMouseLeave = () => {
-    mouseX.set(Number.POSITIVE_INFINITY);
-    mouseY.set(Number.POSITIVE_INFINITY);
-  };
-
-  const handleFocus = () => {
-    if (!innerContainerRef.current) return;
-    const rect = innerContainerRef.current.getBoundingClientRect();
-    mouseX.set(rect.width / 2);
-    mouseY.set(rect.height / 2);
-  };
-
-  const handleBlur = () => {
-    mouseX.set(Number.POSITIVE_INFINITY);
-    mouseY.set(Number.POSITIVE_INFINITY);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!innerContainerRef.current) return;
-    const rect = innerContainerRef.current.getBoundingClientRect();
-    const step = Math.min(rect.width, rect.height) * 0.2;
-    const currentX = Number.isFinite(mouseX.get())
-      ? mouseX.get()
-      : rect.width / 2;
-    const currentY = Number.isFinite(mouseY.get())
-      ? mouseY.get()
-      : rect.height / 2;
-
-    switch (e.key) {
-      case "ArrowUp":
-        e.preventDefault();
-        mouseY.set(Math.max(0, currentY - step));
-        mouseX.set(currentX);
-        break;
-      case "ArrowDown":
-        e.preventDefault();
-        mouseY.set(Math.min(rect.height, currentY + step));
-        mouseX.set(currentX);
-        break;
-      case "ArrowLeft":
-        e.preventDefault();
-        mouseX.set(Math.max(0, currentX - step));
-        mouseY.set(currentY);
-        break;
-      case "ArrowRight":
-        e.preventDefault();
-        mouseX.set(Math.min(rect.width, currentX + step));
-        mouseY.set(currentY);
-        break;
+  // Mouse only: a touch tap would otherwise leave the dots pushed aside
+  // until the next tap elsewhere.
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse" || !innerContainerRef.current) {
+      return;
     }
+
+    const rect = innerContainerRef.current.getBoundingClientRect();
+    mouseX.set(e.clientX - rect.left);
+    mouseY.set(e.clientY - rect.top);
+  };
+
+  const handlePointerLeave = () => {
+    mouseX.set(Number.POSITIVE_INFINITY);
+    mouseY.set(Number.POSITIVE_INFINITY);
   };
 
   return (
@@ -350,29 +293,29 @@ export default function MouseEffectCard({
         className
       )}
     >
+      <style href="kokonutui-mouse-effect-card" precedence="default">
+        {TWINKLE_KEYFRAMES}
+      </style>
       <CardContent
-        aria-label={ariaLabel ?? `${title} — ${subtitle}`}
         className="relative h-[400px] w-full overflow-hidden p-0"
-        onBlur={handleBlur}
-        onFocus={handleFocus}
-        onKeyDown={handleKeyDown}
-        onMouseLeave={handleMouseLeave}
-        onMouseMove={handleMouseMove}
+        onPointerLeave={handlePointerLeave}
+        onPointerMove={handlePointerMove}
         ref={innerContainerRef}
-        tabIndex={0}
       >
-        {dots.map((dot, index) => (
-          <DotComponent
-            dot={dot}
-            dotSize={dotSize}
-            index={index}
-            key={dot.id}
-            mouseX={mouseX}
-            mouseY={mouseY}
-            repulsionRadius={repulsionRadius}
-            repulsionStrength={repulsionStrength}
-          />
-        ))}
+        <div aria-hidden="true" className="absolute inset-0">
+          {dots.map((dot, index) => (
+            <DotComponent
+              dot={dot}
+              dotSize={dotSize}
+              index={index}
+              key={dot.id}
+              mouseX={mouseX}
+              mouseY={mouseY}
+              repulsionRadius={repulsionRadius}
+              repulsionStrength={shouldReduceMotion ? 0 : repulsionStrength}
+            />
+          ))}
+        </div>
 
         {topText && (
           <div className="absolute top-6 left-6 z-10">

@@ -102,11 +102,25 @@ const swapVariants: Variants = {
   exit: { opacity: 0, y: -6, transition: { duration: 0.15, ease: EASE_OUT } },
 };
 
-/** Same swap without movement, for prefers-reduced-motion. */
+/**
+ * Same swap without movement, for prefers-reduced-motion. `y` and `scale` are
+ * pinned at rest so the server (which can't know the preference) and the
+ * client render the same transform.
+ */
 const fadeVariants: Variants = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: 0.2, ease: EASE_OUT } },
-  exit: { opacity: 0, transition: { duration: 0.15, ease: EASE_OUT } },
+  initial: { opacity: 0, y: 0, scale: 1 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.2, ease: EASE_OUT },
+  },
+  exit: {
+    opacity: 0,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.15, ease: EASE_OUT },
+  },
 };
 
 /** Status icon swap: never from scale(0), a slight 0.9 -> 1 settle. */
@@ -243,19 +257,11 @@ function StatusIcon({
             key="processing"
             variants={reduceMotion ? fadeVariants : iconVariants}
           >
-            <motion.div
-              animate={reduceMotion ? undefined : { rotate: 360 }}
+            {/* CSS spin runs off the main thread, so it stays smooth while
+                the app is busy with the transfer. */}
+            <div
               aria-hidden="true"
-              className="absolute inset-0 rounded-full border-2 border-transparent"
-              style={{
-                borderLeftColor: "rgb(16 185 129)",
-                borderTopColor: "rgb(16 185 129 / 0.2)",
-              }}
-              transition={{
-                duration: 1,
-                repeat: Number.POSITIVE_INFINITY,
-                ease: "linear",
-              }}
+              className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-emerald-500/20 border-l-emerald-500 motion-reduce:animate-none"
             />
             <div className="relative z-10 rounded-full bg-white p-5 shadow-[0_0_15px_rgba(16,185,129,0.1)] dark:bg-zinc-900">
               <ArrowUpDown
@@ -298,12 +304,19 @@ export default function CurrencyTransfer({
   }, [isControlled]);
 
   const swap = reduceMotion ? fadeVariants : swapVariants;
+  // The hidden pose is the same on server and client; reduced motion drops
+  // the rise by giving `y` no duration.
   const entry: Variants = {
-    hidden: { opacity: 0, y: reduceMotion ? 0 : 8 },
+    hidden: { opacity: 0, y: 8 },
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
-      transition: { duration: 0.25, delay: i * 0.06, ease: EASE_OUT },
+      transition: {
+        duration: 0.25,
+        delay: i * 0.06,
+        ease: EASE_OUT,
+        y: reduceMotion ? { duration: 0 } : undefined,
+      },
     }),
   };
 
@@ -399,7 +412,7 @@ export default function CurrencyTransfer({
                 <Tooltip>
                   <TooltipTrigger
                     aria-label="Exchange rate details"
-                    className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+                    className="rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/50"
                   >
                     <InfoIcon
                       aria-hidden="true"

@@ -10,13 +10,20 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion } from "motion/react";
+import {
+  MotionConfig,
+  motion,
+  useInView,
+  useReducedMotion,
+} from "motion/react";
+import { useId, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface ActivityData {
   label: string;
   value: number;
   color: string;
+  colorEnd: string;
   size: number;
   current: number;
   target: number;
@@ -26,13 +33,18 @@ interface ActivityData {
 interface CircleProgressProps {
   data: ActivityData;
   index: number;
+  inView: boolean;
+  reduceMotion: boolean;
 }
+
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 const activities: ActivityData[] = [
   {
     label: "MOVE",
     value: 85,
     color: "#FF2D55",
+    colorEnd: "#FF6B8B",
     size: 200,
     current: 479,
     target: 800,
@@ -42,6 +54,7 @@ const activities: ActivityData[] = [
     label: "EXERCISE",
     value: 60,
     color: "#A3F900",
+    colorEnd: "#C5FF4D",
     size: 160,
     current: 24,
     target: 30,
@@ -51,6 +64,7 @@ const activities: ActivityData[] = [
     label: "STAND",
     value: 30,
     color: "#04C7DD",
+    colorEnd: "#4DDFED",
     size: 120,
     current: 6,
     target: 12,
@@ -58,26 +72,31 @@ const activities: ActivityData[] = [
   },
 ];
 
-const CircleProgress = ({ data, index }: CircleProgressProps) => {
+const CircleProgress = ({
+  data,
+  index,
+  inView,
+  reduceMotion,
+}: CircleProgressProps) => {
   const strokeWidth = 16;
   const radius = (data.size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const progress = ((100 - data.value) / 100) * circumference;
 
-  const gradientId = `gradient-${data.label.toLowerCase()}`;
+  const gradientId = useId();
   const gradientUrl = `url(#${gradientId})`;
 
   return (
     <motion.div
-      animate={{ opacity: 1, scale: 1 }}
+      animate={inView ? { opacity: 1, scale: 1 } : undefined}
       className="absolute inset-0 flex items-center justify-center"
-      initial={{ opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.8, delay: index * 0.2, ease: "easeOut" }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.3, delay: index * 0.2, ease: EASE_OUT }}
     >
       <div className="relative">
         <svg
           aria-label={`${data.label} Activity Progress - ${data.value}%`}
-          className="-rotate-90 transform"
+          className="-rotate-90"
           height={data.size}
           viewBox={`0 0 ${data.size} ${data.size}`}
           width={data.size}
@@ -96,12 +115,7 @@ const CircleProgress = ({ data, index }: CircleProgressProps) => {
               <stop
                 offset="100%"
                 style={{
-                  stopColor:
-                    data.color === "#FF2D55"
-                      ? "#FF6B8B"
-                      : data.color === "#A3F900"
-                        ? "#C5FF4D"
-                        : "#4DDFED",
+                  stopColor: data.colorEnd,
                   stopOpacity: 1,
                 }}
               />
@@ -119,7 +133,7 @@ const CircleProgress = ({ data, index }: CircleProgressProps) => {
           />
 
           <motion.circle
-            animate={{ strokeDashoffset: progress }}
+            animate={{ strokeDashoffset: inView ? progress : circumference }}
             cx={data.size / 2}
             cy={data.size / 2}
             fill="none"
@@ -132,11 +146,12 @@ const CircleProgress = ({ data, index }: CircleProgressProps) => {
             style={{
               filter: "drop-shadow(0 0 6px rgba(0,0,0,0.15))",
             }}
-            transition={{
-              duration: 1.8,
-              delay: index * 0.2,
-              ease: "easeInOut",
-            }}
+            transition={
+              // MotionConfig only skips transforms; the draw isn't one.
+              reduceMotion
+                ? { duration: 0 }
+                : { duration: 1.1, delay: index * 0.2, ease: EASE_OUT }
+            }
           />
         </svg>
       </div>
@@ -144,16 +159,16 @@ const CircleProgress = ({ data, index }: CircleProgressProps) => {
   );
 };
 
-const DetailedActivityInfo = () => {
+const DetailedActivityInfo = ({ inView }: { inView: boolean }) => {
   return (
     <motion.div
-      animate={{ opacity: 1, x: 0 }}
+      animate={inView ? { opacity: 1, x: 0 } : undefined}
       className="ml-8 flex flex-col gap-6"
       initial={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.5, delay: 0.3 }}
+      transition={{ duration: 0.5, delay: 0.3, ease: EASE_OUT }}
     >
       {activities.map((activity) => (
-        <motion.div className="flex flex-col" key={activity.label}>
+        <div className="flex flex-col" key={activity.label}>
           <span className="font-medium text-sm text-zinc-600 dark:text-zinc-400">
             {activity.label}
           </span>
@@ -166,7 +181,7 @@ const DetailedActivityInfo = () => {
               {activity.unit}
             </span>
           </span>
-        </motion.div>
+        </div>
       ))}
     </motion.div>
   );
@@ -179,6 +194,10 @@ export default function AppleActivityCard({
   title?: string;
   className?: string;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const reduceMotion = useReducedMotion() ?? false;
+
   return (
     <div
       className={cn(
@@ -186,30 +205,36 @@ export default function AppleActivityCard({
         "text-zinc-900 dark:text-white",
         className
       )}
+      ref={ref}
     >
-      <div className="flex flex-col items-center gap-8">
-        <motion.h2
-          animate={{ opacity: 1, y: 0 }}
-          className="font-medium text-2xl text-zinc-900 dark:text-white"
-          initial={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.5 }}
-        >
-          {title}
-        </motion.h2>
+      {/* Reduced motion keeps the fades and drops the scale/slide. */}
+      <MotionConfig reducedMotion="user">
+        <div className="flex flex-col items-center gap-8">
+          <motion.h2
+            animate={inView ? { opacity: 1, y: 0 } : undefined}
+            className="font-medium text-2xl text-zinc-900 dark:text-white"
+            initial={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5, ease: EASE_OUT }}
+          >
+            {title}
+          </motion.h2>
 
-        <div className="flex items-center">
-          <div className="relative h-[180px] w-[180px]">
-            {activities.map((activity, index) => (
-              <CircleProgress
-                data={activity}
-                index={index}
-                key={activity.label}
-              />
-            ))}
+          <div className="flex items-center">
+            <div className="relative h-[180px] w-[180px]">
+              {activities.map((activity, index) => (
+                <CircleProgress
+                  data={activity}
+                  index={index}
+                  inView={inView}
+                  key={activity.label}
+                  reduceMotion={reduceMotion}
+                />
+              ))}
+            </div>
+            <DetailedActivityInfo inView={inView} />
           </div>
-          <DetailedActivityInfo />
         </div>
-      </div>
+      </MotionConfig>
     </div>
   );
 }

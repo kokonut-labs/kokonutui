@@ -85,7 +85,6 @@ export const component: Registry = [
   {
     name: "shimmer-text",
     type: "registry:component",
-    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/shimmer-text.tsx",
@@ -416,7 +415,6 @@ export const component: Registry = [
   {
     name: "swoosh-text",
     type: "registry:component",
-    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/swoosh-text.tsx",
@@ -533,7 +531,6 @@ export const component: Registry = [
   {
     name: "loader",
     type: "registry:component",
-    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/loader.tsx",

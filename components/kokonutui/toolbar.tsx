@@ -26,7 +26,12 @@ import {
   Share2,
   SlidersHorizontal,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  type Transition,
+  type Variants,
+} from "motion/react";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +39,6 @@ interface ToolbarItem {
   id: string;
   title: string;
   icon: LucideIcon;
-  type?: never;
 }
 
 interface ToolbarProps {
@@ -61,46 +65,43 @@ const DEFAULT_TOOLBAR_ITEMS: ToolbarItem[] = [
   { id: "appearance", title: "Appearance", icon: Palette },
 ];
 
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+
 const buttonVariants = {
-  initial: {
-    gap: 0,
-    paddingLeft: ".5rem",
-    paddingRight: ".5rem",
-  },
   animate: (isSelected: boolean) => ({
     gap: isSelected ? ".5rem" : 0,
     paddingLeft: isSelected ? "1rem" : ".5rem",
     paddingRight: isSelected ? "1rem" : ".5rem",
   }),
-};
+} satisfies Variants;
 
 const spanVariants = {
   initial: { width: 0, opacity: 0 },
   animate: { width: "auto", opacity: 1 },
   exit: { width: 0, opacity: 0 },
-};
+} satisfies Variants;
 
 const notificationVariants = {
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: -10 },
-  exit: { opacity: 0, y: -20 },
-};
+  exit: { opacity: 0, y: -20, transition: { duration: 0.15, ease: EASE_OUT } },
+} satisfies Variants;
 
 const lineVariants = {
   initial: { scaleX: 0, x: "-50%" },
   animate: {
     scaleX: 1,
     x: "0%",
-    transition: { duration: 0.2, ease: "easeOut" },
+    transition: { duration: 0.2, ease: EASE_OUT },
   },
   exit: {
     scaleX: 0,
     x: "50%",
-    transition: { duration: 0.2, ease: "easeIn" },
+    transition: { duration: 0.15, ease: EASE_OUT },
   },
-};
+} satisfies Variants;
 
-const transition = { type: "spring", bounce: 0, duration: 0.4 };
+const transition: Transition = { type: "spring", bounce: 0, duration: 0.2 };
 
 export function Toolbar({
   items = DEFAULT_TOOLBAR_ITEMS,
@@ -118,12 +119,21 @@ export function Toolbar({
     string | null
   >(null);
   const outsideClickRef = React.useRef(null);
+  const notificationTimeoutRef = React.useRef<
+    ReturnType<typeof setTimeout> | undefined
+  >(undefined);
+
+  React.useEffect(() => () => clearTimeout(notificationTimeoutRef.current), []);
 
   const handleItemClick = (itemId: string) => {
     setSelected(selected === itemId ? null : itemId);
     onSelect?.(itemId);
     setActiveNotification(itemId);
-    setTimeout(() => setActiveNotification(null), 1500);
+    clearTimeout(notificationTimeoutRef.current);
+    notificationTimeoutRef.current = setTimeout(
+      () => setActiveNotification(null),
+      1500
+    );
   };
 
   return (
@@ -134,7 +144,6 @@ export function Toolbar({
           "relative flex items-center gap-3 p-2",
           "bg-background",
           "rounded-xl border",
-          "transition-all duration-200",
           className
         )}
         ref={outsideClickRef}
@@ -144,11 +153,11 @@ export function Toolbar({
           {activeNotification && (
             <motion.div
               animate="animate"
-              className="absolute -top-8 left-1/2 z-50 -translate-x-1/2 transform"
+              className="motion-reduce:transform-none! absolute -top-8 left-1/2 z-50 -translate-x-1/2"
               exit="exit"
               initial="initial"
-              transition={{ duration: 0.3 }}
-              variants={notificationVariants as any}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
+              variants={notificationVariants}
             >
               <div className="rounded-full bg-primary px-3 py-1 text-primary-foreground text-xs">
                 {items.find((item) => item.id === activeNotification)?.title}{" "}
@@ -156,10 +165,10 @@ export function Toolbar({
               </div>
               <motion.div
                 animate="animate"
-                className="absolute -bottom-1 left-1/2 h-[2px] w-full origin-left bg-primary"
+                className="motion-reduce:transform-none! absolute -bottom-1 left-0 h-[2px] w-full origin-left bg-primary"
                 exit="exit"
                 initial="initial"
-                variants={lineVariants as any}
+                variants={lineVariants}
               />
             </motion.div>
           )}
@@ -198,8 +207,8 @@ export function Toolbar({
                     className="overflow-hidden"
                     exit="exit"
                     initial="initial"
-                    transition={transition as any}
-                    variants={spanVariants as any}
+                    transition={transition}
+                    variants={spanVariants}
                   >
                     {item.title}
                   </motion.span>
@@ -211,7 +220,7 @@ export function Toolbar({
           <motion.button
             className={cn(
               "flex items-center gap-2 px-4 py-2",
-              "rounded-xl border shadow-sm transition-all duration-200",
+              "rounded-xl border shadow-sm transition-colors duration-200",
               "hover:shadow-md active:border-primary/50",
               isToggled
                 ? [

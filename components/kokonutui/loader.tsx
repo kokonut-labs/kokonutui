@@ -1,13 +1,97 @@
-"use client";
-
-import { motion } from "motion/react";
+import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
-interface LoaderProps extends React.HTMLAttributes<HTMLDivElement> {
+interface LoaderProps
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, "title" | "children"> {
   title?: string;
   subtitle?: string;
   size?: "sm" | "md" | "lg";
 }
+
+const SIZE_CONFIG = {
+  sm: {
+    container: "size-20",
+    titleClass: "text-sm font-medium",
+    subtitleClass: "text-xs",
+    spacing: "space-y-2",
+    maxWidth: "max-w-48",
+  },
+  md: {
+    container: "size-32",
+    titleClass: "text-base font-medium",
+    subtitleClass: "text-sm",
+    spacing: "space-y-3",
+    maxWidth: "max-w-56",
+  },
+  lg: {
+    container: "size-40",
+    titleClass: "text-lg font-semibold",
+    subtitleClass: "text-base",
+    spacing: "space-y-4",
+    maxWidth: "max-w-64",
+  },
+} as const;
+
+const ringMask = (stops: string) =>
+  `radial-gradient(circle at 50% 50%, ${stops})`;
+
+// Rings are tinted with `currentColor`, so one set covers light and dark mode
+// and the loader can be recoloured with any `text-*` class.
+const RINGS: { id: string; style: CSSProperties }[] = [
+  {
+    id: "outer",
+    style: {
+      background:
+        "conic-gradient(from 0deg, transparent 0deg, currentColor 90deg, transparent 180deg)",
+      mask: ringMask("transparent 35%, black 37%, black 39%, transparent 41%"),
+      WebkitMask: ringMask(
+        "transparent 35%, black 37%, black 39%, transparent 41%"
+      ),
+      opacity: 0.8,
+      animationDuration: "3s",
+    },
+  },
+  {
+    id: "primary",
+    style: {
+      background:
+        "conic-gradient(from 0deg, transparent 0deg, currentColor 120deg, color-mix(in srgb, currentColor 50%, transparent) 240deg, transparent 360deg)",
+      mask: ringMask("transparent 42%, black 44%, black 48%, transparent 50%"),
+      WebkitMask: ringMask(
+        "transparent 42%, black 44%, black 48%, transparent 50%"
+      ),
+      opacity: 0.9,
+      animationDuration: "1.2s",
+    },
+  },
+  {
+    id: "counter",
+    style: {
+      background:
+        "conic-gradient(from 180deg, transparent 0deg, color-mix(in srgb, currentColor 60%, transparent) 45deg, transparent 90deg)",
+      mask: ringMask("transparent 52%, black 54%, black 56%, transparent 58%"),
+      WebkitMask: ringMask(
+        "transparent 52%, black 54%, black 56%, transparent 58%"
+      ),
+      opacity: 0.35,
+      animationDuration: "4s",
+      animationDirection: "reverse",
+    },
+  },
+  {
+    id: "accent",
+    style: {
+      background:
+        "conic-gradient(from 270deg, transparent 0deg, color-mix(in srgb, currentColor 40%, transparent) 20deg, transparent 40deg)",
+      mask: ringMask("transparent 61%, black 62%, black 63%, transparent 64%"),
+      WebkitMask: ringMask(
+        "transparent 61%, black 62%, black 63%, transparent 64%"
+      ),
+      opacity: 0.5,
+      animationDuration: "3.5s",
+    },
+  },
+];
 
 export default function Loader({
   title = "Configuring your account...",
@@ -16,31 +100,7 @@ export default function Loader({
   className,
   ...props
 }: LoaderProps) {
-  const sizeConfig = {
-    sm: {
-      container: "size-20",
-      titleClass: "text-sm/tight font-medium",
-      subtitleClass: "text-xs/relaxed",
-      spacing: "space-y-2",
-      maxWidth: "max-w-48",
-    },
-    md: {
-      container: "size-32",
-      titleClass: "text-base/snug font-medium",
-      subtitleClass: "text-sm/relaxed",
-      spacing: "space-y-3",
-      maxWidth: "max-w-56",
-    },
-    lg: {
-      container: "size-40",
-      titleClass: "text-lg/tight font-semibold",
-      subtitleClass: "text-base/relaxed",
-      spacing: "space-y-4",
-      maxWidth: "max-w-64",
-    },
-  };
-
-  const config = sizeConfig[size];
+  const config = SIZE_CONFIG[size];
 
   return (
     <div
@@ -50,260 +110,44 @@ export default function Loader({
       )}
       {...props}
     >
-      {/* Enhanced Monochrome Loader */}
-      <motion.div
-        animate={{
-          scale: [1, 1.02, 1],
-        }}
-        className={cn("relative", config.container)}
-        transition={{
-          duration: 4,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: [0.4, 0, 0.6, 1],
-        }}
+      <div
+        aria-hidden="true"
+        className={cn("relative text-black dark:text-white", config.container)}
       >
-        {/* Outer elegant ring with shimmer */}
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-          }}
-          className="absolute inset-0 rounded-full"
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent 0deg, rgb(0, 0, 0) 90deg, transparent 180deg)",
-            mask: "radial-gradient(circle at 50% 50%, transparent 35%, black 37%, black 39%, transparent 41%)",
-            WebkitMask:
-              "radial-gradient(circle at 50% 50%, transparent 35%, black 37%, black 39%, transparent 41%)",
-            opacity: 0.8,
-          }}
-          transition={{
-            duration: 3,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "linear",
-          }}
-        />
+        {RINGS.map((ring) => (
+          <div
+            className="absolute inset-0 rounded-full motion-safe:animate-spin motion-reduce:animate-pulse"
+            key={ring.id}
+            style={ring.style}
+          />
+        ))}
+      </div>
 
-        {/* Primary animated ring with gradient */}
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-          }}
-          className="absolute inset-0 rounded-full"
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent 0deg, rgb(0, 0, 0) 120deg, rgba(0, 0, 0, 0.5) 240deg, transparent 360deg)",
-            mask: "radial-gradient(circle at 50% 50%, transparent 42%, black 44%, black 48%, transparent 50%)",
-            WebkitMask:
-              "radial-gradient(circle at 50% 50%, transparent 42%, black 44%, black 48%, transparent 50%)",
-            opacity: 0.9,
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: [0.4, 0, 0.6, 1],
-          }}
-        />
-
-        {/* Secondary elegant ring - counter rotation */}
-        <motion.div
-          animate={{
-            rotate: [0, -360],
-          }}
-          className="absolute inset-0 rounded-full"
-          style={{
-            background:
-              "conic-gradient(from 180deg, transparent 0deg, rgba(0, 0, 0, 0.6) 45deg, transparent 90deg)",
-            mask: "radial-gradient(circle at 50% 50%, transparent 52%, black 54%, black 56%, transparent 58%)",
-            WebkitMask:
-              "radial-gradient(circle at 50% 50%, transparent 52%, black 54%, black 56%, transparent 58%)",
-            opacity: 0.35,
-          }}
-          transition={{
-            duration: 4,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: [0.4, 0, 0.6, 1],
-          }}
-        />
-
-        {/* Accent particles */}
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-          }}
-          className="absolute inset-0 rounded-full"
-          style={{
-            background:
-              "conic-gradient(from 270deg, transparent 0deg, rgba(0, 0, 0, 0.4) 20deg, transparent 40deg)",
-            mask: "radial-gradient(circle at 50% 50%, transparent 61%, black 62%, black 63%, transparent 64%)",
-            WebkitMask:
-              "radial-gradient(circle at 50% 50%, transparent 61%, black 62%, black 63%, transparent 64%)",
-            opacity: 0.5,
-          }}
-          transition={{
-            duration: 3.5,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "linear",
-          }}
-        />
-
-        {/* Dark mode variants */}
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-          }}
-          className="absolute inset-0 hidden rounded-full dark:block"
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent 0deg, rgb(255, 255, 255) 90deg, transparent 180deg)",
-            mask: "radial-gradient(circle at 50% 50%, transparent 35%, black 37%, black 39%, transparent 41%)",
-            WebkitMask:
-              "radial-gradient(circle at 50% 50%, transparent 35%, black 37%, black 39%, transparent 41%)",
-            opacity: 0.8,
-          }}
-          transition={{
-            duration: 3,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "linear",
-          }}
-        />
-
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-          }}
-          className="absolute inset-0 hidden rounded-full dark:block"
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent 0deg, rgb(255, 255, 255) 120deg, rgba(255, 255, 255, 0.5) 240deg, transparent 360deg)",
-            mask: "radial-gradient(circle at 50% 50%, transparent 42%, black 44%, black 48%, transparent 50%)",
-            WebkitMask:
-              "radial-gradient(circle at 50% 50%, transparent 42%, black 44%, black 48%, transparent 50%)",
-            opacity: 0.9,
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: [0.4, 0, 0.6, 1],
-          }}
-        />
-
-        <motion.div
-          animate={{
-            rotate: [0, -360],
-          }}
-          className="absolute inset-0 hidden rounded-full dark:block"
-          style={{
-            background:
-              "conic-gradient(from 180deg, transparent 0deg, rgba(255, 255, 255, 0.6) 45deg, transparent 90deg)",
-            mask: "radial-gradient(circle at 50% 50%, transparent 52%, black 54%, black 56%, transparent 58%)",
-            WebkitMask:
-              "radial-gradient(circle at 50% 50%, transparent 52%, black 54%, black 56%, transparent 58%)",
-            opacity: 0.35,
-          }}
-          transition={{
-            duration: 4,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: [0.4, 0, 0.6, 1],
-          }}
-        />
-
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-          }}
-          className="absolute inset-0 hidden rounded-full dark:block"
-          style={{
-            background:
-              "conic-gradient(from 270deg, transparent 0deg, rgba(255, 255, 255, 0.4) 20deg, transparent 40deg)",
-            mask: "radial-gradient(circle at 50% 50%, transparent 61%, black 62%, black 63%, transparent 64%)",
-            WebkitMask:
-              "radial-gradient(circle at 50% 50%, transparent 61%, black 62%, black 63%, transparent 64%)",
-            opacity: 0.5,
-          }}
-          transition={{
-            duration: 3.5,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "linear",
-          }}
-        />
-      </motion.div>
-
-      {/* Enhanced Typography with Breathing Animation */}
-      <motion.div
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
-        className={cn("text-center", config.spacing, config.maxWidth)}
-        initial={{ opacity: 0, y: 12 }}
-        transition={{
-          delay: 0.4,
-          duration: 1,
-          ease: [0.4, 0, 0.2, 1],
-        }}
+      <output
+        aria-live="polite"
+        className={cn(
+          "block text-center starting:opacity-0 transition-opacity duration-200 ease-out",
+          config.spacing,
+          config.maxWidth
+        )}
       >
-        {/* Clean title with subtle animation */}
-        <motion.h1
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
+        <span
           className={cn(
             config.titleClass,
-            "font-medium text-black/90 leading-[1.15] tracking-[-0.02em] antialiased dark:text-white/90"
+            "block text-black/90 leading-[1.15] tracking-[-0.02em] antialiased dark:text-white/90"
           )}
-          initial={{ opacity: 0, y: 12 }}
-          transition={{
-            delay: 0.6,
-            duration: 0.8,
-            ease: [0.4, 0, 0.2, 1],
-          }}
         >
-          <motion.span
-            animate={{
-              opacity: [0.9, 0.7, 0.9],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Number.POSITIVE_INFINITY,
-              ease: [0.4, 0, 0.6, 1],
-            }}
-          >
-            {title}
-          </motion.span>
-        </motion.h1>
-
-        {/* Clean subtitle with subtle animation */}
-        <motion.p
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
+          {title}
+        </span>
+        <span
           className={cn(
             config.subtitleClass,
-            "font-normal text-black/60 leading-[1.45] tracking-[-0.01em] antialiased dark:text-white/60"
+            "block font-normal text-black/60 leading-[1.45] tracking-[-0.01em] antialiased dark:text-white/60"
           )}
-          initial={{ opacity: 0, y: 8 }}
-          transition={{
-            delay: 0.8,
-            duration: 0.8,
-            ease: [0.4, 0, 0.2, 1],
-          }}
         >
-          <motion.span
-            animate={{
-              opacity: [0.6, 0.4, 0.6],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Number.POSITIVE_INFINITY,
-              ease: [0.4, 0, 0.6, 1],
-            }}
-          >
-            {subtitle}
-          </motion.span>
-        </motion.p>
-      </motion.div>
+          {subtitle}
+        </span>
+      </output>
     </div>
   );
 }

@@ -11,11 +11,13 @@
  */
 
 import { Globe, Paperclip, Send } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
 import { cn } from "@/lib/utils";
+
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 interface AIInputSearchProps {
   placeholder?: string;
@@ -36,6 +38,7 @@ export default function AI_Input_Search({
     maxHeight: 200,
   });
   const [showSearch, setShowSearch] = useState(true);
+  const shouldReduceMotion = useReducedMotion();
   const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = () => {
@@ -72,7 +75,7 @@ export default function AI_Input_Search({
         {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents lint/a11y/noNoninteractiveElementInteractions: pointer-only shortcut; the textarea and buttons inside are keyboard reachable */}
         <div
           className={cn(
-            "relative flex w-full cursor-text flex-col rounded-xl text-left transition-all duration-200",
+            "relative flex w-full cursor-text flex-col rounded-xl text-left transition-shadow duration-200",
             "ring-1 ring-black/10 dark:ring-white/10",
             isFocused && "ring-black/20 dark:ring-white/20"
           )}
@@ -121,7 +124,8 @@ export default function AI_Input_Search({
                   "flex h-8 cursor-pointer items-center gap-2 rounded-full border px-1.5 py-1 transition-all",
                   showSearch
                     ? "border-sky-400 bg-sky-500/15 text-sky-500"
-                    : "border-transparent bg-black/5 text-black/40 hover:text-black dark:bg-white/5 dark:text-white/40 dark:hover:text-white"
+                    : "border-transparent bg-black/5 text-black/40 hover:text-black dark:bg-white/5 dark:text-white/40 dark:hover:text-white",
+                  "motion-safe:active:scale-[0.97]"
                 )}
                 onClick={() => {
                   setShowSearch(!showSearch);
@@ -130,24 +134,12 @@ export default function AI_Input_Search({
               >
                 <div className="flex h-4 w-4 shrink-0 items-center justify-center">
                   <motion.div
-                    animate={{
-                      rotate: showSearch ? 180 : 0,
-                      scale: showSearch ? 1.1 : 1,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 25,
-                    }}
-                    whileHover={{
-                      rotate: showSearch ? 180 : 15,
-                      scale: 1.1,
-                      transition: {
-                        type: "spring",
-                        stiffness: 300,
-                        damping: 10,
-                      },
-                    }}
+                    transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
+                    whileHover={
+                      shouldReduceMotion
+                        ? undefined
+                        : { rotate: 15, scale: 1.1 }
+                    }
                   >
                     <Globe
                       className={cn(
@@ -157,7 +149,7 @@ export default function AI_Input_Search({
                     />
                   </motion.div>
                 </div>
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {showSearch && (
                     <motion.span
                       animate={{
@@ -165,9 +157,13 @@ export default function AI_Input_Search({
                         opacity: 1,
                       }}
                       className="shrink-0 overflow-hidden whitespace-nowrap text-sky-500 text-sm"
-                      exit={{ width: 0, opacity: 0 }}
+                      exit={{
+                        width: 0,
+                        opacity: 0,
+                        transition: { duration: 0.15, ease: EASE_OUT },
+                      }}
                       initial={{ width: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: 0.2, ease: EASE_OUT }}
                     >
                       {searchLabel}
                     </motion.span>

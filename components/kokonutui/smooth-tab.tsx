@@ -11,7 +11,13 @@
  */
 
 import type { LucideIcon } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  type Transition,
+  useReducedMotion,
+  type Variants,
+} from "motion/react";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
@@ -26,15 +32,7 @@ interface TabItem {
 }
 
 const WaveformPath = () => (
-  <motion.path
-    animate={{
-      x: [0, 10, 0],
-      transition: {
-        duration: 5,
-        ease: "linear",
-        repeat: Number.POSITIVE_INFINITY,
-      },
-    }}
+  <path
     d="M0 50 
            C 20 40, 40 30, 60 50
            C 80 70, 100 60, 120 50
@@ -44,7 +42,6 @@ const WaveformPath = () => (
            C 320 70, 340 60, 360 50
            C 380 40, 400 30, 420 50
            L 420 100 L 0 100 Z"
-    initial={false}
   />
 );
 
@@ -78,7 +75,6 @@ function TabCardContent({
           aria-hidden="true"
           className="absolute bottom-0 h-32 w-full"
           preserveAspectRatio="none"
-          role="presentation"
           viewBox="0 0 420 100"
         >
           <motion.g
@@ -153,33 +149,36 @@ interface SmoothTabProps {
   onChange?: (tabId: string) => void;
 }
 
+const SLIDE_DISTANCE = 16;
+
+// `custom` is the signed slide offset: positive enters from the right.
 const slideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? "100%" : "-100%",
+  enter: (offset: number) => ({
+    x: offset,
     opacity: 0,
-    filter: "blur(8px)",
-    scale: 0.95,
-    position: "absolute" as const,
+    filter: "blur(2px)",
   }),
   center: {
     x: 0,
     opacity: 1,
     filter: "blur(0px)",
-    scale: 1,
-    position: "absolute" as const,
   },
-  exit: (direction: number) => ({
-    x: direction < 0 ? "100%" : "-100%",
+  exit: (offset: number) => ({
+    x: -offset,
     opacity: 0,
-    filter: "blur(8px)",
-    scale: 0.95,
-    position: "absolute" as const,
+    filter: "blur(2px)",
   }),
+} satisfies Variants;
+
+const transition: Transition = {
+  duration: 0.25,
+  ease: [0.32, 0.72, 0, 1],
 };
 
-const transition = {
-  duration: 0.4,
-  ease: [0.32, 0.72, 0, 1],
+const indicatorTransition: Transition = {
+  type: "spring",
+  stiffness: 400,
+  damping: 30,
 };
 
 export default function SmoothTab({
@@ -194,8 +193,9 @@ export default function SmoothTab({
   );
   const [direction, setDirection] = React.useState(0);
   const [dimensions, setDimensions] = React.useState({ width: 0, left: 0 });
+  const shouldReduceMotion = useReducedMotion();
+  const slideOffset = shouldReduceMotion ? 0 : direction * SLIDE_DISTANCE;
 
-  // Reference for the selected button
   const buttonRefs = React.useRef<Map<string, HTMLButtonElement>>(new Map());
   const containerRef = React.useRef<HTMLDivElement>(null);
   const baseId = React.useId();
@@ -217,14 +217,12 @@ export default function SmoothTab({
       }
     };
 
-    // Initial update
-    requestAnimationFrame(() => {
-      updateDimensions();
-    });
-
-    // Update on resize
+    const frame = requestAnimationFrame(updateDimensions);
     window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateDimensions);
+    };
   }, [selected]);
 
   const handleTabClick = (tabId: string) => {
@@ -272,7 +270,6 @@ export default function SmoothTab({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Card Content Area */}
       <div className="relative mb-4 flex-1">
         <div
           aria-labelledby={selectedItem ? getTabId(selectedIndex) : undefined}
@@ -281,24 +278,16 @@ export default function SmoothTab({
           role="tabpanel"
         >
           <div className="absolute inset-0 overflow-hidden rounded-lg">
-            <AnimatePresence
-              custom={direction}
-              initial={false}
-              mode="popLayout"
-            >
+            <AnimatePresence custom={slideOffset} initial={false}>
               <motion.div
                 animate="center"
-                className="absolute inset-0 h-full w-full bg-card will-change-transform"
-                custom={direction}
+                className="absolute inset-0 bg-card"
+                custom={slideOffset}
                 exit="exit"
                 initial="enter"
                 key={`card-${selected}`}
-                style={{
-                  backfaceVisibility: "hidden",
-                  WebkitBackfaceVisibility: "hidden",
-                }}
-                transition={transition as any}
-                variants={slideVariants as any}
+                transition={transition}
+                variants={slideVariants}
               >
                 {selectedItem?.cardContent ??
                   (selectedItem && (
@@ -314,20 +303,17 @@ export default function SmoothTab({
         </div>
       </div>
 
-      {/* Bottom Toolbar */}
       <div
         aria-label="Smooth tabs"
         className={cn(
           "relative mt-auto flex items-center justify-between gap-1 py-1",
           "mx-auto w-[400px] bg-background",
           "rounded-xl border",
-          "transition-all duration-200",
           className
         )}
         ref={containerRef}
         role="tablist"
       >
-        {/* Sliding Background */}
         <motion.div
           animate={{
             width: dimensions.width - 8,
@@ -340,11 +326,9 @@ export default function SmoothTab({
           )}
           initial={false}
           style={{ height: "calc(100% - 8px)", top: "4px" }}
-          transition={{
-            type: "spring",
-            stiffness: 400,
-            damping: 30,
-          }}
+          transition={
+            shouldReduceMotion ? { duration: 0 } : indicatorTransition
+          }
         />
 
         <div className="relative z-[2] grid w-full grid-cols-4 gap-1">
@@ -356,8 +340,8 @@ export default function SmoothTab({
                 aria-selected={isSelected}
                 className={cn(
                   "relative flex items-center justify-center gap-0.5 rounded-lg px-2 py-1.5",
-                  "font-medium text-sm transition-all duration-300",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "font-medium text-sm transition-[color,background-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:active:scale-[0.97]",
+                  "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
                   "truncate",
                   isSelected
                     ? "text-white"
@@ -368,8 +352,11 @@ export default function SmoothTab({
                 onClick={() => handleTabClick(item.id)}
                 onKeyDown={(e) => handleKeyDown(e, index)}
                 ref={(el) => {
-                  if (el) buttonRefs.current.set(item.id, el);
-                  else buttonRefs.current.delete(item.id);
+                  if (el) {
+                    buttonRefs.current.set(item.id, el);
+                  } else {
+                    buttonRefs.current.delete(item.id);
+                  }
                 }}
                 role="tab"
                 tabIndex={index === focusableIndex ? 0 : -1}

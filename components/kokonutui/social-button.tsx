@@ -152,7 +152,7 @@ export default function SocialButton({
         }}
         transition={{
           duration: 0.2,
-          ease: "easeInOut",
+          ease: [0.23, 1, 0.32, 1],
         }}
       >
         <Button
@@ -162,7 +162,8 @@ export default function SocialButton({
             "hover:bg-gray-50 dark:hover:bg-gray-950",
             "text-black dark:text-white",
             "border border-black/10 dark:border-white/10",
-            "transition-colors duration-200",
+            "transition-[color,background-color,border-color,scale] duration-200",
+            "motion-safe:active:scale-[0.97]",
             className
           )}
           {...props}
@@ -201,6 +202,8 @@ export default function SocialButton({
               "h-10",
               "w-10",
               "flex items-center justify-center",
+              // Reduced motion: fade the items in without the slide.
+              "motion-reduce:transform-none!",
               "bg-black dark:bg-white",
               "text-white dark:text-black",
               i === 0 && "rounded-l-md",
@@ -223,12 +226,12 @@ export default function SocialButton({
           >
             <motion.div
               animate={{
-                scale: activeIndex === i ? 0.85 : 1,
+                scale: activeIndex === i ? 0.95 : 1,
               }}
-              className="relative z-10"
+              className="motion-reduce:transform-none! relative z-10"
               transition={{
                 duration: 0.2,
-                ease: "easeInOut",
+                ease: [0.23, 1, 0.32, 1],
               }}
             >
               <button.icon className="h-4 w-4" />
@@ -241,7 +244,7 @@ export default function SocialButton({
               initial={{ opacity: 0 }}
               transition={{
                 duration: 0.2,
-                ease: "easeInOut",
+                ease: [0.23, 1, 0.32, 1],
               }}
             />
           </motion.button>

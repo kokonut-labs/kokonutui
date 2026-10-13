@@ -17,7 +17,7 @@ export default function V0Button({
       aria-label="Open in v0"
       asChild
       className={cn(
-        "not-prose gap-1 rounded-lg bg-black px-3 text-white text-xs shadow-none transition-colors duration-200 hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200",
+        "not-prose gap-1 rounded-lg bg-black px-3 text-white text-xs shadow-none transition-[color,background-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-zinc-800 motion-safe:active:scale-[0.97] dark:bg-white dark:text-black dark:hover:bg-zinc-200",
         className
       )}
     >
@@ -28,7 +28,7 @@ export default function V0Button({
       >
         Open in{" "}
         <svg
-          className="h-5 w-5 text-current"
+          aria-hidden="true"
           fill="none"
           viewBox="0 0 40 20"
           xmlns="http://www.w3.org/2000/svg"

@@ -125,23 +125,20 @@ const Card = ({
   const collapsedPose = {
     x: defaultX,
     y: defaultY,
-    rotate: reducedMotion ? 0 : defaultRotate,
+    rotate: defaultRotate,
     scale: 1,
   };
 
   const expandedPose = {
     x: spreadX,
     y: 0,
-    rotate: reducedMotion ? 0 : spreadRotate,
+    rotate: spreadRotate,
     scale: 1,
   };
 
   return (
     <motion.div
-      animate={{
-        ...(isExpanded ? expandedPose : collapsedPose),
-        zIndex: totalCards - index,
-      }}
+      animate={isExpanded ? expandedPose : collapsedPose}
       className={cn(
         "absolute inset-0 w-full rounded-2xl p-6",
         "bg-white/60 dark:bg-neutral-900/60",
@@ -151,17 +148,18 @@ const Card = ({
         "group-hover/stack:border-white/30 dark:group-hover/stack:border-neutral-700/30",
         "group-hover/stack:shadow-[0_12px_40px_rgb(0,0,0,0.12)] dark:group-hover/stack:shadow-[0_12px_40px_rgb(0,0,0,0.4)]",
         "transition-[border-color,box-shadow] duration-300 ease-out",
-        "transform-gpu overflow-hidden"
+        "overflow-hidden"
       )}
       initial={collapsedPose}
       style={{
         maxWidth: `${CARD_WIDTH}px`,
         left: "50%",
         marginLeft: `-${CARD_WIDTH / 2}px`,
+        zIndex: totalCards - index,
       }}
       transition={
         reducedMotion
-          ? { duration: 0.2, ease: "easeOut" }
+          ? { duration: 0.2, ease: [0.23, 1, 0.32, 1] }
           : {
               type: "spring",
               stiffness: 220,

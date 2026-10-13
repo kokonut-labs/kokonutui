@@ -33,6 +33,14 @@ interface Beam {
   pulseSpeed: number;
 }
 
+const MINIMUM_BEAMS = 20;
+
+const opacityMap = {
+  subtle: 0.7,
+  medium: 0.85,
+  strong: 1,
+};
+
 function createBeam(width: number, height: number, isDarkMode: boolean): Beam {
   const angle = -35 + Math.random() * 10;
   const hueBase = isDarkMode ? 190 : 210;
@@ -60,23 +68,24 @@ export default function BeamsBackground({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const beamsRef = useRef<Beam[]>([]);
   const animationFrameRef = useRef<number>(0);
-  const MINIMUM_BEAMS = 20;
   const isDarkModeRef = useRef<boolean>(false);
-
-  const opacityMap = {
-    subtle: 0.7,
-    medium: 0.85,
-    strong: 1,
-  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
-    // Check for dark mode
+    // Under reduced motion one still frame is drawn, and redrawn on resize.
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
     const updateDarkMode = () => {
       isDarkModeRef.current =
         document.documentElement.classList.contains("dark");
@@ -111,11 +120,20 @@ export default function BeamsBackground({
       );
     };
 
+    const handleResize = () => {
+      updateCanvasSize();
+      if (prefersReducedMotion) {
+        animate();
+      }
+    };
+
     updateCanvasSize();
-    window.addEventListener("resize", updateCanvasSize);
+    window.addEventListener("resize", handleResize);
 
     function resetBeam(beam: Beam, index: number, totalBeams: number) {
-      if (!canvas) return beam;
+      if (!canvas) {
+        return beam;
+      }
 
       const column = index % 3;
       const spacing = width / 3;
@@ -183,31 +201,36 @@ export default function BeamsBackground({
     }
 
     function animate() {
-      if (!(canvas && ctx)) return;
+      if (!(canvas && ctx)) {
+        return;
+      }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.filter = "blur(35px)";
 
       const totalBeams = beamsRef.current.length;
       beamsRef.current.forEach((beam, index) => {
-        beam.y -= beam.speed;
-        beam.pulse += beam.pulseSpeed;
+        if (!prefersReducedMotion) {
+          beam.y -= beam.speed;
+          beam.pulse += beam.pulseSpeed;
 
-        // Reset beam when it goes off screen
-        if (beam.y + beam.length < -100) {
-          resetBeam(beam, index, totalBeams);
+          if (beam.y + beam.length < -100) {
+            resetBeam(beam, index, totalBeams);
+          }
         }
 
         drawBeam(ctx, beam);
       });
 
-      animationFrameRef.current = requestAnimationFrame(animate);
+      if (!prefersReducedMotion) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
     }
 
     animate();
 
     return () => {
-      window.removeEventListener("resize", updateCanvasSize);
+      window.removeEventListener("resize", handleResize);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -226,21 +249,6 @@ export default function BeamsBackground({
         className="absolute inset-0"
         ref={canvasRef}
         style={{ filter: "blur(15px)" }}
-      />
-
-      <motion.div
-        animate={{
-          opacity: [0.05, 0.15, 0.05],
-        }}
-        className="absolute inset-0 bg-neutral-900/5 dark:bg-neutral-950/5"
-        style={{
-          backdropFilter: "blur(50px)",
-        }}
-        transition={{
-          duration: 10,
-          ease: "easeInOut",
-          repeat: Number.POSITIVE_INFINITY,
-        }}
       />
 
       <div className="relative z-10 flex h-screen w-full items-center justify-center">
