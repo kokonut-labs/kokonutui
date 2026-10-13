@@ -11,20 +11,25 @@
  */
 
 import { Link } from "lucide-react";
-import { motion } from "motion/react";
-import { useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface ShareItem {
+export interface ShareItem {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  /** Renders the item as a link (opened in a new tab). */
+  href?: string;
+  onClick?: () => void;
 }
 
 interface SocialButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label?: string;
+  /** Icon shown on the trigger next to the label. */
+  icon?: React.ComponentType<{ className?: string }>;
   items?: ShareItem[];
   onShare?: (index: number, item: ShareItem) => void;
   className?: string;
@@ -91,15 +96,27 @@ const DEFAULT_SHARE_ITEMS: ShareItem[] = [
   { icon: TwitterIcon, label: "Share on Twitter" },
   { icon: InstagramIcon, label: "Share on Instagram" },
   { icon: LinkedinIcon, label: "Share on LinkedIn" },
-  { icon: Link, label: "Copy link" },
+  {
+    icon: Link,
+    label: "Copy link",
+    onClick: () => {
+      navigator.clipboard?.writeText(window.location.href).catch(() => null);
+    },
+  },
 ];
+
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const HOVER_INTENT_MS = 100;
 
 export default function SocialButton({
   label = "Share",
+  icon: TriggerIcon = Link,
   items = DEFAULT_SHARE_ITEMS,
   onShare,
   className,
   onClick,
+  onBlur,
+  onKeyDown,
   ...props
 }: SocialButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -107,13 +124,34 @@ export default function SocialButton({
   const [isOpen, setIsOpen] = useState(false);
   const isVisible = isHovered || isOpen;
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const shouldReduceMotion = useReducedMotion();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const firstItemRef = useRef<HTMLButtonElement>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (pressTimer.current) {
+        clearTimeout(pressTimer.current);
+      }
+      if (hoverTimer.current) {
+        clearTimeout(hoverTimer.current);
+      }
+    },
+    []
+  );
 
   const handleShare = (index: number) => {
+    const item = items[index];
     setActiveIndex(index);
-    onShare?.(index, items[index]);
-    setTimeout(() => setActiveIndex(null), 300);
+    item.onClick?.();
+    onShare?.(index, item);
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+    }
+    pressTimer.current = setTimeout(() => setActiveIndex(null), 300);
   };
 
   const handleTriggerClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -123,10 +161,39 @@ export default function SocialButton({
     }
     // Commit the open state first so the items are no longer inert
     flushSync(() => setIsOpen(true));
-    firstItemRef.current?.focus();
+    rowRef.current?.querySelector<HTMLElement>("a, button")?.focus();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+  // Mouse only: touch fires emulated mouse events that never "leave".
+  const handlePointerEnter = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse") {
+      return;
+    }
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+    }
+    hoverTimer.current = setTimeout(() => setIsHovered(true), HOVER_INTENT_MS);
+  };
+
+  const handlePointerLeave = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse") {
+      return;
+    }
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+    }
+    setIsHovered(false);
+  };
+
+  // On the trigger and every item (not the wrapper), so the wrapper stays a
+  // plain element.
+  const handleBlur = (e: React.FocusEvent) => {
+    if (!rootRef.current?.contains(e.relatedTarget)) {
+      setIsOpen(false);
+    }
+  };
+
+  const handleEscape = (e: React.KeyboardEvent) => {
     if (e.key === "Escape" && isVisible) {
       setIsOpen(false);
       setIsHovered(false);
@@ -134,25 +201,27 @@ export default function SocialButton({
     }
   };
 
+  // Exits run faster than entrances.
+  const revealDuration = isVisible ? 0.2 : 0.15;
+
+  // `initial={false}` below renders the closed state in the server HTML.
+  // Without it Motion leaves those styles out until hydration, so the share
+  // row showed over the trigger and then animated shut on every page load.
   return (
     <div
-      className="relative"
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) {
-          setIsOpen(false);
-        }
-      }}
-      onKeyDown={handleKeyDown}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className="relative inline-flex"
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+      ref={rootRef}
     >
       <motion.div
         animate={{
           opacity: isVisible ? 0 : 1,
         }}
+        initial={false}
         transition={{
           duration: 0.2,
-          ease: [0.23, 1, 0.32, 1],
+          ease: EASE_OUT,
         }}
       >
         <Button
@@ -168,39 +237,53 @@ export default function SocialButton({
           )}
           {...props}
           aria-expanded={isVisible}
+          onBlur={(e) => {
+            onBlur?.(e);
+            handleBlur(e);
+          }}
           onClick={handleTriggerClick}
+          onKeyDown={(e) => {
+            onKeyDown?.(e);
+            handleEscape(e);
+          }}
           ref={triggerRef}
           // Hidden under the open menu, so keep it out of the tab order
           tabIndex={isVisible ? -1 : props.tabIndex}
         >
           <span className="flex items-center gap-2">
-            <Link className="h-4 w-4" />
+            <TriggerIcon className="h-4 w-4" />
             {label}
           </span>
         </Button>
       </motion.div>
 
+      {/* Covers the trigger exactly, one equal column per item */}
       <motion.div
         animate={{
-          width: isVisible ? "auto" : 0,
+          clipPath: isVisible ? "inset(0% 0% 0% 0%)" : "inset(0% 100% 0% 0%)",
         }}
-        className="absolute top-0 left-0 flex h-10 overflow-hidden"
+        className="absolute inset-0 grid"
         inert={!isVisible}
+        initial={false}
+        ref={rowRef}
+        style={{
+          gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
+        }}
         transition={{
-          duration: 0.3,
-          ease: [0.23, 1, 0.32, 1],
+          duration: shouldReduceMotion ? 0 : revealDuration,
+          ease: EASE_OUT,
         }}
       >
-        {items.map((button, i) => (
-          <motion.button
-            animate={{
+        {items.map((item, i) => {
+          const itemProps = {
+            animate: {
               opacity: isVisible ? 1 : 0,
               x: isVisible ? 0 : -20,
-            }}
-            aria-label={button.label}
-            className={cn(
-              "h-10",
-              "w-10",
+            },
+            "aria-label": item.label,
+            initial: false,
+            className: cn(
+              "h-full w-full",
               "flex items-center justify-center",
               // Reduced motion: fade the items in without the slide.
               "motion-reduce:transform-none!",
@@ -213,42 +296,64 @@ export default function SocialButton({
               "outline-hidden focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-inset dark:focus-visible:ring-black/70",
               "relative overflow-hidden",
               "transition-colors duration-200"
-            )}
-            key={`share-${button.label}`}
-            onClick={() => handleShare(i)}
-            ref={i === 0 ? firstItemRef : undefined}
-            transition={{
-              duration: 0.3,
-              ease: [0.23, 1, 0.32, 1],
+            ),
+            onBlur: handleBlur,
+            onClick: () => handleShare(i),
+            onKeyDown: handleEscape,
+            transition: {
+              duration: revealDuration,
+              ease: EASE_OUT,
               delay: isVisible ? i * 0.05 : 0,
-            }}
-            type="button"
-          >
-            <motion.div
-              animate={{
-                scale: activeIndex === i ? 0.95 : 1,
-              }}
-              className="motion-reduce:transform-none! relative z-10"
-              transition={{
-                duration: 0.2,
-                ease: [0.23, 1, 0.32, 1],
-              }}
+            },
+          };
+          const content = (
+            <>
+              <motion.span
+                animate={{
+                  scale: activeIndex === i ? 0.95 : 1,
+                }}
+                className="motion-reduce:transform-none! relative z-10 inline-flex"
+                initial={false}
+                transition={{
+                  duration: 0.2,
+                  ease: EASE_OUT,
+                }}
+              >
+                <item.icon className="h-4 w-4" />
+              </motion.span>
+              <motion.span
+                animate={{
+                  opacity: activeIndex === i ? 0.15 : 0,
+                }}
+                className="absolute inset-0 bg-white dark:bg-black"
+                initial={{ opacity: 0 }}
+                transition={{
+                  duration: 0.2,
+                  ease: EASE_OUT,
+                }}
+              />
+            </>
+          );
+          return item.href ? (
+            <motion.a
+              {...itemProps}
+              href={item.href}
+              key={`share-${item.label}`}
+              rel="noopener noreferrer"
+              target="_blank"
             >
-              <button.icon className="h-4 w-4" />
-            </motion.div>
-            <motion.div
-              animate={{
-                opacity: activeIndex === i ? 0.15 : 0,
-              }}
-              className="absolute inset-0 bg-white dark:bg-black"
-              initial={{ opacity: 0 }}
-              transition={{
-                duration: 0.2,
-                ease: [0.23, 1, 0.32, 1],
-              }}
-            />
-          </motion.button>
-        ))}
+              {content}
+            </motion.a>
+          ) : (
+            <motion.button
+              {...itemProps}
+              key={`share-${item.label}`}
+              type="button"
+            >
+              {content}
+            </motion.button>
+          );
+        })}
       </motion.div>
     </div>
   );
