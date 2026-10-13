@@ -1,9 +1,6 @@
 {
   "name": "ai-loading",
   "type": "registry:component",
-  "dependencies": [
-    "motion"
-  ],
   "files": [
     {
       "type": "registry:component",

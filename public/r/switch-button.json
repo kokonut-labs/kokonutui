@@ -2,7 +2,8 @@
   "name": "switch-button",
   "type": "registry:component",
   "dependencies": [
-    "lucide-react"
+    "lucide-react",
+    "next-themes"
   ],
   "registryDependencies": [
     "button"

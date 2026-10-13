@@ -2,7 +2,6 @@
   "name": "ai-voice",
   "type": "registry:component",
   "dependencies": [
-    "motion",
     "lucide-react"
   ],
   "files": [

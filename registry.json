@@ -75,6 +75,7 @@
       "title": "Smooth Drawer",
       "description": "Bottom drawer with spring-based slide-in and staggered content reveal, built on Vaul with React, Motion, and Tailwind CSS.",
       "dependencies": [
+        "lucide-react",
         "motion"
       ],
       "registryDependencies": [
@@ -198,6 +199,7 @@
       "title": "AI Input Search",
       "description": "AI search chat input with toggleable web search mode, file attachment and auto-resizing textarea. Built with React, Tailwind CSS and Motion.",
       "dependencies": [
+        "lucide-react",
         "motion"
       ],
       "registryDependencies": [
@@ -319,7 +321,6 @@
       "title": "AI Voice",
       "description": "AI voice input button with recording timer, pulsing waveform bars and listening state. Built with React and animated Tailwind CSS styles.",
       "dependencies": [
-        "motion",
         "lucide-react"
       ],
       "files": [
@@ -367,7 +368,8 @@
       "title": "Switch Button",
       "description": "Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React, next-themes, and Tailwind CSS.",
       "dependencies": [
-        "lucide-react"
+        "lucide-react",
+        "next-themes"
       ],
       "registryDependencies": [
         "button"
@@ -531,9 +533,6 @@
       "type": "registry:component",
       "title": "AI State Loading",
       "description": "Animated AI loading state cycling task statuses through a scrolling code-style log with an SVG progress spinner. Built with React and Tailwind CSS.",
-      "dependencies": [
-        "motion"
-      ],
       "files": [
         {
           "path": "components/kokonutui/ai-loading.tsx",
@@ -722,6 +721,7 @@
       "title": "Liquid Glass",
       "description": "Apple-inspired liquid glass card and buttons using SVG displacement filters for a refractive effect, built with React and Tailwind CSS.",
       "dependencies": [
+        "class-variance-authority",
         "lucide-react"
       ],
       "registryDependencies": [
@@ -779,9 +779,6 @@
       "description": "Animated link button with a vertical text slide on hover and default and ghost variants, built with React, Motion, and Tailwind CSS.",
       "dependencies": [
         "motion"
-      ],
-      "registryDependencies": [
-        "button"
       ],
       "files": [
         {
