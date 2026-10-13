@@ -533,7 +533,6 @@ export const component: Registry = [
   {
     name: "slide-text-button",
     type: "registry:component",
-    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/slide-text-button.tsx",
@@ -544,7 +543,6 @@ export const component: Registry = [
   {
     name: "morphic-navbar",
     type: "registry:component",
-    dependencies: ["clsx"],
     files: [
       {
         path: "components/kokonutui/morphic-navbar.tsx",
