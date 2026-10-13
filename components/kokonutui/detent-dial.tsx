@@ -130,6 +130,9 @@ export default function DetentDial({
   const labelId = useId();
   const knobRef = useRef<HTMLDivElement>(null);
   const tickRefs = useRef<(SVGLineElement | null)[]>([]);
+  // The length last written to each tick, so a frame only touches the few
+  // ticks the swell is actually passing over.
+  const tickLengths = useRef<number[]>([]);
   const reduceMotion = useReducedMotion();
   const range = max - min;
 
@@ -146,6 +149,9 @@ export default function DetentDial({
   const animation = useRef<AnimationPlaybackControls | null>(null);
   const drag = useRef<{
     id: number;
+    // Measured once on grab: reading layout on every move forces the
+    // browser to recalculate it after each frame's writes.
+    rect: DOMRect;
     lastAngle: number;
     samples: { t: number; v: number }[];
   } | null>(null);
@@ -226,6 +232,7 @@ export default function DetentDial({
     event.currentTarget.setPointerCapture(event.pointerId);
     drag.current = {
       id: event.pointerId,
+      rect,
       lastAngle: angle,
       samples: [{ t: event.timeStamp, v: raw.get() }],
     };
@@ -237,8 +244,7 @@ export default function DetentDial({
     if (!current || current.id !== event.pointerId) {
       return;
     }
-    const rect = event.currentTarget.getBoundingClientRect();
-    const { angle, distance } = pointerAngle(event, rect);
+    const { angle, distance } = pointerAngle(event, current.rect);
     if (distance < DEAD_ZONE) {
       current.lastAngle = angle;
       return;
@@ -330,7 +336,10 @@ export default function DetentDial({
   };
 
   // The wheel only turns the dial once it has focus, so scrolling the page
-  // past it never changes the value by accident.
+  // past it never changes the value by accident. The listener is attached
+  // once and reads the latest props through a ref.
+  const wheelStep = useRef({ disabled, step, stepBy });
+  wheelStep.current = { disabled, step, stepBy };
   useEffect(() => {
     const knob = knobRef.current;
     if (!knob) {
@@ -338,7 +347,8 @@ export default function DetentDial({
     }
     let accumulated = 0;
     const onWheel = (event: WheelEvent) => {
-      if (disabled || document.activeElement !== knob) {
+      const latest = wheelStep.current;
+      if (latest.disabled || document.activeElement !== knob) {
         return;
       }
       event.preventDefault();
@@ -347,12 +357,12 @@ export default function DetentDial({
       while (Math.abs(accumulated) >= 40) {
         const sign = Math.sign(accumulated);
         accumulated -= sign * 40;
-        stepBy(-sign * step);
+        latest.stepBy(-sign * latest.step);
       }
     };
     knob.addEventListener("wheel", onWheel, { passive: false });
     return () => knob.removeEventListener("wheel", onWheel);
-  });
+  }, []);
 
   const center = size / 2;
   const tickCount = Math.max(1, Math.min(Math.round(range / step), MAX_TICKS));
@@ -363,12 +373,21 @@ export default function DetentDial({
 
   // Ticks swell as the indicator passes them, following its exact angle
   // (not the snapped value), so a wave travels round the ring as you turn.
-  function tickGeometry(i: number, indicatorAngle: number) {
+  function tickLength(i: number, indicatorAngle: number) {
     const angle = START_ANGLE + (i / tickCount) * SWEEP;
     const major = i === 0 || i === tickCount || i % 5 === 0;
     const distance = (angle - indicatorAngle) / WAVE_WIDTH;
-    const length =
-      (major ? 10 : 6) + WAVE_HEIGHT * Math.exp(-distance * distance);
+    // Rounded to a tenth of a pixel: finer changes aren't visible, and
+    // skipping them leaves most ticks untouched on any given frame.
+    return (
+      Math.round(
+        ((major ? 10 : 6) + WAVE_HEIGHT * Math.exp(-distance * distance)) * 10
+      ) / 10
+    );
+  }
+
+  function tickGeometry(i: number, length: number) {
+    const angle = START_ANGLE + (i / tickCount) * SWEEP;
     return {
       a: polar(center, center, outer - length, angle),
       b: polar(center, center, outer, angle),
@@ -379,10 +398,12 @@ export default function DetentDial({
   useMotionValueEvent(rotation, "change", (indicatorAngle) => {
     for (let i = 0; i <= tickCount; i++) {
       const line = tickRefs.current[i];
-      if (!line) {
+      const length = tickLength(i, indicatorAngle);
+      if (!line || tickLengths.current[i] === length) {
         continue;
       }
-      const { a } = tickGeometry(i, indicatorAngle);
+      tickLengths.current[i] = length;
+      const { a } = tickGeometry(i, length);
       line.setAttribute("x1", String(a.x));
       line.setAttribute("y1", String(a.y));
     }
@@ -408,7 +429,9 @@ export default function DetentDial({
       >
         {Array.from({ length: tickCount + 1 }, (_, i) => {
           const lit = i <= activeTick;
-          const { a, b } = tickGeometry(i, rotation.get());
+          const length = tickLength(i, rotation.get());
+          tickLengths.current[i] = length;
+          const { a, b } = tickGeometry(i, length);
           return (
             <line
               className={cn(
@@ -517,15 +540,17 @@ export default function DetentDial({
 // the current value to the leaving glyph too, so it always exits opposite to
 // the one coming in.
 const rollVariants: Variants = {
+  // A full transform string rather than `y`, so Motion can hand the roll to
+  // the compositor instead of stepping it on the main thread.
   enter: (offset: number) => ({
     opacity: 0,
-    y: offset,
+    transform: `translateY(${offset}px)`,
     filter: offset === 0 ? "blur(0px)" : "blur(2px)",
   }),
-  center: { opacity: 1, y: 0, filter: "blur(0px)" },
+  center: { opacity: 1, transform: "translateY(0px)", filter: "blur(0px)" },
   exit: (offset: number) => ({
     opacity: 0,
-    y: -offset,
+    transform: `translateY(${-offset}px)`,
     filter: offset === 0 ? "blur(0px)" : "blur(2px)",
   }),
 };

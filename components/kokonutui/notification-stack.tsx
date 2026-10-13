@@ -16,6 +16,7 @@ import {
   type PointerEvent,
   type ReactNode,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -127,6 +128,7 @@ export default function NotificationStack({
   const [pinned, setPinned] = useState(false);
   const [leaving, setLeaving] = useState<Set<string>>(() => new Set());
 
+  const listRef = useRef<HTMLOListElement>(null);
   const swipeRefs = useRef(new Map<string, HTMLDivElement>());
   const drag = useRef<Drag | null>(null);
   const suppressClick = useRef(false);
@@ -141,6 +143,44 @@ export default function NotificationStack({
         window.clearTimeout(id);
       }
     };
+  }, []);
+
+  // Measure each card once on mount, then only when it actually resizes
+  // (text rewrapping), instead of reading layout on every render. Cards are
+  // only ever removed, so the initial set is all there is to observe.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) {
+      return;
+    }
+    const measure = (entries: { id?: string; height: number }[]) => {
+      setHeights((prev) => {
+        let next = prev;
+        for (const { id, height } of entries) {
+          if (id && height && prev[id] !== height) {
+            next = next === prev ? { ...prev } : next;
+            next[id] = height;
+          }
+        }
+        return next;
+      });
+    };
+    const cards = Array.from(list.children) as HTMLElement[];
+    measure(
+      cards.map((card) => ({ id: card.dataset.id, height: card.offsetHeight }))
+    );
+    const observer = new ResizeObserver((entries) => {
+      measure(
+        entries.map((entry) => ({
+          id: (entry.target as HTMLElement).dataset.id,
+          height: Math.round(entry.borderBoxSize[0]?.blockSize ?? 0),
+        }))
+      );
+    });
+    for (const card of cards) {
+      observer.observe(card);
+    }
+    return () => observer.disconnect();
   }, []);
 
   const expanded = (hovered || focused || pinned) && items.length > 1;
@@ -324,6 +364,7 @@ export default function NotificationStack({
       <ol
         aria-label="Notifications"
         className="relative transition-[height] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+        ref={listRef}
         style={{ height: stackHeight }}
       >
         {items.map((item) => {
@@ -345,16 +386,8 @@ export default function NotificationStack({
           return (
             <li
               className="absolute inset-x-0 top-0 origin-top transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-opacity"
+              data-id={item.id}
               key={item.id}
-              ref={(node) => {
-                if (!node) {
-                  return;
-                }
-                const height = node.offsetHeight;
-                if (height && heights[item.id] !== height) {
-                  setHeights((prev) => ({ ...prev, [item.id]: height }));
-                }
-              }}
               style={{
                 transform: `translateY(${y}px) scale(${scale})`,
                 opacity: hiddenBehind ? 0 : 1,
