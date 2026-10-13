@@ -18,17 +18,28 @@ import {
   useReducedMotion,
   type Variants,
 } from "motion/react";
-import * as React from "react";
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 interface TabItem {
   id: string;
   title: string;
   description?: string;
+  /** Shown before the title in the tab. */
   icon?: LucideIcon;
-  content?: React.ReactNode;
-  cardContent?: React.ReactNode;
-  color: string;
+  /** Extra content in the default card, below the description. */
+  content?: ReactNode;
+  /** Replaces the whole default card. */
+  cardContent?: ReactNode;
+  /** A literal bg-* class for the indicator. Falls back to `activeColor`. */
+  color?: string;
 }
 
 const WaveformPath = () => (
@@ -63,10 +74,12 @@ function TabCardContent({
   title,
   description,
   fill,
+  children,
 }: {
   title: string;
   description: string;
   fill: string;
+  children?: ReactNode;
 }) {
   return (
     <div className="relative h-full">
@@ -109,6 +122,7 @@ function TabCardContent({
             {description}
           </p>
         </div>
+        {children}
       </div>
     </div>
   );
@@ -119,31 +133,33 @@ const DEFAULT_TABS: TabItem[] = [
     id: "Models",
     title: "Models",
     description: "Choose the model you want to use",
-    color: "bg-blue-500 hover:bg-blue-600",
+    color: "bg-blue-600",
   },
   {
     id: "MCPs",
     title: "MCPs",
     description: "Choose the MCP you want to use",
-    color: "bg-purple-500 hover:bg-purple-600",
+    color: "bg-purple-600",
   },
   {
     id: "Agents",
     title: "Agents",
     description: "Choose the agent you want to use",
-    color: "bg-emerald-500 hover:bg-emerald-600",
+    color: "bg-emerald-700",
   },
   {
     id: "Users",
     title: "Users",
     description: "Choose the user you want to use",
-    color: "bg-amber-500 hover:bg-amber-600",
+    color: "bg-amber-700",
   },
 ];
 
 interface SmoothTabProps {
   items?: TabItem[];
   defaultTabId?: string;
+  /** The selected tab id, for a controlled tab. Pair it with `onChange`. */
+  value?: string;
   className?: string;
   activeColor?: string;
   onChange?: (tabId: string) => void;
@@ -184,58 +200,77 @@ const indicatorTransition: Transition = {
 export default function SmoothTab({
   items = DEFAULT_TABS,
   defaultTabId,
+  value,
   className,
   activeColor = "bg-[#1F9CFE]",
   onChange,
 }: SmoothTabProps) {
-  const [selected, setSelected] = React.useState<string>(
+  const [uncontrolledSelected, setUncontrolledSelected] = useState<string>(
     defaultTabId ?? items[0]?.id
   );
-  const [direction, setDirection] = React.useState(0);
-  const [dimensions, setDimensions] = React.useState({ width: 0, left: 0 });
+  const selected = value ?? uncontrolledSelected;
+  const [indicator, setIndicator] = useState<{
+    width: number;
+    left: number;
+  } | null>(null);
   const shouldReduceMotion = useReducedMotion();
+
+  // The card slides in from the side of the newly selected tab, whether the
+  // change came from a click, the keyboard or a controlled `value`.
+  const [previousSelected, setPreviousSelected] = useState(selected);
+  const [direction, setDirection] = useState(0);
+  if (selected !== previousSelected) {
+    const indexOf = (id: string) => items.findIndex((item) => item.id === id);
+    setPreviousSelected(selected);
+    setDirection(indexOf(selected) > indexOf(previousSelected) ? 1 : -1);
+  }
   const slideOffset = shouldReduceMotion ? 0 : direction * SLIDE_DISTANCE;
 
-  const buttonRefs = React.useRef<Map<string, HTMLButtonElement>>(new Map());
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const baseId = React.useId();
+  const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const containerRef = useRef<HTMLDivElement>(null);
+  const baseId = useId();
 
-  // Update dimensions whenever selected tab changes or on mount
-  React.useLayoutEffect(() => {
-    const updateDimensions = () => {
-      const selectedButton = buttonRefs.current.get(selected);
-      const container = containerRef.current;
+  // Measured before paint, so the indicator is in place on the first frame
+  // instead of springing in from the left edge. Offsets ignore transforms
+  // such as the press scale, and the observer catches container resizes.
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const button = buttonRefs.current.get(selected);
+    if (!(container && button)) {
+      setIndicator(null);
+      return;
+    }
 
-      if (selectedButton && container) {
-        const rect = selectedButton.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
-
-        setDimensions({
-          width: rect.width,
-          left: rect.left - containerRect.left,
-        });
+    const measure = () => {
+      let left = 0;
+      let node: Element | null = button;
+      while (node instanceof HTMLElement && node !== container) {
+        left += node.offsetLeft;
+        node = node.offsetParent;
       }
+      const width = button.offsetWidth;
+      setIndicator((current) =>
+        current?.width === width && current.left === left
+          ? current
+          : { width, left }
+      );
     };
 
-    const frame = requestAnimationFrame(updateDimensions);
-    window.addEventListener("resize", updateDimensions);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("resize", updateDimensions);
-    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    observer.observe(button);
+    return () => observer.disconnect();
   }, [selected]);
 
   const handleTabClick = (tabId: string) => {
-    const currentIndex = items.findIndex((item) => item.id === selected);
-    const newIndex = items.findIndex((item) => item.id === tabId);
-    setDirection(newIndex > currentIndex ? 1 : -1);
-    setSelected(tabId);
+    setUncontrolledSelected(tabId);
     onChange?.(tabId);
   };
 
   // WAI-ARIA tabs pattern: arrows (wrapping), Home and End move focus and select
   const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLButtonElement>,
+    e: KeyboardEvent<HTMLButtonElement>,
     index: number
   ) => {
     let nextIndex: number;
@@ -293,9 +328,11 @@ export default function SmoothTab({
                   (selectedItem && (
                     <TabCardContent
                       description={selectedItem.description ?? ""}
-                      fill={getWaveFill(selectedItem.color)}
+                      fill={getWaveFill(selectedItem.color || activeColor)}
                       title={selectedItem.title}
-                    />
+                    >
+                      {selectedItem.content}
+                    </TabCardContent>
                   ))}
               </motion.div>
             </AnimatePresence>
@@ -307,35 +344,37 @@ export default function SmoothTab({
         aria-label="Smooth tabs"
         className={cn(
           "relative mt-auto flex items-center justify-between gap-1 py-1",
-          "mx-auto w-[400px] bg-background",
+          "mx-auto w-full max-w-[400px] bg-background",
           "rounded-xl border",
           className
         )}
         ref={containerRef}
         role="tablist"
       >
-        <motion.div
-          animate={{
-            width: dimensions.width - 8,
-            x: dimensions.left + 4,
-            opacity: 1,
-          }}
-          className={cn(
-            "absolute z-[1] rounded-lg",
-            selectedItem?.color || activeColor
-          )}
-          initial={false}
-          style={{ height: "calc(100% - 8px)", top: "4px" }}
-          transition={
-            shouldReduceMotion ? { duration: 0 } : indicatorTransition
-          }
-        />
+        {indicator && (
+          <motion.div
+            animate={{
+              width: indicator.width - 8,
+              x: indicator.left + 4,
+            }}
+            className={cn(
+              "absolute z-[1] rounded-lg transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
+              selectedItem?.color || activeColor
+            )}
+            initial={false}
+            style={{ height: "calc(100% - 8px)", top: "4px" }}
+            transition={
+              shouldReduceMotion ? { duration: 0 } : indicatorTransition
+            }
+          />
+        )}
 
-        <div className="relative z-[2] grid w-full grid-cols-4 gap-1">
+        <div className="relative z-[2] grid w-full auto-cols-fr grid-flow-col gap-1">
           {items.map((item, index) => {
             const isSelected = selected === item.id;
+            const Icon = item.icon;
             return (
-              <motion.button
+              <button
                 aria-controls={isSelected ? panelId : undefined}
                 aria-selected={isSelected}
                 className={cn(
@@ -362,8 +401,9 @@ export default function SmoothTab({
                 tabIndex={index === focusableIndex ? 0 : -1}
                 type="button"
               >
+                {Icon && <Icon className="size-4 shrink-0" />}
                 <span className="truncate">{item.title}</span>
-              </motion.button>
+              </button>
             );
           })}
         </div>
