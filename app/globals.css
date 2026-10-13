@@ -234,6 +234,20 @@ button {
   }
 }
 
+/*
+  Component pages have no markdown headings, so the TOC would show only its
+  "On this page" title and a "No Headings" empty state. The column is kept for
+  the Pro banner, so hide the heading chrome and reclaim its top padding.
+*/
+.toc-headings-empty {
+  padding-top: 1rem;
+}
+
+.toc-headings-empty #toc-title,
+.toc-headings-empty #toc-title + div {
+  display: none;
+}
+
 :root {
   --sidebar: hsl(0 0% 98%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);
