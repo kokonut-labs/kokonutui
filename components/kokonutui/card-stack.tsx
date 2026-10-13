@@ -272,7 +272,7 @@ export default function CardStackExample({
         "md:max-w-[1200px]",
         "flex items-center justify-center",
         // Press feedback on the stack: the toggle on top of it is transparent.
-        "transition-[scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:has-[>button:active]:scale-[0.97]",
+        "transition-[scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] motion-safe:has-[>button:active]:scale-[0.99]",
         className
       )}
       ref={containerRef}
