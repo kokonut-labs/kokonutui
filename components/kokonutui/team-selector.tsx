@@ -30,7 +30,7 @@ const DICEBEAR_STYLE = "notionists-neutral";
 const dicebearUrl = (seed: string) =>
   `https://api.dicebear.com/9.x/${DICEBEAR_STYLE}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=f4f4f5,e4e4e7,d4d4d8,a1a1aa`;
 
-interface TeamMember {
+export interface TeamMember {
   id: string;
   name: string;
   avatarUrl: string;
@@ -92,6 +92,10 @@ const STEPPER_BUTTON_CLASS =
 interface TeamSelectorProps {
   members?: TeamMember[];
   defaultValue?: number;
+  /** Controlled team size. Pair it with `onChange`. */
+  value?: number;
+  /** Smallest allowed team size. Defaults to 1. */
+  min?: number;
   onChange?: (size: number) => void;
   label?: string;
   className?: string;
@@ -100,13 +104,27 @@ interface TeamSelectorProps {
 export default function TeamSelector({
   members = DEFAULT_MEMBERS,
   defaultValue = 1,
+  value,
+  min = 1,
   onChange,
   label = "Team Size",
   className,
 }: TeamSelectorProps) {
   const maxTeamSize = members.length;
-  const [peopleCount, setPeopleCount] = useState(defaultValue);
+  const clampCount = (count: number) =>
+    Math.min(Math.max(count, min), maxTeamSize);
+  const [internalCount, setInternalCount] = useState(() =>
+    clampCount(defaultValue)
+  );
+  const peopleCount = clampCount(value ?? internalCount);
   const [direction, setDirection] = useState<1 | -1>(1);
+  // Direction follows every change, including a controlled `value` set from
+  // outside (state adjusted during render, as React recommends).
+  const [previousCount, setPreviousCount] = useState(peopleCount);
+  if (peopleCount !== previousCount) {
+    setPreviousCount(peopleCount);
+    setDirection(peopleCount > previousCount ? 1 : -1);
+  }
   const [isVibrating, setIsVibrating] = useState(false);
   const vibrationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -133,23 +151,24 @@ export default function TeamSelector({
     }, SHAKE_DURATION_MS);
   };
 
+  const changeCount = (newCount: number) => {
+    if (value === undefined) {
+      setInternalCount(newCount);
+    }
+    onChange?.(newCount);
+  };
+
   const handleIncrement = () => {
     if (peopleCount < maxTeamSize) {
-      const newCount = peopleCount + 1;
-      setDirection(1);
-      setPeopleCount(newCount);
-      onChange?.(newCount);
+      changeCount(peopleCount + 1);
     } else {
       triggerVibration();
     }
   };
 
   const handleDecrement = () => {
-    if (peopleCount > 1) {
-      const newCount = peopleCount - 1;
-      setDirection(-1);
-      setPeopleCount(newCount);
-      onChange?.(newCount);
+    if (peopleCount > min) {
+      changeCount(peopleCount - 1);
     } else {
       triggerVibration();
     }
@@ -172,33 +191,39 @@ export default function TeamSelector({
             {label}
           </legend>
 
-          {/* Under reduced motion the avatars fade without scaling. */}
+          {/* Only the selected avatars render, so the row stays centred; the
+              others slide over (layout) as one enters or leaves. Under reduced
+              motion the avatars fade without scaling or sliding. */}
           <MotionConfig reducedMotion="user">
-            <div className="mb-7 flex justify-center">
+            <div className="mb-7 flex min-h-11 justify-center">
               <div className="flex items-center">
-                {members.map((member, index) => (
-                  <motion.div
-                    animate={index < peopleCount ? "visible" : "hidden"}
-                    aria-hidden={index >= peopleCount}
-                    className="flex items-center justify-center"
-                    initial={index < defaultValue ? "visible" : "hidden"}
-                    key={member.id}
-                    style={{
-                      marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP,
-                      zIndex: maxTeamSize - index,
-                    }}
-                    variants={animations.avatar}
-                  >
-                    <Image
-                      alt={member.name}
-                      className="size-11 rounded-full border-2 border-white bg-zinc-100 object-cover shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-black/5 dark:border-zinc-900 dark:bg-zinc-800 dark:ring-white/5"
-                      height={88}
-                      src={member.avatarUrl}
-                      unoptimized
-                      width={88}
-                    />
-                  </motion.div>
-                ))}
+                <AnimatePresence initial={false}>
+                  {members.slice(0, peopleCount).map((member, index) => (
+                    <motion.div
+                      animate="visible"
+                      className="flex items-center justify-center"
+                      exit="hidden"
+                      initial="hidden"
+                      key={member.id}
+                      layout
+                      style={{
+                        marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP,
+                        zIndex: maxTeamSize - index,
+                      }}
+                      transition={{ layout: { duration: 0.2, ease: EASE_OUT } }}
+                      variants={animations.avatar}
+                    >
+                      <Image
+                        alt={member.name}
+                        className="size-11 rounded-full border-2 border-white bg-zinc-100 object-cover shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-black/5 dark:border-zinc-900 dark:bg-zinc-800 dark:ring-white/5"
+                        height={88}
+                        src={member.avatarUrl}
+                        unoptimized
+                        width={88}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             </div>
           </MotionConfig>
@@ -212,7 +237,7 @@ export default function TeamSelector({
             {/* aria-disabled rather than disabled: focus stays on the button at
                 the bound and the click still reaches the shake feedback. */}
             <button
-              aria-disabled={peopleCount <= 1}
+              aria-disabled={peopleCount <= min}
               aria-label="Decrease team size"
               className={STEPPER_BUTTON_CLASS}
               onClick={handleDecrement}
