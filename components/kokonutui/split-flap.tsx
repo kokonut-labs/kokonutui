@@ -10,8 +10,8 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useReducedMotion } from "motion/react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_CHARSET = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:-.";
@@ -180,59 +180,93 @@ function FlapCell({
       <Half char={top} part="top" />
       <Half char={bottom} part="bottom" />
 
-      {flip && (
-        <span key={flip.id}>
-          {/* The top half of the old letter falls away. It accelerates like
-              a real flap dropping, then hands over at the hinge. */}
-          <motion.span
-            animate={{ rotateX: -90 }}
-            className="absolute inset-x-0 top-0 h-1/2 origin-bottom [backface-visibility:hidden] [transform-style:preserve-3d]"
-            initial={{ rotateX: 0 }}
-            transition={{
-              duration: (flip.duration * FALL_SHARE) / 1000,
-              ease: [0.55, 0, 1, 0.45],
-            }}
-          >
-            <HalfFace char={flip.from} part="top" />
-            <motion.span
-              animate={{ opacity: 0.45 }}
-              className="absolute inset-0 rounded-t-[0.12em] bg-black"
-              initial={{ opacity: 0 }}
-              transition={{ duration: (flip.duration * FALL_SHARE) / 1000 }}
-            />
-          </motion.span>
-
-          {/* The bottom half of the new letter swings down onto the stop. */}
-          <motion.span
-            animate={{ rotateX: flip.last ? [90, 0, 14, 0] : [90, 0] }}
-            className="absolute inset-x-0 bottom-0 h-1/2 origin-top [backface-visibility:hidden]"
-            initial={{ rotateX: 90 }}
-            transition={{
-              delay: (flip.duration * FALL_SHARE) / 1000,
-              duration: (flip.duration * (1 - FALL_SHARE)) / 1000,
-              ease: flip.last ? "easeOut" : [0.23, 1, 0.32, 1],
-              times: flip.last ? [0, 0.55, 0.78, 1] : undefined,
-            }}
-          >
-            <HalfFace char={flip.to} part="bottom" />
-            <motion.span
-              animate={{ opacity: 0 }}
-              className="absolute inset-0 rounded-b-[0.12em] bg-black"
-              initial={{ opacity: 0.45 }}
-              transition={{
-                delay: (flip.duration * FALL_SHARE) / 1000,
-                duration: (flip.duration * (1 - FALL_SHARE)) / 1000,
-              }}
-            />
-          </motion.span>
-        </span>
-      )}
+      {flip && <FlipLeaves flip={flip} key={flip.id} />}
 
       {/* The hinge gap between the two halves. */}
       <span className="absolute inset-x-0 top-1/2 h-[0.04em] -translate-y-1/2 bg-black" />
       <span className="absolute top-1/2 -left-[0.04em] h-[0.18em] w-[0.08em] -translate-y-1/2 rounded-full bg-zinc-700" />
       <span className="absolute top-1/2 -right-[0.04em] h-[0.18em] w-[0.08em] -translate-y-1/2 rounded-full bg-zinc-700" />
     </span>
+  );
+}
+
+/**
+ * One flip: the top half of the old letter falls away and the bottom half
+ * of the new one swings down onto the stop. Every flip is a fixed,
+ * fire-and-forget animation, so it runs on the Web Animations API, which
+ * keeps it on the compositor instead of the main thread, and a board of
+ * busy cells doesn't mount a stack of animated components per step.
+ */
+function FlipLeaves({ flip }: { flip: Flip }) {
+  const top = useRef<HTMLSpanElement>(null);
+  const topShade = useRef<HTMLSpanElement>(null);
+  const bottom = useRef<HTMLSpanElement>(null);
+  const bottomShade = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const fall = flip.duration * FALL_SHARE;
+    const land = flip.duration - fall;
+    // The top accelerates like a real flap dropping, then hands over at
+    // the hinge, darkening as it turns away from the light.
+    top.current?.animate(
+      [{ transform: "rotateX(0deg)" }, { transform: "rotateX(-90deg)" }],
+      {
+        duration: fall,
+        easing: "cubic-bezier(0.55, 0, 1, 0.45)",
+        fill: "forwards",
+      }
+    );
+    topShade.current?.animate([{ opacity: 0 }, { opacity: 0.45 }], {
+      duration: fall,
+      fill: "forwards",
+    });
+    // The last flip lands slower and bounces once off the stop.
+    bottom.current?.animate(
+      flip.last
+        ? [
+            { transform: "rotateX(90deg)", easing: "ease-out" },
+            { transform: "rotateX(0deg)", offset: 0.55, easing: "ease-out" },
+            { transform: "rotateX(14deg)", offset: 0.78, easing: "ease-in" },
+            { transform: "rotateX(0deg)" },
+          ]
+        : [{ transform: "rotateX(90deg)" }, { transform: "rotateX(0deg)" }],
+      {
+        delay: fall,
+        duration: land,
+        easing: flip.last ? "linear" : "cubic-bezier(0.23, 1, 0.32, 1)",
+        fill: "both",
+      }
+    );
+    bottomShade.current?.animate([{ opacity: 0.45 }, { opacity: 0 }], {
+      delay: fall,
+      duration: land,
+      fill: "both",
+    });
+  }, [flip]);
+
+  return (
+    <>
+      <span
+        className="absolute inset-x-0 top-0 h-1/2 origin-bottom [backface-visibility:hidden]"
+        ref={top}
+      >
+        <HalfFace char={flip.from} part="top" />
+        <span
+          className="absolute inset-0 rounded-t-[0.12em] bg-black opacity-0"
+          ref={topShade}
+        />
+      </span>
+      <span
+        className="absolute inset-x-0 bottom-0 h-1/2 origin-top [backface-visibility:hidden] [transform:rotateX(90deg)]"
+        ref={bottom}
+      >
+        <HalfFace char={flip.to} part="bottom" />
+        <span
+          className="absolute inset-0 rounded-b-[0.12em] bg-black opacity-45"
+          ref={bottomShade}
+        />
+      </span>
+    </>
   );
 }
 

@@ -14,6 +14,7 @@ import { Check, Copy, RotateCcw } from "lucide-react";
 import {
   AnimatePresence,
   animate,
+  frame,
   motion,
   useMotionValue,
   useMotionValueEvent,
@@ -174,11 +175,15 @@ export default function PeelSticker({
   const rest = restPoint(REST_CORNER, size, REST_CURL);
   const px = useMotionValue(rest.x);
   const py = useMotionValue(rest.y);
-  const drag = useRef<{ id: number; offset: Point } | null>(null);
+  const drag = useRef<{ id: number; offset: Point; rect: DOMRect } | null>(
+    null
+  );
+  const paintQueued = useRef(false);
 
   // Clip paths and the flap's mirror transform are written straight to the
   // DOM on every frame of the pointer or spring; nothing re-renders.
   const paint = () => {
+    paintQueued.current = false;
     const geometry = foldGeometry(
       cornerPoint(corner.current, size),
       { x: px.get(), y: py.get() },
@@ -192,8 +197,15 @@ export default function PeelSticker({
       flapInnerRef.current.style.clipPath = toPolygon(geometry.flap);
     }
   };
-  useMotionValueEvent(px, "change", paint);
-  useMotionValueEvent(py, "change", paint);
+  // x and y both change on every frame; fold once per frame, not once each.
+  const schedulePaint = () => {
+    if (!paintQueued.current) {
+      paintQueued.current = true;
+      frame.render(paint);
+    }
+  };
+  useMotionValueEvent(px, "change", schedulePaint);
+  useMotionValueEvent(py, "change", schedulePaint);
 
   const initial = foldGeometry(cornerPoint(REST_CORNER, size), rest, size);
 
@@ -222,9 +234,16 @@ export default function PeelSticker({
       ...transition,
       velocity: py.getVelocity(),
     });
-    animations.current = [ax, ay];
+    const pair = [ax, ay];
+    animations.current = pair;
     if (onDone) {
-      Promise.all([ax, ay]).then(onDone);
+      Promise.all(pair).then(() => {
+        // An interrupted spring can still resolve; only the latest one
+        // gets to finish.
+        if (animations.current === pair) {
+          onDone();
+        }
+      });
     }
   };
 
@@ -265,10 +284,10 @@ export default function PeelSticker({
     });
   };
 
-  const localPoint = (event: PointerEvent<HTMLDivElement>): Point => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-  };
+  const localPoint = (
+    event: PointerEvent<HTMLDivElement>,
+    rect: DOMRect
+  ): Point => ({ x: event.clientX - rect.left, y: event.clientY - rect.top });
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (peeled || drag.current) {
@@ -278,7 +297,9 @@ export default function PeelSticker({
       return;
     }
     stopAll();
-    const down = localPoint(event);
+    // Measured once on grab rather than on every move.
+    const rect = event.currentTarget.getBoundingClientRect();
+    const down = localPoint(event, rect);
     const grabbed = nearestCorner(down, size);
     if (grabbed !== corner.current) {
       corner.current = grabbed;
@@ -292,6 +313,7 @@ export default function PeelSticker({
     drag.current = {
       id: event.pointerId,
       offset: { x: px.get() - down.x, y: py.get() - down.y },
+      rect,
     };
     setDragging(true);
   };
@@ -301,7 +323,7 @@ export default function PeelSticker({
     if (!current || current.id !== event.pointerId) {
       return;
     }
-    const p = localPoint(event);
+    const p = localPoint(event, current.rect);
     px.set(p.x + current.offset.x);
     py.set(p.y + current.offset.y);
   };

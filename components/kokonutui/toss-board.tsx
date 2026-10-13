@@ -13,6 +13,9 @@
 import { LayoutGrid } from "lucide-react";
 import {
   animate,
+  cancelFrame,
+  type FrameData,
+  frame,
   type MotionValue,
   motion,
   useMotionValue,
@@ -150,10 +153,10 @@ export default function TossBoard({
       {items.map((item) => (
         <TossCard
           boardRef={boardRef}
+          bodies={bodies}
           item={item}
           key={item.id}
           onGrab={() => bringToFront(item.id)}
-          register={(body) => bodies.current.set(item.id, body)}
           z={order.indexOf(item.id) + 1}
         />
       ))}
@@ -170,18 +173,25 @@ export default function TossBoard({
   );
 }
 
+interface Bounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
 function TossCard({
   item,
   z,
   boardRef,
+  bodies,
   onGrab,
-  register,
 }: {
   item: TossItem;
   z: number;
   boardRef: RefObject<HTMLDivElement | null>;
+  bodies: RefObject<Map<string, Body>>;
   onGrab: () => void;
-  register: (body: Body) => void;
 }) {
   const reduceMotion = useReducedMotion();
   const x = useMotionValue(0);
@@ -194,9 +204,12 @@ function TossCard({
   const angle = useTransform(() => rotate.get() + swing.get());
 
   const [held, setHeld] = useState(false);
-  const frame = useRef<number | null>(null);
+  const flight = useRef<((data: FrameData) => void) | null>(null);
   const drag = useRef<{
     id: number;
+    // Measured once on grab; reading the board's size on every move would
+    // force layout after each frame's writes.
+    bounds: Bounds;
     startX: number;
     startY: number;
     originX: number;
@@ -206,13 +219,17 @@ function TossCard({
   } | null>(null);
 
   useEffect(() => {
-    register({ x, y, rotate });
-  }, [register, x, y, rotate]);
+    const map = bodies.current;
+    map.set(item.id, { x, y, rotate });
+    return () => {
+      map.delete(item.id);
+    };
+  }, [bodies, item.id, x, y, rotate]);
 
   useEffect(
     () => () => {
-      if (frame.current !== null) {
-        cancelAnimationFrame(frame.current);
+      if (flight.current) {
+        cancelFrame(flight.current);
       }
     },
     []
@@ -220,7 +237,7 @@ function TossCard({
 
   // Where the card may travel: its CSS position plus x/y must stay inside
   // the board.
-  const bounds = () => {
+  const bounds = (): Bounds => {
     const board = boardRef.current;
     const W = board?.clientWidth ?? 0;
     const H = board?.clientHeight ?? 0;
@@ -235,23 +252,22 @@ function TossCard({
   };
 
   const stopFlight = () => {
-    if (frame.current !== null) {
-      cancelAnimationFrame(frame.current);
-      frame.current = null;
+    if (flight.current) {
+      cancelFrame(flight.current);
+      flight.current = null;
     }
   };
 
   // A tiny integrator: slide with friction, spin down, bounce off the edges.
-  const fly = (vx0: number, vy0: number, spin0: number) => {
+  // It runs in Motion's frame loop, in the update step just before the
+  // render step, so each position is drawn in the frame it was computed.
+  const fly = (vx0: number, vy0: number, spin0: number, b: Bounds) => {
     stopFlight();
     let vx = vx0;
     let vy = vy0;
     let spin = spin0;
-    let last = performance.now();
-    const b = bounds();
-    const step = (now: number) => {
-      const dt = Math.min((now - last) / 1000, 1 / 30);
-      last = now;
+    const step = ({ delta }: FrameData) => {
+      const dt = Math.min(delta / 1000, 1 / 30);
       let nx = x.get() + vx * dt;
       let ny = y.get() + vy * dt;
       if (nx < b.minX || nx > b.maxX) {
@@ -273,12 +289,11 @@ function TossCard({
       vy *= slide;
       spin *= Math.exp(-SPIN_FRICTION * dt);
       if (Math.hypot(vx, vy) < REST_SPEED && Math.abs(spin) < REST_SPEED) {
-        frame.current = null;
-        return;
+        stopFlight();
       }
-      frame.current = requestAnimationFrame(step);
     };
-    frame.current = requestAnimationFrame(step);
+    flight.current = step;
+    frame.update(step, true);
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -297,6 +312,7 @@ function TossCard({
     const rect = event.currentTarget.getBoundingClientRect();
     drag.current = {
       id: event.pointerId,
+      bounds: bounds(),
       startX: event.clientX,
       startY: event.clientY,
       originX: x.get(),
@@ -314,7 +330,7 @@ function TossCard({
     if (!current || current.id !== event.pointerId) {
       return;
     }
-    const b = bounds();
+    const b = current.bounds;
     const nx = current.originX + event.clientX - current.startX;
     const ny = current.originY + event.clientY - current.startY;
     x.set(Math.min(Math.max(nx, b.minX), b.maxX));
@@ -344,7 +360,7 @@ function TossCard({
     const vy = y.getVelocity();
     // Throwing a card by its corner spins it; by its centre, it just slides.
     const spin = (current.grabX * vy - current.grabY * vx) * TORQUE;
-    fly(vx, vy, spin);
+    fly(vx, vy, spin, current.bounds);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -374,11 +390,9 @@ function TossCard({
       aria-label={`${item.label}. Drag or use arrow keys to move.`}
       aria-roledescription="movable card"
       className={cn(
-        "absolute touch-none select-none rounded-xl outline-none",
-        "transition-shadow duration-200 ease-out focus-visible:ring-2 focus-visible:ring-zinc-400",
-        held
-          ? "cursor-grabbing shadow-[0_2px_4px_rgb(0_0_0/0.08),0_24px_48px_-12px_rgb(0_0_0/0.35)]"
-          : "cursor-grab shadow-[0_1px_2px_rgb(0_0_0/0.08),0_6px_16px_-6px_rgb(0_0_0/0.2)]"
+        "absolute touch-none select-none rounded-xl shadow-[0_1px_2px_rgb(0_0_0/0.08),0_6px_16px_-6px_rgb(0_0_0/0.2)] outline-none",
+        "focus-visible:ring-2 focus-visible:ring-zinc-400",
+        held ? "cursor-grabbing" : "cursor-grab"
       )}
       onKeyDown={handleKeyDown}
       onLostPointerCapture={handlePointerUp}
@@ -399,6 +413,16 @@ function TossCard({
       }}
       tabIndex={0}
     >
+      {/* The lifted shadow is drawn once on its own layer and faded in, so
+          picking a card up animates opacity instead of repainting a large
+          blurred box-shadow every frame. */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-0 rounded-xl shadow-[0_2px_4px_rgb(0_0_0/0.08),0_24px_48px_-12px_rgb(0_0_0/0.35)] transition-opacity duration-200 ease-out",
+          held ? "opacity-100" : "opacity-0"
+        )}
+      />
       {item.content}
     </motion.div>
   );
