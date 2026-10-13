@@ -1,11 +1,11 @@
 "use client";
 
-import * as React from "react";
+import { Fragment, type ReactNode, useState } from "react";
 import { Preview } from "./preview";
 import { RefreshButton } from "./refresh-button";
 
 interface PreviewClientProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   isPremium?: boolean;
   link: string;
@@ -16,7 +16,7 @@ interface PreviewClientProps {
 }
 
 export function PreviewClient({ children, ...props }: PreviewClientProps) {
-  const [key, setKey] = React.useState(0);
+  const [key, setKey] = useState(0);
 
   const handleRefresh = () => {
     setKey((prev) => prev + 1);
@@ -25,7 +25,7 @@ export function PreviewClient({ children, ...props }: PreviewClientProps) {
   return (
     <Preview {...props} action={<RefreshButton onRefresh={handleRefresh} />}>
       {/* Re-keying only the demo replays it without resetting the install bar. */}
-      <React.Fragment key={key}>{children}</React.Fragment>
+      <Fragment key={key}>{children}</Fragment>
     </Preview>
   );
 }

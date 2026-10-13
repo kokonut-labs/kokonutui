@@ -61,10 +61,10 @@ export default function PreviewActions({
           <button
             aria-label={isCopied ? "Copied" : "Copy component source code"}
             className={cn(
-              "relative h-7 overflow-hidden rounded-sm px-2.5 font-medium text-xs",
+              "relative h-7 overflow-hidden rounded-md px-2.5 font-medium text-xs",
               "bg-black text-white dark:bg-white dark:text-black",
               "hover:bg-zinc-800 dark:hover:bg-zinc-200",
-              "transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+              "transition-[background-color,scale] duration-150 ease-out active:scale-[0.97]"
             )}
             disabled={isPending}
             type="submit"

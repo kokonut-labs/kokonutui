@@ -72,6 +72,10 @@ interface InstallCommandProps {
   className?: string;
 }
 
+/**
+ * Package-manager switch plus the install command. The whole command row is
+ * one button: clicking anywhere on it copies the command.
+ */
 export function InstallCommand({
   componentName,
   prePath,
@@ -97,63 +101,46 @@ export function InstallCommand({
   return (
     <div
       className={cn(
-        "not-prose w-full min-w-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-900/40",
+        "flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center",
         className
       )}
     >
-      <div className="flex items-center justify-between gap-2 border-zinc-200 border-b pr-1.5 pl-3 dark:border-zinc-800">
-        <div
-          aria-label="Package manager"
-          className="-mb-px flex items-center gap-3"
-          role="tablist"
-        >
-          {PACKAGE_MANAGERS.map((item) => {
-            const isSelected = item === packageManager;
-            return (
-              <button
-                aria-selected={isSelected}
-                className={cn(
-                  "h-9 rounded-sm border-b font-medium text-xs transition-colors duration-150 ease-out",
-                  isSelected
-                    ? "border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100"
-                    : "border-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-200"
-                )}
-                key={item}
-                onClick={() => writePackageManager(item)}
-                role="tab"
-                type="button"
-              >
-                {item}
-              </button>
-            );
-          })}
-        </div>
-        <button
-          aria-label={isCopied ? "Copied" : "Copy install command"}
-          className="relative flex size-7 shrink-0 items-center justify-center rounded-md text-zinc-500 transition-[color,background-color,transform] duration-150 ease-out hover:bg-zinc-200/60 hover:text-zinc-900 active:scale-[0.94] dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-          onClick={handleCopy}
-          title="Copy install command"
-          type="button"
-        >
-          <Copy
-            aria-hidden="true"
-            className={cn(
-              "absolute size-3.5 transition-[opacity,filter,transform] duration-150 ease-out",
-              isCopied ? "scale-75 opacity-0 blur-[2px]" : "opacity-100"
-            )}
-          />
-          <Check
-            aria-hidden="true"
-            className={cn(
-              "absolute size-3.5 text-emerald-600 transition-[opacity,filter,transform] duration-150 ease-out dark:text-emerald-400",
-              isCopied ? "opacity-100" : "scale-75 opacity-0 blur-[2px]"
-            )}
-          />
-        </button>
+      <div
+        aria-label="Package manager"
+        className="flex shrink-0 items-center self-start rounded-lg bg-zinc-200/60 p-0.5 sm:self-auto dark:bg-zinc-800/60"
+        role="tablist"
+      >
+        {PACKAGE_MANAGERS.map((item) => {
+          const isSelected = item === packageManager;
+          return (
+            <button
+              aria-selected={isSelected}
+              className={cn(
+                "h-7 rounded-md px-2.5 font-medium text-xs transition-[color,background-color,box-shadow] duration-150 ease-out",
+                isSelected
+                  ? "bg-white text-zinc-900 shadow-[0_1px_2px_rgba(0,0,0,0.08)] dark:bg-zinc-950 dark:text-zinc-100"
+                  : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+              )}
+              key={item}
+              onClick={() => writePackageManager(item)}
+              role="tab"
+              type="button"
+            >
+              {item}
+            </button>
+          );
+        })}
       </div>
-      {/* The full command wraps on phones and scrolls on desktop; never cut. */}
-      <div className="overflow-x-auto px-3 py-2.5 [scrollbar-width:thin]">
-        <code className="whitespace-pre-wrap break-words font-mono text-[13px] leading-5 md:whitespace-nowrap">
+
+      <button
+        aria-label={isCopied ? "Copied" : `Copy install command: ${command}`}
+        className="group flex min-h-8 min-w-0 flex-1 items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-left transition-[border-color,background-color] duration-150 ease-out hover:border-zinc-300 hover:bg-zinc-50 active:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:active:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/60"
+        onClick={handleCopy}
+        title="Click to copy"
+        type="button"
+      >
+        {/* Wraps on phones; one line from `sm` up, with the full command in the label. */}
+        <code className="min-w-0 flex-1 whitespace-pre-wrap break-words font-mono text-[13px] leading-5 sm:truncate sm:whitespace-nowrap">
           <span className="select-none text-zinc-400 dark:text-zinc-600">
             ${" "}
           </span>
@@ -165,7 +152,29 @@ export function InstallCommand({
             {target}
           </span>
         </code>
-      </div>
+        <span className="relative flex h-5 shrink-0 items-center justify-end gap-1.5 text-xs text-zinc-500 group-hover:text-zinc-800 dark:group-hover:text-zinc-200">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "flex items-center gap-1.5 transition-[opacity,filter] duration-150 ease-out",
+              isCopied ? "opacity-0 blur-[2px]" : "opacity-100"
+            )}
+          >
+            <Copy className="size-3.5" />
+            <span className="hidden sm:inline">Copy</span>
+          </span>
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute right-0 flex items-center gap-1.5 text-emerald-600 transition-[opacity,filter] duration-150 ease-out dark:text-emerald-400",
+              isCopied ? "opacity-100" : "opacity-0 blur-[2px]"
+            )}
+          >
+            <Check className="size-3.5" />
+            <span className="hidden sm:inline">Copied</span>
+          </span>
+        </span>
+      </button>
     </div>
   );
 }
