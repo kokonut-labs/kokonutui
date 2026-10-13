@@ -27,10 +27,16 @@ const TILT_SPRING = { stiffness: 300, damping: 28 } as const;
 const GLOW_SPRING = { stiffness: 180, damping: 22 } as const;
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
+/** `color` at `percent`% opacity. Works for any CSS color, not just hex. */
+function tint(color: string, percent: number) {
+  return `color-mix(in oklab, ${color} ${percent}%, transparent)`;
+}
+
 export interface SpotlightItem {
   icon: LucideIcon;
   title: string;
   description: string;
+  /** Accent color: any CSS color (hex, rgb(), oklch(), var(--x)). */
   color: string;
 }
 
@@ -88,7 +94,9 @@ interface CardProps {
 
 function Card({ item, dimmed, reduceMotion, onHoverStart }: CardProps) {
   const Icon = item.icon;
-  const cardRef = useRef<HTMLDivElement>(null);
+  // Measured for the tilt. It is the untransformed wrapper, so its box does
+  // not shift as the card tilts and scales.
+  const hitAreaRef = useRef<HTMLDivElement>(null);
 
   const normX = useMotionValue(0.5);
   const normY = useMotionValue(0.5);
@@ -103,7 +111,7 @@ function Card({ item, dimmed, reduceMotion, onHoverStart }: CardProps) {
   // Tilt follows a mouse only: on touch, tap-generated events would leave the
   // card tilted. Motion's onHoverStart/End already ignore touch.
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = cardRef.current;
+    const el = hitAreaRef.current;
     if (e.pointerType !== "mouse" || reduceMotion || !el) {
       return;
     }
@@ -124,86 +132,93 @@ function Card({ item, dimmed, reduceMotion, onHoverStart }: CardProps) {
   };
 
   return (
+    // Hover lives on the wrapper so the hit area stays put while the card
+    // tilts; otherwise a tilted edge can slide out from under the pointer.
     <motion.div
-      animate={{
-        scale: dimmed && !reduceMotion ? 0.96 : 1,
-        opacity: dimmed ? 0.5 : 1,
-      }}
-      className={cn(
-        "group relative flex flex-col gap-5 overflow-hidden rounded-2xl border p-6",
-        // Light
-        "border-zinc-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]",
-        // Dark
-        "dark:border-white/6 dark:bg-white/3 dark:shadow-none",
-        "transition-[border-color] duration-300",
-        "hover:border-zinc-300 dark:hover:border-white/14"
-      )}
+      className="group"
       onHoverEnd={handleHoverEnd}
       onHoverStart={handleHoverStart}
       onPointerMove={handlePointerMove}
-      ref={cardRef}
-      style={{
-        rotateX,
-        rotateY,
-        transformPerspective: 900,
-      }}
-      transition={{ duration: 0.18, ease: EASE_OUT }}
+      ref={hitAreaRef}
     >
-      {/* Static accent tint — always visible */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-2xl"
-        style={{
-          background: `radial-gradient(ellipse at 20% 20%, ${item.color}14, transparent 65%)`,
-        }}
-      />
-
-      {/* Hover glow layer */}
       <motion.div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-2xl"
-        style={{
-          opacity: glowOpacity,
-          background: `radial-gradient(ellipse at 20% 20%, ${item.color}2e, transparent 65%)`,
+        animate={{
+          scale: dimmed && !reduceMotion ? 0.96 : 1,
+          opacity: dimmed ? 0.5 : 1,
         }}
-      />
-
-      {/* Shimmer sweep: transitions on hover-in only, so it resets off-card
-          instead of sweeping back on leave. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 left-0 w-[55%] -translate-x-full -skew-x-12 bg-linear-to-r from-transparent via-white/4.5 to-transparent group-hover:translate-x-[280%] group-hover:transition-transform group-hover:duration-700 group-hover:ease-out motion-reduce:hidden"
-      />
-
-      {/* Icon badge */}
-      <div
-        className="relative z-10 flex h-10 w-10 items-center justify-center rounded-xl"
+        className={cn(
+          "relative flex h-full flex-col gap-5 overflow-hidden rounded-2xl border p-6",
+          // Light
+          "border-zinc-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]",
+          // Dark
+          "dark:border-white/6 dark:bg-white/3 dark:shadow-none",
+          "transition-[border-color] duration-300",
+          "group-hover:border-zinc-300 dark:group-hover:border-white/14"
+        )}
         style={{
-          background: `${item.color}18`,
-          boxShadow: `inset 0 0 0 1px ${item.color}30`,
+          rotateX,
+          rotateY,
+          transformPerspective: 900,
         }}
+        transition={{ duration: 0.18, ease: EASE_OUT }}
       >
-        <Icon size={17} strokeWidth={1.9} style={{ color: item.color }} />
-      </div>
+        {/* Static accent tint — always visible */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-2xl"
+          style={{
+            background: `radial-gradient(ellipse at 20% 20%, ${tint(item.color, 8)}, transparent 65%)`,
+          }}
+        />
 
-      {/* Text */}
-      <div className="relative z-10 flex flex-col gap-2">
-        <h3 className="font-semibold text-[14px] text-zinc-900 tracking-tight dark:text-white">
-          {item.title}
-        </h3>
-        <p className="text-[12.5px] text-zinc-500 leading-relaxed dark:text-white/40">
-          {item.description}
-        </p>
-      </div>
+        {/* Hover glow layer */}
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-2xl"
+          style={{
+            opacity: glowOpacity,
+            background: `radial-gradient(ellipse at 20% 20%, ${tint(item.color, 18)}, transparent 65%)`,
+          }}
+        />
 
-      {/* Accent bottom line */}
-      <div
-        aria-hidden="true"
-        className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 rounded-full transition-transform duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-x-100 motion-reduce:transition-none"
-        style={{
-          background: `linear-gradient(to right, ${item.color}80, transparent)`,
-        }}
-      />
+        {/* Shimmer sweep: transitions on hover-in only, so it resets off-card
+          instead of sweeping back on leave. Dark mode only: a white sheen
+          does not show on the white light-mode card. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 hidden w-[55%] -translate-x-full -skew-x-12 bg-linear-to-r from-transparent via-white/4.5 to-transparent group-hover:translate-x-[280%] group-hover:transition-transform group-hover:duration-700 group-hover:ease-out motion-safe:dark:block"
+        />
+
+        {/* Icon badge */}
+        <div
+          className="relative z-10 flex h-10 w-10 items-center justify-center rounded-xl"
+          style={{
+            background: tint(item.color, 9),
+            boxShadow: `inset 0 0 0 1px ${tint(item.color, 19)}`,
+          }}
+        >
+          <Icon size={17} strokeWidth={1.9} style={{ color: item.color }} />
+        </div>
+
+        {/* Text */}
+        <div className="relative z-10 flex flex-col gap-2">
+          <h3 className="font-semibold text-[14px] text-zinc-900 tracking-tight dark:text-white">
+            {item.title}
+          </h3>
+          <p className="text-[12.5px] text-zinc-500 leading-relaxed dark:text-white/60">
+            {item.description}
+          </p>
+        </div>
+
+        {/* Accent bottom line */}
+        <div
+          aria-hidden="true"
+          className="absolute bottom-0 left-0 h-[2px] w-full origin-left scale-x-0 rounded-full transition-transform duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-x-100 motion-reduce:transition-none"
+          style={{
+            background: `linear-gradient(to right, ${tint(item.color, 50)}, transparent)`,
+          }}
+        />
+      </motion.div>
     </motion.div>
   );
 }
@@ -221,7 +236,7 @@ export default function SpotlightCards({
   heading = "Everything you need",
   className,
 }: SpotlightCardsProps) {
-  const [hoveredTitle, setHoveredTitle] = useState<string | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const reduceMotion = useReducedMotion() ?? false;
 
   return (
@@ -257,14 +272,15 @@ export default function SpotlightCards({
           crossing the gap between cards doesn't briefly undim the siblings. */}
       <motion.div
         className="relative grid grid-cols-2 gap-3 sm:grid-cols-3"
-        onHoverEnd={() => setHoveredTitle(null)}
+        onHoverEnd={() => setHoveredIndex(null)}
       >
-        {items.map((item) => (
+        {items.map((item, index) => (
           <Card
-            dimmed={hoveredTitle !== null && hoveredTitle !== item.title}
+            dimmed={hoveredIndex !== null && hoveredIndex !== index}
             item={item}
-            key={item.title}
-            onHoverStart={() => setHoveredTitle(item.title)}
+            // Titles can repeat; the index keeps keys and hover unique.
+            key={`${index}-${item.title}`}
+            onHoverStart={() => setHoveredIndex(index)}
             reduceMotion={reduceMotion}
           />
         ))}
