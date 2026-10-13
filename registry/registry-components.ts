@@ -125,10 +125,6 @@ export const component: Registry = [
         path: "components/kokonutui/action-search-bar.tsx",
         type: "registry:component",
       },
-      {
-        path: "hooks/use-debounce.ts",
-        type: "registry:hook",
-      },
     ],
   },
   {
@@ -520,10 +516,6 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/profile-dropdown.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/gemini.tsx",
         type: "registry:component",
       },
     ],
