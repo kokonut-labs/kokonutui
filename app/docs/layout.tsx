@@ -1,6 +1,7 @@
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import type { Metadata } from "next";
 import HeaderProSmall from "@/components/landing/header-pro-small";
+import { ToolbarPicker } from "@/components/mdx/toolbar/picker";
 import { source } from "@/lib/source";
 import { baseOptions } from "../layout.config";
 
@@ -20,6 +21,8 @@ export default function Layout({ children }: LayoutProps<"/docs">) {
       tree={source.getPageTree()}
     >
       {children}
+      {/* Prototype harness for the preview toolbar directions. */}
+      <ToolbarPicker />
     </DocsLayout>
   );
 }

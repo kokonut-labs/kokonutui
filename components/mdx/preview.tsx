@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { cn } from "@/lib/utils";
+import { component as registryComponents } from "@/registry/registry-components";
 import Loader from "../kokonutui/loader";
-import { InstallCommand } from "./package-manager-tabs";
-import PreviewActions from "./preview-content";
+import { PreviewToolbar } from "./toolbar";
 
 interface PreviewProps {
   children: React.ReactNode;
@@ -20,6 +20,10 @@ interface PreviewProps {
 
 const PRE_PATH = "@kokonutui";
 
+const SITE_ORIGIN = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : `https://${process.env.NEXT_PUBLIC_SITE_URL ?? "kokonutui.com"}`;
+
 function getComponentName(link: string) {
   const [folder, filename] = link.split("/");
   return filename ? filename : folder;
@@ -35,8 +39,11 @@ export function Preview({
   isBlock = false,
   action,
 }: PreviewProps) {
+  const name = getComponentName(link);
+  const entry = registryComponents.find((item) => item.name === name);
+
   return (
-    // One card: the toolbar (install command, badges, actions) always sits
+    // One card: the toolbar (install, requirements, actions) always sits
     // above the demo, on every screen size, so everything is in reach first.
     <div
       className={cn(
@@ -44,25 +51,17 @@ export function Preview({
         className
       )}
     >
-      <div className="flex flex-col gap-2 border-zinc-200 border-b bg-zinc-50/80 p-2 dark:border-zinc-800 dark:bg-zinc-900/40">
-        <InstallCommand
-          componentName={getComponentName(link)}
-          prePath={PRE_PATH}
-        />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5 pl-1">
-            {comment.map((text) => (
-              <span
-                className="rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 font-medium text-[11px] text-purple-700 dark:border-purple-800/50 dark:bg-purple-950/30 dark:text-purple-300"
-                key={text}
-              >
-                {text}
-              </span>
-            ))}
-          </div>
-          <PreviewActions isBlock={isBlock} link={link} />
-        </div>
-      </div>
+      <PreviewToolbar
+        badges={comment}
+        dependencies={entry?.dependencies ?? []}
+        fileCount={entry?.files?.length ?? 1}
+        isBlock={isBlock}
+        link={link}
+        name={name}
+        registryDependencies={entry?.registryDependencies ?? []}
+        target={`${PRE_PATH}/${name}`}
+        v0Href={`https://v0.dev/chat/api/open?url=${SITE_ORIGIN}/r/${name}.json`}
+      />
 
       {useIframe ? (
         <div className="relative h-[100dvh] w-full overflow-hidden">
