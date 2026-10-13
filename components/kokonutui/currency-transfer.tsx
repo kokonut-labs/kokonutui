@@ -380,7 +380,7 @@ export default function CurrencyTransfer({
           className
         )}
       >
-        <CardContent className="flex flex-1 flex-col justify-center space-y-4">
+        <CardContent className="flex flex-1 flex-col justify-center space-y-4 py-0">
           <output aria-live="polite" className="sr-only">
             {completed && `Transfer completed. Transaction ID ${txnId}.`}
             {failed && "Transfer failed."}
@@ -404,7 +404,7 @@ export default function CurrencyTransfer({
             initial="hidden"
             variants={entry}
           >
-            <div className="mb-4 w-full space-y-2 text-center">
+            <div className="w-full space-y-2 text-center">
               <AnimatePresence initial={false} mode="wait">
                 <motion.h2
                   animate="animate"
