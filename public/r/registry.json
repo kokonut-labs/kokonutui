@@ -183,10 +183,6 @@
         {
           "path": "components/kokonutui/action-search-bar.tsx",
           "type": "registry:component"
-        },
-        {
-          "path": "hooks/use-debounce.ts",
-          "type": "registry:hook"
         }
       ]
     },
@@ -363,10 +359,9 @@
       "name": "switch-button",
       "type": "registry:component",
       "title": "Switch Button",
-      "description": "Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React, next-themes, and Tailwind CSS.",
+      "description": "Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes.",
       "dependencies": [
-        "lucide-react",
-        "next-themes"
+        "lucide-react"
       ],
       "registryDependencies": [
         "button"
@@ -382,7 +377,7 @@
       "name": "bento-grid",
       "type": "registry:component",
       "title": "Bento Grid",
-      "description": "Responsive bento grid of feature cards with animated charts, counters and timelines, built with React, Tailwind CSS and Motion animations.",
+      "description": "Responsive bento grid of feature cards with a spotlight list, a typing code snippet, logos, a timeline and a voice widget, built with React, Tailwind CSS and Motion animations.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -744,10 +739,6 @@
         {
           "path": "components/kokonutui/profile-dropdown.tsx",
           "type": "registry:component"
-        },
-        {
-          "path": "components/icons/gemini.tsx",
-          "type": "registry:component"
         }
       ]
     },
@@ -767,10 +758,7 @@
       "name": "slide-text-button",
       "type": "registry:component",
       "title": "Slide Text Button",
-      "description": "Animated link button with a vertical text slide on hover and default and ghost variants, built with React, Motion, and Tailwind CSS.",
-      "dependencies": [
-        "motion"
-      ],
+      "description": "Animated link button with a vertical text slide on hover and default and ghost variants, built with React, Next.js Link, and Tailwind CSS.",
       "files": [
         {
           "path": "components/kokonutui/slide-text-button.tsx",
@@ -783,9 +771,6 @@
       "type": "registry:component",
       "title": "Morphic Navbar",
       "description": "Navigation bar whose active link morphs into a rounded pill with smooth CSS transitions, built with React, Next.js Link, and Tailwind CSS.",
-      "dependencies": [
-        "clsx"
-      ],
       "files": [
         {
           "path": "components/kokonutui/morphic-navbar.tsx",
