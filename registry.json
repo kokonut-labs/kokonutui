@@ -359,7 +359,7 @@
       "name": "detent-dial",
       "type": "registry:component",
       "title": "Detent Dial",
-      "description": "Rotary knob that clicks from notch to notch, coasts when flicked, winds past its ends like a rubber band and rolls its readout digit by digit, built with React and Motion.",
+      "description": "Rotary knob that clicks from notch to notch and coasts when flicked, built with React and Motion.",
       "dependencies": [
         "motion"
       ],
@@ -566,7 +566,7 @@
       "name": "notification-stack",
       "type": "registry:component",
       "title": "Notification Stack",
-      "description": "Stacked notification cards that fan out on hover and dismiss with a swipe or a quick flick, with keyboard and button fallbacks, built with React and Tailwind CSS.",
+      "description": "Stacked notifications that fan out on hover and swipe away, built with React and Tailwind CSS.",
       "dependencies": [
         "lucide-react"
       ],
@@ -602,7 +602,7 @@
       "name": "wheel-picker",
       "type": "registry:component",
       "title": "Wheel Picker",
-      "description": "iOS-style 3D drum picker with flick momentum, looping columns, rubber-band ends and a selection band that recolors text exactly at its edge, built with React and Motion.",
+      "description": "iOS-style 3D drum picker with flick momentum, built with React and Motion.",
       "dependencies": [
         "motion"
       ],
