@@ -562,23 +562,23 @@ export const component: Registry = [
     ],
   },
   {
-    name: "elastic-slider",
+    name: "detent-dial",
     type: "registry:component",
-    dependencies: ["motion", "lucide-react"],
+    dependencies: ["motion"],
     files: [
       {
-        path: "components/kokonutui/elastic-slider.tsx",
+        path: "components/kokonutui/detent-dial.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "clip-tabs",
+    name: "wheel-picker",
     type: "registry:component",
-    dependencies: ["lucide-react"],
+    dependencies: ["motion"],
     files: [
       {
-        path: "components/kokonutui/clip-tabs.tsx",
+        path: "components/kokonutui/wheel-picker.tsx",
         type: "registry:component",
       },
     ],

@@ -1,0 +1,20 @@
+---
+title: Detent Dial
+description: Rotary knob that clicks from notch to notch, coasts when flicked, winds past its ends like a rubber band and rolls its readout digit by digit, built with React and Motion.
+keywords: ["knob", "dial", "rotary", "thermostat", "slider", "detent", "inertia"]
+icon: Gauge
+full: false
+---
+
+#
+
+
+import DetentDial from "@/components/kokonutui/detent-dial";
+
+<Preview link="detent-dial" comment={["Motion"]}>
+    <DetentDial />
+</Preview>
+
+Drag around the knob. It doesn't turn smoothly: it pulls toward each notch, so you feel it click from step to step, and the readout only rolls the digits that changed. Flick it and it coasts, slows down and lands exactly on a notch, bouncing off the end if it runs out of room. Wind it past either end and it stretches, slower and slower, then springs back when you let go.
+
+Arrow keys, Page Up/Down, Home and End change the value instantly. Once focused, the scroll wheel turns it one notch at a time. Double-click to return to the default. On Android, each notch gives a faint vibration under your finger.

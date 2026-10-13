@@ -795,32 +795,31 @@
       ]
     },
     {
-      "name": "elastic-slider",
+      "name": "detent-dial",
       "type": "registry:component",
-      "title": "Elastic Slider",
-      "description": "Range slider that stretches like a rubber band when dragged past either end and springs back on release, with keyboard support, built with React and Motion.",
+      "title": "Detent Dial",
+      "description": "Rotary knob that clicks from notch to notch, coasts when flicked, winds past its ends like a rubber band and rolls its readout digit by digit, built with React and Motion.",
       "dependencies": [
-        "motion",
-        "lucide-react"
+        "motion"
       ],
       "files": [
         {
-          "path": "components/kokonutui/elastic-slider.tsx",
+          "path": "components/kokonutui/detent-dial.tsx",
           "type": "registry:component"
         }
       ]
     },
     {
-      "name": "clip-tabs",
+      "name": "wheel-picker",
       "type": "registry:component",
-      "title": "Clip Tabs",
-      "description": "Segmented tab control whose active pill is a clip-path over a second, inverted copy of the tabs, so text and icons change color exactly at the pill's edge, built with React and Tailwind CSS.",
+      "title": "Wheel Picker",
+      "description": "iOS-style 3D drum picker with flick momentum, looping columns, rubber-band ends and a selection band that recolors text exactly at its edge, built with React and Motion.",
       "dependencies": [
-        "lucide-react"
+        "motion"
       ],
       "files": [
         {
-          "path": "components/kokonutui/clip-tabs.tsx",
+          "path": "components/kokonutui/wheel-picker.tsx",
           "type": "registry:component"
         }
       ]
