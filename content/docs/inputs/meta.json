@@ -7,6 +7,7 @@
     "loader",
     "detent-dial",
     "wheel-picker",
-    "liquid-slider"
+    "liquid-slider",
+    "signature-pad"
   ]
 }
