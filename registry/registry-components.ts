@@ -234,7 +234,7 @@ export const component: Registry = [
   {
     name: "ai-voice",
     type: "registry:component",
-    dependencies: ["lucide-react"],
+    dependencies: ["lucide-react", "motion"],
     files: [
       {
         path: "components/kokonutui/ai-voice.tsx",
