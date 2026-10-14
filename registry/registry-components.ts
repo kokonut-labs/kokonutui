@@ -528,6 +528,7 @@ export const component: Registry = [
   {
     name: "morphic-navbar",
     type: "registry:component",
+    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/morphic-navbar.tsx",
