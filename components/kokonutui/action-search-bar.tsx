@@ -2,347 +2,1108 @@
 
 /**
  * @author: @kokonutui
- * @description: A modern search bar component with action buttons and suggestions
- * @version: 1.0.0
- * @date: 2025-06-26
+ * @description: Command Palette with ⌘K, nested pages, fuzzy matching and in-row action progress
+ * @version: 2.0.0
+ * @date: 2026-10-14
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
 import {
-  AudioLines,
-  BarChart2,
-  LayoutGrid,
-  PlaneTakeoff,
+  Activity,
+  ArrowUpRight,
+  BookOpen,
+  Check,
+  ChevronRight,
+  Copy,
+  FilePlus,
+  FolderInput,
+  History,
+  Keyboard,
+  Link2,
+  LoaderCircle,
   Search,
-  Send,
-  Video,
+  SunMoon,
+  UserPlus,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useId, useMemo, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { animate, useReducedMotion } from "motion/react";
+import {
+  type ChangeEvent,
+  type FocusEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
-export interface Action {
+export interface CommandItem {
   id: string;
   label: string;
-  icon: React.ReactNode;
-  description?: string;
-  short?: string;
-  end?: string;
+  icon?: ReactNode;
+  /** Section heading on its page, such as "Actions" or "Links". */
+  group?: string;
+  /** Extra words the row matches on, without being shown. */
+  keywords?: string[];
+  /** Keys shown at the end of the row, such as ["⌘", "N"]. */
+  shortcut?: string[];
+  /** Marks the row as a link. `onSelect` decides how to open it. */
+  href?: string;
+  /** Choosing the row opens these as a nested page instead of running it. */
+  children?: CommandItem[];
+  /** Input placeholder while this item's page is open. */
+  placeholder?: string;
 }
 
-const ANIMATION_VARIANTS = {
-  container: {
-    hidden: { opacity: 0, y: -4 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.15,
-        ease: [0.23, 1, 0.32, 1],
-        staggerChildren: 0.03,
-      },
-    },
-    exit: {
-      opacity: 0,
-      y: -4,
-      transition: { duration: 0.1, ease: [0.23, 1, 0.32, 1] },
-    },
-  },
-  item: {
-    hidden: { opacity: 0, y: 4 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.15, ease: [0.23, 1, 0.32, 1] },
-    },
-  },
-} as const;
+/** @deprecated Use `CommandItem`. */
+export type Action = CommandItem;
 
-const allActionsSample = [
-  {
-    id: "1",
-    label: "Book tickets",
-    icon: <PlaneTakeoff className="h-4 w-4 text-blue-500" />,
-    description: "Operator",
-    short: "⌘K",
-    end: "Agent",
-  },
-  {
-    id: "2",
-    label: "Summarize",
-    icon: <BarChart2 className="h-4 w-4 text-orange-500" />,
-    description: "gpt-5",
-    short: "⌘P",
-    end: "Command",
-  },
-  {
-    id: "3",
-    label: "Screen Studio",
-    icon: <Video className="h-4 w-4 text-purple-500" />,
-    description: "Claude 4.1",
-    short: "",
-    end: "Application",
-  },
-  {
-    id: "4",
-    label: "Talk to Jarvis",
-    icon: <AudioLines className="h-4 w-4 text-green-500" />,
-    description: "gpt-5 voice",
-    short: "",
-    end: "Active",
-  },
-  {
-    id: "5",
-    label: "Kokonut UI - Pro",
-    icon: <LayoutGrid className="h-4 w-4 text-blue-500" />,
-    description: "Components",
-    short: "",
-    end: "Link",
-  },
-];
-
-function ActionSearchBar({
-  actions = allActionsSample,
-  defaultOpen = false,
-  onSelect,
-  label = "Search Commands",
-  placeholder = "What's up?",
-  className,
-}: {
-  actions?: Action[];
+export interface ActionSearchBarProps {
+  items?: CommandItem[];
+  /** Ids shown under "Recent" before anything is typed. Running a row adds it. */
+  defaultRecent?: string[];
+  /**
+   * Called when a row without children is chosen. Return a Promise to show a
+   * spinner in the row until it settles; a rejection leaves the palette open.
+   */
+  onSelect?: (item: CommandItem, path: CommandItem[]) => unknown;
+  onOpenChange?: (open: boolean) => void;
   defaultOpen?: boolean;
-  /** Called with the chosen action, from Enter or a click. */
-  onSelect?: (action: Action) => void;
+  /** ⌘K / Ctrl+K toggles the palette while it is on screen. */
+  shortcut?: boolean;
   label?: string;
   placeholder?: string;
   className?: string;
-}) {
-  const id = useId();
-  const inputId = `${id}-input`;
-  const listboxId = `${id}-listbox`;
-  const getOptionId = (actionId: string) => `${id}-option-${actionId}`;
+}
 
-  const [query, setQuery] = useState("");
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [activeIndex, setActiveIndex] = useState(-1);
+interface Entry {
+  item: CommandItem;
+  /** Ancestors below the current page, shown as a "Parent ›" prefix. */
+  path: CommandItem[];
+}
 
-  // Filtering a local list is cheap, so it follows every keystroke.
-  const filteredActions = useMemo(() => {
-    const normalizedQuery = query.toLowerCase().trim();
-    if (!normalizedQuery) {
-      return actions;
+interface Row extends Entry {
+  key: string;
+  matches: number[];
+  score: number;
+}
+
+interface Section {
+  key: string;
+  label?: string;
+  rows: Row[];
+}
+
+type InputSource = "keyboard" | "pointer";
+
+const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+const HOLD_MS = 400;
+const RECENT_LIMIT = 3;
+
+const ICON = "size-4";
+
+const sampleItems: CommandItem[] = [
+  {
+    id: "new-document",
+    label: "New document",
+    icon: <FilePlus className={ICON} />,
+    group: "Actions",
+    keywords: ["create", "page", "file"],
+    shortcut: ["⌘", "N"],
+  },
+  {
+    id: "duplicate",
+    label: "Duplicate page",
+    icon: <Copy className={ICON} />,
+    group: "Actions",
+    keywords: ["copy", "clone"],
+    shortcut: ["⌘", "D"],
+  },
+  {
+    id: "move",
+    label: "Move to…",
+    icon: <FolderInput className={ICON} />,
+    group: "Actions",
+    keywords: ["folder", "file"],
+    placeholder: "Move to which folder?",
+    children: [
+      {
+        id: "move-inbox",
+        label: "Inbox",
+        icon: <FolderInput className={ICON} />,
+      },
+      {
+        id: "move-projects",
+        label: "Projects",
+        icon: <FolderInput className={ICON} />,
+      },
+      {
+        id: "move-archive",
+        label: "Archive",
+        icon: <FolderInput className={ICON} />,
+      },
+    ],
+  },
+  {
+    id: "theme",
+    label: "Change theme",
+    icon: <SunMoon className={ICON} />,
+    group: "Actions",
+    keywords: ["appearance", "dark", "light", "mode"],
+    placeholder: "Choose a theme…",
+    children: [
+      { id: "theme-light", label: "Light", icon: <SunMoon className={ICON} /> },
+      { id: "theme-dark", label: "Dark", icon: <SunMoon className={ICON} /> },
+      {
+        id: "theme-system",
+        label: "Match system",
+        icon: <SunMoon className={ICON} />,
+      },
+    ],
+  },
+  {
+    id: "invite",
+    label: "Invite member",
+    icon: <UserPlus className={ICON} />,
+    group: "Actions",
+    keywords: ["team", "share", "add"],
+  },
+  {
+    id: "copy-link",
+    label: "Copy link",
+    icon: <Link2 className={ICON} />,
+    group: "Actions",
+    keywords: ["url", "share"],
+    shortcut: ["⌘", "L"],
+  },
+  {
+    id: "docs",
+    label: "Documentation",
+    icon: <BookOpen className={ICON} />,
+    group: "Links",
+    keywords: ["help", "guide"],
+    href: "/docs",
+  },
+  {
+    id: "changelog",
+    label: "Changelog",
+    icon: <History className={ICON} />,
+    group: "Links",
+    keywords: ["release", "updates", "new"],
+    href: "/changelog",
+  },
+  {
+    id: "status",
+    label: "Status page",
+    icon: <Activity className={ICON} />,
+    group: "Links",
+    keywords: ["uptime", "incident"],
+    href: "/status",
+  },
+  {
+    id: "shortcuts",
+    label: "Keyboard shortcuts",
+    icon: <Keyboard className={ICON} />,
+    group: "Links",
+    keywords: ["keys", "hotkeys"],
+    href: "/shortcuts",
+  },
+];
+
+/* ---------------------------------------------------------------- matching */
+
+const WORD_BREAK = /[\s\-_/.]/;
+const WHITESPACE = /\s+/g;
+const APPLE_PLATFORM = /mac|iphone|ipad/i;
+
+const isWordStart = (text: string, i: number) =>
+  i === 0 || WORD_BREAK.test(text[i - 1] ?? "");
+
+/** The first word start at or after `from` that holds `ch`, else `from`. */
+function nextWordStart(t: string, ch: string, from: number) {
+  for (let j = from; j < t.length; j++) {
+    if (t[j] === ch && isWordStart(t, j)) {
+      return j;
     }
+  }
+  return from;
+}
 
-    return actions.filter((action) => {
-      const searchableText =
-        `${action.label} ${action.description || ""}`.toLowerCase();
-      return searchableText.includes(normalizedQuery);
-    });
-  }, [query, actions]);
+function subsequence(t: string, q: string, preferWordStarts: boolean) {
+  const matches: number[] = [];
+  let score = 0;
+  let from = 0;
+  for (const ch of q) {
+    let i = t.indexOf(ch, from);
+    if (i < 0) {
+      return null;
+    }
+    const prev = matches.at(-1);
+    // Unless it continues a run, jump ahead to a word start holding `ch`.
+    if (preferWordStarts && (prev === undefined || i !== prev + 1)) {
+      i = nextWordStart(t, ch, i);
+    }
+    score += prev !== undefined && i === prev + 1 ? 6 : 1;
+    score += isWordStart(t, i) ? 8 : 0;
+    score -= prev === undefined ? i * 0.5 : (i - prev - 1) * 0.2;
+    matches.push(i);
+    from = i + 1;
+  }
+  return { score, matches };
+}
 
-  // Typing resets the highlight; the clamp covers a shrinking `actions` list.
-  const highlightedIndex =
-    activeIndex < filteredActions.length ? activeIndex : -1;
+/**
+ * Fuzzy match. Returns the matched character indices and a score that favours
+ * contiguous runs, word starts and early matches; null when `query` is not a
+ * subsequence of `text`.
+ */
+export function fuzzyMatch(
+  text: string,
+  query: string
+): { score: number; matches: number[] } | null {
+  const t = text.toLowerCase();
+  const q = query.toLowerCase().replace(WHITESPACE, "");
+  if (!q) {
+    return { score: 0, matches: [] };
+  }
+  const at = t.indexOf(q);
+  if (at >= 0) {
+    const matches = Array.from({ length: q.length }, (_, k) => at + k);
+    return { score: 100 - at + (isWordStart(t, at) ? 30 : 0), matches };
+  }
+  return subsequence(t, q, true) ?? subsequence(t, q, false);
+}
 
-  const activeAction: Action | undefined = isOpen
-    ? filteredActions[highlightedIndex]
-    : undefined;
+function scoreEntry(entry: Entry, query: string) {
+  const onLabel = fuzzyMatch(entry.item.label, query);
+  if (onLabel) {
+    return onLabel;
+  }
+  // Parent labels and keywords still find the row, ranked lower, unbolded.
+  const extra = [
+    ...entry.path.map((p) => p.label),
+    ...(entry.item.keywords ?? []),
+  ];
+  let best: number | null = null;
+  for (const word of extra) {
+    const hit = fuzzyMatch(word, query);
+    if (hit && (best === null || hit.score > best)) {
+      best = hit.score;
+    }
+  }
+  return best === null ? null : { score: best / 2, matches: [] };
+}
 
-  const openList = () => {
-    setIsOpen(true);
-    setActiveIndex(-1);
-  };
+/* ---------------------------------------------------------------- sections */
 
-  const closeList = () => {
-    setIsOpen(false);
-    setActiveIndex(-1);
-  };
+function flatten(items: CommandItem[], path: CommandItem[] = []): Entry[] {
+  const out: Entry[] = [];
+  for (const item of items) {
+    out.push({ item, path });
+    if (item.children) {
+      out.push(...flatten(item.children, [...path, item]));
+    }
+  }
+  return out;
+}
 
-  const selectAction = (action: Action) => {
-    closeList();
-    onSelect?.(action);
-  };
+function groupRows(rows: Row[], fallback?: string): Section[] {
+  const byGroup = new Map<string, Row[]>();
+  for (const row of rows) {
+    const label = row.path[0]?.group ?? row.item.group ?? fallback ?? "";
+    const list = byGroup.get(label) ?? [];
+    list.push(row);
+    byGroup.set(label, list);
+  }
+  return [...byGroup].map(([label, list]) => ({
+    key: label || "items",
+    label: label || undefined,
+    rows: list,
+  }));
+}
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
-    openList();
-  };
+function buildSections(
+  page: CommandItem | undefined,
+  rootItems: CommandItem[],
+  query: string,
+  recent: Entry[]
+): Section[] {
+  const items = page?.children ?? rootItems;
+  const fallback = page?.label;
 
-  // Moves the highlight one row, wrapping at both ends. With no highlight,
-  // Down goes to the first row and Up to the last.
-  const moveHighlight = (step: 1 | -1) => {
-    const count = filteredActions.length;
-    if (count === 0) {
+  if (!query.trim()) {
+    const rows = items.map<Row>((item) => ({
+      item,
+      path: [],
+      key: item.id,
+      matches: [],
+      score: 0,
+    }));
+    const sections = groupRows(rows, fallback);
+    if (!page && recent.length > 0) {
+      sections.unshift({
+        key: "recent",
+        label: "Recent",
+        rows: recent.map((e) => ({
+          ...e,
+          key: `recent-${e.item.id}`,
+          matches: [],
+          score: 0,
+        })),
+      });
+    }
+    return sections;
+  }
+
+  // Searching from a page also reaches the rows nested inside it.
+  const rows: Row[] = [];
+  for (const entry of flatten(items)) {
+    const hit = scoreEntry(entry, query);
+    if (hit) {
+      rows.push({ ...entry, key: entry.item.id, ...hit });
+    }
+  }
+  const sections = groupRows(rows, fallback);
+  for (const section of sections) {
+    section.rows.sort((a, b) => b.score - a.score);
+  }
+  return sections;
+}
+
+function findEntry(items: CommandItem[], id: string): Entry | undefined {
+  return flatten(items).find((e) => e.item.id === id);
+}
+
+/* ---------------------------------------------------------------- pieces */
+
+function Highlighted({ text, matches }: { text: string; matches: number[] }) {
+  if (matches.length === 0) {
+    return <>{text}</>;
+  }
+  const hit = new Set(matches);
+  const parts: { start: number; text: string; on: boolean }[] = [];
+  for (let i = 0; i < text.length; i++) {
+    const on = hit.has(i);
+    const last = parts.at(-1);
+    if (last && last.on === on) {
+      last.text += text[i];
+    } else {
+      parts.push({ start: i, text: text[i] ?? "", on });
+    }
+  }
+  return (
+    <>
+      {parts.map((p) =>
+        p.on ? (
+          <b
+            className="font-semibold text-zinc-950 dark:text-white"
+            key={p.start}
+          >
+            {p.text}
+          </b>
+        ) : (
+          <span key={p.start}>{p.text}</span>
+        )
+      )}
+    </>
+  );
+}
+
+function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-zinc-200 bg-zinc-50 px-1 font-sans text-[11px] text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+      {children}
+    </kbd>
+  );
+}
+
+function RowEnd({
+  item,
+  status,
+}: {
+  item: CommandItem;
+  status: "pending" | "done" | undefined;
+}) {
+  if (status === "pending") {
+    return (
+      <LoaderCircle
+        aria-hidden="true"
+        className="size-4 animate-spin text-zinc-500 dark:text-zinc-400"
+      />
+    );
+  }
+  if (status === "done") {
+    return (
+      <Check
+        aria-hidden="true"
+        className="size-4 text-zinc-900 dark:text-zinc-100"
+      />
+    );
+  }
+  if (item.children) {
+    return <ChevronRight aria-hidden="true" className="size-4 text-zinc-400" />;
+  }
+  if (item.href) {
+    return <ArrowUpRight aria-hidden="true" className="size-4 text-zinc-400" />;
+  }
+  if (item.shortcut) {
+    return (
+      <span aria-hidden="true" className="flex gap-0.5">
+        {item.shortcut.map((key) => (
+          <Kbd key={key}>{key}</Kbd>
+        ))}
+      </span>
+    );
+  }
+  return null;
+}
+
+function useIsMac() {
+  const [mac, setMac] = useState(true);
+  useEffect(() => {
+    setMac(APPLE_PLATFORM.test(navigator.userAgent));
+  }, []);
+  return mac;
+}
+
+/* ---------------------------------------------------------------- palette */
+
+function ActionSearchBar({
+  items = sampleItems,
+  defaultRecent = ["copy-link", "theme-dark"],
+  onSelect,
+  onOpenChange,
+  defaultOpen = false,
+  shortcut = true,
+  label = "Search commands",
+  placeholder = "Search or jump to…",
+  className,
+}: ActionSearchBarProps) {
+  const uid = useId();
+  const inputId = `${uid}-input`;
+  const listboxId = `${uid}-listbox`;
+  const optionId = (index: number) => `${uid}-option-${index}`;
+
+  const reduce = useReducedMotion();
+  const isMac = useIsMac();
+
+  const [open, setOpen] = useState(defaultOpen);
+  const [query, setQuery] = useState("");
+  const [stack, setStack] = useState<CommandItem[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [running, setRunning] = useState<{
+    key: string;
+    phase: "pending" | "done";
+  } | null>(null);
+  const [recentIds, setRecentIds] = useState(defaultRecent);
+  const [announcement, setAnnouncement] = useState("");
+
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const onScreenRef = useRef(true);
+  const fadeNextOpen = useRef(false);
+  const slideNext = useRef<0 | 1 | -1>(0);
+  const springUntil = useRef(0);
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const holdTimer = useRef<number | undefined>(undefined);
+  const runToken = useRef(0);
+
+  const page = stack.at(-1);
+  const recent = useMemo(
+    () =>
+      recentIds
+        .map((id) => findEntry(items, id))
+        .filter((e): e is Entry => e !== undefined && !e.item.children)
+        .slice(0, RECENT_LIMIT),
+    [recentIds, items]
+  );
+  const sections = useMemo(
+    () => buildSections(page, items, query, recent),
+    [page, items, query, recent]
+  );
+  const rows = useMemo(() => sections.flatMap((s) => s.rows), [sections]);
+  const highlighted = Math.min(activeIndex, rows.length - 1);
+  const activeRow = open ? rows[highlighted] : undefined;
+
+  /* -- open / close -- */
+
+  const setOpenState = useCallback(
+    (next: boolean) => {
+      setOpen(next);
+      onOpenChange?.(next);
+    },
+    [onOpenChange]
+  );
+
+  const openPalette = useCallback(
+    (source: InputSource) => {
+      if (open) {
+        return;
+      }
+      fadeNextOpen.current = source === "pointer";
+      setActiveIndex(0);
+      setOpenState(true);
+    },
+    [open, setOpenState]
+  );
+
+  const closePalette = useCallback(
+    (restoreFocus: boolean) => {
+      window.clearTimeout(holdTimer.current);
+      runToken.current += 1;
+      setRunning(null);
+      setOpenState(false);
+      setQuery("");
+      setStack([]);
+      setActiveIndex(0);
+      const target = returnFocus.current;
+      returnFocus.current = null;
+      if (restoreFocus && target?.isConnected) {
+        target.focus();
+      }
+    },
+    [setOpenState]
+  );
+
+  useEffect(() => () => window.clearTimeout(holdTimer.current), []);
+
+  /* -- ⌘K, only while the palette is on screen -- */
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) {
       return;
     }
-    const from = highlightedIndex === -1 && step === -1 ? 0 : highlightedIndex;
-    setActiveIndex((from + step + count) % count);
+    const io = new IntersectionObserver(([entry]) => {
+      onScreenRef.current = entry?.isIntersecting ?? true;
+    });
+    io.observe(root);
+    return () => io.disconnect();
+  }, []);
+
+  const hotkeyState = useRef({ open, openPalette, closePalette });
+  useEffect(() => {
+    hotkeyState.current = { open, openPalette, closePalette };
+  });
+
+  useEffect(() => {
+    if (!shortcut) {
+      return;
+    }
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      const isCombo =
+        (e.metaKey || e.ctrlKey) &&
+        !e.altKey &&
+        !e.shiftKey &&
+        e.key.toLowerCase() === "k";
+      const root = rootRef.current;
+      if (!(isCombo && root && onScreenRef.current) || e.defaultPrevented) {
+        return;
+      }
+      const focused = document.activeElement;
+      // Leave another open modal dialog alone.
+      const modal = focused?.closest('[aria-modal="true"]');
+      if (modal && !modal.contains(root)) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      const state = hotkeyState.current;
+      if (state.open) {
+        state.closePalette(true);
+        return;
+      }
+      if (focused instanceof HTMLElement && !root.contains(focused)) {
+        returnFocus.current = focused;
+      }
+      inputRef.current?.focus();
+      inputRef.current?.select();
+      state.openPalette("keyboard");
+    };
+    // Capture, so a site-wide ⌘K does not also fire while this one is in view.
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [shortcut]);
+
+  /* -- motion: fade on pointer open; slide + spring on pointer page change -- */
+
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (!(open && panel && fadeNextOpen.current)) {
+      return;
+    }
+    fadeNextOpen.current = false;
+    panel.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: 120,
+      easing: EASE_OUT,
+    });
+  }, [open]);
+
+  useLayoutEffect(() => {
+    const body = bodyRef.current;
+    const content = contentRef.current;
+    if (!(open && body && content)) {
+      return;
+    }
+    let controls: ReturnType<typeof animate> | undefined;
+    const fitHeight = () => {
+      const h = `${content.offsetHeight}px`;
+      controls?.stop();
+      if (!reduce && performance.now() < springUntil.current) {
+        controls = animate(
+          body,
+          { height: h },
+          { type: "spring", bounce: 0, duration: 0.32 }
+        );
+      } else {
+        body.style.height = h;
+      }
+    };
+    fitHeight();
+    const ro = new ResizeObserver(fitHeight);
+    ro.observe(content);
+    return () => {
+      ro.disconnect();
+      controls?.stop();
+    };
+  }, [open, reduce]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the page changes
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const dir = slideNext.current;
+    slideNext.current = 0;
+    if (!list || dir === 0) {
+      return;
+    }
+    list.animate(
+      [
+        {
+          transform: reduce ? "none" : `translateX(${dir * 14}px)`,
+          opacity: 0,
+        },
+        { transform: "none", opacity: 1 },
+      ],
+      { duration: 200, easing: EASE_OUT }
+    );
+  }, [stack.length]);
+
+  // Keep the highlighted row inside the list's scroll box (never the page).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: optionId is derived from uid
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const row = document.getElementById(optionId(highlighted));
+    if (!(open && list && row)) {
+      return;
+    }
+    const top = row.offsetTop;
+    const bottom = top + row.offsetHeight;
+    if (top < list.scrollTop + 6) {
+      list.scrollTop = top - 30;
+    } else if (bottom > list.scrollTop + list.clientHeight - 6) {
+      list.scrollTop = bottom - list.clientHeight + 6;
+    }
+  }, [open, highlighted, sections]);
+
+  /* -- pages -- */
+
+  const pushPage = (item: CommandItem, source: InputSource) => {
+    if (source === "pointer") {
+      slideNext.current = 1;
+      springUntil.current = performance.now() + 150;
+    }
+    setStack((s) => [...s, item]);
+    setQuery("");
+    setActiveIndex(0);
+    setAnnouncement(`${item.label}, ${item.children?.length ?? 0} options`);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const popPage = (source: InputSource) => {
+    const left = stack.at(-1);
+    if (!left) {
+      return;
+    }
+    if (source === "pointer") {
+      slideNext.current = -1;
+      springUntil.current = performance.now() + 150;
+    }
+    const nextStack = stack.slice(0, -1);
+    setStack(nextStack);
+    setQuery("");
+    // Land back on the row that opened the page.
+    const back = buildSections(nextStack.at(-1), items, "", recent)
+      .flatMap((s) => s.rows)
+      .findIndex((r) => r.key === left.id);
+    setActiveIndex(Math.max(0, back));
+    setAnnouncement(nextStack.at(-1)?.label ?? "All commands");
+    inputRef.current?.focus();
+  };
+
+  /* -- running -- */
+
+  const finishRun = (row: Row, token: number) => {
+    if (token !== runToken.current) {
+      return;
+    }
+    setRunning({ key: row.key, phase: "done" });
+    setAnnouncement(`${row.item.label}, done`);
+    holdTimer.current = window.setTimeout(() => {
+      if (token !== runToken.current) {
+        return;
+      }
+      setRecentIds((ids) =>
+        [row.item.id, ...ids.filter((id) => id !== row.item.id)].slice(
+          0,
+          RECENT_LIMIT
+        )
+      );
+      closePalette(returnFocus.current !== null);
+    }, HOLD_MS);
+  };
+
+  const runRow = (row: Row) => {
+    runToken.current += 1;
+    const token = runToken.current;
+    const result = onSelect?.(row.item, [...stack, ...row.path]);
+    if (!(result instanceof Promise)) {
+      finishRun(row, token);
+      return;
+    }
+    setRunning({ key: row.key, phase: "pending" });
+    setAnnouncement(`Running ${row.item.label}`);
+    result.then(
+      () => finishRun(row, token),
+      () => {
+        if (token === runToken.current) {
+          setRunning(null);
+          setAnnouncement(`${row.item.label} failed`);
+        }
+      }
+    );
+  };
+
+  const choose = (row: Row, source: InputSource) => {
+    if (running) {
+      return;
+    }
+    if (row.item.children) {
+      pushPage(row.item, source);
+    } else {
+      runRow(row);
+    }
+  };
+
+  /* -- input -- */
+
+  const moveHighlight = (step: number) => {
+    const count = rows.length;
+    if (count > 0) {
+      setActiveIndex((Math.max(highlighted, 0) + step + count) % count);
+    }
+  };
+
+  const handleNavKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (!open) {
+      e.preventDefault();
+      openPalette("keyboard");
+      return;
+    }
+    if (rows.length === 0) {
+      return;
+    }
+    e.preventDefault();
+    if (e.key === "Home" || e.key === "End") {
+      setActiveIndex(e.key === "Home" ? 0 : rows.length - 1);
+    } else {
+      moveHighlight(e.key === "ArrowDown" ? 1 : -1);
+    }
+  };
+
+  const handleEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    if (!open) {
+      openPalette("keyboard");
+    } else if (activeRow) {
+      choose(activeRow, "keyboard");
+    }
+  };
+
+  const handleEscape = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (open) {
+      e.preventDefault();
+      closePalette(true);
+    } else if (query) {
+      setQuery("");
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (running && e.key !== "Tab") {
+      e.preventDefault();
+      return;
+    }
     switch (e.key) {
       case "ArrowDown":
-        e.preventDefault();
-        setIsOpen(true);
-        moveHighlight(1);
-        break;
       case "ArrowUp":
-        if (isOpen && filteredActions.length > 0) {
-          e.preventDefault();
-          moveHighlight(-1);
-        }
+      case "Home":
+      case "End":
+        handleNavKey(e);
         break;
       case "Enter":
-        if (isOpen) {
+        handleEnter(e);
+        break;
+      case "Backspace":
+        if (open && query === "" && stack.length > 0) {
           e.preventDefault();
-          if (activeAction) {
-            selectAction(activeAction);
-          }
+          popPage("keyboard");
         }
         break;
       case "Escape":
-        closeList();
+        handleEscape(e);
         break;
       default:
         break;
     }
   };
 
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    setActiveIndex(0);
+    openPalette("keyboard");
+  };
+
+  const handleInputPointerDown = (e: PointerEvent<HTMLInputElement>) => {
+    if (e.button === 0) {
+      openPalette("pointer");
+    }
+  };
+
+  // Close when focus leaves the whole palette (Tab away, click outside).
+  const handleBlur = (e: FocusEvent<HTMLDivElement>) => {
+    const next = e.relatedTarget;
+    if (open && !(next instanceof Node && e.currentTarget.contains(next))) {
+      returnFocus.current = null;
+      closePalette(false);
+    }
+  };
+
+  const pagePlaceholder = page
+    ? (page.placeholder ?? `Search ${page.label.toLowerCase()}…`)
+    : placeholder;
+
+  let rowIndex = -1;
+
   return (
-    <div className={cn("mx-auto w-full max-w-xl", className)}>
-      <div className="relative flex min-h-[300px] flex-col items-center justify-start">
-        <div className="sticky top-0 z-10 w-full max-w-sm bg-background pt-4 pb-1">
-          <label
-            className="mb-1 block font-medium text-gray-500 text-xs dark:text-gray-400"
-            htmlFor={inputId}
-          >
+    // biome-ignore lint/a11y/noStaticElementInteractions: focusout from the whole palette closes it
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: same focusout handler
+    <div
+      className={cn("relative h-[46px] w-full max-w-md", className)}
+      onBlur={handleBlur}
+      ref={rootRef}
+    >
+      <div
+        className={cn(
+          "@container/palette absolute inset-x-0 top-0 z-30 overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950",
+          open
+            ? "shadow-[0_16px_40px_-16px_rgb(0_0_0/0.2)] dark:shadow-[0_16px_40px_-16px_rgb(0_0_0/0.7)]"
+            : "shadow-xs"
+        )}
+      >
+        <div className="flex h-11 items-center gap-2 px-3">
+          <Search
+            aria-hidden="true"
+            className="size-4 shrink-0 text-zinc-400 dark:text-zinc-500"
+          />
+          {stack.map((p, i) => (
+            <button
+              aria-label={`Back from ${p.label}`}
+              className="inline-flex h-6 shrink-0 items-center rounded-md bg-zinc-100 px-2 font-medium text-xs text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+              key={p.id}
+              onClick={() => {
+                if (i === stack.length - 1 && !running) {
+                  popPage("pointer");
+                }
+              }}
+              // Keep focus in the input; Backspace is the keyboard path.
+              onPointerDown={(e) => e.preventDefault()}
+              tabIndex={-1}
+              type="button"
+            >
+              {p.label}
+            </button>
+          ))}
+          <label className="sr-only" htmlFor={inputId}>
             {label}
           </label>
-          <div className="relative">
-            <Input
-              aria-activedescendant={
-                activeAction ? getOptionId(activeAction.id) : undefined
-              }
-              aria-autocomplete="list"
-              aria-controls={isOpen ? listboxId : undefined}
-              aria-expanded={isOpen}
-              autoComplete="off"
-              className="h-9 rounded-lg py-1.5 pr-9 pl-3 text-sm focus-visible:ring-offset-0"
-              id={inputId}
-              onBlur={closeList}
-              onChange={handleInputChange}
-              onFocus={openList}
-              onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              role="combobox"
-              type="text"
-              value={query}
-            />
-            <div className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2">
-              <AnimatePresence mode="popLayout">
-                <motion.div
-                  animate={{ y: 0, opacity: 1 }}
-                  // Only the fade remains under reduced motion.
-                  className="motion-reduce:transform-none!"
-                  exit={{
-                    y: 20,
-                    opacity: 0,
-                    transition: { duration: 0.15, ease: [0.23, 1, 0.32, 1] },
-                  }}
-                  initial={{ y: -20, opacity: 0 }}
-                  key={query.length > 0 ? "send" : "search"}
-                  transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-                >
-                  {query.length > 0 ? (
-                    <Send className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                  ) : (
-                    <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
+          <input
+            aria-activedescendant={
+              activeRow ? optionId(highlighted) : undefined
+            }
+            aria-autocomplete="list"
+            aria-controls={open ? listboxId : undefined}
+            aria-expanded={open}
+            autoComplete="off"
+            className="h-full min-w-0 flex-1 bg-transparent text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+            id={inputId}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onPointerDown={handleInputPointerDown}
+            placeholder={pagePlaceholder}
+            readOnly={running !== null}
+            ref={inputRef}
+            role="combobox"
+            spellCheck={false}
+            type="text"
+            value={query}
+          />
+          {shortcut && !open && (
+            <span aria-hidden="true" className="flex shrink-0 gap-0.5">
+              <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
+              <Kbd>K</Kbd>
+            </span>
+          )}
         </div>
 
-        <div className="w-full max-w-sm">
-          <AnimatePresence>
-            {isOpen && (
-              <motion.div
-                animate="show"
-                className="mt-1 w-full overflow-hidden rounded-md border bg-white shadow-xs dark:border-gray-800 dark:bg-black"
-                exit="exit"
-                initial="hidden"
-                // Keep focus in the input while pressing inside the list, so
-                // its blur never closes the list before the click lands.
-                onMouseDown={(e) => e.preventDefault()}
-                variants={ANIMATION_VARIANTS.container}
-              >
-                <motion.ul
-                  aria-label="Search results"
+        {open && (
+          <div
+            // Keep focus in the input while pressing inside the list, so its
+            // blur never closes the palette before the click lands.
+            onPointerDown={(e) => e.preventDefault()}
+            ref={panelRef}
+          >
+            <div className="border-zinc-100 border-t dark:border-zinc-800/80" />
+            <div className="overflow-hidden" ref={bodyRef}>
+              <div ref={contentRef}>
+                <div
+                  aria-busy={running?.phase === "pending"}
+                  aria-label={page ? page.label : "Commands"}
+                  className="relative max-h-72 overflow-y-auto overscroll-contain p-1.5"
                   id={listboxId}
+                  ref={listRef}
                   role="listbox"
                 >
-                  {filteredActions.map((action, index) => (
-                    // The pointer moves the same highlight as the arrow keys, so
-                    // only one row is ever highlighted. It changes instantly.
-                    <motion.li
-                      aria-selected={highlightedIndex === index}
-                      className="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 transition-[scale] duration-150 ease-out aria-selected:bg-gray-100 motion-safe:active:scale-[0.97] dark:aria-selected:bg-zinc-800"
-                      id={getOptionId(action.id)}
-                      key={action.id}
-                      onClick={() => selectAction(action)}
-                      onPointerMove={(e) => {
-                        if (e.pointerType === "mouse") {
-                          setActiveIndex(index);
-                        }
-                      }}
-                      role="option"
-                      variants={ANIMATION_VARIANTS.item}
+                  {sections.map((section) => (
+                    // biome-ignore lint/a11y/useSemanticElements: ARIA listbox groups, not a form fieldset
+                    <div
+                      aria-labelledby={
+                        section.label ? `${uid}-${section.key}` : undefined
+                      }
+                      key={section.key}
+                      role="group"
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span aria-hidden="true" className="text-gray-500">
-                            {action.icon}
-                          </span>
-                          <span className="font-medium text-gray-900 text-sm dark:text-gray-100">
-                            {action.label}
-                          </span>
-                          {action.description && (
-                            <span className="text-gray-400 text-xs">
-                              {action.description}
-                            </span>
-                          )}
+                      {section.label && (
+                        <div
+                          className="px-2 pt-2 pb-1 font-medium text-[11px] text-zinc-500 dark:text-zinc-400"
+                          id={`${uid}-${section.key}`}
+                          role="presentation"
+                        >
+                          {section.label}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {action.short && (
-                          <span className="text-gray-400 text-xs">
-                            {action.short}
-                          </span>
-                        )}
-                        {action.end && (
-                          <span className="text-right text-gray-400 text-xs">
-                            {action.end}
-                          </span>
-                        )}
-                      </div>
-                    </motion.li>
+                      )}
+                      {section.rows.map((row) => {
+                        rowIndex += 1;
+                        const index = rowIndex;
+                        const status =
+                          running?.key === row.key ? running.phase : undefined;
+                        return (
+                          // biome-ignore lint/a11y/useFocusableInteractive: combobox pattern, focus stays in the input (aria-activedescendant)
+                          // biome-ignore lint/a11y/useKeyWithClickEvents: keys are handled by the input
+                          <div
+                            aria-disabled={running !== null && !status}
+                            aria-selected={index === highlighted}
+                            className="group/row flex h-9 cursor-default items-center gap-2.5 rounded-md px-2 text-sm text-zinc-700 aria-disabled:opacity-50 aria-selected:bg-zinc-100 dark:text-zinc-300 dark:aria-selected:bg-zinc-800/70"
+                            id={optionId(index)}
+                            key={row.key}
+                            onClick={() => choose(row, "pointer")}
+                            onPointerMove={(e) => {
+                              if (
+                                e.pointerType === "mouse" &&
+                                !running &&
+                                index !== highlighted
+                              ) {
+                                setActiveIndex(index);
+                              }
+                            }}
+                            role="option"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="flex size-4 shrink-0 items-center justify-center text-zinc-400 group-aria-selected/row:text-zinc-700 dark:text-zinc-500 dark:group-aria-selected/row:text-zinc-200"
+                            >
+                              {row.item.icon}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate">
+                              {row.path.map((p) => (
+                                <span
+                                  className="text-zinc-400 dark:text-zinc-500"
+                                  key={p.id}
+                                >
+                                  {p.label}
+                                  <span aria-hidden="true"> › </span>
+                                </span>
+                              ))}
+                              <Highlighted
+                                matches={row.matches}
+                                text={row.item.label}
+                              />
+                              {row.item.children && (
+                                <span className="sr-only">, opens a page</span>
+                              )}
+                            </span>
+                            <span className="flex shrink-0 items-center">
+                              <RowEnd item={row.item} status={status} />
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ))}
-                </motion.ul>
-                <div className="mt-2 border-gray-100 border-t px-3 py-2 dark:border-gray-800">
-                  <div className="flex items-center justify-between text-gray-500 text-xs">
-                    <span>↑↓ to navigate</span>
-                    <span>ESC to cancel</span>
-                  </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                {rows.length === 0 && (
+                  <p className="px-3 pt-1 pb-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                    No results for “{query.trim()}”
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-zinc-100 border-t px-3 py-2 text-[11px] text-zinc-500 dark:border-zinc-800/80 dark:text-zinc-400">
+              <span className="flex items-center gap-1.5">
+                <span className="@xs/palette:flex hidden items-center gap-1.5">
+                  <Kbd>↑</Kbd>
+                  <Kbd>↓</Kbd>
+                  <span className="mr-1.5">Navigate</span>
+                </span>
+                <Kbd>↵</Kbd>
+                <span>{activeRow?.item.children ? "Open" : "Run"}</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                {stack.length > 0 && (
+                  <>
+                    <Kbd>⌫</Kbd>
+                    <span className="mr-1.5">Back</span>
+                  </>
+                )}
+                <Kbd>esc</Kbd>
+                <span>Close</span>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
+      <span aria-live="polite" className="sr-only">
+        {announcement}
+      </span>
     </div>
   );
 }

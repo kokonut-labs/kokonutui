@@ -107,7 +107,6 @@ export const component: Registry = [
     name: "action-search-bar",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
-    registryDependencies: ["input"],
     files: [
       {
         path: "components/kokonutui/action-search-bar.tsx",
