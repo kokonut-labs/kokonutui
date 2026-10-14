@@ -73,8 +73,9 @@ export interface ToolbarProps {
   defaultEdge?: DockEdge;
   onEdgeChange?: (edge: DockEdge) => void;
   /**
-   * When single-key shortcuts work. `scoped` (default) listens only while the
-   * pointer is over the canvas or focus is inside it; `global` always listens.
+   * When single-key shortcuts work. `scoped` (default) listens only while
+   * focus is inside the canvas, or the pointer is over it and nothing else
+   * has focus; `global` always listens. Never while typing.
    */
   shortcuts?: "scoped" | "global" | "off";
   /** Accessible name for the toolbar. */
@@ -295,7 +296,9 @@ function tipPosition(edge: DockEdge, button: DOMRect, dock: DOMRect) {
   }
 }
 
-function isEditable(target: EventTarget | null) {
+const TEXT_ROLES = new Set(["textbox", "searchbox", "combobox", "spinbutton"]);
+
+function isEditable(target: EventTarget | null | undefined) {
   if (!(target instanceof HTMLElement)) {
     return false;
   }
@@ -303,7 +306,17 @@ function isEditable(target: EventTarget | null) {
     target.isContentEditable ||
     target.tagName === "INPUT" ||
     target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT"
+    target.tagName === "SELECT" ||
+    TEXT_ROLES.has(target.getAttribute("role") ?? "")
+  );
+}
+
+/** True while the person is typing, including inside shadow roots. */
+function isTyping(e: globalThis.KeyboardEvent) {
+  return (
+    e.isComposing ||
+    isEditable(e.composedPath()[0]) ||
+    isEditable(document.activeElement)
   );
 }
 
@@ -1012,13 +1025,17 @@ export function Toolbar({
         e.altKey ||
         e.repeat ||
         e.defaultPrevented ||
-        isEditable(e.target)
+        isTyping(e)
       ) {
         return;
       }
+      // Scoped: focus is in the stage, or the pointer is over it while
+      // nothing else on the page holds focus.
+      const focused = document.activeElement;
+      const idle = !focused || focused === document.body;
       const inside =
-        hoverRef.current ||
-        Boolean(stageRef.current?.contains(document.activeElement));
+        Boolean(stageRef.current?.contains(focused)) ||
+        (hoverRef.current && idle);
       const id = map.get(e.key.toLowerCase());
       if (id && (mode === "global" || inside)) {
         e.preventDefault();
@@ -1259,8 +1276,8 @@ export function Toolbar({
         className
       )}
       data-tool={current}
-      onPointerEnter={() => {
-        hoverRef.current = true;
+      onPointerEnter={(e) => {
+        hoverRef.current = e.pointerType !== "touch";
       }}
       onPointerLeave={() => {
         hoverRef.current = false;
