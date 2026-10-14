@@ -292,7 +292,12 @@ const nextConfig = {
       },
       {
         source: "/docs/components/sliced-text",
-        destination: "/docs/texts/sliced-text",
+        destination: "/docs/texts/glitch-text",
+        permanent: true,
+      },
+      {
+        source: "/docs/texts/sliced-text",
+        destination: "/docs/texts/glitch-text",
         permanent: true,
       },
       {

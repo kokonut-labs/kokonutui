@@ -462,20 +462,8 @@ export const component: Registry = [
     ],
   },
   {
-    name: "sliced-text",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/sliced-text.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "glitch-text",
     type: "registry:component",
-    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/glitch-text.tsx",
