@@ -4,7 +4,7 @@
 /**
  * @author: @dorianbaffier
  * @description: Topo Background
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-14
  * @license: MIT
  * @website: https://kokonutui.com
@@ -15,6 +15,10 @@ import { type ReactNode, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 export interface TopoBackgroundProps {
+  /**
+   * Extra classes for the root. The map draws on a transparent canvas, so
+   * `className="bg-transparent"` lays it over your own page background.
+   */
   className?: string;
   /** Content shown over the map. Pass `null` for a bare background. */
   children?: ReactNode;
@@ -26,6 +30,8 @@ export interface TopoBackgroundProps {
   interactive?: boolean;
   /** Seed for the terrain, so a page always opens on the same map. */
   seed?: number;
+  /** Print elevations on the index contours, as on a survey map. */
+  labels?: boolean;
 }
 
 // Distance between field samples, in CSS px. Contours are traced through
@@ -51,6 +57,36 @@ const RIPPLE_HEIGHT = 0.2;
 const RIPPLE_WAVELENGTH = 96;
 // When nothing is moving but the drift, a frame every 33ms is plenty.
 const IDLE_FRAME_MS = 33;
+// Elevation labels: one per slot of this size at most (px), riding along
+// with the terrain. Elevation of level n is BASE + n * STEP metres, so the
+// index contours read as round hundreds.
+const LABEL_SPACING = 210;
+const LABEL_BASE = 500;
+const LABEL_STEP = 20;
+// Labels keep clear of the faded top and bottom edges.
+const LABEL_MARGIN = 0.16;
+const MAX_LABEL_ANGLE = Math.PI / 3;
+const LABEL_FONT =
+  "500 10px ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif";
+
+/** The best spot found so far in each label slot. */
+interface LabelSlots {
+  drift: number;
+  width: number;
+  height: number;
+  best: Map<number, Label>;
+  /** Areas covered by the content, where a number would read as noise. */
+  avoid: { x0: number; y0: number; x1: number; y1: number }[];
+}
+
+interface Label {
+  x: number;
+  y: number;
+  angle: number;
+  level: number;
+  /** Squared distance to the slot's centre; the closest candidate wins. */
+  score: number;
+}
 
 interface Ripple {
   x: number;
@@ -189,6 +225,75 @@ function cellSegments(
   }
 }
 
+/**
+ * Offer a point on an index contour as a label spot. Slots are laid out in
+ * terrain space (they drift with the map) and every other row is offset by
+ * half a slot, so labels scatter instead of lining up in a grid.
+ */
+function offerLabel(slots: LabelSlots, label: Omit<Label, "score">) {
+  const { x, y } = label;
+  if (
+    y < slots.height * LABEL_MARGIN ||
+    y > slots.height * (1 - LABEL_MARGIN) ||
+    x < 24 ||
+    x > slots.width - 24 ||
+    slots.avoid.some((r) => x > r.x0 && x < r.x1 && y > r.y0 && y < r.y1)
+  ) {
+    return;
+  }
+  const row = Math.floor(y / LABEL_SPACING);
+  const shifted = x + slots.drift + (row % 2) * (LABEL_SPACING / 2);
+  const col = Math.floor(shifted / LABEL_SPACING);
+  const cx = (col + 0.5) * LABEL_SPACING;
+  const cy = (row + 0.5) * LABEL_SPACING;
+  const score = (shifted - cx) ** 2 + (y - cy) ** 2;
+  // Too far from the slot centre: a neighbouring label could sit right
+  // next to it.
+  if (score > (LABEL_SPACING * 0.32) ** 2) {
+    return;
+  }
+  const key = row * 100_000 + col;
+  const current = slots.best.get(key);
+  if (!current || score < current.score) {
+    slots.best.set(key, { ...label, score });
+  }
+}
+
+/** Offer the middle of a cell an index contour passes through. */
+function offerCellLabel(
+  slots: LabelSlots,
+  [a, b, c, d]: [number, number, number, number],
+  x0: number,
+  y0: number,
+  level: number,
+  t: number
+) {
+  // The contour runs across the slope; the cell's gradient gives a steadier
+  // direction than the short segment itself.
+  const gx = b - a + c - d;
+  const gy = d - a + c - b;
+  // Slide from the cell's centre along the slope onto the line itself.
+  const px = gx / (2 * CELL);
+  const py = gy / (2 * CELL);
+  const g2 = px * px + py * py;
+  const lift = g2 > 0 ? (t - (a + b + c + d) / 4) / g2 : 0;
+  const half = CELL / 2;
+  const ox = Math.max(-half, Math.min(half, lift * px));
+  const oy = Math.max(-half, Math.min(half, lift * py));
+  let angle = Math.atan2(gx, -gy);
+  // Keep text upright, and skip steep stretches: a number on its side is
+  // hard to read.
+  if (angle > Math.PI / 2) {
+    angle -= Math.PI;
+  } else if (angle < -Math.PI / 2) {
+    angle += Math.PI;
+  }
+  if (Math.abs(angle) > MAX_LABEL_ANGLE) {
+    return;
+  }
+  offerLabel(slots, { x: x0 + half + ox, y: y0 + half + oy, angle, level });
+}
+
 /** Every contour level that passes through one cell, usually none or one. */
 function traceCell(
   field: Float32Array,
@@ -196,7 +301,7 @@ function traceCell(
   i: number,
   j: number,
   interval: number,
-  paths: { minor: Path2D; major: Path2D }
+  paths: { minor: Path2D; major: Path2D; slots: LabelSlots | null }
 ) {
   const a = field[j * cols + i];
   const b = field[j * cols + i + 1];
@@ -217,13 +322,17 @@ function traceCell(
     if (index === 0 || index === 15) {
       continue;
     }
-    const path = level % INDEX_EVERY === 0 ? paths.major : paths.minor;
-    cellSegments(path, index, box, {
+    const isIndex = level % INDEX_EVERY === 0;
+    cellSegments(isIndex ? paths.major : paths.minor, index, box, {
       top: x0 + CELL * ((t - a) / (b - a)),
       right: y0 + CELL * ((t - b) / (c - b)),
       bottom: x0 + CELL * ((t - d) / (c - d)),
       left: y0 + CELL * ((t - a) / (d - a)),
     });
+    // Saddles are poor label spots: the line turns sharply there.
+    if (isIndex && paths.slots && index !== 5 && index !== 10) {
+      offerCellLabel(paths.slots, [a, b, c, d], x0, y0, level, t);
+    }
   }
 }
 
@@ -238,9 +347,10 @@ function traceContours(
   rows: number,
   interval: number,
   minor: Path2D,
-  major: Path2D
+  major: Path2D,
+  slots: LabelSlots | null
 ) {
-  const paths = { minor, major };
+  const paths = { minor, major, slots };
   for (let j = 0; j < rows - 1; j++) {
     for (let i = 0; i < cols - 1; i++) {
       traceCell(field, cols, i, j, interval, paths);
@@ -278,6 +388,7 @@ export default function TopoBackground({
   speed = 1,
   interactive = true,
   seed = 26,
+  labels = true,
 }: TopoBackgroundProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -330,6 +441,7 @@ export default function TopoBackground({
       rows = Math.ceil(height / CELL) + 1;
       field = new Float32Array(cols * rows);
       color = getComputedStyle(canvas).color;
+      measureContent();
     };
 
     const sample = (now: number) => {
@@ -374,13 +486,75 @@ export default function TopoBackground({
       }
     };
 
+    const slots: LabelSlots = {
+      drift: 0,
+      width: 0,
+      height: 0,
+      best: new Map(),
+      avoid: [],
+    };
+    // Keep labels out from under the content laid over the map.
+    const measureContent = () => {
+      const origin = canvas.getBoundingClientRect();
+      slots.avoid = [];
+      for (const child of Array.from(root.children)) {
+        if (child.contains(canvas)) {
+          continue;
+        }
+        const r = child.getBoundingClientRect();
+        slots.avoid.push({
+          x0: r.left - origin.left - 16,
+          y0: r.top - origin.top - 12,
+          x1: r.right - origin.left + 16,
+          y1: r.bottom - origin.top + 12,
+        });
+      }
+    };
+
+    /**
+     * Knock the lines out under each label, then print the elevation, so
+     * the contour is broken where the number sits, as on a survey map.
+     */
+    const drawLabels = () => {
+      ctx.font = LABEL_FONT;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const label of slots.best.values()) {
+        const text = `${LABEL_BASE + label.level * LABEL_STEP}`;
+        const w = ctx.measureText(text).width + 8;
+        ctx.save();
+        ctx.translate(Math.round(label.x), Math.round(label.y));
+        ctx.rotate(label.angle);
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.globalAlpha = 1;
+        ctx.fillRect(-w / 2, -6, w, 12);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 0.5;
+        ctx.fillText(text, 0, 0.5);
+        ctx.restore();
+      }
+    };
+
     const paint = (now: number) => {
       sample(now);
       const minor = new Path2D();
       const major = new Path2D();
-      traceContours(field, cols, rows, interval, minor, major);
+      slots.best.clear();
+      slots.drift = time * 6;
+      slots.width = width;
+      slots.height = height;
+      traceContours(
+        field,
+        cols,
+        rows,
+        interval,
+        minor,
+        major,
+        labels ? slots : null
+      );
       ctx.clearRect(0, 0, width, height);
       ctx.strokeStyle = color;
+      ctx.fillStyle = color;
       ctx.lineCap = "round";
       ctx.globalAlpha = 0.16;
       ctx.lineWidth = 0.75;
@@ -388,6 +562,9 @@ export default function TopoBackground({
       ctx.globalAlpha = 0.34;
       ctx.lineWidth = 1.1;
       ctx.stroke(major);
+      if (labels) {
+        drawLabels();
+      }
       ctx.globalAlpha = 1;
     };
 
@@ -423,6 +600,28 @@ export default function TopoBackground({
       }
     };
 
+    // Follow light and dark mode without asking the app for a theme. The
+    // check only runs while the map is on screen.
+    let colorTimer = 0;
+    const checkColor = () => {
+      const next = getComputedStyle(canvas).color;
+      if (next !== color) {
+        color = next;
+        if (reduceMotion || !raf) {
+          paint(performance.now());
+        }
+      }
+    };
+    const watchColor = () => {
+      if (visible && !colorTimer) {
+        checkColor();
+        colorTimer = window.setInterval(checkColor, 500);
+      } else if (!visible && colorTimer) {
+        window.clearInterval(colorTimer);
+        colorTimer = 0;
+      }
+    };
+
     resize();
     paint(performance.now());
     canvas.style.opacity = "1";
@@ -436,31 +635,21 @@ export default function TopoBackground({
 
     // Stop drawing entirely while the map is scrolled away or the tab is
     // in the background.
-    const intersection = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting && document.visibilityState === "visible";
-      if (visible) {
-        start();
-      }
-    });
-    intersection.observe(root);
-    const onVisibility = () => {
-      visible = document.visibilityState === "visible";
+    let onScreen = true;
+    const updateVisible = () => {
+      visible = onScreen && document.visibilityState === "visible";
+      watchColor();
       if (visible) {
         start();
       }
     };
-    document.addEventListener("visibilitychange", onVisibility);
-
-    // Follow light and dark mode without asking the app for a theme.
-    const colorTimer = window.setInterval(() => {
-      const next = getComputedStyle(canvas).color;
-      if (next !== color) {
-        color = next;
-        if (reduceMotion) {
-          paint(performance.now());
-        }
-      }
-    }, 500);
+    const intersection = new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+      updateVisible();
+    });
+    intersection.observe(root);
+    document.addEventListener("visibilitychange", updateVisible);
+    watchColor();
 
     const local = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -509,13 +698,13 @@ export default function TopoBackground({
       cancelAnimationFrame(raf);
       resizeObserver.disconnect();
       intersection.disconnect();
-      document.removeEventListener("visibilitychange", onVisibility);
+      document.removeEventListener("visibilitychange", updateVisible);
       window.clearInterval(colorTimer);
       root.removeEventListener("pointermove", onMove);
       root.removeEventListener("pointerleave", onLeave);
       root.removeEventListener("pointerdown", onDown);
     };
-  }, [interval, speed, interactive, seed]);
+  }, [interval, speed, interactive, seed, labels]);
 
   return (
     <div
@@ -544,9 +733,10 @@ export default function TopoBackground({
 function DefaultContent() {
   return (
     <div className="relative flex max-w-xl flex-col items-center gap-4 px-6 text-center">
-      <h1 className="font-semibold text-4xl tracking-tight sm:text-5xl">
+      {/* A plain paragraph: the page that uses this decides its own h1. */}
+      <p className="text-balance font-semibold text-4xl text-zinc-900 tracking-tight sm:text-5xl dark:text-zinc-100">
         Find your footing
-      </h1>
+      </p>
       <p className="max-w-sm text-base text-zinc-500 dark:text-zinc-400">
         A living contour map. Move the cursor to raise a hill, click to send a
         ripple across it.
