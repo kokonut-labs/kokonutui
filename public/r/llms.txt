@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 50 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 51 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -45,7 +45,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Profile Dropdown](https://kokonutui.com/docs/navigation/profile-dropdown.md): User profile dropdown menu with avatar, subscription and model details, and quick action links, built with React, shadcn/ui, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/profile-dropdown`
 - [Pull Cord](https://kokonutui.com/docs/buttons/pull-cord.md): A lamp switch you pull on a swinging cord, built with React and a rope simulation. Install: `npx shadcn@latest add @kokonutui/pull-cord`
 - [Scroll Text](https://kokonutui.com/docs/texts/scroll-text.md): Scroll-driven text list that highlights the active word as you scroll, using IntersectionObserver with React, Tailwind CSS and Motion animations. Install: `npx shadcn@latest add @kokonutui/scroll-text`
-- [Shapes Hero](https://kokonutui.com/docs/backgrounds/shape-hero.md): Hero section with translucent geometric shapes that drop in and float over a gradient backdrop. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/shape-hero`
+- [Shape Hero](https://kokonutui.com/docs/backgrounds/shape-hero.md): A landing hero where shapes drop in, pile up under the headline and can be grabbed and thrown. Install: `npx shadcn@latest add @kokonutui/shape-hero`
 - [Shimmer Text](https://kokonutui.com/docs/texts/shimmer-text.md): Animated shimmer text with a looping gradient sweep across the letters, built with React and Tailwind CSS gradients and keyframes. Install: `npx shadcn@latest add @kokonutui/shimmer-text`
 - [Sliced Text](https://kokonutui.com/docs/texts/sliced-text.md): Text effect that splits into two offset slices and merges together on hover using clip-path, built with React, Tailwind CSS and Motion animations. Install: `npx shadcn@latest add @kokonutui/sliced-text`
 - [Slide Text Button](https://kokonutui.com/docs/buttons/slide-text-button.md): Animated link button with a vertical text slide on hover and default and ghost variants, built with React, Next.js Link, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/slide-text-button`
@@ -58,6 +58,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Swoosh Text](https://kokonutui.com/docs/texts/swoosh-text.md): Hover text effect with layered colorful shadows that snap flat on mouseover, built with React and Tailwind CSS transitions. Install: `npx shadcn@latest add @kokonutui/swoosh-text`
 - [Team Selector](https://kokonutui.com/docs/inputs/team-selector.md): Animated team size selector with stacked overlapping avatars, spring transitions and increment controls. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/team-selector`
 - [Toolbar](https://kokonutui.com/docs/navigation/toolbar.md): Figma-inspired toolbar where the selected tool expands to reveal its label with spring animations, built with React, Motion, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/toolbar`
+- [Topo Background](https://kokonutui.com/docs/backgrounds/topo-background.md): A living contour map that drifts, rises under the cursor and ripples on click, built with React and Canvas. Install: `npx shadcn@latest add @kokonutui/topo-background`
 - [Typing Text](https://kokonutui.com/docs/texts/type-writer.md): Typewriter text animation that types and deletes multiple sequences with a blinking cursor and auto loop, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/type-writer`
 - [V0 Button](https://kokonutui.com/docs/buttons/v0-button.md): Open in v0 button that sends a component registry JSON to v0.dev for instant editing, built with React, the shadcn Button, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/v0-button`
 - [Wheel Picker](https://kokonutui.com/docs/inputs/wheel-picker.md): iOS-style 3D drum picker with flick momentum, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/wheel-picker`

@@ -92,11 +92,8 @@
     {
       "name": "shape-hero",
       "type": "registry:component",
-      "title": "Shapes Hero",
-      "description": "Hero section with translucent geometric shapes that drop in and float over a gradient backdrop. Built with React, Tailwind CSS and Motion.",
-      "dependencies": [
-        "motion"
-      ],
+      "title": "Shape Hero",
+      "description": "A landing hero where shapes drop in, pile up under the headline and can be grabbed and thrown.",
       "files": [
         {
           "path": "components/kokonutui/shape-hero.tsx",
@@ -289,6 +286,19 @@
       "files": [
         {
           "path": "components/kokonutui/flow-field.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "topo-background",
+      "type": "registry:component",
+      "title": "Topo Background",
+      "description": "A living contour map that drifts, rises under the cursor and ripples on click, built with React and Canvas.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/topo-background.tsx",
           "type": "registry:component"
         }
       ]
