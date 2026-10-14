@@ -3,252 +3,453 @@
 /**
  * @author: @dorianbaffier
  * @description: Background Paths
- * @version: 1.0.0
- * @date: 2025-06-26
+ * @version: 2.0.0
+ * @date: 2026-10-14
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { MotionConfig, motion, useInView } from "motion/react";
-import { type ReactNode, useId, useRef } from "react";
+import {
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
-interface Point {
-  x: number;
-  y: number;
+export interface BackgroundPathsProps {
+  className?: string;
+  /** Content shown over the lines. Pass `null` for a bare background. */
+  children?: ReactNode;
+  /** Number of lines, shared across the three depth layers. */
+  count?: number;
+  /** How far the ribbon fans out, as a share of the height. */
+  spread?: number;
+  /** Tilt of the ribbon, in degrees. */
+  angle?: number;
+  /** How fast the layers drift. 0 holds them still. */
+  speed?: number;
+  /** Shift the layers by depth as the mouse moves. */
+  interactive?: boolean;
 }
 
-interface WaveLayerConfig {
-  type: "primary" | "secondary" | "accent";
-  count: number;
-  amplitude: number;
-  segments: number;
-  /** Vertical drift of the whole layer, in viewBox units. */
-  drift: number;
-  /** Seconds per drift cycle. */
-  duration: number;
-  /** Opacity of the whole layer. */
+/** Each layer is drawn this much larger than the container on every side, so drift and parallax never show an edge. */
+const OVERSCAN = 0.08;
+const SAMPLES = 28;
+const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+
+interface Layer {
+  /** 0 is the back layer, 1 the front one. */
+  depth: number;
+  width: number;
   opacity: number;
-  opacityBase: number;
-  opacityStep: number;
-  widthBase: number;
-  widthStep: number;
+  /** Phase offset, so the layers don't sit exactly on top of each other. */
+  phase: number;
+  /** Drift path, as a translate in percent of the layer, and seconds per leg. */
+  drift: [number, number];
+  duration: number;
+  /** Parallax travel in px at the edge of the container. */
+  parallax: number;
 }
 
-const WAVE_LAYERS: WaveLayerConfig[] = [
+const LAYERS: Layer[] = [
   {
-    type: "primary",
-    count: 12,
-    amplitude: 150,
-    segments: 10,
-    drift: 15,
-    duration: 8,
-    opacity: 1,
-    opacityBase: 0.15,
-    opacityStep: 0.02,
-    widthBase: 4,
-    widthStep: 0.3,
+    depth: 0,
+    width: 1,
+    opacity: 0.14,
+    phase: 0.5,
+    drift: [-1.4, 1],
+    duration: 26,
+    parallax: 6,
   },
   {
-    type: "secondary",
-    count: 15,
-    amplitude: 100,
-    segments: 8,
-    drift: 10,
-    duration: 6,
-    opacity: 0.8,
-    opacityBase: 0.12,
-    opacityStep: 0.015,
-    widthBase: 3,
-    widthStep: 0.25,
+    depth: 0.5,
+    width: 1.25,
+    opacity: 0.22,
+    phase: 0.25,
+    drift: [1.2, -1.4],
+    duration: 20,
+    parallax: 12,
   },
   {
-    type: "accent",
-    count: 10,
-    amplitude: 60,
-    segments: 6,
-    drift: 5,
-    duration: 4,
-    opacity: 0.6,
-    opacityBase: 0.08,
-    opacityStep: 0.12,
-    widthBase: 2,
-    widthStep: 0.2,
+    depth: 1,
+    width: 1.5,
+    opacity: 0.34,
+    phase: 0,
+    drift: [-1.8, -0.8],
+    duration: 15,
+    parallax: 20,
   },
 ];
 
-function generateAestheticPath(
-  index: number,
-  baseAmplitude: number,
-  segments: number
-): string {
-  const phase = index * 0.2;
-  const points: Point[] = [];
-
-  const startX = 2400;
-  const startY = 800;
-  const endX = -2400;
-  const endY = -800 + index * 25;
-
-  for (let i = 0; i <= segments; i++) {
-    const progress = i / segments;
-    const eased = 1 - (1 - progress) ** 2;
-
-    const baseX = startX + (endX - startX) * eased;
-    const baseY = startY + (endY - startY) * eased;
-
-    const amplitudeFactor = 1 - eased * 0.3;
-    const wave1 =
-      Math.sin(progress * Math.PI * 3 + phase) *
-      (baseAmplitude * 0.7 * amplitudeFactor);
-    const wave2 =
-      Math.cos(progress * Math.PI * 4 + phase) *
-      (baseAmplitude * 0.3 * amplitudeFactor);
-    const wave3 =
-      Math.sin(progress * Math.PI * 2 + phase) *
-      (baseAmplitude * 0.2 * amplitudeFactor);
-
-    points.push({
-      x: baseX,
-      y: baseY + wave1 + wave2 + wave3,
-    });
-  }
-
-  // Math.sin/cos can differ in the last digits between the server and the
-  // browser, so round the coordinates to keep the SSR markup identical.
-  const f = (n: number) => n.toFixed(1);
-
-  const pathCommands = points.map((point: Point, i: number) => {
-    if (i === 0) {
-      return `M ${f(point.x)} ${f(point.y)}`;
-    }
-    const prevPoint = points[i - 1];
-    const tension = 0.4;
-    const cp1x = prevPoint.x + (point.x - prevPoint.x) * tension;
-    const cp1y = prevPoint.y;
-    const cp2x = prevPoint.x + (point.x - prevPoint.x) * (1 - tension);
-    const cp2y = point.y;
-    return `C ${f(cp1x)} ${f(cp1y)}, ${f(cp2x)} ${f(cp2y)}, ${f(point.x)} ${f(point.y)}`;
-  });
-
-  return pathCommands.join(" ");
+interface Line {
+  id: string;
+  d: string;
+  opacity: number;
 }
 
-// The paths are deterministic, so they are built once for every instance.
-const LAYERS = WAVE_LAYERS.map((layer) => ({
-  ...layer,
-  paths: Array.from({ length: layer.count }, (_, i) => ({
-    id: `${layer.type}-${i}`,
-    d: generateAestheticPath(i, layer.amplitude, layer.segments),
-    opacity: Math.min(layer.opacityBase + i * layer.opacityStep, 1),
-    width: layer.widthBase + i * layer.widthStep,
-  })),
-}));
+// Fades the lines at the top and bottom edges and quiets them behind
+// centered content.
+const MASK = {
+  maskImage:
+    "linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent), radial-gradient(ellipse 40% 32% at 50% 50%, rgb(0 0 0 / 0.25), #000)",
+  maskComposite: "intersect",
+  WebkitMaskComposite: "source-in",
+} as const;
 
-const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const round = (n: number) => Math.round(n * 10) / 10;
 
-function FloatingPaths() {
-  const ref = useRef<HTMLDivElement>(null);
-  // Drift only while on screen.
-  const drifting = useInView(ref);
-  const gradientId = useId();
+/** Catmull-Rom through the points, written as cubic Béziers. */
+function smoothPath(points: [number, number][]) {
+  let d = `M${round(points[0][0])} ${round(points[0][1])}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(i - 1, 0)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(i + 2, points.length - 1)];
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += `C${round(c1x)} ${round(c1y)} ${round(c2x)} ${round(c2y)} ${round(p2[0])} ${round(p2[1])}`;
+  }
+  return d;
+}
+
+/**
+ * One twisting ribbon of lines across a `width` by `height` box. Lines fan
+ * out, cross over where the ribbon turns and fan out again, each crossing at
+ * a slightly different point so the twist reads as depth.
+ */
+function buildLayer(
+  layer: Layer,
+  layerIndex: number,
+  lineCount: number,
+  width: number,
+  height: number,
+  spread: number,
+  angle: number
+): Line[] {
+  const slope = Math.tan((angle * Math.PI) / 180);
+  // On tall, narrow screens a full-height ribbon turns too steeply to read,
+  // so its height is capped relative to the width.
+  const band = Math.min(height, width * 1.1);
+  const lines: Line[] = [];
+  for (let i = 0; i < lineCount; i++) {
+    // -0.5 to 0.5 across the ribbon.
+    const s = lineCount === 1 ? 0 : i / (lineCount - 1) - 0.5;
+    const points: [number, number][] = [];
+    for (let k = 0; k <= SAMPLES; k++) {
+      const u = k / SAMPLES;
+      const x = u * width;
+      const center =
+        height * 0.5 +
+        slope * (x - width / 2) +
+        band * 0.1 * Math.sin(Math.PI * 2 * (0.75 * u + 0.1) + layer.phase);
+      // The ribbon turns over once, right of center, clear of a centered
+      // headline.
+      const twist = Math.cos(Math.PI * (u - 0.22) + s * 0.6 + layer.phase);
+      points.push([x, center + s * spread * band * twist]);
+    }
+    lines.push({
+      id: `${layerIndex}-${i}`,
+      d: smoothPath(points),
+      // The ribbon's edges fade, its middle carries the weight.
+      opacity: layer.opacity * (0.45 + 0.55 * (1 - Math.abs(s) * 2)),
+    });
+  }
+  return lines;
+}
+
+function useSize(ref: RefObject<HTMLElement | null>) {
+  const [size, setSize] = useState<{ width: number; height: number } | null>(
+    null
+  );
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) {
+      return;
+    }
+    let frame = 0;
+    const observer = new ResizeObserver(([entry]) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const width = Math.round(entry.contentRect.width);
+        const height = Math.round(entry.contentRect.height);
+        setSize((prev) =>
+          prev &&
+          Math.abs(prev.width - width) < 2 &&
+          Math.abs(prev.height - height) < 2
+            ? prev
+            : { width, height }
+        );
+      });
+    });
+    observer.observe(node);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [ref]);
+  return size;
+}
+
+export default function BackgroundPaths({
+  className,
+  children,
+  count = 42,
+  spread = 1,
+  angle = -8,
+  speed = 1,
+  interactive = true,
+}: BackgroundPathsProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const layerRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const driftRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const size = useSize(rootRef);
+  const drawn = useRef(false);
+
+  const layerWidth = size ? size.width * (1 + OVERSCAN * 2) : 0;
+  const layerHeight = size ? size.height * (1 + OVERSCAN * 2) : 0;
+  const perLayer = Math.max(1, Math.round(count / LAYERS.length));
+
+  const layers = useMemo(
+    () =>
+      layerWidth
+        ? LAYERS.map((layer, index) =>
+            buildLayer(
+              layer,
+              index,
+              perLayer,
+              layerWidth,
+              layerHeight,
+              spread,
+              angle
+            )
+          )
+        : [],
+    [layerWidth, layerHeight, perLayer, spread, angle]
+  );
+
+  // Draw the lines on once, the first time they exist. Later resizes only
+  // change `d`, so they never redraw.
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!(root && layers.length) || drawn.current) {
+      return;
+    }
+    drawn.current = true;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    root.dataset.ready = "";
+    if (reduceMotion) {
+      return;
+    }
+    const paths = root.querySelectorAll<SVGPathElement>("path");
+    paths.forEach((path, index) => {
+      path.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], {
+        duration: 900,
+        delay: (index % perLayer) * 12,
+        easing: EASE_OUT,
+        fill: "backwards",
+      });
+    });
+  }, [layers, perLayer]);
+
+  // Drift: one compositor-only transform loop per layer. The SVG inside is
+  // rasterized once and only moved, never redrawn. Paused offscreen.
+  useEffect(() => {
+    const root = rootRef.current;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    if (!(root && size) || reduceMotion || speed <= 0) {
+      return;
+    }
+    const animations = LAYERS.map((layer, index) =>
+      driftRefs.current[index]?.animate(
+        [
+          { transform: "translate3d(0, 0, 0)" },
+          {
+            transform: `translate3d(${layer.drift[0]}%, ${layer.drift[1]}%, 0)`,
+          },
+        ],
+        {
+          duration: (layer.duration * 1000) / speed,
+          iterations: Number.POSITIVE_INFINITY,
+          direction: "alternate",
+          easing: "ease-in-out",
+        }
+      )
+    );
+    let onScreen = true;
+    const sync = () => {
+      for (const animation of animations) {
+        if (onScreen && !document.hidden) {
+          animation?.play();
+        } else {
+          animation?.pause();
+        }
+      }
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+      sync();
+    });
+    observer.observe(root);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", sync);
+      for (const animation of animations) {
+        animation?.cancel();
+      }
+    };
+  }, [size, speed]);
+
+  // Parallax: each layer leans towards the mouse by its depth. Eased in a
+  // frame loop that only runs while it is still moving.
+  useEffect(() => {
+    const root = rootRef.current;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    if (!root || reduceMotion || !interactive) {
+      return;
+    }
+    const target = { x: 0, y: 0 };
+    const current = { x: 0, y: 0 };
+    let frame = 0;
+    let rect = root.getBoundingClientRect();
+
+    const tick = () => {
+      current.x += (target.x - current.x) * 0.08;
+      current.y += (target.y - current.y) * 0.08;
+      const settled =
+        Math.abs(target.x - current.x) < 0.001 &&
+        Math.abs(target.y - current.y) < 0.001;
+      if (settled) {
+        current.x = target.x;
+        current.y = target.y;
+      }
+      LAYERS.forEach((layer, index) => {
+        const node = layerRefs.current[index];
+        if (node) {
+          node.style.transform = `translate3d(${(current.x * layer.parallax).toFixed(2)}px, ${(current.y * layer.parallax).toFixed(2)}px, 0)`;
+        }
+      });
+      frame = settled ? 0 : requestAnimationFrame(tick);
+    };
+    const start = () => {
+      if (!frame) {
+        frame = requestAnimationFrame(tick);
+      }
+    };
+    const onEnter = () => {
+      rect = root.getBoundingClientRect();
+    };
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse") {
+        return;
+      }
+      // -1 to 1 from the center of the container.
+      target.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      target.y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
+      start();
+    };
+    const onLeave = () => {
+      target.x = 0;
+      target.y = 0;
+      start();
+    };
+    root.addEventListener("pointerenter", onEnter);
+    root.addEventListener("pointermove", onMove);
+    root.addEventListener("pointerleave", onLeave);
+    window.addEventListener("scroll", onEnter, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      root.removeEventListener("pointerenter", onEnter);
+      root.removeEventListener("pointermove", onMove);
+      root.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("scroll", onEnter);
+    };
+  }, [interactive]);
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 overflow-hidden"
-      ref={ref}
+      className={cn(
+        "group/paths relative flex min-h-[560px] w-full items-center justify-center overflow-hidden bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100",
+        className
+      )}
+      ref={rootRef}
     >
-      <svg
+      <div
         aria-hidden="true"
-        className="h-full w-full"
-        fill="none"
-        preserveAspectRatio="xMidYMid slice"
-        viewBox="-2400 -800 4800 1600"
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 ease-out group-data-ready/paths:opacity-100"
+        style={MASK}
       >
-        <defs>
-          <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="0%">
-            <stop offset="0%" stopColor="rgba(147, 51, 234, 0.5)" />
-            <stop offset="50%" stopColor="rgba(236, 72, 153, 0.5)" />
-            <stop offset="100%" stopColor="rgba(59, 130, 246, 0.5)" />
-          </linearGradient>
-        </defs>
-
-        {/* One drift loop per layer: its paths always moved in lockstep. */}
-        {LAYERS.map((layer) => (
-          <motion.g
-            animate={{
-              opacity: layer.opacity,
-              y: drifting ? [0, -layer.drift, 0] : 0,
+        {LAYERS.map((layer, index) => (
+          <div
+            className="absolute will-change-transform"
+            key={layer.depth}
+            ref={(node) => {
+              layerRefs.current[index] = node;
             }}
-            initial={{ opacity: 0 }}
-            key={layer.type}
-            transition={{
-              opacity: { duration: 1, ease: EASE_OUT },
-              y: drifting
-                ? {
-                    duration: layer.duration,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "easeInOut",
-                  }
-                : { duration: 0 },
+            style={{
+              inset: `-${OVERSCAN * 100}%`,
             }}
           >
-            {layer.paths.map((path) => (
-              <path
-                d={path.d}
-                key={path.id}
-                opacity={path.opacity}
-                stroke={`url(#${gradientId})`}
-                strokeLinecap="round"
-                strokeWidth={path.width}
-              />
-            ))}
-          </motion.g>
+            <div
+              className="h-full w-full will-change-transform"
+              ref={(node) => {
+                driftRefs.current[index] = node;
+              }}
+            >
+              {size ? (
+                <svg
+                  className="h-full w-full"
+                  fill="none"
+                  role="presentation"
+                  viewBox={`0 0 ${round(layerWidth)} ${round(layerHeight)}`}
+                >
+                  {layers[index]?.map((line) => (
+                    <path
+                      d={line.d}
+                      key={line.id}
+                      opacity={line.opacity}
+                      pathLength={1}
+                      stroke="currentColor"
+                      strokeDasharray="1 1"
+                      strokeLinecap="round"
+                      strokeWidth={layer.width}
+                    />
+                  ))}
+                </svg>
+              ) : null}
+            </div>
+          </div>
         ))}
-      </svg>
+      </div>
+      {children === undefined ? <DefaultContent /> : children}
     </div>
   );
 }
 
-export default function BackgroundPaths({
-  title = "Background Paths",
-  className,
-  children,
-}: {
-  title?: string;
-  className?: string;
-  /** Replaces the demo title. Pass `null` to render the paths alone. */
-  children?: ReactNode;
-}) {
+function DefaultContent() {
   return (
-    <div
-      className={cn(
-        "relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-white dark:bg-neutral-950",
-        className
-      )}
-    >
-      {/* Reduced motion skips the drift and the title's rise; fades stay. */}
-      <MotionConfig reducedMotion="user">
-        <FloatingPaths />
-
-        <div className="container relative z-10 mx-auto px-4 text-center md:px-6">
-          <div className="mx-auto max-w-4xl">
-            {children === undefined ? (
-              <motion.h1
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-8 bg-gradient-to-r from-neutral-800/90 to-neutral-600/90 bg-clip-text font-bold text-3xl text-transparent tracking-tighter sm:text-5xl dark:from-white/90 dark:to-white/70"
-                initial={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.7, ease: EASE_OUT }}
-              >
-                {title}
-              </motion.h1>
-            ) : (
-              children
-            )}
-          </div>
-        </div>
-      </MotionConfig>
+    <div className="relative flex max-w-xl flex-col items-center gap-4 px-6 text-center">
+      <h1 className="font-semibold text-4xl tracking-tight sm:text-5xl">
+        Calm by default
+      </h1>
+      <p className="max-w-sm text-base text-zinc-500 dark:text-zinc-400">
+        One color, any size, next to no cost. The lines drift on their own
+        layers and lean with the cursor.
+      </p>
     </div>
   );
 }

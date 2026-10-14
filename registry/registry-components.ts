@@ -158,7 +158,6 @@ export const component: Registry = [
   {
     name: "background-paths",
     type: "registry:component",
-    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/background-paths.tsx",
