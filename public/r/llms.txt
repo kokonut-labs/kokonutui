@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 51 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 53 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -34,7 +34,9 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Glitch Text](https://kokonutui.com/docs/texts/glitch-text.md): Customizable glitch text effect with adjustable intensity, colors and sizes, animated in React with Motion and styled with Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/glitch-text`
 - [Gradient Button](https://kokonutui.com/docs/buttons/gradient-button.md): Layered gradient button with emerald, purple, and orange variants, a gradient border in light and dark mode, soft inner glow, press feedback, and an optional icon, styled entirely with Tailwind CSS in React. Install: `npx shadcn@latest add @kokonutui/gradient-button`
 - [Hold Button](https://kokonutui.com/docs/buttons/hold-button.md): Press-and-hold confirmation button with an animated progress fill, configurable hold duration, and color variants, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/hold-button`
+- [Liquid Gauge](https://kokonutui.com/docs/cards/liquid-gauge.md): A usage meter filled with liquid that sloshes, ripples and bubbles, built with React and a wave simulation. Install: `npx shadcn@latest add @kokonutui/liquid-gauge`
 - [Liquid Glass](https://kokonutui.com/docs/cards/liquid-glass-card.md): Apple-inspired liquid glass card and buttons using SVG displacement filters for a refractive effect, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/liquid-glass-card`
+- [Liquid Slider](https://kokonutui.com/docs/inputs/liquid-slider.md): A vertical slider you fill like a glass, with a sloshing surface and rising bubbles. Install: `npx shadcn@latest add @kokonutui/liquid-slider`
 - [Loader](https://kokonutui.com/docs/inputs/loader.md): Animated loading indicator with rotating gradient rings, size variants and customizable title text. Built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/loader`
 - [Magnet Button](https://kokonutui.com/docs/buttons/attract-button.md): Magnetic button that pulls floating particles to its center on hover using Motion spring animations, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/attract-button`
 - [Matrix Text](https://kokonutui.com/docs/texts/matrix-text.md): Matrix-style text effect where letters scramble through binary characters before revealing, built with React, Tailwind CSS and Motion animations. Install: `npx shadcn@latest add @kokonutui/matrix-text`
