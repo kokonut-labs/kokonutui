@@ -316,6 +316,148 @@ function useElapsed(active: boolean, done: boolean) {
   return seconds;
 }
 
+// Same stylesheet as AI Text Loading, so the two share one copy on a page.
+const WAVE_CSS = `
+@keyframes kokonut-ai-wave { 50% { opacity: 0.3; } }
+.kokonut-ai-wave { animation: kokonut-ai-wave 1.6s ease-in-out infinite both; }
+@media (prefers-reduced-motion: reduce) { .kokonut-ai-wave { animation: none; } }
+`;
+
+/** A soft brightness wave through the running step's letters. */
+function WaveText({ text }: { text: string }) {
+  return (
+    <>
+      <style href="kokonut-ai-wave" precedence="default">
+        {WAVE_CSS}
+      </style>
+      {Array.from(text).map((char, i) => (
+        <span
+          className="kokonut-ai-wave whitespace-pre"
+          // biome-ignore lint/suspicious/noArrayIndexKey: letters of one fixed label, never reordered
+          key={i}
+          style={{ animationDelay: `${i * 0.05}s` }}
+        >
+          {char}
+        </span>
+      ))}
+    </>
+  );
+}
+
+const formatStepTime = (ms: number) =>
+  ms < 10_000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms / 1000)}s`;
+
+/**
+ * Times each step from when it starts running to when it ends, so callers
+ * only pass statuses. A step back to pending clears its time.
+ */
+function useStepTimes(steps: AgentStep[]) {
+  const [times, setTimes] = useState<Record<string, number>>({});
+  const startsRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    const now = Date.now();
+    const starts = startsRef.current;
+    const finished: Record<string, number> = {};
+    let changed = false;
+    for (const step of steps) {
+      if (step.status === "pending") {
+        delete starts[step.id];
+        changed ||= step.id in times;
+        continue;
+      }
+      // Running again after it had ended: a new run, so time it afresh.
+      if (step.status === "running" && step.id in times) {
+        starts[step.id] = now;
+        changed = true;
+      }
+      starts[step.id] ??= now;
+      if (step.status === "done" || step.status === "error") {
+        finished[step.id] = times[step.id] ?? now - starts[step.id];
+        changed ||= !(step.id in times);
+      }
+    }
+    if (changed) {
+      setTimes(finished);
+    }
+  }, [steps, times]);
+
+  return times;
+}
+
+const LABEL_COLORS: Record<AgentStepStatus, string> = {
+  pending: "text-gray-400 dark:text-gray-500",
+  running: "text-gray-900 dark:text-gray-100",
+  done: "text-gray-500 dark:text-gray-400",
+  error: "text-red-600 dark:text-red-400",
+};
+
+function StepRow({
+  step,
+  time,
+  isLast,
+}: {
+  step: AgentStep;
+  time: number | undefined;
+  isLast: boolean;
+}) {
+  return (
+    <li className="relative flex gap-3 pt-3.5">
+      {/* The rail between icons fills in as each step completes. */}
+      {!isLast && (
+        <span
+          aria-hidden="true"
+          className="absolute top-[34px] bottom-[-10px] left-[7.5px] w-px overflow-hidden bg-gray-200 dark:bg-gray-800"
+        >
+          <span
+            className={cn(
+              "block h-full w-full origin-top bg-gray-400 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] dark:bg-gray-500",
+              step.status === "done" ? "scale-y-100" : "scale-y-0"
+            )}
+          />
+        </span>
+      )}
+      <StepIcon status={step.status} />
+      <div className="-mt-0.5 min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <p
+            className={cn(
+              "min-w-0 truncate text-sm transition-colors duration-200",
+              LABEL_COLORS[step.status]
+            )}
+          >
+            {step.status === "running" ? (
+              <>
+                <span className="sr-only">{step.label}</span>
+                <span aria-hidden="true">
+                  <WaveText text={step.label} />
+                </span>
+              </>
+            ) : (
+              step.label
+            )}
+          </p>
+          {time !== undefined && (
+            <motion.span
+              animate={{ opacity: 1 }}
+              className="ml-auto shrink-0 text-gray-400 text-xs tabular-nums dark:text-gray-500"
+              initial={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
+            >
+              {formatStepTime(time)}
+            </motion.span>
+          )}
+        </div>
+        {step.status === "running" && step.detail?.length ? (
+          <div className="mt-1">
+            <StepLog lines={step.detail} />
+          </div>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
 export default function AILoadingState({
   steps: stepsProp,
   collapseWhenDone = true,
@@ -332,6 +474,7 @@ export default function AILoadingState({
     steps.length > 0 && steps.every((step) => step.status === "done");
   const isActive = Boolean(running);
   const seconds = useElapsed(isActive, isDone);
+  const times = useStepTimes(steps);
 
   // Open while working; folds away once everything is done, until the user
   // opens it again.
@@ -395,32 +538,13 @@ export default function AILoadingState({
                 initial={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.25, ease: EASE_OUT }}
               >
-                {steps.map((step) => (
-                  <li className="relative flex gap-3 pt-2.5" key={step.id}>
-                    <StepIcon status={step.status} />
-                    <div className="-mt-0.5 min-w-0 flex-1">
-                      <p
-                        className={cn(
-                          "text-sm transition-colors duration-200",
-                          step.status === "pending" &&
-                            "text-gray-400 dark:text-gray-500",
-                          step.status === "running" &&
-                            "text-gray-900 dark:text-gray-100",
-                          step.status === "done" &&
-                            "text-gray-500 dark:text-gray-400",
-                          step.status === "error" &&
-                            "text-red-600 dark:text-red-400"
-                        )}
-                      >
-                        {step.label}
-                      </p>
-                      {step.status === "running" && step.detail?.length ? (
-                        <div className="mt-1">
-                          <StepLog lines={step.detail} />
-                        </div>
-                      ) : null}
-                    </div>
-                  </li>
+                {steps.map((step, i) => (
+                  <StepRow
+                    isLast={i === steps.length - 1}
+                    key={step.id}
+                    step={step}
+                    time={times[step.id]}
+                  />
                 ))}
               </motion.ol>
             )}
