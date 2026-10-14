@@ -46,6 +46,18 @@ const REST = Math.SQRT1_2;
 const EPSILON = 0.0008;
 const WHITESPACE = /\s+/;
 
+const segmenter =
+  typeof Intl !== "undefined" && "Segmenter" in Intl
+    ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+    : null;
+
+/** Splits into user-perceived characters, so emoji and accents stay whole. */
+function splitGraphemes(value: string): string[] {
+  return segmenter
+    ? Array.from(segmenter.segment(value), (s) => s.segment)
+    : Array.from(value);
+}
+
 interface Key {
   x: number;
   y: number;
@@ -302,6 +314,7 @@ function useExtrusion(
     let frame = 0;
     let last = 0;
     let visible = true;
+    let onScreen = true;
 
     const tick = (now: number) => {
       frame = 0;
@@ -371,7 +384,7 @@ function useExtrusion(
     };
 
     const onVisibility = () => {
-      visible = !document.hidden;
+      visible = onScreen && !document.hidden;
       wake();
     };
 
@@ -382,7 +395,8 @@ function useExtrusion(
     document.fonts?.ready.then(measure).catch(() => undefined);
 
     const intersection = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting && !document.hidden;
+      onScreen = entry.isIntersecting;
+      visible = onScreen && !document.hidden;
       wake();
     });
     intersection.observe(root);
@@ -446,7 +460,7 @@ export default function SwooshText({
           <span key={w}>
             {w > 0 ? " " : null}
             <span className="inline-block whitespace-nowrap">
-              {Array.from(word).map((char, c) => (
+              {splitGraphemes(word).map((char, c) => (
                 <Letter
                   accent={accent}
                   char={char}
