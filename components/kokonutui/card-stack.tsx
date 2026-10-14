@@ -525,8 +525,19 @@ export default function CardStack({
     }
     const dx = event.clientX - current.startX;
     const dy = event.clientY - current.startY;
-    if (!current.moved && Math.hypot(dx, dy) < TAP_SLOP) {
-      return;
+    if (!current.moved) {
+      if (Math.hypot(dx, dy) < TAP_SLOP) {
+        return;
+      }
+      // Axis lock for touch: a mostly vertical swipe is a page scroll, so
+      // let go of the card and leave it to the browser (touch-pan-y).
+      if (event.pointerType !== "mouse" && Math.abs(dy) > Math.abs(dx)) {
+        drag.current = null;
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+        return;
+      }
     }
     const body = bodies.current[current.index];
     if (!body) {
@@ -562,7 +573,10 @@ export default function CardStack({
     kick();
   };
 
-  const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
+  const handlePointerUp = (
+    event: PointerEvent<HTMLButtonElement>,
+    cancelled = false
+  ) => {
     const current = drag.current;
     if (!current || current.pointerId !== event.pointerId) {
       return;
@@ -571,6 +585,13 @@ export default function CardStack({
     progress.current = 0;
     const body = bodies.current[current.index];
     if (!(body && current.moved)) {
+      kick();
+      return;
+    }
+    if (cancelled) {
+      // The browser took the gesture (or capture was lost): no throw, no
+      // click, just spring home.
+      body.phase = "rest";
       kick();
       return;
     }
@@ -595,6 +616,8 @@ export default function CardStack({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    // A drag that ended without its click must not swallow Enter or Space.
+    suppressClick.current = false;
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       event.preventDefault();
       focusTop.current = true;
@@ -631,7 +654,7 @@ export default function CardStack({
               <button
                 aria-label={`${card.title}, ${card.subtitle}. Open details`}
                 className={cn(
-                  "group/deck-card absolute inset-0 origin-bottom touch-none select-none rounded-2xl text-left outline-none will-change-transform",
+                  "group/deck-card absolute inset-0 origin-bottom touch-pan-y select-none rounded-2xl text-left outline-none will-change-transform",
                   "shadow-[0_1px_2px_rgb(0_0_0/0.05),0_4px_12px_-4px_rgb(0_0_0/0.12)] transition-shadow duration-200 ease-out dark:shadow-[0_1px_2px_rgb(0_0_0/0.4),0_6px_16px_-6px_rgb(0_0_0/0.7)]",
                   "data-[state=drag]:shadow-[0_2px_4px_rgb(0_0_0/0.05),0_28px_48px_-16px_rgb(0_0_0/0.3)] data-[state=fly]:shadow-[0_2px_4px_rgb(0_0_0/0.05),0_28px_48px_-16px_rgb(0_0_0/0.3)]",
                   "focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-4 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950",
@@ -651,11 +674,11 @@ export default function CardStack({
                   }
                 }}
                 onKeyDown={handleKeyDown}
-                onLostPointerCapture={handlePointerUp}
-                onPointerCancel={handlePointerUp}
+                onLostPointerCapture={(event) => handlePointerUp(event, true)}
+                onPointerCancel={(event) => handlePointerUp(event, true)}
                 onPointerDown={(event) => handlePointerDown(event, index)}
                 onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
+                onPointerUp={(event) => handlePointerUp(event)}
                 ref={(node) => {
                   nodes.current[index] = node;
                 }}
