@@ -82,20 +82,9 @@ export const component: Registry = [
     ],
   },
   {
-    name: "shimmer-text",
-    type: "registry:component",
-    files: [
-      {
-        path: "components/kokonutui/shimmer-text.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "carousel-cards",
     type: "registry:component",
     dependencies: ["lucide-react"],
-    registryDependencies: ["card", "badge", "button"],
     files: [
       {
         path: "components/kokonutui/carousel-cards.tsx",
@@ -118,7 +107,6 @@ export const component: Registry = [
     name: "action-search-bar",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
-    registryDependencies: ["input"],
     files: [
       {
         path: "components/kokonutui/action-search-bar.tsx",
@@ -165,24 +153,12 @@ export const component: Registry = [
     ],
   },
   {
-    name: "mouse-effect-card",
+    name: "dot-field",
     type: "registry:component",
-    dependencies: ["motion"],
-    registryDependencies: ["card", "button"],
+    dependencies: [],
     files: [
       {
-        path: "components/kokonutui/mouse-effect-card.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "beams-background",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/beams-background.tsx",
+        path: "components/kokonutui/dot-field.tsx",
         type: "registry:component",
       },
     ],
@@ -190,7 +166,7 @@ export const component: Registry = [
   {
     name: "flow-field",
     type: "registry:component",
-    dependencies: ["motion"],
+    dependencies: [],
     files: [
       {
         path: "components/kokonutui/flow-field.tsx",
@@ -362,34 +338,6 @@ export const component: Registry = [
         path: "components/kokonutui/bento-grid.tsx",
         type: "registry:component",
       },
-      {
-        path: "components/icons/anthropic.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/anthropic-dark.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/gemini.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/open-ai.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/open-ai-dark.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/mistral.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/deepseek.tsx",
-        type: "registry:component",
-      },
     ],
   },
   {
@@ -475,7 +423,7 @@ export const component: Registry = [
   {
     name: "card-stack",
     type: "registry:component",
-    dependencies: ["motion"],
+    dependencies: ["lucide-react", "motion"],
     files: [
       {
         path: "components/kokonutui/card-stack.tsx",
@@ -528,7 +476,6 @@ export const component: Registry = [
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
-    registryDependencies: ["card", "button", "input"],
     files: [
       {
         path: "components/kokonutui/avatar-picker.tsx",
@@ -580,20 +527,8 @@ export const component: Registry = [
     ],
   },
   {
-    name: "sliced-text",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/sliced-text.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "glitch-text",
     type: "registry:component",
-    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/glitch-text.tsx",
@@ -602,20 +537,9 @@ export const component: Registry = [
     ],
   },
   {
-    name: "matrix-text",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/matrix-text.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "dynamic-text",
     type: "registry:component",
-    dependencies: ["motion"],
+    dependencies: [],
     files: [
       {
         path: "components/kokonutui/dynamic-text.tsx",
@@ -636,28 +560,6 @@ export const component: Registry = [
     ],
   },
   {
-    name: "tweet-card",
-    type: "registry:component",
-    dependencies: ["lucide-react"],
-    files: [
-      {
-        path: "components/kokonutui/tweet-card.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "scroll-text",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/scroll-text.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "liquid-glass-card",
     type: "registry:component",
     dependencies: ["class-variance-authority", "lucide-react"],
@@ -672,8 +574,7 @@ export const component: Registry = [
   {
     name: "profile-dropdown",
     type: "registry:component",
-    dependencies: ["lucide-react"],
-    registryDependencies: ["dropdown-menu"],
+    dependencies: ["lucide-react", "motion"],
     files: [
       {
         path: "components/kokonutui/profile-dropdown.tsx",
@@ -704,20 +605,10 @@ export const component: Registry = [
   {
     name: "morphic-navbar",
     type: "registry:component",
+    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/morphic-navbar.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "spotlight-cards",
-    type: "registry:component",
-    dependencies: ["motion", "lucide-react"],
-    files: [
-      {
-        path: "components/kokonutui/spotlight-cards.tsx",
         type: "registry:component",
       },
     ],

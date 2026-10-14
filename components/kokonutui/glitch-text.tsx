@@ -2,311 +2,376 @@
 
 /**
  * @author: @dorianbaffier
- * @description: Glitch Text
+ * @description: Glitch Text (Signal Text). Flat text that bursts into hard-cut
+ * horizontal bands with a thin red/cyan channel split, on idle, hover, or as
+ * the transition to new text.
  * @version: 2.0.0
- * @date: 2025-06-26
+ * @date: 2026-10-14
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { motion, steps, useInView, useReducedMotion } from "motion/react";
-import type { CSSProperties } from "react";
-import { useRef } from "react";
+import type { CSSProperties, PointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
-export type GlitchTextColor =
-  | "rainbow"
-  | "blue"
-  | "purple"
-  | "cyan"
-  | "pink"
-  | "orange"
-  | "gradient-orange";
+/**
+ * - `idle`: a burst every 4-9s while on screen, plus on text changes.
+ * - `hover`: a burst on pointer enter (or tap), plus on text changes.
+ * - `change`: only text changes glitch; the burst is the transition.
+ */
+export type GlitchTextTrigger = "idle" | "hover" | "change";
 
-export type GlitchTextIntensity = "light" | "medium" | "heavy" | "extreme";
-
-export type GlitchTextSize = "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | number;
+export type GlitchTextIntensity = "subtle" | "medium" | "strong";
 
 export interface GlitchTextProps {
-  /** Text to render. Defaults to "Glitch Text". */
+  /** Text to render. Changing it glitches over to the new text. */
   text?: string;
+  /** What starts a burst. Defaults to `idle`. */
+  trigger?: GlitchTextTrigger;
+  /** Band count, displacement and channel split. Defaults to `medium`. */
+  intensity?: GlitchTextIntensity;
+  /** Color of the leading channel during a burst. The other one is cyan. */
+  accent?: string;
   className?: string;
-  /** How far and how often the glitch bursts fire. */
-  glitchIntensity?: GlitchTextIntensity;
-  color?: GlitchTextColor;
-  /** Optional background color for the container. */
-  backgroundColor?: string;
-  /** Disable the glitch and render clean, static text. */
-  isStatic?: boolean;
-  size?: GlitchTextSize;
-  fontWeight?: number;
-  /** Letter spacing in px. Defaults to 0.07em, so it scales with `size`. */
-  letterSpacing?: number;
   /** Root element. A span by default, so it also fits inside a heading. */
   as?: "span" | "div" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 }
 
-/** One OKLCH color: lightness, chroma, hue (hue may be a CSS expression). */
-type Oklch = readonly [l: number, c: number, h: number | string];
-
-/** A layer is painted either with a flat color or a text-clipped gradient. */
-type Paint =
-  | { kind: "solid"; color: Oklch }
-  | { kind: "gradient"; stops: readonly [Oklch, Oklch, Oklch] };
-
-interface ColorScheme {
-  primary: Paint;
-  before: Paint;
-  after: Paint;
+interface Settings {
+  /** Horizontal bands the text is cut into. */
+  bands: number;
+  /** Max sideways jump of a band, in em (so it scales with the font). */
+  shift: number;
+  /** Max red/cyan channel offset, in px. */
+  split: number;
+  /** Hard-cut frames per burst. */
+  frames: number;
+  /** Length of one frame, in ms. */
+  frame: number;
 }
 
-const oklch = ([l, c, h]: Oklch, alpha?: number) =>
-  alpha === undefined
-    ? `oklch(${l} ${c} ${h})`
-    : `oklch(${l} ${c} ${h} / ${alpha})`;
-
-const solid = (l: number, c: number, h: number | string): Paint => ({
-  kind: "solid",
-  color: [l, c, h],
-});
-
-const gradient = (a: Oklch, b: Oklch, c: Oklch): Paint => ({
-  kind: "gradient",
-  stops: [a, b, c],
-});
-
-/** Animated on the text wrapper when `color="rainbow"` (and motion is allowed). */
-const RAINBOW_HUE = "var(--rainbow-hue, 270)";
-/** One full trip around the hue wheel, starting from the static 270. */
-const RAINBOW_CYCLE = { "--rainbow-hue": [270, 630] };
-const RAINBOW_TRANSITION = {
-  duration: 6,
-  ease: "linear",
-  repeat: Number.POSITIVE_INFINITY,
-} as const;
-
-const COLOR_SCHEMES: Record<GlitchTextColor, ColorScheme> = {
-  rainbow: {
-    primary: solid(0.85, 0.2, RAINBOW_HUE),
-    before: solid(0.9, 0.15, `calc(${RAINBOW_HUE} + 60)`),
-    after: solid(0.8, 0.25, `calc(${RAINBOW_HUE} - 60)`),
-  },
-  blue: {
-    primary: solid(0.65, 0.2, 250),
-    before: solid(0.75, 0.15, 255),
-    after: solid(0.55, 0.25, 245),
-  },
-  purple: {
-    primary: solid(0.6, 0.22, 290),
-    before: solid(0.7, 0.18, 295),
-    after: solid(0.5, 0.25, 285),
-  },
-  cyan: {
-    primary: solid(0.8, 0.15, 200),
-    before: solid(0.85, 0.12, 205),
-    after: solid(0.7, 0.18, 195),
-  },
-  pink: {
-    primary: solid(0.7, 0.25, 330),
-    before: solid(0.8, 0.2, 335),
-    after: solid(0.6, 0.28, 325),
-  },
-  orange: {
-    primary: solid(0.7, 0.25, 45),
-    before: solid(0.85, 0.2, 40),
-    after: solid(0.6, 0.28, 50),
-  },
-  "gradient-orange": {
-    primary: gradient([0.7, 0.25, 45], [0.75, 0.28, 30], [0.65, 0.3, 60]),
-    before: gradient([0.85, 0.2, 40], [0.8, 0.22, 25], [0.75, 0.25, 55]),
-    after: gradient([0.6, 0.28, 50], [0.55, 0.3, 35], [0.5, 0.32, 65]),
-  },
+const INTENSITY: Record<GlitchTextIntensity, Settings> = {
+  subtle: { bands: 3, shift: 0.05, split: 1, frames: 5, frame: 55 },
+  medium: { bands: 4, shift: 0.12, split: 2, frames: 6, frame: 55 },
+  strong: { bands: 5, shift: 0.18, split: 3, frames: 7, frame: 50 },
 };
 
-/** Representative color of a paint, used for the glow. */
-const baseColor = (paint: Paint): Oklch =>
-  paint.kind === "solid" ? paint.color : paint.stops[1];
+const MAX_BANDS = 5;
+const BAND_IDS = Array.from({ length: MAX_BANDS }, (_, i) => `band-${i}`);
+const DEFAULT_ACCENT = "oklch(0.63 0.24 25)";
+const CYAN = "oklch(0.78 0.14 205)";
+// Each keyframe holds until the next one: a glitch cuts, it doesn't glide.
+const HOLD = "steps(1, end)";
+const FIRST_IDLE = 1200;
+const IDLE_MIN = 4000;
+const IDLE_SPREAD = 5000;
+// Chance that a band stays put on a given frame, so the cut reads as broken
+// signal rather than a uniform shake.
+const STILL_CHANCE = 0.3;
 
-/**
- * Gradients go through background-clip:text with a transparent fill — CSS
- * `color` can't hold a gradient. The glow uses drop-shadow, since text-shadow
- * would paint over a clipped background.
- */
-const paintStyle = (paint: Paint, glowBlur: number): CSSProperties => {
-  const glow = `drop-shadow(0 0 ${glowBlur}px ${oklch(baseColor(paint), 0.35)})`;
-  if (paint.kind === "solid") {
-    return { color: oklch(paint.color), filter: glow };
+const round = (n: number) => Math.round(n * 1000) / 1000;
+
+const prefersReducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Keyframes that hold each value for one frame, then end on the last one. */
+const held = (frames: Keyframe[]): Keyframe[] => [
+  ...frames.map((k, i) => ({ ...k, offset: i / frames.length, easing: HOLD })),
+  { ...frames.at(-1), offset: 1 },
+];
+
+/** Random band boundaries from 0 to 100%, no band much thinner than another. */
+const randomCuts = (count: number) => {
+  const weights = Array.from({ length: count }, () => 0.55 + Math.random());
+  const total = weights.reduce((a, b) => a + b, 0);
+  const cuts = [0];
+  for (const w of weights) {
+    cuts.push(round((cuts.at(-1) ?? 0) + (w / total) * 100));
   }
-  const [a, b, c] = paint.stops;
-  return {
-    backgroundImage: `linear-gradient(135deg, ${oklch(a)} 0%, ${oklch(b)} 50%, ${oklch(c)} 100%)`,
-    filter: glow,
-  };
+  return cuts;
 };
 
-interface IntensitySettings {
-  /** Max offset in px for the chromatic layers. */
-  offset: number;
-  /** Max skew in deg. */
-  skew: number;
-  /** Peak opacity of the chromatic layers during a burst. */
-  opacity: number;
-  /** Length of one glitch burst, in seconds. */
-  burst: number;
-  /** Calm time between bursts, in seconds. */
-  rest: number;
+const jump = (max: number) => {
+  if (Math.random() < STILL_CHANCE) {
+    return 0;
+  }
+  const sign = Math.random() < 0.5 ? -1 : 1;
+  return round(sign * (0.25 + 0.75 * Math.random()) * max);
+};
+
+/** Sideways positions of one band: off on frame one, home on the last. */
+const bandPath = (s: Settings, forceMove: boolean) =>
+  Array.from({ length: s.frames }, (_, f) => {
+    if (f === s.frames - 1) {
+      return 0;
+    }
+    const x = jump(s.shift);
+    return f === 0 && forceMove && x === 0 ? round(s.shift * 0.6) : x;
+  });
+
+interface Shown {
+  /** Text the bands show first during a change burst. */
+  from: string | null;
+  to: string;
+  /** Bumped on every text change. */
+  id: number;
 }
 
-const INTENSITY: Record<GlitchTextIntensity, IntensitySettings> = {
-  light: { offset: 2, skew: 0.5, opacity: 0.7, burst: 0.3, rest: 3.2 },
-  medium: { offset: 3, skew: 1, opacity: 0.8, burst: 0.36, rest: 2.2 },
-  heavy: { offset: 5, skew: 2, opacity: 0.85, burst: 0.42, rest: 1.2 },
-  extreme: { offset: 8, skew: 3, opacity: 0.9, burst: 0.48, rest: 0.5 },
-};
+const LAYER = "col-start-1 row-start-1 grid";
+const TEXT = "col-start-1 row-start-1";
+const GHOST = "pointer-events-none select-none opacity-0";
 
-const SIZE_CLASSES: Record<Exclude<GlitchTextSize, number>, string> = {
-  sm: "text-2xl",
-  md: "text-4xl",
-  lg: "text-5xl",
-  xl: "text-6xl",
-  "2xl": "text-7xl",
-  "3xl": "text-8xl",
-};
-
-// Each segment jumps straight to its next keyframe and holds it: a glitch
-// cuts, it doesn't glide. ("start", so the last keyframe, the rest pose, is
-// what stays on screen between bursts.)
-const HARD_CUT = steps(1, "start");
-const BURST_TIMES = [0, 0.2, 0.4, 0.6, 0.8, 1];
-const FIRST_BURST_DELAY = 0.6;
-const REST = { x: 0, y: 0, skewX: 0, opacity: 0 };
-const INSTANT = { duration: 0 };
-
-/** Jitter pattern per layer (sign of x, y, skew at each keyframe). */
-const PATTERNS = {
-  before: [
-    [1, -1, 1],
-    [-1, 1, -1],
-    [-1, -1, 1],
-    [1, 1, -1],
-  ],
-  after: [
-    [-1, 1, -1],
-    [1, -1, 1],
-    [1, 1, -1],
-    [-1, -1, 1],
-  ],
-} as const;
-
-type Pattern = (typeof PATTERNS)[keyof typeof PATTERNS];
-
-const burstKeyframes = (pattern: Pattern, s: IntensitySettings) => ({
-  x: [0, ...pattern.map(([x]) => x * s.offset), 0],
-  y: [0, ...pattern.map(([, y]) => y * s.offset), 0],
-  skewX: [0, ...pattern.map(([, , k]) => k * s.skew), 0],
-  opacity: [0, s.opacity, s.opacity * 0.6, s.opacity, s.opacity * 0.6, 0],
-});
+function LayerText({ from, to }: { from: string | null; to: string }) {
+  return (
+    <>
+      {from !== null && (
+        <span className={cn(TEXT, "opacity-0")} data-text="from">
+          {from}
+        </span>
+      )}
+      <span className={TEXT} data-text="to">
+        {to}
+      </span>
+    </>
+  );
+}
 
 const GlitchText = ({
-  text = "Glitch Text",
+  text = "Signal Text",
+  trigger = "idle",
+  intensity = "medium",
+  accent = DEFAULT_ACCENT,
   className,
-  glitchIntensity = "medium",
-  color = "gradient-orange",
-  backgroundColor,
-  isStatic = false,
-  size = "md",
-  fontWeight = 700,
-  letterSpacing,
   as: Root = "span",
 }: GlitchTextProps) => {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref);
-  const prefersReducedMotion = useReducedMotion();
-  // Paused while offscreen so the loops don't spend frames nobody sees.
-  const animated = !(isStatic || prefersReducedMotion) && inView;
+  const layersRef = useRef<HTMLSpanElement>(null);
+  const animsRef = useRef<Animation[]>([]);
+  const runningRef = useRef(false);
+  const intensityRef = useRef(intensity);
+  intensityRef.current = intensity;
 
-  const scheme = COLOR_SCHEMES[color];
-  const settings = INTENSITY[glitchIntensity];
+  const [shown, setShown] = useState<Shown>({ from: null, to: text, id: 0 });
+  if (shown.to !== text) {
+    setShown({ from: shown.to, to: text, id: shown.id + 1 });
+  }
 
-  const transition = {
-    duration: settings.burst,
-    times: BURST_TIMES,
-    ease: HARD_CUT,
-    delay: FIRST_BURST_DELAY,
-    repeat: Number.POSITIVE_INFINITY,
-    repeatDelay: settings.rest,
+  const stop = useCallback(() => {
+    for (const a of animsRef.current) {
+      a.cancel();
+    }
+    animsRef.current = [];
+    runningRef.current = false;
+  }, []);
+
+  /** Runs one burst. With `swap`, the bands cut from old text to new midway. */
+  const burst = useCallback(
+    (swap: boolean, onDone?: () => void) => {
+      const root = layersRef.current;
+      if (!root) {
+        return;
+      }
+      stop();
+      const s = INTENSITY[intensityRef.current];
+      const opts: KeyframeAnimationOptions = {
+        duration: s.frames * s.frame,
+        fill: "none",
+      };
+      const anims: Animation[] = [];
+      const run = (el: Element, frames: Keyframe[]) => {
+        anims.push(el.animate(held(frames), opts));
+      };
+
+      const base = root.querySelector('[data-layer="base"]');
+      if (base) {
+        run(base, [{ opacity: 0 }]);
+      }
+
+      // The bands tile the text top to bottom, so at rest they rebuild it.
+      // The outer edges reach past the box to keep ascenders and descenders.
+      const cuts = randomCuts(s.bands);
+      const bands = root.querySelectorAll<HTMLElement>('[data-layer="band"]');
+      const mover = Math.floor(Math.random() * s.bands);
+      bands.forEach((band, i) => {
+        if (i >= s.bands) {
+          return;
+        }
+        const top = i === 0 ? -50 : cuts[i];
+        const bottom = i === s.bands - 1 ? -50 : round(100 - cuts[i + 1]);
+        band.style.clipPath = `inset(${top}% -25% ${bottom}% -25%)`;
+        run(
+          band,
+          bandPath(s, i === mover).map((x) => ({
+            opacity: 1,
+            transform: `translate3d(${x}em, 0, 0)`,
+          }))
+        );
+      });
+
+      // Red and cyan copies sit behind the bands and peek out on either side.
+      const channels = root.querySelectorAll('[data-layer="channel"]');
+      const offsets = Array.from({ length: s.frames }, () =>
+        Math.max(1, Math.ceil(Math.random() * s.split))
+      );
+      channels.forEach((channel, c) => {
+        const dir = c === 0 ? -1 : 1;
+        run(
+          channel,
+          offsets.map((d, f) => ({
+            opacity: f === s.frames - 1 ? 0 : 1,
+            transform: `translate3d(${dir * d}px, 0, 0)`,
+          }))
+        );
+      });
+
+      if (swap) {
+        const half = Math.ceil(s.frames / 2);
+        const flip = (selector: string, before: number) => {
+          for (const el of root.querySelectorAll(selector)) {
+            run(
+              el,
+              Array.from({ length: s.frames }, (_, f) => ({
+                opacity: f < half ? before : 1 - before,
+              }))
+            );
+          }
+        };
+        flip('[data-layer]:not([data-layer="base"]) [data-text="from"]', 1);
+        flip('[data-layer]:not([data-layer="base"]) [data-text="to"]', 0);
+      }
+
+      animsRef.current = anims;
+      runningRef.current = true;
+      const last = anims.at(-1);
+      if (last) {
+        last.onfinish = () => {
+          animsRef.current = [];
+          runningRef.current = false;
+          onDone?.();
+        };
+      }
+    },
+    [stop]
+  );
+
+  // Text changed: the burst is the transition. A layout effect, so the new
+  // text never paints clean before the bands take over.
+  useLayoutEffect(() => {
+    if (shown.from === null) {
+      return;
+    }
+    const id = shown.id;
+    const settle = () =>
+      setShown((s) => (s.id === id ? { ...s, from: null } : s));
+    if (prefersReducedMotion()) {
+      settle();
+      return;
+    }
+    burst(true, settle);
+  }, [shown.from, shown.id, burst]);
+
+  // Idle: a rare burst every 4-9s, only while on screen and the tab is visible.
+  useEffect(() => {
+    const root = layersRef.current;
+    if (trigger !== "idle" || !root) {
+      return;
+    }
+    let visible = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = (delay: number) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (
+          !(document.hidden || runningRef.current || prefersReducedMotion())
+        ) {
+          burst(false);
+        }
+        schedule(IDLE_MIN + Math.random() * IDLE_SPREAD);
+      }, delay);
+    };
+    const update = () => {
+      if (visible && !document.hidden) {
+        if (timer === undefined) {
+          schedule(FIRST_IDLE);
+        }
+      } else {
+        clearTimeout(timer);
+        timer = undefined;
+      }
+    };
+    const io = new IntersectionObserver(([entry]) => {
+      visible = entry?.isIntersecting ?? false;
+      update();
+    });
+    io.observe(root);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      io.disconnect();
+      document.removeEventListener("visibilitychange", update);
+      clearTimeout(timer);
+    };
+  }, [trigger, burst]);
+
+  useEffect(() => stop, [stop]);
+
+  const onPointer = (e: PointerEvent) => {
+    // Mouse bursts on enter; touch and pen burst on press, since they can't hover.
+    const isMouse = e.pointerType === "mouse";
+    if (
+      trigger !== "hover" ||
+      (e.type === "pointerenter") !== isMouse ||
+      runningRef.current ||
+      prefersReducedMotion()
+    ) {
+      return;
+    }
+    burst(false);
   };
 
-  const layerClass = (paint: Paint) =>
-    cn("block", paint.kind === "gradient" && "bg-clip-text text-transparent");
+  const { from, to } = shown;
 
   return (
     <Root
       className={cn(
-        "relative inline-flex items-center justify-center",
+        "relative inline-block text-zinc-900 dark:text-zinc-100",
         className
       )}
-      style={backgroundColor ? { backgroundColor } : undefined}
+      onPointerDown={onPointer}
+      onPointerEnter={onPointer}
+      style={{ "--glitch-accent": accent } as CSSProperties}
     >
-      <motion.span
-        animate={color === "rainbow" && animated ? RAINBOW_CYCLE : undefined}
-        className={cn(
-          "relative inline-block",
-          typeof size === "string" && SIZE_CLASSES[size]
-        )}
-        ref={ref}
-        style={{
-          fontSize: typeof size === "number" ? `${size}px` : undefined,
-          fontWeight,
-          letterSpacing: letterSpacing ?? "0.07em",
-        }}
-        transition={RAINBOW_TRANSITION}
-      >
-        {/* Always rendered (hidden at rest) so server and client markup match. */}
-        {(["before", "after"] as const).map((layer) => (
-          <motion.span
-            animate={
-              animated ? burstKeyframes(PATTERNS[layer], settings) : REST
-            }
-            aria-hidden="true"
-            className={cn(
-              "pointer-events-none absolute inset-0 select-none",
-              animated && "will-change-transform",
-              layerClass(scheme[layer])
-            )}
-            initial={REST}
-            key={layer}
-            style={paintStyle(scheme[layer], 7)}
-            transition={animated ? transition : INSTANT}
-          >
-            {text}
-          </motion.span>
-        ))}
-
-        <motion.span
-          animate={
-            animated
-              ? {
-                  x: [
-                    0,
-                    settings.offset / 3,
-                    -settings.offset / 3,
-                    settings.offset / 4,
-                    0,
-                    0,
-                  ],
-                }
-              : { x: 0 }
-          }
-          className={cn("relative", layerClass(scheme.primary))}
-          initial={{ x: 0 }}
-          style={paintStyle(scheme.primary, 5)}
-          transition={animated ? transition : INSTANT}
+      <span className="sr-only">{text}</span>
+      <span aria-hidden="true" className="relative inline-grid" ref={layersRef}>
+        <span
+          className={cn(LAYER, GHOST)}
+          data-layer="channel"
+          style={{ color: "var(--glitch-accent)" }}
         >
-          {text}
-        </motion.span>
-      </motion.span>
+          <LayerText from={from} to={to} />
+        </span>
+        <span
+          className={cn(LAYER, GHOST)}
+          data-layer="channel"
+          style={{ color: CYAN }}
+        >
+          <LayerText from={from} to={to} />
+        </span>
+        <span className={LAYER} data-layer="base">
+          <LayerText from={from} to={to} />
+        </span>
+        {BAND_IDS.map((id) => (
+          <span className={cn(LAYER, GHOST)} data-layer="band" key={id}>
+            <LayerText from={from} to={to} />
+          </span>
+        ))}
+      </span>
     </Root>
   );
 };

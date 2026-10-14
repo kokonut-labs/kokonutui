@@ -1,13 +1,9 @@
 {
   "title": "Texts",
   "pages": [
-    "scroll-text",
     "type-writer",
-    "matrix-text",
     "dynamic-text",
     "glitch-text",
-    "shimmer-text",
-    "sliced-text",
     "swoosh-text",
     "plucked-text"
   ]

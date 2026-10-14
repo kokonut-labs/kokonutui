@@ -1,52 +1,14 @@
 ---
-title: Bento Grid
-description: Responsive bento grid of feature cards with a spotlight list, a typing code snippet, logos, a timeline and a voice widget, built with React, Tailwind CSS and Motion animations.
-keywords: ["feature grid", "dashboard", "showcase", "landing page", "stats", "mosaic"]
-icon: Grip
+title: Widget Grid
+description: Dashboard widgets you lift, drag and resize on a 6-column grid, with spring physics and full keyboard support.
+keywords: ["widget grid", "dashboard", "drag and drop", "reorder", "resize", "sortable", "bento grid", "layout"]
+icon: LayoutDashboard
 full: false
 ---
 
 
-import BentoGrid from "@/components/kokonutui/bento-grid";
+import WidgetGrid from "@/components/kokonutui/bento-grid";
 
-<Preview link="bento-grid">
-    <BentoGrid />
-</Preview>
-
-## Usage
-
-Pass your own `items` to replace the demo content. The grid is 6 columns from `md` up; size each card with `className` (for example `md:col-span-4`).
-
-```tsx
-import BentoGrid, { type BentoItem } from "@/components/kokonutui/bento-grid";
-
-const items: BentoItem[] = [
-  {
-    id: "launch",
-    title: "Ship faster",
-    description: "Everything you need to go from idea to production.",
-    href: "/features",
-    feature: { type: "spotlight", items: ["Edge functions", "Preview URLs"] },
-    className: "md:col-span-4",
-  },
-  {
-    id: "history",
-    title: "Our story",
-    description: "A few milestones along the way.",
-    feature: {
-      type: "timeline",
-      events: [
-        { year: "2023", event: "Founded" },
-        { year: "2024", event: "Public launch" },
-      ],
-    },
-    className: "md:col-span-2",
-  },
-];
-
-export default function Page() {
-  return <BentoGrid items={items} />;
-}
-```
-
-Available features: `spotlight`, `typing`, `logos`, `timeline` and `voice`. The `voice` feature also takes an optional `label` (the mic button's accessible name) and `onToggle(recording)`, called when the user turns it on or off. Cards with an `href` become links; hover tilt is disabled for users who prefer reduced motion. `className` goes on the outer section and `gridClassName` on the grid, to change its width, padding or gap.
+<PreviewClient link="bento-grid">
+    <WidgetGrid />
+</PreviewClient>

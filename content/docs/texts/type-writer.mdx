@@ -1,7 +1,7 @@
 ---
 title: Typing Text
-description: Typewriter text animation that types and deletes multiple sequences with a blinking cursor and auto loop, built with React and Motion.
-keywords: ["typewriter", "typing effect", "blinking cursor", "hero heading", "terminal"]
+description: Typewriter text that makes the odd typo and corrects it, erases by selecting, and blinks its caret only when idle, built with React and Motion.
+keywords: ["typewriter", "typing effect", "caret", "typos", "text selection", "hero heading"]
 icon: CaseUpper
 full: false
 ---
@@ -10,5 +10,5 @@ full: false
 import TypeWriter from "@/components/kokonutui/type-writer";
 
 <PreviewClient link="type-writer" comment={["Motion"]}>
-    <TypeWriter />
+    <TypeWriter deleteMode="select" typos={0.06} />
 </PreviewClient>
