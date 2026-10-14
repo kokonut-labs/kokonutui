@@ -108,7 +108,7 @@ const SAMPLE_ACCOUNTS: Account[] = [
 ];
 
 const SAMPLE_ITEMS: ProfileMenuItem[] = [
-  { label: "Profile", icon: <User className="size-4" />, href: "#" },
+  { label: "Profile", icon: <User className="size-4" /> },
   { label: "Settings", icon: <Settings className="size-4" />, value: "⌘," },
   { label: "Billing", icon: <CreditCard className="size-4" /> },
 ];
