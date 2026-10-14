@@ -82,6 +82,8 @@ interface Rect {
 interface DragState {
   id: string;
   mode: "pointer" | "keyboard";
+  /** The pointer holding the cell; other fingers are ignored. */
+  pointerId: number;
   grabX: number;
   grabY: number;
   lastX: number;
@@ -1248,7 +1250,7 @@ export default function WidgetGrid({
   const onDragMove = useCallback(
     (e: globalThis.PointerEvent) => {
       const drag = dragRef.current;
-      if (!drag || drag.mode !== "pointer") {
+      if (!drag || drag.mode !== "pointer" || e.pointerId !== drag.pointerId) {
         return;
       }
       const now = performance.now();
@@ -1266,7 +1268,11 @@ export default function WidgetGrid({
     [engine, hitTest, placeDragged, toGrid]
   );
 
-  const onDragUp = useCallback(() => endDragRef.current(false), []);
+  const onDragUp = useCallback((e: globalThis.PointerEvent) => {
+    if (e.pointerId === dragRef.current?.pointerId) {
+      endDragRef.current(false);
+    }
+  }, []);
   const onDragKey = useCallback((e: globalThis.KeyboardEvent) => {
     if (e.key === "Escape") {
       e.preventDefault();
@@ -1317,7 +1323,7 @@ export default function WidgetGrid({
   endDragRef.current = endDrag;
 
   const liftPointer = useCallback(
-    (id: string, clientX: number, clientY: number) => {
+    (id: string, pointerId: number, clientX: number, clientY: number) => {
       const rect = rectsRef.current.get(id);
       if (!rect || dragRef.current) {
         return;
@@ -1327,6 +1333,7 @@ export default function WidgetGrid({
       dragRef.current = {
         id,
         mode: "pointer",
+        pointerId,
         grabX: p.x - (rect.x + b.ox),
         grabY: p.y - (rect.y + b.oy),
         lastX: clientX,
@@ -1411,7 +1418,7 @@ export default function WidgetGrid({
           const press = pressRef.current;
           cancelPressRef.current();
           if (press) {
-            liftPointer(press.id, press.x, press.y);
+            liftPointer(press.id, press.pointerId, press.x, press.y);
           }
         }, LONG_PRESS_MS),
       };
@@ -1605,6 +1612,7 @@ export default function WidgetGrid({
       dragRef.current = {
         id,
         mode: "keyboard",
+        pointerId: -1,
         grabX: 0,
         grabY: 0,
         lastX: 0,
@@ -1753,7 +1761,7 @@ export default function WidgetGrid({
                 if (e.button === 0) {
                   e.preventDefault();
                   cancelPress();
-                  liftPointer(id, e.clientX, e.clientY);
+                  liftPointer(id, e.pointerId, e.clientX, e.clientY);
                 }
               }}
               onHover={(on) =>
