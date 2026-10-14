@@ -201,6 +201,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "topo-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/topo-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "apple-activity-card",
     type: "registry:component",
     dependencies: ["motion"],

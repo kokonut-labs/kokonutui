@@ -1,0 +1,556 @@
+// biome-ignore-all lint/suspicious/noBitwiseOperators: the noise hash and the marching-squares case index are bit arithmetic.
+"use client";
+
+/**
+ * @author: @dorianbaffier
+ * @description: Topo Background
+ * @version: 1.0.0
+ * @date: 2026-10-14
+ * @license: MIT
+ * @website: https://kokonutui.com
+ * @github: https://github.com/kokonut-labs/kokonutui
+ */
+
+import { type ReactNode, useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
+
+export interface TopoBackgroundProps {
+  className?: string;
+  /** Content shown over the map. Pass `null` for a bare background. */
+  children?: ReactNode;
+  /** Height difference between two contour lines. Lower draws more lines. */
+  interval?: number;
+  /** How fast the terrain drifts. 0 holds it still. */
+  speed?: number;
+  /** Raise a hill under the cursor and send a ripple on click. */
+  interactive?: boolean;
+  /** Seed for the terrain, so a page always opens on the same map. */
+  seed?: number;
+}
+
+// Distance between field samples, in CSS px. Contours are traced through
+// this grid, so it trades smoothness for work per frame.
+const CELL = 12;
+// Width of a hill in the terrain, in px.
+const TERRAIN_SCALE = 360;
+// Every fifth line is an index contour, drawn heavier, as on a real map.
+const INDEX_EVERY = 5;
+// The hill that follows the cursor: height in field units, and spread (px).
+const HILL_HEIGHT = 0.5;
+const HILL_SPREAD = 120;
+// How quickly the hill catches up with the cursor (per second) and how
+// quickly it rises or sinks when the cursor arrives or leaves.
+const HILL_FOLLOW = 9;
+const HILL_RISE = 5;
+// A click sends a ring outwards through the terrain.
+const RIPPLE_MS = 1800;
+const RIPPLE_SPEED = 0.24; // px per ms
+const RIPPLE_WIDTH = 42;
+const RIPPLE_HEIGHT = 0.2;
+// Distance between the crests of the wave train, in px.
+const RIPPLE_WAVELENGTH = 96;
+// When nothing is moving but the drift, a frame every 33ms is plenty.
+const IDLE_FRAME_MS = 33;
+
+interface Ripple {
+  x: number;
+  y: number;
+  start: number;
+}
+
+/** Seeded 3D gradient noise (Ken Perlin's improved noise), about -1 to 1. */
+function createNoise(seed: number) {
+  const p = Array.from({ length: 256 }, (_, i) => i);
+  let state = seed >>> 0 || 1;
+  const random = () => {
+    state = (state * 1_664_525 + 1_013_904_223) >>> 0;
+    return state / 4_294_967_296;
+  };
+  for (let i = 255; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [p[i], p[j]] = [p[j], p[i]];
+  }
+  const perm = new Uint8Array(512);
+  for (let i = 0; i < 512; i++) {
+    perm[i] = p[i & 255];
+  }
+  const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const grad = (hash: number, x: number, y: number, z: number) => {
+    const h = hash & 15;
+    const u = h < 8 ? x : y;
+    let v = z;
+    if (h < 4) {
+      v = y;
+    } else if (h === 12 || h === 14) {
+      v = x;
+    }
+    return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+  };
+
+  return (x: number, y: number, z: number) => {
+    const X = Math.floor(x) & 255;
+    const Y = Math.floor(y) & 255;
+    const Z = Math.floor(z) & 255;
+    const fx = x - Math.floor(x);
+    const fy = y - Math.floor(y);
+    const fz = z - Math.floor(z);
+    const u = fade(fx);
+    const v = fade(fy);
+    const w = fade(fz);
+    const A = perm[X] + Y;
+    const AA = perm[A] + Z;
+    const AB = perm[A + 1] + Z;
+    const B = perm[X + 1] + Y;
+    const BA = perm[B] + Z;
+    const BB = perm[B + 1] + Z;
+    return lerp(
+      lerp(
+        lerp(grad(perm[AA], fx, fy, fz), grad(perm[BA], fx - 1, fy, fz), u),
+        lerp(
+          grad(perm[AB], fx, fy - 1, fz),
+          grad(perm[BB], fx - 1, fy - 1, fz),
+          u
+        ),
+        v
+      ),
+      lerp(
+        lerp(
+          grad(perm[AA + 1], fx, fy, fz - 1),
+          grad(perm[BA + 1], fx - 1, fy, fz - 1),
+          u
+        ),
+        lerp(
+          grad(perm[AB + 1], fx, fy - 1, fz - 1),
+          grad(perm[BB + 1], fx - 1, fy - 1, fz - 1),
+          u
+        ),
+        v
+      ),
+      w
+    );
+  };
+}
+
+/**
+ * The segment a contour draws through one grid cell, given which corners
+ * are above the level (bits: top-left 8, top-right 4, bottom-right 2,
+ * bottom-left 1) and where it crosses each edge.
+ */
+function cellSegments(
+  path: Path2D,
+  index: number,
+  box: { x0: number; y0: number; x1: number; y1: number },
+  cross: { top: number; right: number; bottom: number; left: number }
+) {
+  const { x0, y0, x1, y1 } = box;
+  const { top, right, bottom, left } = cross;
+  const line = (ax: number, ay: number, bx: number, by: number) => {
+    path.moveTo(ax, ay);
+    path.lineTo(bx, by);
+  };
+  switch (index) {
+    case 1:
+    case 14:
+      line(x0, left, bottom, y1);
+      break;
+    case 2:
+    case 13:
+      line(bottom, y1, x1, right);
+      break;
+    case 3:
+    case 12:
+      line(x0, left, x1, right);
+      break;
+    case 4:
+    case 11:
+      line(top, y0, x1, right);
+      break;
+    case 6:
+    case 9:
+      line(top, y0, bottom, y1);
+      break;
+    case 7:
+    case 8:
+      line(x0, left, top, y0);
+      break;
+    // The two saddles: opposite corners are high, so the level crosses
+    // the cell twice.
+    case 5:
+      line(x0, left, top, y0);
+      line(bottom, y1, x1, right);
+      break;
+    case 10:
+      line(top, y0, x1, right);
+      line(x0, left, bottom, y1);
+      break;
+    default:
+      break;
+  }
+}
+
+/** Every contour level that passes through one cell, usually none or one. */
+function traceCell(
+  field: Float32Array,
+  cols: number,
+  i: number,
+  j: number,
+  interval: number,
+  paths: { minor: Path2D; major: Path2D }
+) {
+  const a = field[j * cols + i];
+  const b = field[j * cols + i + 1];
+  const c = field[(j + 1) * cols + i + 1];
+  const d = field[(j + 1) * cols + i];
+  const x0 = i * CELL;
+  const y0 = j * CELL;
+  const first = Math.ceil(Math.min(a, b, c, d) / interval);
+  const last = Math.floor(Math.max(a, b, c, d) / interval);
+  if (first > last) {
+    return;
+  }
+  const box = { x0, y0, x1: x0 + CELL, y1: y0 + CELL };
+  for (let level = first; level <= last; level++) {
+    const t = level * interval;
+    const index =
+      (a > t ? 8 : 0) | (b > t ? 4 : 0) | (c > t ? 2 : 0) | (d > t ? 1 : 0);
+    if (index === 0 || index === 15) {
+      continue;
+    }
+    const path = level % INDEX_EVERY === 0 ? paths.major : paths.minor;
+    cellSegments(path, index, box, {
+      top: x0 + CELL * ((t - a) / (b - a)),
+      right: y0 + CELL * ((t - b) / (c - b)),
+      bottom: x0 + CELL * ((t - d) / (c - d)),
+      left: y0 + CELL * ((t - a) / (d - a)),
+    });
+  }
+}
+
+/**
+ * Marching squares: for each cell, find where each contour level crosses
+ * its edges and join those points. Index contours go into their own path
+ * so each group is stroked once.
+ */
+function traceContours(
+  field: Float32Array,
+  cols: number,
+  rows: number,
+  interval: number,
+  minor: Path2D,
+  major: Path2D
+) {
+  const paths = { minor, major };
+  for (let j = 0; j < rows - 1; j++) {
+    for (let i = 0; i < cols - 1; i++) {
+      traceCell(field, cols, i, j, interval, paths);
+    }
+  }
+}
+
+interface Hill {
+  x: number;
+  y: number;
+  targetX: number;
+  targetY: number;
+  amount: number;
+  on: boolean;
+}
+
+/** Ease the hill towards the cursor and up or down. True while it moves. */
+function stepHill(hill: Hill, dt: number) {
+  const follow = 1 - Math.exp(-HILL_FOLLOW * dt);
+  hill.x += (hill.targetX - hill.x) * follow;
+  hill.y += (hill.targetY - hill.y) * follow;
+  const goal = hill.on ? 1 : 0;
+  hill.amount += (goal - hill.amount) * (1 - Math.exp(-HILL_RISE * dt));
+  return (
+    Math.abs(hill.targetX - hill.x) > 0.5 ||
+    Math.abs(hill.targetY - hill.y) > 0.5 ||
+    Math.abs(goal - hill.amount) > 0.002
+  );
+}
+
+export default function TopoBackground({
+  className,
+  children,
+  interval = 0.07,
+  speed = 1,
+  interactive = true,
+  seed = 26,
+}: TopoBackgroundProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!(root && canvas && ctx)) {
+      return;
+    }
+
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    const noise = createNoise(seed);
+
+    let width = 0;
+    let height = 0;
+    let cols = 0;
+    let rows = 0;
+    let field = new Float32Array(0);
+    let color = "";
+
+    // The cursor hill, eased towards the pointer so it glides, not jumps.
+    const hill: Hill = {
+      x: 0,
+      y: 0,
+      targetX: 0,
+      targetY: 0,
+      amount: 0,
+      on: false,
+    };
+    const ripples: Ripple[] = [];
+    let time = 0;
+    let last = 0;
+    let lastPaint = 0;
+    let raf = 0;
+    let visible = true;
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = rect.width;
+      height = rect.height;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.ceil(width / CELL) + 1;
+      rows = Math.ceil(height / CELL) + 1;
+      field = new Float32Array(cols * rows);
+      color = getComputedStyle(canvas).color;
+    };
+
+    const sample = (now: number) => {
+      const z = time * 0.05;
+      const drift = time * 6;
+      const hillOn = hill.amount > 0.001;
+      const spread = 2 * HILL_SPREAD * HILL_SPREAD;
+      const ringWidth = 2 * RIPPLE_WIDTH * RIPPLE_WIDTH;
+      for (let j = 0; j < rows; j++) {
+        const y = j * CELL;
+        for (let i = 0; i < cols; i++) {
+          const x = i * CELL;
+          const nx = (x + drift) / TERRAIN_SCALE;
+          const ny = y / TERRAIN_SCALE;
+          let v =
+            noise(nx, ny, z) * 0.78 +
+            noise(nx * 2.3 + 17.1, ny * 2.3 + 4.7, z * 1.4) * 0.22;
+          if (hillOn) {
+            const dx = x - hill.x;
+            const dy = y - hill.y;
+            v +=
+              HILL_HEIGHT *
+              hill.amount *
+              Math.exp(-(dx * dx + dy * dy) / spread);
+          }
+          for (const ripple of ripples) {
+            const age = now - ripple.start;
+            const reach = age * RIPPLE_SPEED;
+            const d = Math.hypot(x - ripple.x, y - ripple.y) - reach;
+            const fadeOut = 1 - age / RIPPLE_MS;
+            // A short train of crests and troughs, like a stone dropped in
+            // water, so the contours bunch into rings as it passes.
+            v +=
+              RIPPLE_HEIGHT *
+              fadeOut *
+              fadeOut *
+              Math.exp(-(d * d) / ringWidth) *
+              Math.cos((d / RIPPLE_WAVELENGTH) * Math.PI * 2);
+          }
+          field[j * cols + i] = v;
+        }
+      }
+    };
+
+    const paint = (now: number) => {
+      sample(now);
+      const minor = new Path2D();
+      const major = new Path2D();
+      traceContours(field, cols, rows, interval, minor, major);
+      ctx.clearRect(0, 0, width, height);
+      ctx.strokeStyle = color;
+      ctx.lineCap = "round";
+      ctx.globalAlpha = 0.16;
+      ctx.lineWidth = 0.75;
+      ctx.stroke(minor);
+      ctx.globalAlpha = 0.34;
+      ctx.lineWidth = 1.1;
+      ctx.stroke(major);
+      ctx.globalAlpha = 1;
+    };
+
+    const frame = (now: number) => {
+      raf = 0;
+      if (!visible) {
+        return;
+      }
+      const dt = last ? Math.min((now - last) / 1000, 0.05) : 0;
+      last = now;
+      const hillMoving = stepHill(hill, dt);
+      while (ripples.length > 0 && now - ripples[0].start > RIPPLE_MS) {
+        ripples.shift();
+      }
+      const settling = hillMoving || ripples.length > 0;
+
+      time += dt * speed;
+      // The drift alone is slow; half the frame rate looks the same and
+      // costs half as much. Anything following the hand gets every frame.
+      if (settling || now - lastPaint >= IDLE_FRAME_MS) {
+        paint(now);
+        lastPaint = now;
+      }
+      if (speed > 0 || settling) {
+        raf = requestAnimationFrame(frame);
+      }
+    };
+
+    const start = () => {
+      if (!raf && visible && !reduceMotion) {
+        last = 0;
+        raf = requestAnimationFrame(frame);
+      }
+    };
+
+    resize();
+    paint(performance.now());
+    canvas.style.opacity = "1";
+    start();
+
+    const resizeObserver = new ResizeObserver(() => {
+      resize();
+      paint(performance.now());
+    });
+    resizeObserver.observe(canvas);
+
+    // Stop drawing entirely while the map is scrolled away or the tab is
+    // in the background.
+    const intersection = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting && document.visibilityState === "visible";
+      if (visible) {
+        start();
+      }
+    });
+    intersection.observe(root);
+    const onVisibility = () => {
+      visible = document.visibilityState === "visible";
+      if (visible) {
+        start();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // Follow light and dark mode without asking the app for a theme.
+    const colorTimer = window.setInterval(() => {
+      const next = getComputedStyle(canvas).color;
+      if (next !== color) {
+        color = next;
+        if (reduceMotion) {
+          paint(performance.now());
+        }
+      }
+    }, 500);
+
+    const local = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    };
+    const onMove = (event: PointerEvent) => {
+      // Touch has no hover; a hill stuck where a finger lifted looks wrong.
+      if (event.pointerType !== "mouse") {
+        return;
+      }
+      const point = local(event);
+      if (!hill.on) {
+        // Rise where the cursor came in rather than sliding over from the
+        // last place it left.
+        hill.x = point.x;
+        hill.y = point.y;
+      }
+      hill.targetX = point.x;
+      hill.targetY = point.y;
+      hill.on = true;
+      start();
+    };
+    const onLeave = () => {
+      hill.on = false;
+      start();
+    };
+    const onDown = (event: PointerEvent) => {
+      // Clicks on the content (links, buttons) are not meant for the map.
+      if ((event.target as HTMLElement).closest("a, button, input, textarea")) {
+        return;
+      }
+      const point = local(event);
+      ripples.push({ ...point, start: performance.now() });
+      if (ripples.length > 4) {
+        ripples.shift();
+      }
+      start();
+    };
+    if (interactive && !reduceMotion) {
+      root.addEventListener("pointermove", onMove);
+      root.addEventListener("pointerleave", onLeave);
+      root.addEventListener("pointerdown", onDown);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      resizeObserver.disconnect();
+      intersection.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(colorTimer);
+      root.removeEventListener("pointermove", onMove);
+      root.removeEventListener("pointerleave", onLeave);
+      root.removeEventListener("pointerdown", onDown);
+    };
+  }, [interval, speed, interactive, seed]);
+
+  return (
+    <div
+      className={cn(
+        "relative flex min-h-[560px] w-full items-center justify-center overflow-hidden bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100",
+        className
+      )}
+      ref={rootRef}
+    >
+      {/* Faded out top and bottom so the map sits into the page around it. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <canvas
+          className="h-full w-full opacity-0 transition-opacity duration-500 ease-out"
+          ref={canvasRef}
+          style={{
+            maskImage:
+              "linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent)",
+          }}
+        />
+      </div>
+      {children === undefined ? <DefaultContent /> : children}
+    </div>
+  );
+}
+
+function DefaultContent() {
+  return (
+    <div className="relative flex max-w-xl flex-col items-center gap-4 px-6 text-center">
+      <h1 className="font-semibold text-4xl tracking-tight sm:text-5xl">
+        Find your footing
+      </h1>
+      <p className="max-w-sm text-base text-zinc-500 dark:text-zinc-400">
+        A living contour map. Move the cursor to raise a hill, click to send a
+        ripple across it.
+      </p>
+    </div>
+  );
+}
