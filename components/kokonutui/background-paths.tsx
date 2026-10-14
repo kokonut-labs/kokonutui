@@ -10,15 +10,7 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import {
-  type ReactNode,
-  type RefObject,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 export interface BackgroundPathsProps {
@@ -31,172 +23,156 @@ export interface BackgroundPathsProps {
   spread?: number;
   /** Tilt of the ribbon, in degrees. */
   angle?: number;
-  /** How fast the layers drift. 0 holds them still. */
+  /** How fast the ribbon flows. 0 holds it still. */
   speed?: number;
-  /** Shift the layers by depth as the mouse moves. */
+  /** Part the lines around the cursor. */
   interactive?: boolean;
 }
 
-/** Each layer is drawn this much larger than the container on every side, so drift and parallax never show an edge. */
-const OVERSCAN = 0.08;
-const SAMPLES = 28;
-const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+const SAMPLES = 64;
+/** Lines reach this far past each side, so their ends never show. */
+const OVERSCAN = 0.06;
+const DRAW_MS = 1400;
+const DRAW_STAGGER_MS = 40;
+const PART_RADIUS = 150;
+const PART_PUSH = 56;
 
 interface Layer {
-  /** 0 is the back layer, 1 the front one. */
-  depth: number;
   width: number;
   opacity: number;
-  /** Phase offset, so the layers don't sit exactly on top of each other. */
+  /** Phase offset, so the layers don't sit on top of each other. */
   phase: number;
-  /** Drift path, as a translate in percent of the layer, and seconds per leg. */
-  drift: [number, number];
-  duration: number;
-  /** Parallax travel in px at the edge of the container. */
-  parallax: number;
+  /** Flow speed relative to the others: the front layer moves fastest. */
+  pace: number;
+  /** How much the cursor parts this layer. */
+  part: number;
 }
 
 const LAYERS: Layer[] = [
-  {
-    depth: 0,
-    width: 1,
-    opacity: 0.14,
-    phase: 0.5,
-    drift: [-1.4, 1],
-    duration: 26,
-    parallax: 6,
-  },
-  {
-    depth: 0.5,
-    width: 1.25,
-    opacity: 0.22,
-    phase: 0.25,
-    drift: [1.2, -1.4],
-    duration: 20,
-    parallax: 12,
-  },
-  {
-    depth: 1,
-    width: 1.5,
-    opacity: 0.34,
-    phase: 0,
-    drift: [-1.8, -0.8],
-    duration: 15,
-    parallax: 20,
-  },
+  { width: 1, opacity: 0.16, phase: 0.6, pace: 0.7, part: 0.45 },
+  { width: 1.25, opacity: 0.26, phase: 0.3, pace: 0.85, part: 0.75 },
+  { width: 1.5, opacity: 0.4, phase: 0, pace: 1, part: 1 },
 ];
 
-interface Line {
-  id: string;
-  d: string;
-  opacity: number;
+interface Pointer {
+  x: number;
+  y: number;
+  /** Eases to 1 while the mouse is over the hero, back to 0 when it leaves. */
+  amount: number;
+  on: boolean;
 }
 
-// Fades the lines at the top and bottom edges and quiets them behind
-// centered content.
-const MASK = {
-  maskImage:
-    "linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent), radial-gradient(ellipse 40% 32% at 50% 50%, rgb(0 0 0 / 0.25), #000)",
-  maskComposite: "intersect",
-  WebkitMaskComposite: "source-in",
-} as const;
+interface Frame {
+  width: number;
+  height: number;
+  time: number;
+  /** 0 to 1: how much of each line the entrance has drawn. */
+  drawn: number[];
+  pointer: Pointer;
+}
 
-const round = (n: number) => Math.round(n * 10) / 10;
-
-/** Catmull-Rom through the points, written as cubic Béziers. */
-function smoothPath(points: [number, number][]) {
-  let d = `M${round(points[0][0])} ${round(points[0][1])}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[Math.max(i - 1, 0)];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = points[Math.min(i + 2, points.length - 1)];
-    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
-    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
-    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
-    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
-    d += `C${round(c1x)} ${round(c1y)} ${round(c2x)} ${round(c2y)} ${round(p2[0])} ${round(p2[1])}`;
-  }
-  return d;
+interface Shape {
+  count: number;
+  spread: number;
+  slope: number;
+  interactive: boolean;
 }
 
 /**
- * One twisting ribbon of lines across a `width` by `height` box. Lines fan
- * out, cross over where the ribbon turns and fan out again, each crossing at
- * a slightly different point so the twist reads as depth.
+ * Height of line `s` (-0.5 to 0.5 across the ribbon) at `u` (0 to 1 along
+ * it). The ribbon turns over where `twist` crosses zero; that point and the
+ * ribbon's curve both slide slowly with time, so the lines keep flowing.
  */
-function buildLayer(
+function lineY(
+  s: number,
+  u: number,
   layer: Layer,
-  layerIndex: number,
-  lineCount: number,
-  width: number,
-  height: number,
-  spread: number,
-  angle: number
-): Line[] {
-  const slope = Math.tan((angle * Math.PI) / 180);
+  frame: Frame,
+  shape: Shape,
+  band: number
+) {
+  const t = frame.time * layer.pace;
+  const x = u * frame.width;
+  const center =
+    frame.height * 0.5 +
+    shape.slope * (x - frame.width / 2) +
+    band *
+      0.1 *
+      Math.sin(Math.PI * 2 * (0.75 * u + 0.1) + layer.phase + t * 0.35);
+  const turn = 0.22 + 0.09 * Math.sin(t * 0.21 + layer.phase);
+  const breathe = 0.3 * Math.sin(t * 0.5 + s * 4 + layer.phase);
+  const twist = Math.cos(
+    Math.PI * (u - turn) + s * (0.6 + breathe) + layer.phase
+  );
+  return center + s * shape.spread * band * twist;
+}
+
+/** Push a point away from the cursor, vertically, with a soft falloff. */
+function part(x: number, y: number, frame: Frame, strength: number) {
+  const { pointer } = frame;
+  if (pointer.amount < 0.001) {
+    return y;
+  }
+  const dx = x - pointer.x;
+  const dy = y - pointer.y;
+  const falloff = Math.exp(-(dx * dx + dy * dy) / (PART_RADIUS * PART_RADIUS));
+  // A soft sign, so lines right under the cursor split smoothly, not snap.
+  const side = dy / (Math.abs(dy) + 24);
+  return y + side * falloff * PART_PUSH * strength * pointer.amount;
+}
+
+function drawLines(
+  ctx: CanvasRenderingContext2D,
+  frame: Frame,
+  shape: Shape,
+  color: string
+) {
+  const { width, height } = frame;
+  ctx.clearRect(0, 0, width, height);
+  ctx.strokeStyle = color;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   // On tall, narrow screens a full-height ribbon turns too steeply to read,
   // so its height is capped relative to the width.
   const band = Math.min(height, width * 1.1);
-  const lines: Line[] = [];
-  for (let i = 0; i < lineCount; i++) {
-    // -0.5 to 0.5 across the ribbon.
-    const s = lineCount === 1 ? 0 : i / (lineCount - 1) - 0.5;
-    const points: [number, number][] = [];
-    for (let k = 0; k <= SAMPLES; k++) {
-      const u = k / SAMPLES;
-      const x = u * width;
-      const center =
-        height * 0.5 +
-        slope * (x - width / 2) +
-        band * 0.1 * Math.sin(Math.PI * 2 * (0.75 * u + 0.1) + layer.phase);
-      // The ribbon turns over once, right of center, clear of a centered
-      // headline.
-      const twist = Math.cos(Math.PI * (u - 0.22) + s * 0.6 + layer.phase);
-      points.push([x, center + s * spread * band * twist]);
-    }
-    lines.push({
-      id: `${layerIndex}-${i}`,
-      d: smoothPath(points),
+  const perLayer = Math.max(1, Math.round(shape.count / LAYERS.length));
+  const xs = new Float32Array(SAMPLES + 1);
+  const ys = new Float32Array(SAMPLES + 1);
+
+  LAYERS.forEach((layer, layerIndex) => {
+    ctx.lineWidth = layer.width;
+    for (let i = 0; i < perLayer; i++) {
+      const drawn = frame.drawn[layerIndex * perLayer + i] ?? 1;
+      if (drawn <= 0) {
+        continue;
+      }
+      const s = perLayer === 1 ? 0 : i / (perLayer - 1) - 0.5;
+      const last = Math.max(1, Math.ceil(SAMPLES * drawn));
+      for (let k = 0; k <= last; k++) {
+        const u = -OVERSCAN + (k / SAMPLES) * (1 + OVERSCAN * 2);
+        const x = u * width;
+        const y = lineY(s, u, layer, frame, shape, band);
+        xs[k] = x;
+        ys[k] = shape.interactive ? part(x, y, frame, layer.part) : y;
+      }
       // The ribbon's edges fade, its middle carries the weight.
-      opacity: layer.opacity * (0.45 + 0.55 * (1 - Math.abs(s) * 2)),
-    });
-  }
-  return lines;
+      ctx.globalAlpha = layer.opacity * (0.45 + 0.55 * (1 - Math.abs(s) * 2));
+      ctx.beginPath();
+      ctx.moveTo(xs[0], ys[0]);
+      // Curves through the midpoints keep the line smooth at any sampling.
+      for (let k = 1; k < last; k++) {
+        const mx = (xs[k] + xs[k + 1]) / 2;
+        const my = (ys[k] + ys[k + 1]) / 2;
+        ctx.quadraticCurveTo(xs[k], ys[k], mx, my);
+      }
+      ctx.lineTo(xs[last], ys[last]);
+      ctx.stroke();
+    }
+  });
+  ctx.globalAlpha = 1;
 }
 
-function useSize(ref: RefObject<HTMLElement | null>) {
-  const [size, setSize] = useState<{ width: number; height: number } | null>(
-    null
-  );
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) {
-      return;
-    }
-    let frame = 0;
-    const observer = new ResizeObserver(([entry]) => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const width = Math.round(entry.contentRect.width);
-        const height = Math.round(entry.contentRect.height);
-        setSize((prev) =>
-          prev &&
-          Math.abs(prev.width - width) < 2 &&
-          Math.abs(prev.height - height) < 2
-            ? prev
-            : { width, height }
-        );
-      });
-    });
-    observer.observe(node);
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-    };
-  }, [ref]);
-  return size;
-}
+const EASE_OUT = (t: number) => 1 - (1 - t) ** 3;
 
 export default function BackgroundPaths({
   className,
@@ -208,232 +184,167 @@ export default function BackgroundPaths({
   interactive = true,
 }: BackgroundPathsProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const layerRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const driftRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const size = useSize(rootRef);
-  const drawn = useRef(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const layerWidth = size ? size.width * (1 + OVERSCAN * 2) : 0;
-  const layerHeight = size ? size.height * (1 + OVERSCAN * 2) : 0;
-  const perLayer = Math.max(1, Math.round(count / LAYERS.length));
-
-  const layers = useMemo(
-    () =>
-      layerWidth
-        ? LAYERS.map((layer, index) =>
-            buildLayer(
-              layer,
-              index,
-              perLayer,
-              layerWidth,
-              layerHeight,
-              spread,
-              angle
-            )
-          )
-        : [],
-    [layerWidth, layerHeight, perLayer, spread, angle]
-  );
-
-  // Draw the lines on once, the first time they exist. Later resizes only
-  // change `d`, so they never redraw.
-  useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (!(root && layers.length) || drawn.current) {
-      return;
-    }
-    drawn.current = true;
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-    root.dataset.ready = "";
-    if (reduceMotion) {
-      return;
-    }
-    const paths = root.querySelectorAll<SVGPathElement>("path");
-    paths.forEach((path, index) => {
-      path.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], {
-        duration: 900,
-        delay: (index % perLayer) * 12,
-        easing: EASE_OUT,
-        fill: "backwards",
-      });
-    });
-  }, [layers, perLayer]);
-
-  // Drift: one compositor-only transform loop per layer. The SVG inside is
-  // rasterized once and only moved, never redrawn. Paused offscreen.
   useEffect(() => {
     const root = rootRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!(root && canvas && ctx)) {
+      return;
+    }
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    if (!(root && size) || reduceMotion || speed <= 0) {
-      return;
-    }
-    const animations = LAYERS.map((layer, index) =>
-      driftRefs.current[index]?.animate(
-        [
-          { transform: "translate3d(0, 0, 0)" },
-          {
-            transform: `translate3d(${layer.drift[0]}%, ${layer.drift[1]}%, 0)`,
-          },
-        ],
-        {
-          duration: (layer.duration * 1000) / speed,
-          iterations: Number.POSITIVE_INFINITY,
-          direction: "alternate",
-          easing: "ease-in-out",
-        }
-      )
-    );
-    let onScreen = true;
-    const sync = () => {
-      for (const animation of animations) {
-        if (onScreen && !document.hidden) {
-          animation?.play();
-        } else {
-          animation?.pause();
+    const shape: Shape = {
+      count,
+      spread,
+      slope: Math.tan((angle * Math.PI) / 180),
+      interactive: interactive && !reduceMotion,
+    };
+    const perLayer = Math.max(1, Math.round(count / LAYERS.length));
+    const total = perLayer * LAYERS.length;
+    const frame: Frame = {
+      width: 0,
+      height: 0,
+      // Start mid-flow, so the first frame isn't the same every visit.
+      time: 40,
+      drawn: new Array(total).fill(reduceMotion ? 1 : 0),
+      pointer: { x: 0, y: 0, amount: 0, on: false },
+    };
+    let color = getComputedStyle(canvas).color;
+    let start = 0;
+    let last = 0;
+    let raf = 0;
+    let visible = true;
+
+    const paint = () => drawLines(ctx, frame, shape, color);
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      frame.width = rect.width;
+      frame.height = rect.height;
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      paint();
+    };
+
+    const loop = (now: number) => {
+      raf = 0;
+      if (!start) {
+        start = now;
+        last = now;
+      }
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      frame.time += dt * speed;
+      // The entrance draws each line on once, left to right, staggered.
+      const elapsed = now - start;
+      for (let i = 0; i < frame.drawn.length; i++) {
+        if (frame.drawn[i] < 1) {
+          const local = (elapsed - (i % perLayer) * DRAW_STAGGER_MS) / DRAW_MS;
+          frame.drawn[i] = EASE_OUT(Math.min(Math.max(local, 0), 1));
         }
       }
+      const { pointer } = frame;
+      pointer.amount += ((pointer.on ? 1 : 0) - pointer.amount) * 0.08;
+      paint();
+      const settling =
+        frame.drawn.some((d) => d < 1) ||
+        (pointer.amount > 0.001 && !pointer.on) ||
+        pointer.on;
+      if (visible && (speed > 0 || settling)) {
+        raf = requestAnimationFrame(loop);
+      }
     };
-    const observer = new IntersectionObserver(([entry]) => {
-      onScreen = entry.isIntersecting;
-      sync();
+    const play = () => {
+      if (!raf && visible && !reduceMotion) {
+        last = performance.now();
+        raf = requestAnimationFrame(loop);
+      }
+    };
+
+    resize();
+    canvas.style.opacity = "1";
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
+    const intersection = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting && !document.hidden;
+      if (visible) {
+        play();
+      }
     });
-    observer.observe(root);
-    document.addEventListener("visibilitychange", sync);
-    return () => {
-      observer.disconnect();
-      document.removeEventListener("visibilitychange", sync);
-      for (const animation of animations) {
-        animation?.cancel();
+    intersection.observe(root);
+    const onVisibility = () => {
+      visible = !document.hidden;
+      if (visible) {
+        play();
       }
     };
-  }, [size, speed]);
+    document.addEventListener("visibilitychange", onVisibility);
+    // Follow theme changes, which only change the inherited text color.
+    const colorTimer = window.setInterval(() => {
+      const next = getComputedStyle(canvas).color;
+      if (next !== color) {
+        color = next;
+        paint();
+      }
+    }, 500);
 
-  // Parallax: each layer leans towards the mouse by its depth. Eased in a
-  // frame loop that only runs while it is still moving.
-  useEffect(() => {
-    const root = rootRef.current;
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-    if (!root || reduceMotion || !interactive) {
-      return;
-    }
-    const target = { x: 0, y: 0 };
-    const current = { x: 0, y: 0 };
-    let frame = 0;
-    let rect = root.getBoundingClientRect();
-
-    const tick = () => {
-      current.x += (target.x - current.x) * 0.08;
-      current.y += (target.y - current.y) * 0.08;
-      const settled =
-        Math.abs(target.x - current.x) < 0.001 &&
-        Math.abs(target.y - current.y) < 0.001;
-      if (settled) {
-        current.x = target.x;
-        current.y = target.y;
-      }
-      LAYERS.forEach((layer, index) => {
-        const node = layerRefs.current[index];
-        if (node) {
-          node.style.transform = `translate3d(${(current.x * layer.parallax).toFixed(2)}px, ${(current.y * layer.parallax).toFixed(2)}px, 0)`;
-        }
-      });
-      frame = settled ? 0 : requestAnimationFrame(tick);
-    };
-    const start = () => {
-      if (!frame) {
-        frame = requestAnimationFrame(tick);
-      }
-    };
-    const onEnter = () => {
-      rect = root.getBoundingClientRect();
-    };
     const onMove = (event: PointerEvent) => {
-      if (event.pointerType !== "mouse") {
+      if (event.pointerType !== "mouse" || !shape.interactive) {
         return;
       }
-      // -1 to 1 from the center of the container.
-      target.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      target.y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
-      start();
+      const rect = canvas.getBoundingClientRect();
+      frame.pointer.x = event.clientX - rect.left;
+      frame.pointer.y = event.clientY - rect.top;
+      frame.pointer.on = true;
+      play();
     };
     const onLeave = () => {
-      target.x = 0;
-      target.y = 0;
-      start();
+      frame.pointer.on = false;
+      play();
     };
-    root.addEventListener("pointerenter", onEnter);
     root.addEventListener("pointermove", onMove);
     root.addEventListener("pointerleave", onLeave);
-    window.addEventListener("scroll", onEnter, { passive: true });
+    play();
+
     return () => {
-      cancelAnimationFrame(frame);
-      root.removeEventListener("pointerenter", onEnter);
+      cancelAnimationFrame(raf);
+      resizeObserver.disconnect();
+      intersection.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(colorTimer);
       root.removeEventListener("pointermove", onMove);
       root.removeEventListener("pointerleave", onLeave);
-      window.removeEventListener("scroll", onEnter);
     };
-  }, [interactive]);
+  }, [count, spread, angle, speed, interactive]);
 
   return (
     <div
       className={cn(
-        "group/paths relative flex min-h-[560px] w-full items-center justify-center overflow-hidden bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100",
+        "relative flex min-h-[560px] w-full items-center justify-center overflow-hidden bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100",
         className
       )}
       ref={rootRef}
     >
+      {/* Faded at the top and bottom, and quieter behind centered content. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 ease-out group-data-ready/paths:opacity-100"
-        style={MASK}
+        className="pointer-events-none absolute inset-0"
+        style={{
+          maskImage:
+            "linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent), radial-gradient(ellipse 40% 32% at 50% 50%, rgb(0 0 0 / 0.3), #000)",
+          maskComposite: "intersect",
+          WebkitMaskComposite: "source-in",
+        }}
       >
-        {LAYERS.map((layer, index) => (
-          <div
-            className="absolute will-change-transform"
-            key={layer.depth}
-            ref={(node) => {
-              layerRefs.current[index] = node;
-            }}
-            style={{
-              inset: `-${OVERSCAN * 100}%`,
-            }}
-          >
-            <div
-              className="h-full w-full will-change-transform"
-              ref={(node) => {
-                driftRefs.current[index] = node;
-              }}
-            >
-              {size ? (
-                <svg
-                  className="h-full w-full"
-                  fill="none"
-                  role="presentation"
-                  viewBox={`0 0 ${round(layerWidth)} ${round(layerHeight)}`}
-                >
-                  {layers[index]?.map((line) => (
-                    <path
-                      d={line.d}
-                      key={line.id}
-                      opacity={line.opacity}
-                      pathLength={1}
-                      stroke="currentColor"
-                      strokeDasharray="1 1"
-                      strokeLinecap="round"
-                      strokeWidth={layer.width}
-                    />
-                  ))}
-                </svg>
-              ) : null}
-            </div>
-          </div>
-        ))}
+        <canvas
+          className="h-full w-full opacity-0 transition-opacity duration-500 ease-out"
+          ref={canvasRef}
+        />
       </div>
       {children === undefined ? <DefaultContent /> : children}
     </div>
@@ -447,8 +358,8 @@ function DefaultContent() {
         Calm by default
       </h1>
       <p className="max-w-sm text-base text-zinc-500 dark:text-zinc-400">
-        One color, any size, next to no cost. The lines drift on their own
-        layers and lean with the cursor.
+        A ribbon of lines that keeps flowing in one color, at any size. Move the
+        cursor through it and the lines part around you.
       </p>
     </div>
   );
