@@ -268,6 +268,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "pull-cord",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/pull-cord.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "bento-grid",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
