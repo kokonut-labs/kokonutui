@@ -539,6 +539,17 @@ function Index({ parts }: { parts: Part[] }) {
                       {p.code}
                     </span>
                     <span className="truncate">{p.title}</span>
+                    {p.isNew ? (
+                      <span
+                        className={cn(
+                          MONO,
+                          "ml-auto shrink-0 text-[11px]",
+                          LEAF
+                        )}
+                      >
+                        New
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               ))}

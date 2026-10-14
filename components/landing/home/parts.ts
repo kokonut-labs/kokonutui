@@ -1,3 +1,4 @@
+import { getAddedDates, isRecent } from "@/lib/changelog";
 import { component as registry } from "@/registry/registry-components";
 import { getCategories } from "./get-categories";
 
@@ -17,6 +18,10 @@ export interface Part {
   registryDependencies: string[];
   /** Files the CLI writes into your project. */
   files: string[];
+  /** The changelog release that added it (YYYY-MM-DD), when it has one. */
+  added?: string;
+  /** Added in a recent release, so lists mark it as new. */
+  isNew: boolean;
 }
 
 // Two letters per docs category, for the catalog's part codes.
@@ -34,10 +39,12 @@ const CODES: Record<string, string> = {
 export function getParts(): Part[] {
   const categories = getCategories();
   const entries = new Map(registry.map((entry) => [entry.name, entry]));
+  const addedDates = getAddedDates();
 
   const parts: Part[] = categories.flatMap((category) =>
     category.items.map((item, i) => {
       const entry = entries.get(item.name);
+      const added = addedDates.get(item.name);
       const prefix =
         CODES[category.slug] ?? category.slug.slice(0, 2).toUpperCase();
       return {
@@ -54,6 +61,8 @@ export function getParts(): Part[] {
           entry?.files?.map((file) =>
             typeof file === "string" ? file : file.path
           ) ?? [],
+        added,
+        isNew: added ? isRecent(added) : false,
       };
     })
   );

@@ -5,6 +5,7 @@
   "pages": [
     "index",
     "mcp",
+    "changelog",
     "templates",
     "backgrounds",
     "cards",
