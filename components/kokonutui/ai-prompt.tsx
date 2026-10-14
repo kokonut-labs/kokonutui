@@ -10,9 +10,17 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { ArrowRight, Bot, Check, ChevronDown, Paperclip } from "lucide-react";
+import {
+  ArrowRight,
+  Bot,
+  Check,
+  ChevronDown,
+  FileText,
+  Paperclip,
+  X,
+} from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type ReactNode, useId, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import Anthropic from "@/components/icons/anthropic";
 import AnthropicDark from "@/components/icons/anthropic-dark";
 import { Button } from "@/components/ui/button";
@@ -76,15 +84,31 @@ function GeminiIcon() {
   );
 }
 
+export interface PromptAttachment {
+  id: string;
+  file: File;
+}
+
 interface AIPromptProps {
   models?: string[];
   defaultModel?: string;
   placeholder?: string;
   headerText?: string;
   headerAction?: string;
-  onSubmit?: (value: string, model: string) => void;
-  /** Called with the files picked from the attach button. */
-  onAttach?: (files: FileList) => void;
+  /**
+   * Sends the message. Return a promise to show the Stop button until it
+   * settles; `signal` aborts when the user presses Stop. Without it, the
+   * component plays a short pretend reply so the demo feels alive.
+   */
+  onSubmit?: (
+    value: string,
+    model: string,
+    options: { files: File[]; signal: AbortSignal }
+  ) => unknown;
+  /** Called when the user presses Stop while a reply is in progress. */
+  onStop?: () => void;
+  /** Called with the files picked, dropped or pasted into the prompt. */
+  onAttach?: (files: FileList | File[]) => void;
   className?: string;
 }
 
@@ -124,6 +148,154 @@ const getModelIcon = (model: string) =>
     <Bot aria-hidden="true" className="h-4 w-4 opacity-50" />
   );
 
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const DEMO_REPLY_MS = 2400;
+
+const formatSize = (bytes: number) => {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${Math.round(bytes / 1024)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const waitFor = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((resolve) => {
+    const id = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => {
+      clearTimeout(id);
+      resolve();
+    });
+  });
+
+function AttachmentChip({
+  attachment,
+  onRemove,
+}: {
+  attachment: PromptAttachment;
+  onRemove: () => void;
+}) {
+  const { file } = attachment;
+  const isImage = file.type.startsWith("image/");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Object URLs are created after mount and revoked on unmount, so a
+  // removed chip doesn't keep its image in memory.
+  useEffect(() => {
+    if (!isImage) {
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file, isImage]);
+
+  return (
+    <motion.li
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      className="flex h-11 max-w-52 items-center gap-2 rounded-lg bg-white py-1 pr-1.5 pl-1 ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10"
+      exit={{
+        opacity: 0,
+        filter: "blur(2px)",
+        transition: { duration: 0.12, ease: EASE_OUT },
+      }}
+      initial={{ opacity: 0, y: 4, filter: "blur(2px)" }}
+      layout="position"
+      transition={{ duration: 0.2, ease: EASE_OUT }}
+    >
+      <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-black/5 text-black/50 dark:bg-white/10 dark:text-white/60">
+        {previewUrl ? (
+          // biome-ignore lint/performance/noImgElement: object URL preview, nothing to optimise
+          <img
+            alt=""
+            className="size-full object-cover"
+            height={36}
+            src={previewUrl}
+            width={36}
+          />
+        ) : (
+          <FileText aria-hidden="true" className="size-4" />
+        )}
+      </span>
+      <span className="min-w-0 flex-1 leading-tight">
+        <span className="block truncate text-black text-xs dark:text-white">
+          {file.name}
+        </span>
+        <span className="block text-[10px] text-black/50 tabular-nums dark:text-white/50">
+          {formatSize(file.size)}
+        </span>
+      </span>
+      <button
+        aria-label={`Remove ${file.name}`}
+        className="flex size-6 shrink-0 items-center justify-center rounded-md text-black/40 transition-colors duration-150 hover:bg-black/5 hover:text-black focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
+        onClick={onRemove}
+        type="button"
+      >
+        <X aria-hidden="true" className="size-3.5" />
+      </button>
+    </motion.li>
+  );
+}
+
+function SendButton({
+  responding,
+  canSend,
+  onSend,
+  onStop,
+}: {
+  responding: boolean;
+  canSend: boolean;
+  onSend: () => void;
+  onStop: () => void;
+}) {
+  // One button with two faces. The faces crossfade with a little blur, so
+  // Send turning into Stop reads as the same control changing state.
+  const face =
+    "absolute inset-0 flex items-center justify-center transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]";
+  return (
+    <button
+      aria-label={responding ? "Stop response" : "Send message"}
+      className={cn(
+        "relative size-8 rounded-lg",
+        "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500",
+        "transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
+        responding
+          ? "bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80"
+          : "bg-black/5 hover:bg-black/10 disabled:pointer-events-none dark:bg-white/5 dark:hover:bg-white/10"
+      )}
+      disabled={!(responding || canSend)}
+      onClick={responding ? onStop : onSend}
+      type="button"
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          face,
+          responding ? "opacity-0 blur-[2px]" : "opacity-100 blur-0"
+        )}
+      >
+        <ArrowRight
+          className={cn(
+            "h-4 w-4 transition-opacity duration-200 dark:text-white",
+            canSend ? "opacity-100" : "opacity-30"
+          )}
+        />
+      </span>
+      <span
+        aria-hidden="true"
+        className={cn(
+          face,
+          responding ? "opacity-100 blur-0" : "opacity-0 blur-[2px]"
+        )}
+      >
+        <span className="size-2.5 rounded-[2px] bg-current" />
+      </span>
+    </button>
+  );
+}
+
 export default function AI_Prompt({
   models = DEFAULT_MODELS,
   defaultModel = "Claude Fable 5",
@@ -131,10 +303,16 @@ export default function AI_Prompt({
   headerText = "is free this weekend!",
   headerAction = "Ship Now!",
   onSubmit,
+  onStop,
   onAttach,
   className,
 }: AIPromptProps) {
   const [value, setValue] = useState("");
+  const [attachments, setAttachments] = useState<PromptAttachment[]>([]);
+  const [responding, setResponding] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const nextIdRef = useRef(0);
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 72,
     maxHeight: 300,
@@ -147,13 +325,59 @@ export default function AI_Prompt({
   const shouldReduceMotion = useReducedMotion();
   const labelOffset = shouldReduceMotion ? 0 : 5;
 
-  const submit = () => {
-    if (!(value.trim() && onSubmit)) {
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  const addFiles = (files: FileList | File[]) => {
+    const list = Array.from(files);
+    if (list.length === 0) {
       return;
     }
-    onSubmit(value, selectedModel);
+    onAttach?.(files);
+    setAttachments((current) => [
+      ...current,
+      ...list.map((file) => {
+        nextIdRef.current += 1;
+        return { id: `attachment-${nextIdRef.current}`, file };
+      }),
+    ]);
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((current) => current.filter((a) => a.id !== id));
+    textareaRef.current?.focus();
+  };
+
+  const canSend = value.trim().length > 0 && !responding;
+
+  const submit = async () => {
+    if (!canSend) {
+      return;
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const files = attachments.map((a) => a.file);
     setValue("");
+    setAttachments([]);
     adjustHeight(true);
+    setResponding(true);
+    try {
+      await (onSubmit
+        ? onSubmit(value, selectedModel, { files, signal: controller.signal })
+        : waitFor(DEMO_REPLY_MS, controller.signal));
+    } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setResponding(false);
+      }
+    }
+  };
+
+  const stop = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setResponding(false);
+    onStop?.();
+    textareaRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -161,8 +385,14 @@ export default function AI_Prompt({
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       submit();
+    } else if (e.key === "Escape" && responding) {
+      e.preventDefault();
+      stop();
     }
   };
+
+  const hasFiles = (e: React.DragEvent) =>
+    Array.from(e.dataTransfer.types).includes("Files");
 
   return (
     <div className={cn("w-4/6 py-4", className)}>
@@ -179,14 +409,69 @@ export default function AI_Prompt({
             {headerAction}
           </p>
         </div>
-        <div className="flex flex-col rounded-xl has-[textarea:focus-visible]:ring-1 has-[textarea:focus-visible]:ring-blue-500">
+        {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions: drop target for files; keyboard users have the attach button */}
+        <div
+          className={cn(
+            "relative flex flex-col rounded-xl has-[textarea:focus-visible]:ring-1 has-[textarea:focus-visible]:ring-blue-500",
+            isDragging && "ring-1 ring-blue-500"
+          )}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+              setIsDragging(false);
+            }
+          }}
+          onDragOver={(e) => {
+            if (hasFiles(e)) {
+              e.preventDefault();
+              setIsDragging(true);
+            }
+          }}
+          onDrop={(e) => {
+            if (!hasFiles(e)) {
+              return;
+            }
+            e.preventDefault();
+            setIsDragging(false);
+            addFiles(e.dataTransfer.files);
+          }}
+        >
+          <AnimatePresence initial={false}>
+            {attachments.length > 0 && (
+              <motion.div
+                animate={{ height: "auto", opacity: 1 }}
+                className="overflow-hidden rounded-t-xl bg-black/5 dark:bg-white/5"
+                exit={{ height: 0, opacity: 0 }}
+                initial={{ height: 0, opacity: 0 }}
+                transition={{
+                  duration: shouldReduceMotion ? 0 : 0.2,
+                  ease: EASE_OUT,
+                }}
+              >
+                <ul
+                  aria-label="Attachments"
+                  className="flex flex-wrap gap-2 px-3 pt-3"
+                >
+                  <AnimatePresence initial={false} mode="popLayout">
+                    {attachments.map((attachment) => (
+                      <AttachmentChip
+                        attachment={attachment}
+                        key={attachment.id}
+                        onRemove={() => removeAttachment(attachment.id)}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </ul>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <label className="sr-only" htmlFor={textareaId}>
             Message
           </label>
           <Textarea
             className={cn(
               "w-full resize-none rounded-xl rounded-b-none border-none bg-black/5 px-4 py-3 placeholder:text-black/70 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-white/5 dark:text-white dark:placeholder:text-white/70",
-              "min-h-[72px]"
+              "min-h-[72px]",
+              attachments.length > 0 && "rounded-t-none"
             )}
             id={textareaId}
             onChange={(e) => {
@@ -194,6 +479,12 @@ export default function AI_Prompt({
               adjustHeight();
             }}
             onKeyDown={handleKeyDown}
+            onPaste={(e) => {
+              if (e.clipboardData.files.length > 0) {
+                e.preventDefault();
+                addFiles(e.clipboardData.files);
+              }
+            }}
             placeholder={placeholder}
             ref={textareaRef}
             value={value}
@@ -225,7 +516,7 @@ export default function AI_Prompt({
                         key={selectedModel}
                         transition={{
                           duration: 0.15,
-                          ease: [0.23, 1, 0.32, 1],
+                          ease: EASE_OUT,
                         }}
                       >
                         {getModelIcon(selectedModel)}
@@ -255,45 +546,46 @@ export default function AI_Prompt({
               </DropdownMenu>
               <div className="mx-0.5 h-4 w-px bg-black/10 dark:bg-white/10" />
               <label
-                aria-label="Attach file"
                 className={cn(
                   "cursor-pointer rounded-lg bg-black/5 p-2 dark:bg-white/5",
                   "hover:bg-black/10 has-focus-visible:ring-1 has-focus-visible:ring-blue-500 has-focus-visible:ring-offset-0 dark:hover:bg-white/10",
                   "text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white",
-                  "transition-[background-color,color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:active:scale-100"
+                  "transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                 )}
               >
                 <input
-                  aria-label="Attach file"
+                  aria-label="Attach files"
                   className="sr-only"
+                  multiple
                   onChange={(e) => {
                     if (e.target.files?.length) {
-                      onAttach?.(e.target.files);
+                      addFiles(e.target.files);
                     }
+                    // Cleared so picking the same file again still fires.
+                    e.target.value = "";
                   }}
                   type="file"
                 />
                 <Paperclip className="h-4 w-4 transition-colors" />
               </label>
             </div>
-            <button
-              aria-label="Send message"
-              className={cn(
-                "rounded-lg bg-black/5 p-2 dark:bg-white/5",
-                "hover:bg-black/10 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:ring-offset-0 dark:hover:bg-white/10",
-                "transition-[background-color,scale] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:pointer-events-none motion-reduce:active:scale-100"
-              )}
-              disabled={!value.trim()}
-              onClick={submit}
-              type="button"
-            >
-              <ArrowRight
-                className={cn(
-                  "h-4 w-4 transition-opacity duration-200 dark:text-white",
-                  value.trim() ? "opacity-100" : "opacity-30"
-                )}
-              />
-            </button>
+            <SendButton
+              canSend={canSend}
+              onSend={submit}
+              onStop={stop}
+              responding={responding}
+            />
+          </div>
+
+          {/* Shown while files are dragged over the prompt. */}
+          <div
+            aria-hidden="true"
+            className={cn(
+              "pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl border border-blue-500/50 border-dashed bg-white/80 text-blue-600 text-xs transition-opacity duration-150 dark:bg-black/70 dark:text-blue-400",
+              isDragging ? "opacity-100" : "opacity-0"
+            )}
+          >
+            Drop files to attach
           </div>
         </div>
       </div>
