@@ -8,6 +8,9 @@
     "bento-grid",
     "currency-transfer",
     "carousel-cards",
-    "notification-stack"
+    "notification-stack",
+    "liquid-gauge",
+    "activity-terrain",
+    "receipt-printer"
   ]
 }

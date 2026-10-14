@@ -80,6 +80,12 @@ export function Header() {
                   </Link>
                   <Link
                     className="flex items-center gap-1 rounded-lg px-3 py-1 font-medium text-[15px] text-black/80 tracking-tighter transition-colors duration-200 hover:bg-black/5 dark:text-white/80 dark:hover:bg-white/5"
+                    href="/docs/changelog"
+                  >
+                    Changelog
+                  </Link>
+                  <Link
+                    className="flex items-center gap-1 rounded-lg px-3 py-1 font-medium text-[15px] text-black/80 tracking-tighter transition-colors duration-200 hover:bg-black/5 dark:text-white/80 dark:hover:bg-white/5"
                     href="https://kokonutui.pro/templates?utm_source=kokonutui.com&utm_medium=header"
                     target="_blank"
                   >

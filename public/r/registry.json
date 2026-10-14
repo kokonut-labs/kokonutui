@@ -7,7 +7,7 @@
       "name": "ai-prompt",
       "type": "registry:component",
       "title": "AI Input Selector",
-      "description": "Animated AI chat input with model selection dropdown, file attachment and auto-resizing textarea. Built with React, Tailwind CSS and Motion.",
+      "description": "AI chat input with a model picker, file chips you can drop or paste, and Stop while replying.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -105,7 +105,7 @@
       "name": "ai-text-loading",
       "type": "registry:component",
       "title": "AI Text Loading",
-      "description": "Animated AI thinking indicator that cycles status messages with a shimmering gradient text effect. Built with React, Tailwind CSS and Motion.",
+      "description": "AI thinking text with a soft wave through the letters and words that swap letter by letter.",
       "dependencies": [
         "motion"
       ],
@@ -301,6 +301,19 @@
       ]
     },
     {
+      "name": "drape-background",
+      "type": "registry:component",
+      "title": "Drape Background",
+      "description": "A pleated curtain in a breeze that you can push and pull, built with React, WebGL and a cloth simulation.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/drape-background.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "apple-activity-card",
       "type": "registry:component",
       "title": "Apple Activity Card",
@@ -319,9 +332,10 @@
       "name": "ai-voice",
       "type": "registry:component",
       "title": "AI Voice",
-      "description": "AI voice input button with recording timer, pulsing waveform bars and listening state. Built with React and animated Tailwind CSS styles.",
+      "description": "Voice input with a scrolling waveform, then a take you can play back, discard or send.",
       "dependencies": [
-        "lucide-react"
+        "lucide-react",
+        "motion"
       ],
       "files": [
         {
@@ -342,6 +356,22 @@
       "files": [
         {
           "path": "components/kokonutui/smooth-tab.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "marking-menu",
+      "type": "registry:component",
+      "title": "Marking Menu",
+      "description": "A radial menu you hold to open or flick to pick blind, built with React and Motion.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/marking-menu.tsx",
           "type": "registry:component"
         }
       ]
@@ -378,6 +408,32 @@
       ]
     },
     {
+      "name": "liquid-slider",
+      "type": "registry:component",
+      "title": "Liquid Slider",
+      "description": "A vertical slider you fill like a glass, with a sloshing surface and rising bubbles.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/liquid-slider.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "signature-pad",
+      "type": "registry:component",
+      "title": "Signature Pad",
+      "description": "A signature field with a sprung pen tip, speed-weighted ink and SVG output.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/signature-pad.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "switch-button",
       "type": "registry:component",
       "title": "Switch Button",
@@ -404,6 +460,32 @@
       "files": [
         {
           "path": "components/kokonutui/pull-cord.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "tear-button",
+      "type": "registry:component",
+      "title": "Tear Button",
+      "description": "A confirm button you tear off like a ticket stub, hole by hole.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/tear-button.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "bell-button",
+      "type": "registry:component",
+      "title": "Bell Button",
+      "description": "A subscribe button whose bell swings and rings, with a clapper that really strikes.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/bell-button.tsx",
           "type": "registry:component"
         }
       ]
@@ -559,7 +641,11 @@
       "name": "ai-loading",
       "type": "registry:component",
       "title": "AI State Loading",
-      "description": "Animated AI loading state cycling task statuses through a scrolling code-style log with an SVG progress spinner. Built with React and Tailwind CSS.",
+      "description": "Agent progress as a list of steps with a live log, elapsed time and a summary when done.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
       "files": [
         {
           "path": "components/kokonutui/ai-loading.tsx",
@@ -593,6 +679,42 @@
       "files": [
         {
           "path": "components/kokonutui/notification-stack.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "liquid-gauge",
+      "type": "registry:component",
+      "title": "Liquid Gauge",
+      "description": "A usage meter filled with liquid that sloshes, ripples and bubbles, built with React and a wave simulation.",
+      "files": [
+        {
+          "path": "components/kokonutui/liquid-gauge.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "activity-terrain",
+      "type": "registry:component",
+      "title": "Activity Terrain",
+      "description": "A contribution heatmap that tilts up into a 3D terrain you can turn, built with React and canvas.",
+      "files": [
+        {
+          "path": "components/kokonutui/activity-terrain.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "receipt-printer",
+      "type": "registry:component",
+      "title": "Receipt Printer",
+      "description": "A receipt that prints line by line, then tears off and falls when you pull it, built with React.",
+      "files": [
+        {
+          "path": "components/kokonutui/receipt-printer.tsx",
           "type": "registry:component"
         }
       ]
@@ -656,6 +778,19 @@
       "files": [
         {
           "path": "components/kokonutui/swoosh-text.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "plucked-text",
+      "type": "registry:component",
+      "title": "Plucked Text",
+      "description": "A headline sitting on a string you can pluck, strum and let ring, built with React and real string physics.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/plucked-text.tsx",
           "type": "registry:component"
         }
       ]
