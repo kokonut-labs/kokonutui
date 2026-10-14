@@ -378,6 +378,19 @@
       ]
     },
     {
+      "name": "liquid-slider",
+      "type": "registry:component",
+      "title": "Liquid Slider",
+      "description": "A vertical slider you fill like a glass, with a sloshing surface and rising bubbles.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/liquid-slider.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "switch-button",
       "type": "registry:component",
       "title": "Switch Button",
