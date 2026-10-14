@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 59 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 60 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -50,6 +50,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Plucked Text](https://kokonutui.com/docs/texts/plucked-text.md): A headline sitting on a string you can pluck, strum and let ring, built with React and real string physics. Install: `npx shadcn@latest add @kokonutui/plucked-text`
 - [Profile Dropdown](https://kokonutui.com/docs/navigation/profile-dropdown.md): User profile dropdown menu with avatar, subscription and model details, and quick action links, built with React, shadcn/ui, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/profile-dropdown`
 - [Pull Cord](https://kokonutui.com/docs/buttons/pull-cord.md): A lamp switch you pull on a swinging cord, built with React and a rope simulation. Install: `npx shadcn@latest add @kokonutui/pull-cord`
+- [Receipt Printer](https://kokonutui.com/docs/cards/receipt-printer.md): A receipt that prints line by line, then tears off and falls when you pull it, built with React. Install: `npx shadcn@latest add @kokonutui/receipt-printer`
 - [Scroll Text](https://kokonutui.com/docs/texts/scroll-text.md): Scroll-driven text list that highlights the active word as you scroll, using IntersectionObserver with React, Tailwind CSS and Motion animations. Install: `npx shadcn@latest add @kokonutui/scroll-text`
 - [Shape Hero](https://kokonutui.com/docs/backgrounds/shape-hero.md): A landing hero where shapes drop in, pile up under the headline and can be grabbed and thrown. Install: `npx shadcn@latest add @kokonutui/shape-hero`
 - [Shimmer Text](https://kokonutui.com/docs/texts/shimmer-text.md): Animated shimmer text with a looping gradient sweep across the letters, built with React and Tailwind CSS gradients and keyframes. Install: `npx shadcn@latest add @kokonutui/shimmer-text`

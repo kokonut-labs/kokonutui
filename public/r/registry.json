@@ -695,6 +695,18 @@
       ]
     },
     {
+      "name": "receipt-printer",
+      "type": "registry:component",
+      "title": "Receipt Printer",
+      "description": "A receipt that prints line by line, then tears off and falls when you pull it, built with React.",
+      "files": [
+        {
+          "path": "components/kokonutui/receipt-printer.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",
