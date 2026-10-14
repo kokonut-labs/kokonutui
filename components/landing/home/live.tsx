@@ -46,10 +46,10 @@ function live<M extends { default: unknown }>(
 }
 
 export const LIVE: Record<string, LiveEntry> = {
-  "receipt-printer": live(
-    () => import("@/components/kokonutui/receipt-printer"),
+  "apple-activity-card": live(
+    () => import("@/components/kokonutui/apple-activity-card"),
     ({ default: C }) => <C />,
-    "Pull down to tear it off"
+    "Rings fill as it mounts"
   ),
   "ai-prompt": live(
     () => import("@/components/kokonutui/ai-prompt"),
@@ -61,10 +61,10 @@ export const LIVE: Record<string, LiveEntry> = {
     ({ default: C }) => <C />,
     "Turn it, or flick and let it coast"
   ),
-  "notification-stack": live(
-    () => import("@/components/kokonutui/notification-stack"),
-    ({ default: C }) => <C />,
-    "Hover to fan out, swipe to dismiss"
+  "ai-loading": live(
+    () => import("@/components/kokonutui/ai-loading"),
+    ({ default: C }) => <C className="w-full max-w-[400px]" />,
+    "An agent working through its steps"
   ),
   "tear-button": live(
     () => import("@/components/kokonutui/tear-button"),
