@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { renderPlaceholder } from "fumadocs-core/mdx-plugins/remark-llms.runtime";
 import { siteConfig } from "@/config/site";
+import { BLOCK_RENDERERS } from "@/lib/llm-blocks";
 import type { source } from "@/lib/source";
 
 const COMPONENTS_DIR = path.join(process.cwd(), "components/kokonutui");
@@ -65,6 +66,7 @@ export async function getLLMText(page: Page): Promise<string> {
   const processed = await page.data.getText("processed");
 
   const body = await renderPlaceholder(processed, {
+    ...BLOCK_RENDERERS,
     Preview: renderPreview,
     PreviewClient: renderPreview,
     PreviewTemplate: renderPreview,

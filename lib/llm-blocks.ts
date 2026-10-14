@@ -1,0 +1,124 @@
+import type { renderPlaceholder } from "fumadocs-core/mdx-plugins/remark-llms.runtime";
+import { getParts } from "@/components/landing/home/parts";
+import { siteConfig } from "@/config/site";
+import {
+  AGENT_ENDPOINTS,
+  AGENT_PROMPTS,
+  AGENT_RULES,
+  MCP_CLIENTS,
+  MCP_SETUP,
+  mcpInit,
+} from "@/lib/agents";
+import { RELEASES } from "@/lib/changelog";
+
+// Markdown for the docs' own MDX blocks, so the `.md` pages agents read carry
+// the same commands and files as the page, never raw JSX.
+
+type Renderer = Parameters<typeof renderPlaceholder>[1][string];
+type Args = Parameters<Renderer>[0];
+
+const attr = ({ attributes }: Args, name: string) => {
+  const value = attributes[name];
+  return typeof value === "string" ? value : undefined;
+};
+
+const fence = (language: string, code: string, title?: string) =>
+  [
+    title ? `\`\`\`${language} title="${title}"` : `\`\`\`${language}`,
+    code,
+    "```",
+    "",
+  ].join("\n");
+
+const command: Renderer = (args) => {
+  const run = attr(args, "run");
+  return run ? fence("bash", `npx ${run}`) : "";
+};
+
+const note: Renderer = (args) => {
+  const title = attr(args, "title") ?? "Note";
+  const body = args.children.trim().replace(/\n/g, "\n> ");
+  return `> **${title}**\n>\n> ${body}\n`;
+};
+
+const mcpSetup: Renderer = () =>
+  MCP_CLIENTS.map(({ id, label }) => {
+    const setup = MCP_SETUP[id];
+    return [
+      `### ${label}`,
+      "",
+      fence("bash", `npx ${mcpInit(id)}`),
+      `Or add it by hand to \`${setup.file}\`:`,
+      "",
+      fence(setup.language, setup.config, setup.file),
+      setup.note,
+      "",
+    ].join("\n");
+  }).join("\n");
+
+const agentRules: Renderer = () =>
+  MCP_CLIENTS.map(({ id, label }) => {
+    const rules = AGENT_RULES[id];
+    return [
+      `### ${label}: \`${rules.file}\``,
+      "",
+      fence("markdown", rules.content, rules.file),
+    ].join("\n");
+  }).join("\n");
+
+const agentPrompts: Renderer = () =>
+  `${AGENT_PROMPTS.map((prompt) => `- "${prompt}"`).join("\n")}\n`;
+
+const agentEndpoints: Renderer = () =>
+  `${AGENT_ENDPOINTS.map(
+    ({ path, description }) => `- \`${siteConfig.url}${path}\`: ${description}`
+  ).join("\n")}\n`;
+
+const release: Renderer = (args) => {
+  const found = RELEASES.find((r) => r.date === attr(args, "date"));
+  if (!found) {
+    return "";
+  }
+  const parts = new Map(getParts().map((p) => [p.name, p]));
+  const pr = (n: number) => `[#${n}](${siteConfig.links.github}/pull/${n})`;
+  const lines: string[] = [];
+  const group = (
+    label: string,
+    entries: typeof found.added,
+    text: (name: string, note?: string) => string | undefined
+  ) => {
+    const rows = entries.flatMap((entry) => {
+      const part = parts.get(entry.name);
+      if (!part) {
+        return [];
+      }
+      const about = text(entry.name, entry.note);
+      return [
+        `- [${part.title}](${siteConfig.url}${part.url}.md) (${part.category}, ${pr(entry.pr)})${about ? `: ${about}` : ""}`,
+      ];
+    });
+    if (rows.length > 0) {
+      lines.push(`**${label}**`, "", ...rows, "");
+    }
+  };
+  group("New components", found.added, (name) => parts.get(name)?.description);
+  group("Improved", found.improved, (_name, note) => note);
+  if (found.library?.length) {
+    lines.push("**Across the library**", "");
+    for (const change of found.library) {
+      lines.push(`- ${change.note} (${change.prs.map(pr).join(", ")})`);
+    }
+    lines.push("");
+  }
+  return lines.join("\n");
+};
+
+export const BLOCK_RENDERERS: Record<string, Renderer> = {
+  Command: command,
+  Note: note,
+  McpSetup: mcpSetup,
+  AgentRules: agentRules,
+  AgentPrompts: agentPrompts,
+  AgentEndpoints: agentEndpoints,
+  Release: release,
+};

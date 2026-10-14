@@ -13,16 +13,10 @@ import {
   LINE,
   MONO,
 } from "@/components/landing/home/styles";
+import { usePackageManager } from "@/components/mdx/docs-prefs";
 import { copyComponent } from "@/lib/action";
+import { PACKAGE_MANAGERS, runWith } from "@/lib/agents";
 import { cn } from "@/lib/utils";
-
-const MANAGERS = [
-  { id: "bun", run: "bunx --bun" },
-  { id: "npm", run: "npx" },
-  { id: "pnpm", run: "pnpm dlx" },
-] as const;
-
-type Manager = (typeof MANAGERS)[number]["id"];
 
 const COPIED_MS = 1600;
 
@@ -47,17 +41,16 @@ export function InstallBar({
   prePath: string;
   showSource?: boolean;
 }) {
-  const [manager, setManager] = useState<Manager>("bun");
+  const [manager, setManager] = usePackageManager();
   const { copied, copy } = useCopy();
-  const run = MANAGERS.find((m) => m.id === manager)?.run ?? "npx";
-  const command = `${run} shadcn@latest add ${prePath}/${name}`;
+  const command = runWith(manager, `shadcn@latest add ${prePath}/${name}`);
 
   return (
     <div className={cn("grid grid-cols-1 border-b", GRID, LINE)}>
       <div className={cn("flex flex-wrap items-stretch justify-between", CELL)}>
         <fieldset className="m-0 flex min-w-0 border-0 p-0">
           <legend className="sr-only">Package manager</legend>
-          {MANAGERS.map((m) => {
+          {PACKAGE_MANAGERS.map((m) => {
             const selected = m.id === manager;
             return (
               <button

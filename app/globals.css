@@ -144,6 +144,22 @@
   font-family: var(--font-home-mono), ui-monospace, monospace;
 }
 
+/* Fenced code in the docs (components/mdx/code-block.tsx). Fumadocs owns the
+   markup, so its title bar and copy button are squared off here. */
+.docs-code,
+.docs-code pre {
+  font-family: var(--font-home-mono), ui-monospace, monospace;
+}
+
+.docs-code figcaption {
+  font-size: 12px;
+}
+
+.docs-code button {
+  border-radius: 0;
+  backdrop-filter: none;
+}
+
 @layer utilities {
   body {
     font-family: Arial, Helvetica, sans-serif;
