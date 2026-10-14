@@ -299,6 +299,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "tear-button",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/tear-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "bento-grid",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
