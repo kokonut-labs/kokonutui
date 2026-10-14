@@ -428,6 +428,16 @@ export const component: Registry = [
     ],
   },
   {
+    name: "liquid-gauge",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/liquid-gauge.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
