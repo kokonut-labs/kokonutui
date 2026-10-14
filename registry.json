@@ -699,6 +699,19 @@
       ]
     },
     {
+      "name": "plucked-text",
+      "type": "registry:component",
+      "title": "Plucked Text",
+      "description": "A headline sitting on a string you can pluck, strum and let ring, built with React and real string physics.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/plucked-text.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "sliced-text",
       "type": "registry:component",
       "title": "Sliced Text",
