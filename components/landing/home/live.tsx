@@ -66,7 +66,7 @@ export const LIVE: Record<string, LiveEntry> = {
   "smooth-tab": live(
     () => import("@/components/kokonutui/smooth-tab"),
     ({ default: C }) => <C />,
-    "Switch tabs both ways"
+    "Swipe the panel"
   ),
   "hold-button": live(
     () => import("@/components/kokonutui/hold-button"),
