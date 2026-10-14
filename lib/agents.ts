@@ -38,9 +38,22 @@ const MCP_JSON = `{
   }
 }`;
 
+// Cursor and VS Code install an MCP server from a link; the config is the
+// same `npx shadcn@latest mcp` the files below hold.
+const CURSOR_INSTALL_URL =
+  "cursor://anysphere.cursor-deeplink/mcp/install?name=shadcn&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJzaGFkY25AbGF0ZXN0IiwibWNwIl19";
+const VSCODE_INSTALL_URL =
+  "vscode:mcp/install?%7B%22name%22%3A%22shadcn%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22shadcn%40latest%22%2C%22mcp%22%5D%7D";
+
 export const MCP_SETUP: Record<
   McpClient,
-  { file: string; language: string; config: string; note: string }
+  {
+    file: string;
+    language: string;
+    config: string;
+    note: string;
+    install?: { label: string; href: string };
+  }
 > = {
   claude: {
     file: ".mcp.json",
@@ -53,6 +66,7 @@ export const MCP_SETUP: Record<
     language: "json",
     config: MCP_JSON,
     note: "Turn the server on in Cursor Settings, under MCP.",
+    install: { label: "Add to Cursor", href: CURSOR_INSTALL_URL },
   },
   vscode: {
     file: ".vscode/mcp.json",
@@ -66,6 +80,7 @@ export const MCP_SETUP: Record<
   }
 }`,
     note: "Open .vscode/mcp.json and click Start next to the shadcn server.",
+    install: { label: "Add to VS Code", href: VSCODE_INSTALL_URL },
   },
   codex: {
     file: "~/.codex/config.toml",
@@ -112,6 +127,46 @@ ${RULES_BODY}`,
     codex: { file: "AGENTS.md", content: RULES_BODY },
   };
 
+const indent = (text: string) =>
+  text
+    .split("\n")
+    .map((line) => (line ? `   ${line}` : line))
+    .join("\n");
+
+export const SETUP_URL = `${siteConfig.url}/setup.md`;
+
+/** The one line a person gives their agent; the steps live at SETUP_URL. */
+export const SETUP_PROMPT = `Set up Kokonut UI in this project by following ${SETUP_URL}`;
+
+/**
+ * The setup, written for an agent to carry out, served at /setup.md. Editor
+ * agnostic: the agent knows which client and package manager it runs with.
+ */
+export const SETUP_GUIDE = `# Set up Kokonut UI
+
+Kokonut UI (${siteConfig.url}) is a shadcn/ui component registry. You are an AI agent setting it up in the user's project. Run each command with the project's package manager (bunx, pnpm dlx or npx), skip any step that is already done, and don't change unrelated files.
+
+1. If the project has no components.json, run:
+   npx shadcn@latest init
+2. Add the registry to components.json, keeping any registries already there:
+   "registries": { "@kokonutui": "https://kokonutui.com/r/{name}.json" }
+3. Install the cn helper the components use:
+   npx shadcn@latest add https://kokonutui.com/r/utils.json
+4. Connect the shadcn MCP server for the editor you are running in, so you can browse and install components later:
+   npx shadcn@latest mcp init --client <claude|cursor|vscode|codex>
+5. Add the rules below to the project's agent instructions file: CLAUDE.md, AGENTS.md, .cursor/rules/kokonutui.mdc or .github/copilot-instructions.md, whichever the project already uses. Create AGENTS.md if there is none.
+
+${indent(RULES_BODY)}
+
+When you're done, tell the user in a few lines what you changed, whether they need to restart their editor for the MCP server, and suggest one component they could add next (the list is at ${siteConfig.url}/llms.txt).
+
+Full guide for people: ${siteConfig.url}/docs/agents
+`;
+
+/** Per component: a prompt that installs it straight from its registry URL. */
+export const componentPrompt = (name: string) =>
+  `Add the ${name} component from Kokonut UI to this project with npx shadcn@latest add ${siteConfig.url}/r/${name}.json, then show me how to use it.`;
+
 export const AGENT_PROMPTS = [
   "Show me every component in the @kokonutui registry",
   "Add @kokonutui/particle-button to my project",
@@ -120,6 +175,11 @@ export const AGENT_PROMPTS = [
 ];
 
 export const AGENT_ENDPOINTS = [
+  {
+    path: "/setup.md",
+    description:
+      "Setup steps written for an agent: registry, MCP server and rules file. The setup prompt points here.",
+  },
   {
     path: "/llms.txt",
     description:

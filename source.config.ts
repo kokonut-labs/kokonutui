@@ -28,6 +28,7 @@ const llmsOptions: LLMsOptions = {
     "AgentPrompts",
     "AgentEndpoints",
     "Release",
+    "SetupChoice",
   ],
   // Heading ids would print as `[#slug]` after every heading.
   headingIds: false,

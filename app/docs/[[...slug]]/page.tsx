@@ -21,6 +21,7 @@ import {
   Command,
   McpSetup,
   Note,
+  SetupChoice,
 } from "@/components/mdx/docs-blocks";
 import { Preview, type PreviewProps } from "@/components/mdx/preview";
 import { PreviewClient } from "@/components/mdx/preview-client";
@@ -202,6 +203,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
             Command,
             McpSetup,
             Note,
+            SetupChoice,
             Preview: DocsPreview,
             PreviewClient: DocsPreviewClient,
             PreviewTemplate,

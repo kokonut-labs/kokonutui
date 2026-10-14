@@ -8,6 +8,8 @@ import {
   MCP_CLIENTS,
   MCP_SETUP,
   mcpInit,
+  SETUP_PROMPT,
+  SETUP_URL,
 } from "@/lib/agents";
 import { RELEASES } from "@/lib/changelog";
 
@@ -48,6 +50,9 @@ const mcpSetup: Renderer = () =>
       `### ${label}`,
       "",
       fence("bash", `npx ${mcpInit(id)}`),
+      ...(setup.install
+        ? [`${setup.install.label}: ${setup.install.href}`, ""]
+        : []),
       `Or add it by hand to \`${setup.file}\`:`,
       "",
       fence(setup.language, setup.config, setup.file),
@@ -113,6 +118,15 @@ const release: Renderer = (args) => {
   return lines.join("\n");
 };
 
+const setupChoice: Renderer = () =>
+  [
+    "To have an agent do the whole setup, give it this prompt:",
+    "",
+    fence("text", SETUP_PROMPT),
+    `If you are an agent setting up Kokonut UI, follow ${SETUP_URL}. Otherwise, follow the steps below.`,
+    "",
+  ].join("\n");
+
 export const BLOCK_RENDERERS: Record<string, Renderer> = {
   Command: command,
   Note: note,
@@ -121,4 +135,5 @@ export const BLOCK_RENDERERS: Record<string, Renderer> = {
   AgentPrompts: agentPrompts,
   AgentEndpoints: agentEndpoints,
   Release: release,
+  SetupChoice: setupChoice,
 };

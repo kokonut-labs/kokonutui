@@ -73,6 +73,8 @@ export function GET() {
     "its Markdown source, which includes the install command and the full",
     "component source code.",
     "",
+    `To set Kokonut UI up in a project, follow ${siteConfig.url}/setup.md.`,
+    "",
   ];
 
   for (const child of tree.children) {

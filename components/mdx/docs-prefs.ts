@@ -10,17 +10,20 @@ import {
 
 // A reader picks their package manager or editor once, and every command on
 // every docs page follows. Stored per browser; the server renders defaults.
-const DEFAULTS = { pm: "bun", editor: "claude" } as const;
+// Component install bars lead with the agent prompt; the CLI is one tap away.
+const DEFAULTS = { pm: "bun", editor: "claude", via: "agent" } as const;
 
 interface Prefs {
   editor: McpClient;
   pm: PackageManager;
+  via: "agent" | "cli";
 }
 type Key = keyof Prefs;
 
 const ALLOWED: Record<Key, readonly string[]> = {
   pm: PACKAGE_MANAGERS.map((m) => m.id),
   editor: MCP_CLIENTS.map((c) => c.id),
+  via: ["agent", "cli"],
 };
 
 const STORAGE_PREFIX = "kokonut-docs-";
@@ -75,3 +78,4 @@ function useDocsPref<K extends Key>(key: K) {
 
 export const usePackageManager = () => useDocsPref("pm");
 export const useEditor = () => useDocsPref("editor");
+export const useInstallVia = () => useDocsPref("via");
