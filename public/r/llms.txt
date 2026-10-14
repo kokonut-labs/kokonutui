@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 49 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 50 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -43,6 +43,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Notification Stack](https://kokonutui.com/docs/cards/notification-stack.md): Stacked notifications that fan out on hover and swipe away, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/notification-stack`
 - [Particle Button](https://kokonutui.com/docs/buttons/particle-button.md): Button that bursts animated particles from its center on click with a quick scale press effect, built with React, Motion, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/particle-button`
 - [Profile Dropdown](https://kokonutui.com/docs/navigation/profile-dropdown.md): User profile dropdown menu with avatar, subscription and model details, and quick action links, built with React, shadcn/ui, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/profile-dropdown`
+- [Pull Cord](https://kokonutui.com/docs/buttons/pull-cord.md): A lamp switch you pull on a swinging cord, built with React and a rope simulation. Install: `npx shadcn@latest add @kokonutui/pull-cord`
 - [Scroll Text](https://kokonutui.com/docs/texts/scroll-text.md): Scroll-driven text list that highlights the active word as you scroll, using IntersectionObserver with React, Tailwind CSS and Motion animations. Install: `npx shadcn@latest add @kokonutui/scroll-text`
 - [Shapes Hero](https://kokonutui.com/docs/backgrounds/shape-hero.md): Hero section with translucent geometric shapes that drop in and float over a gradient backdrop. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/shape-hero`
 - [Shimmer Text](https://kokonutui.com/docs/texts/shimmer-text.md): Animated shimmer text with a looping gradient sweep across the letters, built with React and Tailwind CSS gradients and keyframes. Install: `npx shadcn@latest add @kokonutui/shimmer-text`

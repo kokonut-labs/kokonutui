@@ -389,6 +389,19 @@
       ]
     },
     {
+      "name": "pull-cord",
+      "type": "registry:component",
+      "title": "Pull Cord",
+      "description": "A lamp switch you pull on a swinging cord, built with React and a rope simulation.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/pull-cord.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "bento-grid",
       "type": "registry:component",
       "title": "Bento Grid",
