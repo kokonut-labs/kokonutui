@@ -265,6 +265,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "liquid-slider",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/liquid-slider.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "switch-button",
     type: "registry:component",
     dependencies: ["lucide-react"],
@@ -283,6 +294,17 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/pull-cord.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "tear-button",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/tear-button.tsx",
         type: "registry:component",
       },
     ],
@@ -434,6 +456,16 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/notification-stack.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "liquid-gauge",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/liquid-gauge.tsx",
         type: "registry:component",
       },
     ],

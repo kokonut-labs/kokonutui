@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 51 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 54 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -34,7 +34,9 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Glitch Text](https://kokonutui.com/docs/texts/glitch-text.md): Customizable glitch text effect with adjustable intensity, colors and sizes, animated in React with Motion and styled with Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/glitch-text`
 - [Gradient Button](https://kokonutui.com/docs/buttons/gradient-button.md): Layered gradient button with emerald, purple, and orange variants, a gradient border in light and dark mode, soft inner glow, press feedback, and an optional icon, styled entirely with Tailwind CSS in React. Install: `npx shadcn@latest add @kokonutui/gradient-button`
 - [Hold Button](https://kokonutui.com/docs/buttons/hold-button.md): Press-and-hold confirmation button with an animated progress fill, configurable hold duration, and color variants, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/hold-button`
+- [Liquid Gauge](https://kokonutui.com/docs/cards/liquid-gauge.md): A usage meter filled with liquid that sloshes, ripples and bubbles, built with React and a wave simulation. Install: `npx shadcn@latest add @kokonutui/liquid-gauge`
 - [Liquid Glass](https://kokonutui.com/docs/cards/liquid-glass-card.md): Apple-inspired liquid glass card and buttons using SVG displacement filters for a refractive effect, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/liquid-glass-card`
+- [Liquid Slider](https://kokonutui.com/docs/inputs/liquid-slider.md): A vertical slider you fill like a glass, with a sloshing surface and rising bubbles. Install: `npx shadcn@latest add @kokonutui/liquid-slider`
 - [Loader](https://kokonutui.com/docs/inputs/loader.md): Animated loading indicator with rotating gradient rings, size variants and customizable title text. Built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/loader`
 - [Magnet Button](https://kokonutui.com/docs/buttons/attract-button.md): Magnetic button that pulls floating particles to its center on hover using Motion spring animations, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/attract-button`
 - [Matrix Text](https://kokonutui.com/docs/texts/matrix-text.md): Matrix-style text effect where letters scramble through binary characters before revealing, built with React, Tailwind CSS and Motion animations. Install: `npx shadcn@latest add @kokonutui/matrix-text`
@@ -57,6 +59,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Switch Button](https://kokonutui.com/docs/buttons/switch-button.md): Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes. Install: `npx shadcn@latest add @kokonutui/switch-button`
 - [Swoosh Text](https://kokonutui.com/docs/texts/swoosh-text.md): Hover text effect with layered colorful shadows that snap flat on mouseover, built with React and Tailwind CSS transitions. Install: `npx shadcn@latest add @kokonutui/swoosh-text`
 - [Team Selector](https://kokonutui.com/docs/inputs/team-selector.md): Animated team size selector with stacked overlapping avatars, spring transitions and increment controls. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/team-selector`
+- [Tear Button](https://kokonutui.com/docs/buttons/tear-button.md): A confirm button you tear off like a ticket stub, hole by hole. Install: `npx shadcn@latest add @kokonutui/tear-button`
 - [Toolbar](https://kokonutui.com/docs/navigation/toolbar.md): Figma-inspired toolbar where the selected tool expands to reveal its label with spring animations, built with React, Motion, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/toolbar`
 - [Topo Background](https://kokonutui.com/docs/backgrounds/topo-background.md): A living contour map that drifts, rises under the cursor and ripples on click, built with React and Canvas. Install: `npx shadcn@latest add @kokonutui/topo-background`
 - [Typing Text](https://kokonutui.com/docs/texts/type-writer.md): Typewriter text animation that types and deletes multiple sequences with a blinking cursor and auto loop, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/type-writer`

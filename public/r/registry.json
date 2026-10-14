@@ -378,6 +378,19 @@
       ]
     },
     {
+      "name": "liquid-slider",
+      "type": "registry:component",
+      "title": "Liquid Slider",
+      "description": "A vertical slider you fill like a glass, with a sloshing surface and rising bubbles.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/liquid-slider.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "switch-button",
       "type": "registry:component",
       "title": "Switch Button",
@@ -404,6 +417,19 @@
       "files": [
         {
           "path": "components/kokonutui/pull-cord.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "tear-button",
+      "type": "registry:component",
+      "title": "Tear Button",
+      "description": "A confirm button you tear off like a ticket stub, hole by hole.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/tear-button.tsx",
           "type": "registry:component"
         }
       ]
@@ -593,6 +619,18 @@
       "files": [
         {
           "path": "components/kokonutui/notification-stack.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "liquid-gauge",
+      "type": "registry:component",
+      "title": "Liquid Gauge",
+      "description": "A usage meter filled with liquid that sloshes, ripples and bubbles, built with React and a wave simulation.",
+      "files": [
+        {
+          "path": "components/kokonutui/liquid-gauge.tsx",
           "type": "registry:component"
         }
       ]
