@@ -504,6 +504,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "plucked-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/plucked-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "sliced-text",
     type: "registry:component",
     dependencies: ["motion"],
