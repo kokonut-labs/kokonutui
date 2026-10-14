@@ -265,6 +265,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "liquid-slider",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/liquid-slider.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "switch-button",
     type: "registry:component",
     dependencies: ["lucide-react"],
