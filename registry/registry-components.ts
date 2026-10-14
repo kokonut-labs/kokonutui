@@ -243,6 +243,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "marking-menu",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/marking-menu.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "team-selector",
     type: "registry:component",
     dependencies: ["motion", "lucide-react"],
