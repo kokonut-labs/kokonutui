@@ -421,6 +421,19 @@
       ]
     },
     {
+      "name": "signature-pad",
+      "type": "registry:component",
+      "title": "Signature Pad",
+      "description": "A signature field with a sprung pen tip, speed-weighted ink and SVG output.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/signature-pad.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "switch-button",
       "type": "registry:component",
       "title": "Switch Button",

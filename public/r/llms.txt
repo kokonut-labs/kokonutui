@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 58 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 59 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -53,6 +53,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Scroll Text](https://kokonutui.com/docs/texts/scroll-text.md): Scroll-driven text list that highlights the active word as you scroll, using IntersectionObserver with React, Tailwind CSS and Motion animations. Install: `npx shadcn@latest add @kokonutui/scroll-text`
 - [Shape Hero](https://kokonutui.com/docs/backgrounds/shape-hero.md): A landing hero where shapes drop in, pile up under the headline and can be grabbed and thrown. Install: `npx shadcn@latest add @kokonutui/shape-hero`
 - [Shimmer Text](https://kokonutui.com/docs/texts/shimmer-text.md): Animated shimmer text with a looping gradient sweep across the letters, built with React and Tailwind CSS gradients and keyframes. Install: `npx shadcn@latest add @kokonutui/shimmer-text`
+- [Signature Pad](https://kokonutui.com/docs/inputs/signature-pad.md): A signature field with a sprung pen tip, speed-weighted ink and SVG output. Install: `npx shadcn@latest add @kokonutui/signature-pad`
 - [Sliced Text](https://kokonutui.com/docs/texts/sliced-text.md): Text effect that splits into two offset slices and merges together on hover using clip-path, built with React, Tailwind CSS and Motion animations. Install: `npx shadcn@latest add @kokonutui/sliced-text`
 - [Slide Text Button](https://kokonutui.com/docs/buttons/slide-text-button.md): Animated link button with a vertical text slide on hover and default and ghost variants, built with React, Next.js Link, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/slide-text-button`
 - [Smooth Drawer](https://kokonutui.com/docs/navigation/smooth-drawer.md): Bottom drawer with spring-based slide-in and staggered content reveal, built on Vaul with React, Motion, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/smooth-drawer`
