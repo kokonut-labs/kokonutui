@@ -615,7 +615,11 @@
       "name": "ai-loading",
       "type": "registry:component",
       "title": "AI State Loading",
-      "description": "Animated AI loading state cycling task statuses through a scrolling code-style log with an SVG progress spinner. Built with React and Tailwind CSS.",
+      "description": "Agent progress as a list of steps with a live log, elapsed time and a summary when done.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
       "files": [
         {
           "path": "components/kokonutui/ai-loading.tsx",
