@@ -51,8 +51,109 @@ export const RELEASES: Release[] = [
       { name: "plucked-text", pr: 57 },
       { name: "marking-menu", pr: 58 },
       { name: "drape-background", pr: 59 },
+      { name: "dot-field", pr: 67 },
     ],
     improved: [
+      {
+        name: "card-flip",
+        pr: 67,
+        note: "Rebuilt as Flick Card: drag or flick it to spin, with thickness and light that follow the angle.",
+      },
+      {
+        name: "card-stack",
+        pr: 67,
+        note: "Rebuilt as Throw Deck: throw the top card off and it tucks back under the pile.",
+      },
+      {
+        name: "carousel-cards",
+        pr: 67,
+        note: "Rebuilt as Momentum Rail: drag with momentum and cover-flow depth from scroll.",
+      },
+      {
+        name: "liquid-glass-card",
+        pr: 67,
+        note: "Rebuilt as Now Playing: a spinning disc you turn to scrub the track.",
+      },
+      {
+        name: "bento-grid",
+        pr: 67,
+        note: "Rebuilt as Widget Grid: pick up, reorder and resize widgets by pointer or keyboard.",
+      },
+      {
+        name: "dynamic-text",
+        pr: 67,
+        note: "Rebuilt as Morph Text: letters travel, fall and land between strings, with decode and cycle modes.",
+      },
+      {
+        name: "glitch-text",
+        pr: 67,
+        note: "Rebuilt as Signal Text: flat text with sliced band glitches, on idle, hover or change.",
+      },
+      {
+        name: "swoosh-text",
+        pr: 67,
+        note: "Rebuilt as Extruded Text: 3D letters lit by the cursor that sink like keycaps.",
+      },
+      {
+        name: "flow-field",
+        pr: 67,
+        note: "Rebuilt as Wind: monochrome streamlines that part around the cursor and swirl in its wake.",
+      },
+      {
+        name: "toolbar",
+        pr: 67,
+        note: "Rebuilt as Tool Dock: a draggable editor dock with tooltips, shortcuts and tool flyouts.",
+      },
+      {
+        name: "smooth-tab",
+        pr: 67,
+        note: "Rebuilt as Swipe Tabs: swipe the panel and the indicator follows your finger.",
+      },
+      {
+        name: "morphic-navbar",
+        pr: 67,
+        note: "Rebuilt as Split Nav: the bar splits around the active link and you can scrub across it.",
+      },
+      {
+        name: "profile-dropdown",
+        pr: 67,
+        note: "Rebuilt as Account Menu: the card morphs into its menu, with account switching and hold to sign out.",
+      },
+      {
+        name: "action-search-bar",
+        pr: 67,
+        note: "Rebuilt as Command Palette: nested pages, fuzzy matching and instant keyboard use.",
+      },
+      {
+        name: "avatar-picker",
+        pr: 67,
+        note: "Faces generated from your name, on a 3D coin you can flick or shuffle.",
+      },
+      {
+        name: "currency-transfer",
+        pr: 67,
+        note: "Odometer amounts, a chip that carries the money across, and a progress arc.",
+      },
+      {
+        name: "type-writer",
+        pr: 67,
+        note: "A caret that blinks only when idle, select-to-delete, and optional typos.",
+      },
+      {
+        name: "apple-activity-card",
+        pr: 67,
+        note: "Numbers count up with the rings, and rings can go past 100%.",
+      },
+      {
+        name: "notification-stack",
+        pr: 67,
+        note: "Released cards spring back or fly away with your finger's speed.",
+      },
+      {
+        name: "topo-background",
+        pr: 67,
+        note: "Elevation labels on the contour lines.",
+      },
       {
         name: "background-paths",
         pr: 48,
@@ -89,24 +190,9 @@ export const RELEASES: Release[] = [
         note: "Calls your onClick and onSuccess, and keeps particles inside the button.",
       },
       {
-        name: "glitch-text",
-        pr: 26,
-        note: "Burst-style glitch, gradient text that renders everywhere, reduced motion.",
-      },
-      {
         name: "gradient-button",
         pr: 27,
         note: "Correct light and dark themes, and renders its children and icon.",
-      },
-      {
-        name: "currency-transfer",
-        pr: 28,
-        note: "Typed props, a controlled status, and screen reader support.",
-      },
-      {
-        name: "bento-grid",
-        pr: 29,
-        note: "Takes its tiles as an items prop, with fixed column spans.",
       },
     ],
     library: [
