@@ -63,7 +63,6 @@ export const component: Registry = [
   {
     name: "shape-hero",
     type: "registry:component",
-    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/shape-hero.tsx",
