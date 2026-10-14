@@ -28,27 +28,18 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 
-// How far open the paper rests while hovered, as a hint that it unfolds.
-const HOVER_PEEK = 0.07;
 // Movement before a press counts as a drag rather than a click.
 const DRAG_SLOP = 4;
 // Release faster than this (share of the full fold per second) and the
 // paper follows the flick, whatever its position.
 const FLICK = 1.2;
-// Opening overshoots flat by a hair, so the paper settles like paper.
-const OPEN_SPRING = {
-  type: "spring",
-  stiffness: 260,
-  damping: 22,
-  restDelta: 0.001,
-} as const;
-const CLOSE_SPRING = {
-  type: "spring",
-  stiffness: 320,
-  damping: 34,
-  restDelta: 0.001,
-} as const;
-const PEEK_TRANSITION = { duration: 0.25, ease: [0.23, 1, 0.32, 1] } as const;
+// Panels unfold one after another, top first, each starting this share of
+// the way after the one above. Folding runs the other way, bottom first.
+const STAGGER = 0.14;
+// No bounce: paper that overshoots flat and folds back reads as jitter.
+const OPEN_SPRING = { type: "spring", duration: 0.5, bounce: 0 } as const;
+const CLOSE_SPRING = { type: "spring", duration: 0.4, bounce: 0 } as const;
+const RADIUS = 16;
 
 export interface PaperFoldProps {
   /** Always visible; clicking it folds and unfolds the rest. */
@@ -65,16 +56,27 @@ export interface PaperFoldProps {
   className?: string;
 }
 
+/** How folded one panel is (0 flat, 90 edge-on) at overall progress p. */
+function panelFold(index: number, count: number, p: number) {
+  const span = 1 - (count - 1) * STAGGER;
+  const local = Math.min(1, Math.max(0, (p - index * STAGGER) / span));
+  return (1 - local) * 90;
+}
+
 /**
- * Angle of one panel relative to the one above it. The panels hang from one
- * another like a folded map: the first tips back by the fold angle, and
- * each next one bends twice that the other way, so they zig-zag flat.
+ * Angle of each panel relative to the one above it. The panels hang from
+ * one another like a folded map: even panels tip back by their fold, odd
+ * ones forward, so together they zig-zag flat.
  */
-function panelAngle(index: number, fold: number) {
-  if (index === 0) {
-    return -fold;
+function panelAngles(count: number, p: number) {
+  const angles: number[] = [];
+  let previous = 0;
+  for (let i = 0; i < count; i++) {
+    const net = (i % 2 === 0 ? -1 : 1) * panelFold(i, count, p);
+    angles.push(net - previous);
+    previous = net;
   }
-  return index % 2 === 1 ? 2 * fold : -2 * fold;
+  return angles;
 }
 
 const round = (n: number) => Math.round(n * 100) / 100;
@@ -92,6 +94,10 @@ export default function PaperFold({
   const reduceMotion = useReducedMotion();
   const [internal, setInternal] = useState(defaultOpen);
   const open = openProp ?? internal;
+  // Inline styles come from the first render only. After that the DOM is
+  // driven directly, and a re-render must not snap it back to an end state
+  // in the middle of an animation.
+  const [initialOpen] = useState(open);
 
   // 0 is folded flat under the header, 1 is open flat.
   const progress = useMotionValue(open ? 1 : 0);
@@ -108,50 +114,59 @@ export default function PaperFold({
     samples: { t: number; p: number }[];
   } | null>(null);
   const suppressClick = useRef(false);
+  // The state this component last animated to, so a parent's change can be
+  // told apart from our own.
+  const requested = useRef(open);
 
   const count = panels.length;
   const fullHeight = count * panelHeight;
 
-  // Each frame writes the panel transforms, their shading and the body's
-  // height straight to the DOM. The height has to change: content below
-  // the paper should follow it.
+  // Each frame writes only the panels' transforms and shading. The body's
+  // height changes once per toggle, not per frame: it opens to full size
+  // as the paper starts to unfold and closes after it has folded, so the
+  // page around it lays out twice instead of on every frame.
   const apply = (p: number) => {
-    const fold = (1 - p) * 90;
-    const rad = (fold * Math.PI) / 180;
+    const angles = panelAngles(count, p);
     for (let i = 0; i < count; i++) {
       const panel = panelRefs.current[i];
       if (panel) {
-        panel.style.transform = `rotateX(${round(panelAngle(i, fold))}deg)`;
+        panel.style.transform = `rotateX(${round(angles[i])}deg)`;
       }
       const shade = shadeRefs.current[i];
       if (shade) {
         // Panels tipped towards the light stay pale; the ones facing down
         // fall into shadow.
         const strength = i % 2 === 0 ? 0.06 : 0.22;
-        shade.style.opacity = String(round(strength * Math.abs(Math.sin(rad))));
+        const fold = (panelFold(i, count, p) * Math.PI) / 180;
+        shade.style.opacity = String(round(strength * Math.sin(fold)));
       }
-    }
-    if (bodyRef.current) {
-      bodyRef.current.style.height = `${round(fullHeight * Math.cos(rad))}px`;
-    }
-    if (headerRef.current) {
-      // The header's bottom corners round off as the paper tucks away.
-      const radius = round(16 * Math.min(1, Math.max(0, 1 - p * 6)));
-      headerRef.current.style.borderBottomLeftRadius = `${radius}px`;
-      headerRef.current.style.borderBottomRightRadius = `${radius}px`;
     }
   };
   useMotionValueEvent(progress, "change", apply);
 
+  const setLaidOut = (expanded: boolean) => {
+    if (bodyRef.current) {
+      bodyRef.current.style.height = `${expanded ? fullHeight : 0}px`;
+    }
+    if (headerRef.current) {
+      const radius = `${expanded ? 0 : RADIUS}px`;
+      headerRef.current.style.borderBottomLeftRadius = radius;
+      headerRef.current.style.borderBottomRightRadius = radius;
+    }
+  };
+
   // Follow the controlled value when the parent changes it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: setLaidOut only writes to refs.
   useEffect(() => {
-    if (drag.current) {
+    if (drag.current || open === requested.current) {
       return;
     }
+    requested.current = open;
     const target = open ? 1 : 0;
     if (Math.abs(progress.get() - target) > 0.2) {
       animation.current?.stop();
       progress.jump(target);
+      setLaidOut(open);
     }
   }, [open, progress]);
 
@@ -159,13 +174,24 @@ export default function PaperFold({
 
   const settle = (next: boolean, velocity = 0) => {
     animation.current?.stop();
+    requested.current = next;
+    if (next) {
+      setLaidOut(true);
+    }
     if (reduceMotion) {
       progress.jump(next ? 1 : 0);
+      setLaidOut(next);
     } else {
-      animation.current = animate(progress, next ? 1 : 0, {
+      const controls = animate(progress, next ? 1 : 0, {
         ...(next ? OPEN_SPRING : CLOSE_SPRING),
         velocity,
+        onComplete: () => {
+          if (!next && animation.current === controls) {
+            setLaidOut(false);
+          }
+        },
       });
+      animation.current = controls;
     }
     if (next !== open) {
       if (openProp === undefined) {
@@ -173,14 +199,6 @@ export default function PaperFold({
       }
       onOpenChange?.(next);
     }
-  };
-
-  const peek = (to: number) => {
-    if (open || drag.current || reduceMotion) {
-      return;
-    }
-    animation.current?.stop();
-    animation.current = animate(progress, to, PEEK_TRANSITION);
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -212,6 +230,7 @@ export default function PaperFold({
       }
       current.moved = true;
       animation.current?.stop();
+      setLaidOut(true);
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     // Pulling down unfolds, at the same rate the bottom edge moves. Past
@@ -261,16 +280,6 @@ export default function PaperFold({
       onLostPointerCapture={handlePointerUp}
       onPointerCancel={handlePointerUp}
       onPointerDown={handlePointerDown}
-      onPointerEnter={(event) => {
-        if (event.pointerType === "mouse") {
-          peek(HOVER_PEEK);
-        }
-      }}
-      onPointerLeave={(event) => {
-        if (event.pointerType === "mouse") {
-          peek(0);
-        }
-      }}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
     >
@@ -278,8 +287,8 @@ export default function PaperFold({
         className="relative z-10 overflow-hidden rounded-t-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
         ref={headerRef}
         style={{
-          borderBottomLeftRadius: open ? 0 : 16,
-          borderBottomRightRadius: open ? 0 : 16,
+          borderBottomLeftRadius: initialOpen ? 0 : RADIUS,
+          borderBottomRightRadius: initialOpen ? 0 : RADIUS,
         }}
       >
         <button
@@ -307,7 +316,7 @@ export default function PaperFold({
         // Perspective lives on the panels' direct parent; set any higher
         // and the folds flatten into a plain squash.
         style={{
-          height: open ? fullHeight : 0,
+          height: initialOpen ? fullHeight : 0,
           perspective: 900,
           perspectiveOrigin: "50% 0%",
         }}
@@ -315,7 +324,7 @@ export default function PaperFold({
         <Panel
           height={panelHeight}
           index={0}
-          initialFold={open ? 0 : 90}
+          initialAngle={panelAngles(count, initialOpen ? 1 : 0)}
           last={count === 1}
           panelRefs={panelRefs}
           panels={panels}
@@ -331,7 +340,7 @@ function Panel({
   panels,
   index,
   height,
-  initialFold,
+  initialAngle,
   last,
   panelRefs,
   shadeRefs,
@@ -339,21 +348,21 @@ function Panel({
   panels: ReactNode[];
   index: number;
   height: number;
-  initialFold: number;
+  initialAngle: number[];
   last: boolean;
   panelRefs: { current: (HTMLDivElement | null)[] };
   shadeRefs: { current: (HTMLDivElement | null)[] };
 }) {
   return (
     <div
-      className="absolute inset-x-0 origin-top"
+      className="absolute inset-x-0 origin-top will-change-transform"
       ref={(node) => {
         panelRefs.current[index] = node;
       }}
       style={{
         height,
         top: index === 0 ? 0 : "100%",
-        transform: `rotateX(${panelAngle(index, initialFold)}deg)`,
+        transform: `rotateX(${round(initialAngle[index])}deg)`,
         transformStyle: "preserve-3d",
       }}
     >
@@ -378,7 +387,7 @@ function Panel({
         <Panel
           height={height}
           index={index + 1}
-          initialFold={initialFold}
+          initialAngle={initialAngle}
           last={index + 2 === panels.length}
           panelRefs={panelRefs}
           panels={panels}
