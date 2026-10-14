@@ -21,7 +21,7 @@ import {
   VERCEL_OSS_URL,
   VIDEO_ID,
 } from "./data";
-import { Fit, LIVE, LiveFallback } from "./live";
+import { Fit, LIVE, LiveFallback, useNearViewport } from "./live";
 import type { Part } from "./parts";
 import {
   CELL,
@@ -39,19 +39,23 @@ import {
 } from "./styles";
 import { VideoCard } from "./video";
 
-const FEATURED = "apple-activity-card";
+const FEATURED = "receipt-printer";
 /** The featured part, asked for the way you'd ask a colleague. */
-const AGENT_PROMPT = "Add @kokonutui/apple-activity-card to my dashboard";
+const AGENT_PROMPT = "Add @kokonutui/receipt-printer to my checkout page";
+// The wide background comes after four plates, so it starts a row at both
+// two and three columns.
 const PLATES = [
   "ai-prompt",
-  "team-selector",
-  "particle-button",
-  "currency-transfer",
-  "smooth-tab",
-  "hold-button",
-  "card-flip",
-  "file-upload",
-  "dynamic-text",
+  "detent-dial",
+  "notification-stack",
+  "tear-button",
+  "drape-background",
+  "wheel-picker",
+  "plucked-text",
+  "pull-cord",
+  "activity-terrain",
+  "liquid-gauge",
+  "bell-button",
 ];
 
 export function Catalog({
@@ -217,7 +221,7 @@ function Cover({ featured }: { featured?: Part }) {
 
 function FeaturedPlate({ part }: { part: Part }) {
   const { Component: Demo, hint } = LIVE[part.name];
-  // The rings only fill on mount, so the cover offers a way to see it again.
+  // It prints once on mount, so the cover offers a way to see it again.
   const [run, setRun] = useState(0);
   return (
     <figure
@@ -228,7 +232,7 @@ function FeaturedPlate({ part }: { part: Part }) {
       style={enter(1)}
     >
       <div className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
-        <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>
+        <span className={cn(MONO, "shrink-0 font-medium text-[12px]", LEAF)}>
           {part.code}
         </span>
         <span className="flex min-w-0 items-baseline gap-3">
@@ -351,16 +355,27 @@ function Plates({ plates }: { plates: Part[] }) {
 function Plate({ part }: { part: Part }) {
   const entry = LIVE[part.name];
   const Demo = entry.Component;
+  const { ref, near } = useNearViewport<HTMLDivElement>();
+  const demo = near ? (
+    <Suspense fallback={<LiveFallback />}>
+      <Demo />
+    </Suspense>
+  ) : null;
   return (
-    <figure className={cn("flex flex-col", CELL)}>
+    <figure
+      className={cn("flex flex-col", entry.wide && "sm:col-span-2", CELL)}
+    >
       <PlateHead code={part.code} note={entry.hint} />
-      {/* Every plate is the same size; big parts are shown reduced. */}
-      <div className="relative h-[300px]">
-        <Fit className="px-6 py-4">
-          <Suspense fallback={<LiveFallback />}>
-            <Demo />
-          </Suspense>
-        </Fit>
+      {/* Every plate is the same height; big parts are shown reduced, and
+          backgrounds fill a double plate edge to edge. */}
+      <div className="relative h-[300px]" ref={ref}>
+        {entry.wide ? (
+          <div className="absolute inset-x-4 inset-y-3 overflow-hidden">
+            {demo}
+          </div>
+        ) : (
+          <Fit className="px-6 py-4">{demo}</Fit>
+        )}
       </div>
       <PlateFoot part={part} />
     </figure>
@@ -370,7 +385,9 @@ function Plate({ part }: { part: Part }) {
 function PlateHead({ code, note }: { code: string; note: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
-      <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>{code}</span>
+      <span className={cn(MONO, "shrink-0 font-medium text-[12px]", LEAF)}>
+        {code}
+      </span>
       <span className={cn(META, "truncate")}>{note}</span>
     </div>
   );

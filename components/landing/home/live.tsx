@@ -6,6 +6,7 @@ import {
   lazy,
   type MouseEvent,
   type ReactNode,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -21,15 +22,22 @@ export interface LiveEntry {
   Component: LazyExoticComponent<ComponentType>;
   /** One line telling people what to do with it. */
   hint: string;
+  /**
+   * Fills a two-column plate edge to edge instead of being fitted into one,
+   * for backgrounds.
+   */
+  wide?: boolean;
 }
 
 function live<M extends { default: unknown }>(
   load: () => Promise<M>,
   render: (mod: M) => ReactNode,
-  hint: string
+  hint: string,
+  options: { wide?: boolean } = {}
 ): LiveEntry {
   return {
     hint,
+    ...options,
     Component: lazy(async () => {
       const mod = await load();
       return { default: () => render(mod) };
@@ -38,55 +46,67 @@ function live<M extends { default: unknown }>(
 }
 
 export const LIVE: Record<string, LiveEntry> = {
-  "apple-activity-card": live(
-    () => import("@/components/kokonutui/apple-activity-card"),
+  "receipt-printer": live(
+    () => import("@/components/kokonutui/receipt-printer"),
     ({ default: C }) => <C />,
-    "Rings fill as it mounts"
+    "Pull down to tear it off"
   ),
   "ai-prompt": live(
     () => import("@/components/kokonutui/ai-prompt"),
     ({ default: C }) => <C className="w-full max-w-[520px]" />,
-    "Type, switch models, press Enter"
+    "Type / for commands, drop a file"
   ),
-  "team-selector": live(
-    () => import("@/components/kokonutui/team-selector"),
+  "detent-dial": live(
+    () => import("@/components/kokonutui/detent-dial"),
     ({ default: C }) => <C />,
-    "Use − and +"
+    "Turn it, or flick and let it coast"
   ),
-  "particle-button": live(
-    () => import("@/components/kokonutui/particle-button"),
-    ({ default: C }) => <C>Send</C>,
-    "Click it"
-  ),
-  "currency-transfer": live(
-    () => import("@/components/kokonutui/currency-transfer"),
+  "notification-stack": live(
+    () => import("@/components/kokonutui/notification-stack"),
     ({ default: C }) => <C />,
-    "Completes once as it mounts"
+    "Hover to fan out, swipe to dismiss"
   ),
-  "smooth-tab": live(
-    () => import("@/components/kokonutui/smooth-tab"),
+  "tear-button": live(
+    () => import("@/components/kokonutui/tear-button"),
     ({ default: C }) => <C />,
-    "Switch tabs both ways"
+    "Tear the stub off to confirm"
   ),
-  "hold-button": live(
-    () => import("@/components/kokonutui/hold-button"),
+  "drape-background": live(
+    () => import("@/components/kokonutui/drape-background"),
+    // Edge to edge, with no headline: the cloth is the demo.
+    ({ default: C }) => <C className="absolute inset-0 min-h-0">{null}</C>,
+    "Sweep through it, or grab a fold",
+    { wide: true }
+  ),
+  "wheel-picker": live(
+    () => import("@/components/kokonutui/wheel-picker"),
     ({ default: C }) => <C />,
-    "Press and hold"
+    "Flick a wheel"
   ),
-  "card-flip": live(
-    () => import("@/components/kokonutui/card-flip"),
+  "plucked-text": live(
+    () => import("@/components/kokonutui/plucked-text"),
     ({ default: C }) => <C />,
-    "Hover to flip"
+    "Pluck the string under the words"
   ),
-  "file-upload": live(
-    () => import("@/components/kokonutui/file-upload"),
-    ({ default: C }) => <C className="w-full max-w-[360px]" />,
-    "Drop any image"
-  ),
-  "dynamic-text": live(
-    () => import("@/components/kokonutui/dynamic-text"),
+  "pull-cord": live(
+    () => import("@/components/kokonutui/pull-cord"),
     ({ default: C }) => <C />,
-    "Plays once as it mounts"
+    "Pull the cord"
+  ),
+  "activity-terrain": live(
+    () => import("@/components/kokonutui/activity-terrain"),
+    ({ default: C }) => <C />,
+    "Drag to turn the terrain"
+  ),
+  "bell-button": live(
+    () => import("@/components/kokonutui/bell-button"),
+    ({ default: C }) => <C />,
+    "Click it to ring the bell"
+  ),
+  "liquid-gauge": live(
+    () => import("@/components/kokonutui/liquid-gauge"),
+    ({ default: C }) => <C />,
+    "Drag sideways to slosh it"
   ),
 };
 
@@ -99,6 +119,34 @@ function stayOnPage(e: MouseEvent<HTMLElement>) {
   if (link?.getAttribute("href") === "#") {
     e.preventDefault();
   }
+}
+
+/**
+ * True once the element comes within a screen of the viewport, and stays
+ * true. Plates mount their demo then, so a dozen simulations don't all load
+ * and run while the cover is on screen.
+ */
+export function useNearViewport<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || near) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setNear(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "100% 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [near]);
+  return { ref, near };
 }
 
 /** Shown for the moment a component's chunk is loading. */
