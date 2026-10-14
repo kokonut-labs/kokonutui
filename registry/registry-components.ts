@@ -343,6 +343,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "bell-button",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/bell-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "bento-grid",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
