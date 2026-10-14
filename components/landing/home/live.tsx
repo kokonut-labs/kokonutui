@@ -85,7 +85,12 @@ export const LIVE: Record<string, LiveEntry> = {
   ),
   "dynamic-text": live(
     () => import("@/components/kokonutui/dynamic-text"),
-    ({ default: C }) => <C />,
+    ({ default: C }) => (
+      <C
+        className="font-medium text-3xl text-zinc-900 dark:text-zinc-100"
+        mode="cycle"
+      />
+    ),
     "Plays once as it mounts"
   ),
 };

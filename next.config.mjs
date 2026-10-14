@@ -249,7 +249,12 @@ const nextConfig = {
       },
       {
         source: "/docs/components/matrix-text",
-        destination: "/docs/texts/matrix-text",
+        destination: "/docs/texts/dynamic-text",
+        permanent: true,
+      },
+      {
+        source: "/docs/texts/matrix-text",
+        destination: "/docs/texts/dynamic-text",
         permanent: true,
       },
       {
