@@ -39,15 +39,15 @@ import {
 } from "./styles";
 import { VideoCard } from "./video";
 
-const FEATURED = "receipt-printer";
+const FEATURED = "apple-activity-card";
 /** The featured part, asked for the way you'd ask a colleague. */
-const AGENT_PROMPT = "Add @kokonutui/receipt-printer to my checkout page";
+const AGENT_PROMPT = "Add @kokonutui/apple-activity-card to my dashboard";
 // The wide background comes after four plates, so it starts a row at both
 // two and three columns.
 const PLATES = [
   "ai-prompt",
   "detent-dial",
-  "notification-stack",
+  "ai-loading",
   "tear-button",
   "drape-background",
   "wheel-picker",
@@ -221,7 +221,7 @@ function Cover({ featured }: { featured?: Part }) {
 
 function FeaturedPlate({ part }: { part: Part }) {
   const { Component: Demo, hint } = LIVE[part.name];
-  // It prints once on mount, so the cover offers a way to see it again.
+  // The rings only fill on mount, so the cover offers a way to see it again.
   const [run, setRun] = useState(0);
   return (
     <figure
