@@ -65,6 +65,8 @@ export interface CarouselCardsProps {
   defaultFavorites?: string[];
   /** Called when a card's heart is toggled, with the item id and new state. */
   onToggleFavorite?: ToggleFavorite;
+  /** Called when a card without an `href` is clicked or activated. */
+  onSelect?: (item: RailItem) => void;
   className?: string;
 }
 
@@ -655,18 +657,23 @@ const CardDetails = ({ item }: { item: RailItem }) => (
   </div>
 );
 
+const STRETCHED =
+  "outline-none after:absolute after:inset-0 after:rounded-2xl after:content-['']";
+
 const RailCard = ({
   item,
   saved,
   onToggleSaved,
+  onSelect,
 }: {
   item: RailItem;
   saved: boolean;
   onToggleSaved: (id: string) => void;
+  onSelect?: (item: RailItem) => void;
 }) => (
   <li className="kokonutui-rail-card w-(--rail-card) flex-none snap-center">
     <div className="kokonutui-rail-tilt group/rail-card relative">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-zinc-200 ring-zinc-900 ring-offset-2 ring-offset-white group-has-[a:focus-visible]/rail-card:ring-2 dark:bg-zinc-800 dark:ring-zinc-100 dark:ring-offset-zinc-950">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-zinc-200 ring-zinc-900 ring-offset-2 ring-offset-white group-has-[[data-rail-link]:focus-visible]/rail-card:ring-2 dark:bg-zinc-800 dark:ring-zinc-100 dark:ring-offset-zinc-950">
         {item.image ? (
           <div className={cn(LAYER_CLASS, "[--rail-depth:8%]")}>
             {/* biome-ignore lint/performance/noImgElement: a plain img keeps the component free of next/image config */}
@@ -699,13 +706,26 @@ const RailCard = ({
       <div className="px-0.5 pt-3">
         <h3 className="truncate font-medium text-sm text-zinc-900 tracking-tight dark:text-zinc-100">
           {/* The link is stretched over the card; the heart sits above it. */}
-          <a
-            className="outline-none after:absolute after:inset-0 after:rounded-2xl"
-            draggable={false}
-            href={item.href ?? "#"}
-          >
-            {item.title}
-          </a>
+          {/* Without an href this is a button: a bare "#" link would navigate. */}
+          {item.href ? (
+            <a
+              className={STRETCHED}
+              data-rail-link=""
+              draggable={false}
+              href={item.href}
+            >
+              {item.title}
+            </a>
+          ) : (
+            <button
+              className={cn(STRETCHED, "cursor-pointer text-left")}
+              data-rail-link=""
+              onClick={() => onSelect?.(item)}
+              type="button"
+            >
+              {item.title}
+            </button>
+          )}
         </h3>
         <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
           {item.location}
@@ -935,7 +955,7 @@ function useMomentumRail(
       if (e.pointerType !== "mouse" || e.button !== 0) {
         return;
       }
-      if ((e.target as Element).closest("button")) {
+      if ((e.target as Element).closest("button:not([data-rail-link])")) {
         return;
       }
       cancelAnimationFrame(s.raf);
@@ -1049,6 +1069,7 @@ function useMomentumRail(
     scroller.addEventListener("pointermove", onPointerMove);
     scroller.addEventListener("pointerup", onRelease);
     scroller.addEventListener("pointercancel", onRelease);
+    scroller.addEventListener("lostpointercapture", onRelease);
     scroller.addEventListener("click", onClickCapture, true);
     scroller.addEventListener("wheel", onNativeInput, { passive: true });
     scroller.addEventListener("touchstart", onNativeInput, { passive: true });
@@ -1061,6 +1082,7 @@ function useMomentumRail(
       scroller.removeEventListener("pointermove", onPointerMove);
       scroller.removeEventListener("pointerup", onRelease);
       scroller.removeEventListener("pointercancel", onRelease);
+      scroller.removeEventListener("lostpointercapture", onRelease);
       scroller.removeEventListener("click", onClickCapture, true);
       scroller.removeEventListener("wheel", onNativeInput);
       scroller.removeEventListener("touchstart", onNativeInput);
@@ -1084,6 +1106,7 @@ export default function CarouselCards({
   eyebrow = "Picked for this autumn",
   defaultFavorites = [],
   onToggleFavorite,
+  onSelect,
   className,
 }: CarouselCardsProps) {
   const scrollerRef = useRef<HTMLElement>(null);
@@ -1177,6 +1200,7 @@ export default function CarouselCards({
             <RailCard
               item={item}
               key={item.id}
+              onSelect={onSelect}
               onToggleSaved={toggleSaved}
               saved={saved.has(item.id)}
             />
