@@ -96,7 +96,7 @@ interface RingNodes {
  */
 function paintRing(
   nodes: RingNodes,
-  data: ActivityData,
+  data: Pick<ActivityData, "size" | "current">,
   p: number,
   ratio: number
 ) {
@@ -162,25 +162,38 @@ function CircleProgress({
     count: null,
   });
 
+  // Where the ring last stood, so new values carry on from there instead of
+  // redrawing from empty. Null until the first draw.
+  const shown = useRef<number | null>(null);
+  // Keyed on the values, not the object: a parent re-rendering with the same
+  // numbers in a fresh array must not restart the draw.
+  const { size, current } = data;
+
   useEffect(() => {
     if (!inView) {
       return;
     }
     const ringNodes = { ...nodes.current, count: countRef.current };
+    const ring = { size, current };
     if (reduceMotion || ratio === 0) {
-      paintRing(ringNodes, data, ratio, ratio);
+      paintRing(ringNodes, ring, ratio, ratio);
+      shown.current = ratio;
       return;
     }
-    // Start from zero right away, so the number doesn't show its final
-    // value while the ring waits for its turn.
-    paintRing(ringNodes, data, 0, ratio);
-    let pulsed = false;
-    const controls = animate(0, ratio, {
+    const from = shown.current;
+    // First draw: start from zero right away, so the number doesn't show its
+    // final value while the ring waits for its turn.
+    if (from === null) {
+      paintRing(ringNodes, ring, 0, ratio);
+    }
+    let pulsed = (from ?? 0) >= 1;
+    const controls = animate(from ?? 0, ratio, {
       duration: drawSeconds(ratio),
-      delay: index * STAGGER,
+      delay: from === null ? index * STAGGER : 0,
       ease: EASE_OUT,
       onUpdate: (p) => {
-        paintRing(ringNodes, data, p, ratio);
+        shown.current = p;
+        paintRing(ringNodes, ring, p, ratio);
         // The goal is hit: the cap pulses once at the top of the ring.
         if (!pulsed && p >= 1) {
           pulsed = true;
@@ -195,7 +208,7 @@ function CircleProgress({
       },
     });
     return () => controls.stop();
-  }, [inView, reduceMotion, data, ratio, index, countRef]);
+  }, [inView, reduceMotion, size, current, ratio, index, countRef]);
 
   return (
     <motion.div
