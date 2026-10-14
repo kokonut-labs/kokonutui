@@ -76,7 +76,11 @@ export interface ActionSearchBarProps {
   onSelect?: (item: CommandItem, path: CommandItem[]) => unknown;
   onOpenChange?: (open: boolean) => void;
   defaultOpen?: boolean;
-  /** ⌘K / Ctrl+K toggles the palette while it is on screen. */
+  /**
+   * ⌘K / Ctrl+K toggles the palette. By default it only does so while the
+   * palette is focused or hovered, so the host page keeps its own ⌘K. Set
+   * `true` to take ⌘K page-wide whenever the palette is on screen.
+   */
   shortcut?: boolean;
   label?: string;
   placeholder?: string;
@@ -465,6 +469,21 @@ function RowEnd({
   return null;
 }
 
+function isPaletteCombo(e: globalThis.KeyboardEvent) {
+  return (
+    (e.metaKey || e.ctrlKey) &&
+    !e.altKey &&
+    !e.shiftKey &&
+    e.key.toLowerCase() === "k"
+  );
+}
+
+/** Focus sits in an open modal dialog that does not hold the palette. */
+function inOtherModal(focused: Element | null, root: HTMLElement) {
+  const modal = focused?.closest('[aria-modal="true"]');
+  return Boolean(modal && !modal.contains(root));
+}
+
 function useIsMac() {
   const [mac, setMac] = useState(true);
   useEffect(() => {
@@ -481,7 +500,7 @@ function ActionSearchBar({
   onSelect,
   onOpenChange,
   defaultOpen = false,
-  shortcut = true,
+  shortcut = false,
   label = "Search commands",
   placeholder = "Search or jump to…",
   className,
@@ -512,6 +531,7 @@ function ActionSearchBar({
   const contentRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const onScreenRef = useRef(true);
+  const hoverRef = useRef(false);
   const fadeNextOpen = useRef(false);
   const slideNext = useRef<0 | 1 | -1>(0);
   const springUntil = useRef(0);
@@ -598,23 +618,20 @@ function ActionSearchBar({
   });
 
   useEffect(() => {
-    if (!shortcut) {
-      return;
-    }
     const onKey = (e: globalThis.KeyboardEvent) => {
-      const isCombo =
-        (e.metaKey || e.ctrlKey) &&
-        !e.altKey &&
-        !e.shiftKey &&
-        e.key.toLowerCase() === "k";
       const root = rootRef.current;
-      if (!(isCombo && root && onScreenRef.current) || e.defaultPrevented) {
+      if (
+        !(isPaletteCombo(e) && root && onScreenRef.current) ||
+        e.defaultPrevented
+      ) {
         return;
       }
       const focused = document.activeElement;
-      // Leave another open modal dialog alone.
-      const modal = focused?.closest('[aria-modal="true"]');
-      if (modal && !modal.contains(root)) {
+      const focusedInside = focused instanceof Node && root.contains(focused);
+      if (!(shortcut || focusedInside || hoverRef.current)) {
+        return;
+      }
+      if (inOtherModal(focused, root)) {
         return;
       }
       e.preventDefault();
@@ -624,14 +641,14 @@ function ActionSearchBar({
         state.closePalette(true);
         return;
       }
-      if (focused instanceof HTMLElement && !root.contains(focused)) {
+      if (focused instanceof HTMLElement && !focusedInside) {
         returnFocus.current = focused;
       }
       inputRef.current?.focus();
       inputRef.current?.select();
       state.openPalette("keyboard");
     };
-    // Capture, so a site-wide ⌘K does not also fire while this one is in view.
+    // Capture, so the host page's ⌘K does not also fire when this one takes it.
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, [shortcut]);
@@ -910,6 +927,12 @@ function ActionSearchBar({
     <div
       className={cn("relative h-[46px] w-full max-w-md", className)}
       onBlur={handleBlur}
+      onPointerEnter={(e) => {
+        hoverRef.current = e.pointerType === "mouse";
+      }}
+      onPointerLeave={() => {
+        hoverRef.current = false;
+      }}
       ref={rootRef}
     >
       <div
@@ -967,7 +990,7 @@ function ActionSearchBar({
             type="text"
             value={query}
           />
-          {shortcut && !open && (
+          {!open && (
             <span aria-hidden="true" className="flex shrink-0 gap-0.5">
               <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
               <Kbd>K</Kbd>

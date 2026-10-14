@@ -272,7 +272,10 @@ export default function SmoothTab({
     );
 
   const [uncontrolled, setUncontrolled] = useState(() => indexOf(defaultTabId));
-  const selected = value === undefined ? uncontrolled : indexOf(value);
+  const selected =
+    value === undefined
+      ? clamp(uncontrolled, 0, Math.max(count - 1, 0))
+      : indexOf(value);
   // Captured once, so React never rewrites the imperatively painted styles.
   const [initial] = useState(selected);
 
@@ -498,7 +501,14 @@ export default function SmoothTab({
     if (current.axis !== "x") {
       return;
     }
-    suppressClick.current = !cancelled;
+    // Swallow the click this release may send. A touch swipe sends none,
+    // so the flag clears on the next tick instead of eating a later tap.
+    if (!cancelled) {
+      suppressClick.current = true;
+      window.setTimeout(() => {
+        suppressClick.current = false;
+      }, 0);
+    }
     const first = current.samples[0];
     // px per ms; negative is a swipe towards the next tab.
     const vx = (e.clientX - first.x) / Math.max(e.timeStamp - first.t, 1);
