@@ -190,7 +190,7 @@ export const component: Registry = [
   {
     name: "flow-field",
     type: "registry:component",
-    dependencies: ["motion"],
+    dependencies: [],
     files: [
       {
         path: "components/kokonutui/flow-field.tsx",
