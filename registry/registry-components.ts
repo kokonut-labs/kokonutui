@@ -398,7 +398,7 @@ export const component: Registry = [
   {
     name: "card-stack",
     type: "registry:component",
-    dependencies: ["motion"],
+    dependencies: ["lucide-react", "motion"],
     files: [
       {
         path: "components/kokonutui/card-stack.tsx",
