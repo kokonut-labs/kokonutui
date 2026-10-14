@@ -82,16 +82,6 @@ export const component: Registry = [
     ],
   },
   {
-    name: "shimmer-text",
-    type: "registry:component",
-    files: [
-      {
-        path: "components/kokonutui/shimmer-text.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "carousel-cards",
     type: "registry:component",
     dependencies: ["lucide-react"],
@@ -523,28 +513,6 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/particle-button.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "tweet-card",
-    type: "registry:component",
-    dependencies: ["lucide-react"],
-    files: [
-      {
-        path: "components/kokonutui/tweet-card.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "scroll-text",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/scroll-text.tsx",
         type: "registry:component",
       },
     ],

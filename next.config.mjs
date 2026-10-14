@@ -123,7 +123,13 @@ const nextConfig = {
       },
       {
         source: "/docs/components/tweet-card",
-        destination: "/docs/cards/tweet-card",
+        destination: "/docs/cards/card-flip",
+        permanent: true,
+      },
+      // tweet-card was removed; send old links to a sibling component
+      {
+        source: "/docs/cards/tweet-card",
+        destination: "/docs/cards/card-flip",
         permanent: true,
       },
       {
@@ -234,7 +240,13 @@ const nextConfig = {
       // Text components moved from /docs/components/ to /docs/texts/
       {
         source: "/docs/components/scroll-text",
-        destination: "/docs/texts/scroll-text",
+        destination: "/docs/texts/type-writer",
+        permanent: true,
+      },
+      // scroll-text was removed; send old links to a sibling component
+      {
+        source: "/docs/texts/scroll-text",
+        destination: "/docs/texts/type-writer",
         permanent: true,
       },
       {
@@ -264,7 +276,13 @@ const nextConfig = {
       },
       {
         source: "/docs/components/shimmer-text",
-        destination: "/docs/texts/shimmer-text",
+        destination: "/docs/texts/type-writer",
+        permanent: true,
+      },
+      // shimmer-text was removed; send old links to a sibling component
+      {
+        source: "/docs/texts/shimmer-text",
+        destination: "/docs/texts/type-writer",
         permanent: true,
       },
       {

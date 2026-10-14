@@ -18,7 +18,7 @@ const RESOLVE_DELAY_MS = 1600;
 const INSTALLED_ROWS = [
   { name: "@kokonutui/particle-button", time: "1.2s" },
   { name: "@kokonutui/liquid-glass-card", time: "0.9s" },
-  { name: "@kokonutui/shimmer-text", time: "0.8s" },
+  { name: "@kokonutui/type-writer", time: "0.8s" },
 ];
 
 // Delays for the mount cascade: copy first, then panels, then chrome.
@@ -201,10 +201,11 @@ export function HeroSplit() {
               <span className={PREVIEW_LABEL_CLASS}>liquid-glass-card</span>
             </div>
             <div className={PREVIEW_TILE_CLASS}>
-              <span className="bg-linear-to-r from-black/90 via-black/25 to-black/90 bg-clip-text font-bold text-transparent text-xl tracking-tight dark:from-white/90 dark:via-white/25 dark:to-white/90">
-                Shimmer
+              <span className="flex items-center gap-0.5 font-bold text-black/90 text-xl tracking-tight dark:text-white/90">
+                Type
+                <span className="h-5 w-[2px] bg-black/60 dark:bg-white/60" />
               </span>
-              <span className={PREVIEW_LABEL_CLASS}>shimmer-text</span>
+              <span className={PREVIEW_LABEL_CLASS}>type-writer</span>
             </div>
             <div className={PREVIEW_TILE_CLASS}>
               <div className="flex w-36 items-center justify-between rounded-xl border border-black/10 bg-white px-3 py-2 dark:border-white/15 dark:bg-white/[0.04]">
