@@ -11,12 +11,17 @@
  */
 
 import {
+  AlignLeft,
   ArrowRight,
   Bot,
   Check,
   ChevronDown,
+  Code2,
   FileText,
+  Languages,
+  Lightbulb,
   Paperclip,
+  Slash,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -84,6 +89,13 @@ function GeminiIcon() {
   );
 }
 
+export interface PromptCommand {
+  id: string;
+  label: string;
+  description?: string;
+  icon?: ReactNode;
+}
+
 export interface PromptAttachment {
   id: string;
   file: File;
@@ -103,14 +115,47 @@ interface AIPromptProps {
   onSubmit?: (
     value: string,
     model: string,
-    options: { files: File[]; signal: AbortSignal }
+    options: {
+      files: File[];
+      signal: AbortSignal;
+      command: PromptCommand | null;
+    }
   ) => unknown;
+  /** Shown when the message starts with "/". Pass [] to turn the menu off. */
+  commands?: PromptCommand[];
   /** Called when the user presses Stop while a reply is in progress. */
   onStop?: () => void;
   /** Called with the files picked, dropped or pasted into the prompt. */
   onAttach?: (files: FileList | File[]) => void;
   className?: string;
 }
+
+const DEFAULT_COMMANDS: PromptCommand[] = [
+  {
+    id: "summarize",
+    label: "Summarize",
+    description: "Shorten text or files",
+    icon: <AlignLeft className="size-4" />,
+  },
+  {
+    id: "translate",
+    label: "Translate",
+    description: "Into another language",
+    icon: <Languages className="size-4" />,
+  },
+  {
+    id: "explain",
+    label: "Explain",
+    description: "Step by step, in plain words",
+    icon: <Lightbulb className="size-4" />,
+  },
+  {
+    id: "code",
+    label: "Write code",
+    description: "Functions, tests and fixes",
+    icon: <Code2 className="size-4" />,
+  },
+];
 
 const DEFAULT_MODELS = [
   "Gemini 3 Pro",
@@ -150,6 +195,7 @@ const getModelIcon = (model: string) =>
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const DEMO_REPLY_MS = 2400;
+const WHITESPACE = /\s/;
 
 const formatSize = (bytes: number) => {
   if (bytes < 1024) {
@@ -239,6 +285,99 @@ function AttachmentChip({
   );
 }
 
+function CommandMenu({
+  id,
+  commands,
+  activeIndex,
+  onHover,
+  onSelect,
+}: {
+  id: string;
+  commands: PromptCommand[];
+  activeIndex: number;
+  onHover: (index: number) => void;
+  onSelect: (command: PromptCommand) => void;
+}) {
+  return (
+    <motion.div
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className="absolute inset-x-0 bottom-full z-10 mb-2 origin-bottom rounded-xl bg-white p-1 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
+      exit={{ opacity: 0, y: 2, scale: 0.98, transition: { duration: 0.1 } }}
+      initial={{ opacity: 0, y: 4, scale: 0.98 }}
+      transition={{ duration: 0.15, ease: EASE_OUT }}
+    >
+      {/* The highlight follows the keyboard instantly, without a transition. */}
+      <div aria-label="Commands" id={id} role="listbox">
+        {commands.map((command, i) => (
+          // biome-ignore lint/a11y/useKeyWithClickEvents: options are driven from the textarea with the arrow keys
+          <div
+            aria-selected={i === activeIndex}
+            className={cn(
+              "flex h-9 cursor-pointer items-center gap-2 rounded-lg px-2",
+              i === activeIndex && "bg-black/5 dark:bg-white/10"
+            )}
+            id={`${id}-${command.id}`}
+            key={command.id}
+            onClick={() => onSelect(command)}
+            onMouseDown={(e) => e.preventDefault()}
+            onPointerMove={() => onHover(i)}
+            role="option"
+            tabIndex={-1}
+          >
+            <span className="flex size-6 shrink-0 items-center justify-center text-black/50 dark:text-white/60 [&_svg]:size-4">
+              {command.icon ?? <Slash />}
+            </span>
+            <span className="text-black text-sm dark:text-white">
+              {command.label}
+            </span>
+            {command.description && (
+              <span className="min-w-0 truncate text-black/40 text-xs dark:text-white/40">
+                {command.description}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function CommandPill({
+  command,
+  onRemove,
+}: {
+  command: PromptCommand;
+  onRemove: () => void;
+}) {
+  return (
+    <motion.li
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      className="flex h-11 items-center gap-1.5 rounded-lg bg-blue-500/10 pr-1.5 pl-2.5 text-blue-600 text-sm dark:text-blue-400"
+      exit={{
+        opacity: 0,
+        filter: "blur(2px)",
+        transition: { duration: 0.12, ease: EASE_OUT },
+      }}
+      initial={{ opacity: 0, y: 4, filter: "blur(2px)" }}
+      layout="position"
+      transition={{ duration: 0.2, ease: EASE_OUT }}
+    >
+      <span aria-hidden="true" className="opacity-60">
+        /
+      </span>
+      {command.label}
+      <button
+        aria-label={`Remove ${command.label} command`}
+        className="flex size-6 items-center justify-center rounded-md transition-colors duration-150 hover:bg-blue-500/10 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500"
+        onClick={onRemove}
+        type="button"
+      >
+        <X aria-hidden="true" className="size-3.5" />
+      </button>
+    </motion.li>
+  );
+}
+
 function SendButton({
   responding,
   canSend,
@@ -299,15 +438,20 @@ function SendButton({
 export default function AI_Prompt({
   models = DEFAULT_MODELS,
   defaultModel = "Claude Fable 5",
-  placeholder = "What can I do for you?",
+  placeholder = "What can I do for you? Type / for commands",
   headerText = "is free this weekend!",
   headerAction = "Ship Now!",
   onSubmit,
   onStop,
   onAttach,
+  commands = DEFAULT_COMMANDS,
   className,
 }: AIPromptProps) {
   const [value, setValue] = useState("");
+  const [command, setCommand] = useState<PromptCommand | null>(null);
+  const [menuIndex, setMenuIndex] = useState(0);
+  const [menuDismissed, setMenuDismissed] = useState(false);
+  const menuId = useId();
   const [attachments, setAttachments] = useState<PromptAttachment[]>([]);
   const [responding, setResponding] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -347,6 +491,26 @@ export default function AI_Prompt({
     textareaRef.current?.focus();
   };
 
+  // "/" at the very start opens the menu; the text after it filters it.
+  const slashQuery =
+    !command && value.startsWith("/") && !WHITESPACE.test(value)
+      ? value.slice(1).toLowerCase()
+      : null;
+  const matches =
+    slashQuery === null
+      ? []
+      : commands.filter((c) => c.label.toLowerCase().includes(slashQuery));
+  const menuOpen = matches.length > 0 && !menuDismissed;
+  const activeIndex = Math.min(menuIndex, matches.length - 1);
+
+  const pickCommand = (picked: PromptCommand) => {
+    setCommand(picked);
+    setValue("");
+    setMenuIndex(0);
+    adjustHeight(true);
+    textareaRef.current?.focus();
+  };
+
   const canSend = value.trim().length > 0 && !responding;
 
   const submit = async () => {
@@ -356,13 +520,19 @@ export default function AI_Prompt({
     const controller = new AbortController();
     abortRef.current = controller;
     const files = attachments.map((a) => a.file);
+    const sentCommand = command;
     setValue("");
     setAttachments([]);
+    setCommand(null);
     adjustHeight(true);
     setResponding(true);
     try {
       await (onSubmit
-        ? onSubmit(value, selectedModel, { files, signal: controller.signal })
+        ? onSubmit(value, selectedModel, {
+            files,
+            signal: controller.signal,
+            command: sentCommand,
+          })
         : waitFor(DEMO_REPLY_MS, controller.signal));
     } finally {
       if (abortRef.current === controller) {
@@ -380,9 +550,41 @@ export default function AI_Prompt({
     textareaRef.current?.focus();
   };
 
+  const handleMenuKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const step = { ArrowDown: 1, ArrowUp: -1 }[e.key];
+    if (step) {
+      e.preventDefault();
+      setMenuIndex((activeIndex + step + matches.length) % matches.length);
+      return true;
+    }
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      pickCommand(matches[activeIndex]);
+      return true;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setMenuDismissed(true);
+      return true;
+    }
+    return false;
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) {
+      return;
+    }
+    if (menuOpen && handleMenuKey(e)) {
+      return;
+    }
+    // Backspace in an empty prompt takes the command off first.
+    if (e.key === "Backspace" && command && value === "") {
+      e.preventDefault();
+      setCommand(null);
+      return;
+    }
     // Enter during IME composition confirms the candidate; it must not submit.
-    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       submit();
     } else if (e.key === "Escape" && responding) {
@@ -436,7 +638,7 @@ export default function AI_Prompt({
           }}
         >
           <AnimatePresence initial={false}>
-            {attachments.length > 0 && (
+            {(attachments.length > 0 || command) && (
               <motion.div
                 animate={{ height: "auto", opacity: 1 }}
                 className="overflow-hidden rounded-t-xl bg-black/5 dark:bg-white/5"
@@ -452,6 +654,16 @@ export default function AI_Prompt({
                   className="flex flex-wrap gap-2 px-3 pt-3"
                 >
                   <AnimatePresence initial={false} mode="popLayout">
+                    {command && (
+                      <CommandPill
+                        command={command}
+                        key={`command-${command.id}`}
+                        onRemove={() => {
+                          setCommand(null);
+                          textareaRef.current?.focus();
+                        }}
+                      />
+                    )}
                     {attachments.map((attachment) => (
                       <AttachmentChip
                         attachment={attachment}
@@ -467,17 +679,38 @@ export default function AI_Prompt({
           <label className="sr-only" htmlFor={textareaId}>
             Message
           </label>
+          <AnimatePresence>
+            {menuOpen && (
+              <CommandMenu
+                activeIndex={activeIndex}
+                commands={matches}
+                id={menuId}
+                onHover={setMenuIndex}
+                onSelect={pickCommand}
+              />
+            )}
+          </AnimatePresence>
           <Textarea
+            aria-activedescendant={
+              menuOpen ? `${menuId}-${matches[activeIndex].id}` : undefined
+            }
+            aria-autocomplete="list"
+            aria-controls={menuOpen ? menuId : undefined}
+            aria-expanded={menuOpen}
             className={cn(
               "w-full resize-none rounded-xl rounded-b-none border-none bg-black/5 px-4 py-3 placeholder:text-black/70 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-white/5 dark:text-white dark:placeholder:text-white/70",
               "min-h-[72px]",
-              attachments.length > 0 && "rounded-t-none"
+              (attachments.length > 0 || command) && "rounded-t-none"
             )}
             id={textareaId}
+            onBlur={() => setMenuDismissed(true)}
             onChange={(e) => {
               setValue(e.target.value);
+              setMenuDismissed(false);
+              setMenuIndex(0);
               adjustHeight();
             }}
+            onFocus={() => setMenuDismissed(false)}
             onKeyDown={handleKeyDown}
             onPaste={(e) => {
               if (e.clipboardData.files.length > 0) {
