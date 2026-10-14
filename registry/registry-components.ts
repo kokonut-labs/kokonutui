@@ -210,6 +210,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "drape-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/drape-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "apple-activity-card",
     type: "registry:component",
     dependencies: ["motion"],
@@ -238,6 +249,17 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/smooth-tab.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "marking-menu",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/marking-menu.tsx",
         type: "registry:component",
       },
     ],
@@ -467,6 +489,17 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/swoosh-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "plucked-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/plucked-text.tsx",
         type: "registry:component",
       },
     ],
