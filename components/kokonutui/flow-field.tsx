@@ -329,6 +329,8 @@ function stepWake(air: Air, dt: number) {
 /** Particle state as flat arrays: cheap to walk 700 times a frame. */
 class Particles {
   count = 0;
+  width = 0;
+  height = 0;
   x = new Float32Array(0);
   y = new Float32Array(0);
   vx = new Float32Array(0);
@@ -339,8 +341,20 @@ class Particles {
 
   resize(count: number, width: number, height: number) {
     if (count === this.count) {
+      // Same count, new size: stretch the particles over the new area so a
+      // wider canvas doesn't start with an empty strip.
+      const sx = this.width > 0 ? width / this.width : 1;
+      const sy = this.height > 0 ? height / this.height : 1;
+      for (let i = 0; i < count; i++) {
+        this.x[i] *= sx;
+        this.y[i] *= sy;
+      }
+      this.width = width;
+      this.height = height;
       return;
     }
+    this.width = width;
+    this.height = height;
     this.count = count;
     this.x = new Float32Array(count);
     this.y = new Float32Array(count);
@@ -724,6 +738,22 @@ export default function FlowField({
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(canvas);
 
+    // Moving the window to a screen with another pixel ratio doesn't resize
+    // the canvas, so watch the ratio too or the trails go soft.
+    let dprQuery: MediaQueryList | null = null;
+    const watchDpr = () => {
+      dprQuery?.removeEventListener("change", onDpr);
+      dprQuery = window.matchMedia(
+        `(resolution: ${window.devicePixelRatio}dppx)`
+      );
+      dprQuery.addEventListener("change", onDpr);
+    };
+    const onDpr = () => {
+      resize();
+      watchDpr();
+    };
+    watchDpr();
+
     // Stop drawing entirely while the wind is scrolled away or the tab is
     // in the background.
     let onScreen = true;
@@ -763,6 +793,7 @@ export default function FlowField({
     return () => {
       cancelAnimationFrame(raf);
       resizeObserver.disconnect();
+      dprQuery?.removeEventListener("change", onDpr);
       intersection.disconnect();
       document.removeEventListener("visibilitychange", update);
       window.clearInterval(colorTimer);
