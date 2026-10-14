@@ -210,6 +210,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "drape-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/drape-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "apple-activity-card",
     type: "registry:component",
     dependencies: ["motion"],
