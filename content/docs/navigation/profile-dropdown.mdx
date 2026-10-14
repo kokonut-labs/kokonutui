@@ -1,7 +1,7 @@
 ---
-title: Profile Dropdown
-description: User profile dropdown menu with avatar, subscription and model details, and quick action links, built with React, shadcn/ui, and Tailwind CSS.
-keywords: ["account menu", "user menu", "avatar menu", "settings", "logout"]
+title: Account Menu
+description: An account card that morphs into its own menu, with account switching, status, theme and hold-to-sign-out.
+keywords: ["account menu", "profile dropdown", "user menu", "switch account", "status", "theme toggle", "sign out", "morph"]
 icon: UserLock
 full: false
 ---
@@ -10,5 +10,7 @@ full: false
 import ProfileDropdown from "@/components/kokonutui/profile-dropdown";
 
 <Preview link="profile-dropdown">
-    <ProfileDropdown />
+    <div className="flex h-[460px] w-full items-start justify-center pt-6">
+        <ProfileDropdown />
+    </div>
 </Preview>
