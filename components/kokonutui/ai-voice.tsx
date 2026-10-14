@@ -3,17 +3,19 @@
 /**
  * @author: @kokonutui
  * @description: AI Voice
- * @version: 2.0.0
+ * @version: 2.1.0
  * @date: 2026-10-14
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { Mic } from "lucide-react";
-import { useReducedMotion } from "motion/react";
+import { ArrowUp, Mic, Pause, Play, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+
+type Mode = "idle" | "recording" | "review";
 
 const BAR_COUNT = 48;
 // One extra bar waits off the right edge, so the row can slide a full bar
@@ -29,13 +31,15 @@ const STILL_LEVELS = BAR_IDS.map(
   (_, i) => 0.25 + 0.5 * Math.abs(Math.sin(i * 0.55) * Math.cos(i * 0.21))
 );
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+const EDGE_MASK =
+  "linear-gradient(to right, transparent, black 18%, black 92%, transparent)";
 
 /**
  * Speech-like level without a microphone: syllables at about 4-5 per second,
  * grouped into words and phrases with pauses between them.
  */
 function createVoiceSimulator() {
-  let speaking = true;
+  let speaking = false;
   let switchAt = 0;
   let gate = 0;
   return (time: number) => {
@@ -56,25 +60,172 @@ function createVoiceSimulator() {
   };
 }
 
+/** Squeezes a whole take into BAR_COUNT bars, keeping each slice's peak. */
+function condense(take: number[]) {
+  if (take.length === 0) {
+    return STILL_LEVELS.slice(0, BAR_COUNT);
+  }
+  return Array.from({ length: BAR_COUNT }, (_, i) => {
+    const from = Math.floor((i / BAR_COUNT) * take.length);
+    const to = Math.max(
+      from + 1,
+      Math.floor(((i + 1) / BAR_COUNT) * take.length)
+    );
+    return Math.max(REST_LEVEL, ...take.slice(from, to));
+  });
+}
+
 const formatTime = (seconds: number) => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
+  const whole = Math.floor(seconds);
+  const mins = Math.floor(whole / 60);
+  const secs = whole % 60;
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 };
 
+const setScales = (
+  bars: (HTMLSpanElement | null)[],
+  levels: readonly number[]
+) => {
+  bars.forEach((bar, i) => {
+    if (bar) {
+      bar.style.transform = `scaleY(${(levels[i] ?? REST_LEVEL).toFixed(3)})`;
+    }
+  });
+};
+
+type Face = "mic" | "stop" | "play" | "pause";
+
+const mainLabelFor = (mode: Mode, playing: boolean) => {
+  if (mode === "recording") {
+    return "Stop recording";
+  }
+  if (mode === "review") {
+    return playing ? "Pause playback" : "Play recording";
+  }
+  return "Start recording";
+};
+
+const timerText = (
+  mode: Mode,
+  seconds: number,
+  duration: number,
+  playing: boolean,
+  playhead: number
+) => {
+  if (mode === "review") {
+    return formatTime(playing || playhead > 0 ? playhead : duration);
+  }
+  return formatTime(mode === "recording" ? seconds : 0);
+};
+
+const FACE_CLASS =
+  "absolute transition-[opacity,filter,scale] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-opacity";
+const faceState = (visible: boolean) =>
+  visible ? "scale-100 opacity-100 blur-0" : "scale-50 opacity-0 blur-[3px]";
+
+/**
+ * Mic, stop, play and pause stay mounted and crossfade with a little blur,
+ * so every swap reads as one control changing state.
+ */
+function ButtonFaces({ visible }: { visible: Record<Face, boolean> }) {
+  const icon = "h-6 w-6 text-black/90 dark:text-white/90";
+  return (
+    <>
+      <Mic
+        aria-hidden="true"
+        className={cn(FACE_CLASS, icon, faceState(visible.mic))}
+      />
+      <span
+        aria-hidden="true"
+        className={cn(
+          FACE_CLASS,
+          "h-5 w-5 rounded-[5px] bg-black dark:bg-white",
+          faceState(visible.stop)
+        )}
+      />
+      <Play
+        aria-hidden="true"
+        className={cn(
+          FACE_CLASS,
+          icon,
+          "fill-current",
+          faceState(visible.play)
+        )}
+      />
+      <Pause
+        aria-hidden="true"
+        className={cn(
+          FACE_CLASS,
+          icon,
+          "fill-current",
+          faceState(visible.pause)
+        )}
+      />
+    </>
+  );
+}
+
+const ACTION_FOCUS =
+  "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30";
+
+function ReviewActions({
+  onDiscard,
+  onSend,
+}: {
+  onDiscard: () => void;
+  onSend: () => void;
+}) {
+  return (
+    <motion.div
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      className="flex items-center gap-1"
+      exit={{ opacity: 0, filter: "blur(2px)" }}
+      initial={{ opacity: 0, y: 4, filter: "blur(2px)" }}
+      transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+    >
+      <button
+        className={cn(
+          "flex h-7 items-center gap-1 rounded-lg px-2 text-black/60 text-xs transition-colors duration-150 hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white",
+          ACTION_FOCUS
+        )}
+        onClick={onDiscard}
+        type="button"
+      >
+        <X aria-hidden="true" className="size-3.5" />
+        Discard
+      </button>
+      <button
+        className={cn(
+          "flex h-7 items-center gap-1 rounded-lg bg-black px-2.5 text-white text-xs transition-colors duration-150 hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80",
+          ACTION_FOCUS
+        )}
+        onClick={onSend}
+        type="button"
+      >
+        Send
+        <ArrowUp aria-hidden="true" className="size-3.5" />
+      </button>
+    </motion.div>
+  );
+}
+
 interface AIVoiceProps {
   className?: string;
-  /** Plays a listening loop until the first click. */
+  /** Plays a record, review and send loop until the first click. */
   demo?: boolean;
   /**
    * Live input level from 0 to 1, e.g. from your own audio analyser. When
    * omitted, the waveform plays a simulated voice.
    */
   level?: number;
-  /** Called with the new state when the user starts or stops listening. */
+  /** Called with the new state when the user starts or stops recording. */
   onListeningChange?: (listening: boolean) => void;
-  /** Called with the recording length in seconds when the user stops. */
+  /** Called with the take's length in seconds when recording stops. */
   onStop?: (duration: number) => void;
+  /** Called when the user sends the reviewed take. */
+  onSend?: (duration: number) => void;
+  /** Called when the user throws the take away. */
+  onDiscard?: () => void;
 }
 
 export default function AI_Voice({
@@ -83,57 +234,60 @@ export default function AI_Voice({
   level,
   onListeningChange,
   onStop,
+  onSend,
+  onDiscard,
 }: AIVoiceProps) {
-  const [listening, setListening] = useState(false);
+  const [mode, setMode] = useState<Mode>("idle");
   const [isDemo, setIsDemo] = useState(demo);
   const [seconds, setSeconds] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [playhead, setPlayhead] = useState(0);
   const shouldReduceMotion = useReducedMotion();
+
   const rootRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLSpanElement>(null);
+  const playedRef = useRef<HTMLDivElement>(null);
   const barRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const playedBarRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const takeRef = useRef<number[]>([]);
+  const startedAtRef = useRef(0);
   const levelRef = useRef(level);
   useEffect(() => {
     levelRef.current = level;
   }, [level]);
-  // The demo loop is not the user listening, so assistive tech only hears
-  // about real listening.
-  const isUserListening = listening && !isDemo;
 
-  // Waveform: one rAF loop writes transforms straight to the bars, so a
-  // frame never re-renders React. It pauses while the card is offscreen.
+  const recording = mode === "recording";
+  const reviewing = mode === "review";
+  // The demo loop is not the user recording, so assistive tech only hears
+  // about real actions.
+  const announce = !isDemo;
+
+  // Recording: one rAF loop writes transforms straight to the bars and the
+  // ring, so a frame never re-renders React. It pauses offscreen.
   useEffect(() => {
     const bars = barRefs.current;
     const row = rowRef.current;
+    const ring = ringRef.current;
     const root = rootRef.current;
-    if (!(row && root)) {
+    if (!(recording && row && ring && root)) {
       return;
     }
-
-    if (!listening) {
-      row.style.transform = "translateX(0px)";
-      for (const bar of bars) {
-        if (bar) {
-          bar.style.transform = `scaleY(${REST_LEVEL})`;
-        }
-      }
-      return;
-    }
+    takeRef.current = [];
 
     if (shouldReduceMotion) {
-      bars.forEach((bar, i) => {
-        if (bar) {
-          bar.style.transform = `scaleY(${STILL_LEVELS[i]})`;
-        }
-      });
+      setScales(bars, STILL_LEVELS);
+      takeRef.current = STILL_LEVELS.slice();
       return;
     }
 
     const simulate = createVoiceSimulator();
     const samples = BAR_IDS.map(() => REST_LEVEL);
     let phase = 0;
+    let smooth = 0;
     let last = performance.now();
     let frame = 0;
-    let visible = true;
 
     const tick = (now: number) => {
       // Clamped so a backgrounded tab doesn't fast-forward on return.
@@ -142,21 +296,24 @@ export default function AI_Voice({
       phase += dt / SAMPLE_MS;
       while (phase >= 1) {
         phase -= 1;
-        samples.shift();
         const live = levelRef.current;
-        samples.push(
+        const sample =
           live === undefined
             ? simulate(now)
-            : Math.max(REST_LEVEL, Math.min(1, live))
-        );
+            : Math.max(REST_LEVEL, Math.min(1, live));
+        samples.shift();
+        samples.push(sample);
+        takeRef.current.push(sample);
       }
       row.style.transform = `translateX(${(-phase * BAR_PITCH).toFixed(2)}px)`;
-      samples.forEach((sample, i) => {
-        const bar = bars[i];
-        if (bar) {
-          bar.style.transform = `scaleY(${sample.toFixed(3)})`;
-        }
-      });
+      setScales(bars, samples);
+      // The ring behind the button swells with the voice, smoothed so it
+      // breathes rather than flickers.
+      const latest = samples.at(-1) ?? REST_LEVEL;
+      smooth += (latest - smooth) * 0.18;
+      const lift = Math.max(0, smooth - REST_LEVEL);
+      ring.style.transform = `scale(${(1 + lift * 0.22).toFixed(3)})`;
+      ring.style.opacity = (0.4 + lift * 0.8).toFixed(3);
       frame = requestAnimationFrame(tick);
     };
 
@@ -167,8 +324,7 @@ export default function AI_Voice({
     };
 
     const observer = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      if (visible) {
+      if (entry.isIntersecting) {
         start();
       } else {
         cancelAnimationFrame(frame);
@@ -180,108 +336,211 @@ export default function AI_Voice({
     return () => {
       observer.disconnect();
       cancelAnimationFrame(frame);
+      ring.style.transform = "scale(1)";
+      ring.style.opacity = "0";
     };
-  }, [listening, shouldReduceMotion]);
+  }, [recording, shouldReduceMotion]);
 
-  // Timer: counts whole seconds while listening.
+  // Review shows the whole take squeezed into the row; idle lays it flat.
+  // The bars carry a CSS transition outside recording, so both glide.
   useEffect(() => {
-    if (!listening) {
+    const row = rowRef.current;
+    if (recording || !row) {
+      return;
+    }
+    row.style.transform = "translateX(0px)";
+    const levels = reviewing
+      ? condense(takeRef.current)
+      : BAR_IDS.map(() => REST_LEVEL);
+    setScales(barRefs.current, levels);
+    setScales(playedBarRefs.current, levels);
+  }, [recording, reviewing]);
+
+  // Recording timer.
+  useEffect(() => {
+    if (!recording) {
       return;
     }
     setSeconds(0);
-    const startedAt = Date.now();
+    startedAtRef.current = Date.now();
     const id = setInterval(() => {
-      setSeconds(Math.floor((Date.now() - startedAt) / 1000));
+      setSeconds(Math.floor((Date.now() - startedAtRef.current) / 1000));
     }, 250);
     return () => clearInterval(id);
-  }, [listening]);
+  }, [recording]);
 
-  // Demo: listen for 3s, rest for 1.2s, until the first click.
+  // Playback: a playhead sweeps the take. There is no audio; it shows where
+  // your own player is, or just previews the take in the demo.
   useEffect(() => {
-    if (!isDemo) {
+    const played = playedRef.current;
+    if (!(playing && played)) {
       return;
     }
-    let id: ReturnType<typeof setTimeout>;
-    const run = (next: boolean) => {
-      setListening(next);
-      id = setTimeout(() => run(!next), next ? 3000 : 1200);
+    const length = Math.max(duration, 1) * 1000;
+    const startedAt = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      const progress = Math.min((now - startedAt) / length, 1);
+      played.style.clipPath = `inset(0 ${((1 - progress) * 100).toFixed(2)}% 0 0)`;
+      setPlayhead(progress * Math.max(duration, 1));
+      if (progress < 1) {
+        frame = requestAnimationFrame(tick);
+      } else {
+        setPlaying(false);
+      }
     };
-    id = setTimeout(() => run(true), 300);
-    return () => clearTimeout(id);
-  }, [isDemo]);
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing, duration]);
 
-  const handleClick = () => {
-    // The first click ends the demo loop and starts listening right away.
-    const next = isDemo || !listening;
-    if (!(next || isDemo)) {
-      onStop?.(seconds);
-    }
-    setIsDemo(false);
-    setListening(next);
-    onListeningChange?.(next);
+  const startRecording = () => {
+    setPlaying(false);
+    setMode("recording");
+    onListeningChange?.(true);
   };
 
+  const stopRecording = () => {
+    const taken = Math.max(
+      (Date.now() - startedAtRef.current) / 1000,
+      takeRef.current.length * (SAMPLE_MS / 1000)
+    );
+    setDuration(taken);
+    setPlayhead(0);
+    if (playedRef.current) {
+      playedRef.current.style.clipPath = "inset(0 100% 0 0)";
+    }
+    setMode("review");
+    onListeningChange?.(false);
+    onStop?.(taken);
+  };
+
+  const finish = (sent: boolean) => {
+    setPlaying(false);
+    setMode("idle");
+    if (sent) {
+      onSend?.(duration);
+    } else {
+      onDiscard?.();
+    }
+  };
+
+  const togglePlay = () => {
+    if (!playing && playedRef.current) {
+      playedRef.current.style.clipPath = "inset(0 100% 0 0)";
+    }
+    setPlaying((p) => !p);
+  };
+
+  // Demo: record, review with a playback sweep, send, rest. Ends on the
+  // first press anywhere in the component.
+  const hasPlayed = playhead > 0;
+  const demoStepRef = useRef<() => void>(() => undefined);
+  useEffect(() => {
+    demoStepRef.current = () => {
+      if (mode === "idle") {
+        startRecording();
+      } else if (mode === "recording") {
+        stopRecording();
+      } else if (hasPlayed) {
+        finish(true);
+      } else {
+        togglePlay();
+      }
+    };
+  });
+  useEffect(() => {
+    if (!isDemo || playing) {
+      return;
+    }
+    const delays: Record<Mode, number> = {
+      idle: 1200,
+      recording: 3400,
+      review: hasPlayed ? 900 : 500,
+    };
+    const id = setTimeout(() => demoStepRef.current(), delays[mode]);
+    return () => clearTimeout(id);
+  }, [isDemo, mode, hasPlayed, playing]);
+
+  const endDemo = () => {
+    if (isDemo) {
+      setIsDemo(false);
+      setPlaying(false);
+      setMode("idle");
+    }
+  };
+
+  const handleMainClick = () => {
+    if (isDemo) {
+      endDemo();
+      startRecording();
+    } else if (recording) {
+      stopRecording();
+    } else if (reviewing) {
+      togglePlay();
+    } else {
+      startRecording();
+    }
+  };
+
+  const faces: Record<Face, boolean> = {
+    mic: mode === "idle",
+    stop: recording,
+    play: reviewing && !playing,
+    pause: reviewing && playing,
+  };
+  const timerValue = timerText(mode, seconds, duration, playing, playhead);
+
   return (
-    <div className={cn("w-full py-4", className)} ref={rootRef}>
+    <div
+      className={cn("w-full py-4", className)}
+      onPointerDownCapture={endDemo}
+      ref={rootRef}
+    >
       <div className="relative mx-auto flex w-full max-w-xl flex-col items-center gap-2">
-        <button
-          aria-label={isUserListening ? "Stop listening" : "Start listening"}
-          aria-pressed={isUserListening}
-          className={cn(
-            "relative flex h-16 w-16 items-center justify-center rounded-xl transition-colors duration-150 ease-out",
-            "outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
-            listening
-              ? "bg-black/5 dark:bg-white/5"
-              : "hover:bg-black/5 dark:hover:bg-white/5"
-          )}
-          onClick={handleClick}
-          type="button"
-        >
-          {/* Both icons stay mounted and crossfade with a little blur, so
-              the swap reads as one control changing state. */}
-          <Mic
-            aria-hidden="true"
-            className={cn(
-              "absolute h-6 w-6 text-black/90 transition-[opacity,filter,scale] duration-200 dark:text-white/90",
-              listening
-                ? "scale-50 opacity-0 blur-[3px]"
-                : "scale-100 opacity-100 blur-0"
-            )}
-            style={{ transitionTimingFunction: EASE_OUT }}
-          />
+        <div className="relative">
+          {/* Swells with the voice while recording. */}
           <span
             aria-hidden="true"
-            className={cn(
-              "absolute h-5 w-5 rounded-[5px] bg-black transition-[opacity,filter,scale] duration-200 dark:bg-white",
-              listening
-                ? "scale-100 opacity-100 blur-0"
-                : "scale-50 opacity-0 blur-[3px]"
-            )}
-            style={{ transitionTimingFunction: EASE_OUT }}
+            className="pointer-events-none absolute inset-0 rounded-xl bg-black/5 opacity-0 dark:bg-white/5"
+            ref={ringRef}
           />
-        </button>
+          <button
+            aria-label={mainLabelFor(mode, playing)}
+            aria-pressed={recording && announce}
+            className={cn(
+              "relative flex h-16 w-16 items-center justify-center rounded-xl transition-colors duration-150 ease-out",
+              "outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
+              mode === "idle"
+                ? "hover:bg-black/5 dark:hover:bg-white/5"
+                : "bg-black/5 dark:bg-white/5"
+            )}
+            onClick={handleMainClick}
+            type="button"
+          >
+            <ButtonFaces visible={faces} />
+          </button>
+        </div>
 
         <span
           className={cn(
             "font-mono text-sm tabular-nums transition-colors duration-300",
-            listening
-              ? "text-black/70 dark:text-white/70"
-              : "text-black/30 dark:text-white/30"
+            mode === "idle"
+              ? "text-black/30 dark:text-white/30"
+              : "text-black/70 dark:text-white/70"
           )}
         >
-          {formatTime(listening ? seconds : 0)}
+          {timerValue}
         </span>
 
-        {/* Newest sound enters on the right and scrolls left; the edges fade
-            so bars arrive and leave softly. */}
+        {/* While recording, the newest sound enters on the right and the
+            edges fade. In review the whole take sits still and a darker
+            copy, clipped at the playhead, shows what has played. */}
         <div
           aria-hidden="true"
-          className="h-8 w-60 overflow-hidden"
+          className="relative h-8 w-60 overflow-hidden"
           style={{
-            maskImage:
-              "linear-gradient(to right, transparent, black 18%, black 92%, transparent)",
-            WebkitMaskImage:
-              "linear-gradient(to right, transparent, black 18%, black 92%, transparent)",
+            maskImage: recording ? EDGE_MASK : undefined,
+            WebkitMaskImage: recording ? EDGE_MASK : undefined,
           }}
         >
           <div className="flex h-full items-center gap-[2px]" ref={rowRef}>
@@ -289,9 +548,9 @@ export default function AI_Voice({
               <span
                 className={cn(
                   "h-full w-[3px] shrink-0 rounded-full",
-                  listening
+                  recording
                     ? "bg-black/60 dark:bg-white/60"
-                    : "bg-black/15 transition-transform duration-500 dark:bg-white/15"
+                    : "bg-black/15 transition-transform duration-500 motion-reduce:transition-none dark:bg-white/15"
                 )}
                 key={id}
                 ref={(el) => {
@@ -299,8 +558,8 @@ export default function AI_Voice({
                 }}
                 style={{
                   transform: `scaleY(${REST_LEVEL})`,
-                  // When listening stops, the bars settle right to left.
-                  transitionDelay: listening
+                  // Out of recording the bars settle right to left.
+                  transitionDelay: recording
                     ? undefined
                     : `${(BAR_COUNT - i) * 6}ms`,
                   transitionTimingFunction: EASE_OUT,
@@ -308,15 +567,55 @@ export default function AI_Voice({
               />
             ))}
           </div>
+          <div
+            className={cn(
+              "absolute inset-0 flex items-center gap-[2px] transition-opacity duration-200",
+              reviewing ? "opacity-100" : "opacity-0"
+            )}
+            ref={playedRef}
+            style={{ clipPath: "inset(0 100% 0 0)" }}
+          >
+            {BAR_IDS.map((id, i) => (
+              <span
+                className="h-full w-[3px] shrink-0 rounded-full bg-black/70 dark:bg-white/70"
+                key={id}
+                ref={(el) => {
+                  playedBarRefs.current[i] = el;
+                }}
+                style={{ transform: `scaleY(${REST_LEVEL})` }}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* <output> has the implicit role="status". It stays silent while the
-            demo loop toggles the caption every few seconds. */}
-        <output
-          aria-live={isDemo ? "off" : "polite"}
-          className="h-4 text-black/70 text-xs dark:text-white/70"
-        >
-          {listening ? "Listening..." : "Click to speak"}
+        <div className="relative flex h-7 items-center justify-center">
+          <AnimatePresence initial={false} mode="popLayout">
+            {reviewing ? (
+              <ReviewActions
+                key="actions"
+                onDiscard={() => finish(false)}
+                onSend={() => finish(true)}
+              />
+            ) : (
+              <motion.span
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                className="text-black/70 text-xs dark:text-white/70"
+                exit={{ opacity: 0, filter: "blur(2px)" }}
+                initial={{ opacity: 0, filter: "blur(2px)" }}
+                key="caption"
+                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              >
+                {recording ? "Listening..." : "Click to speak"}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* <output> has the implicit role="status". It stays silent during
+            the demo loop. */}
+        <output aria-live={announce ? "polite" : "off"} className="sr-only">
+          {announce && recording ? "Recording" : ""}
+          {announce && reviewing ? "Recording ready to send" : ""}
         </output>
       </div>
     </div>
