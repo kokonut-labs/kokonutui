@@ -428,6 +428,36 @@ export const component: Registry = [
     ],
   },
   {
+    name: "receipt-printer",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/receipt-printer.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "activity-terrain",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/activity-terrain.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "liquid-gauge",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/liquid-gauge.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
