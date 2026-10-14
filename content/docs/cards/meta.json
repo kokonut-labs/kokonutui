@@ -12,6 +12,7 @@
     "currency-transfer",
     "carousel-cards",
     "notification-stack",
+    "liquid-gauge",
     "receipt-printer"
   ]
 }

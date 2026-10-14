@@ -598,6 +598,18 @@
       ]
     },
     {
+      "name": "liquid-gauge",
+      "type": "registry:component",
+      "title": "Liquid Gauge",
+      "description": "A usage meter filled with liquid that sloshes, ripples and bubbles, built with React and a wave simulation.",
+      "files": [
+        {
+          "path": "components/kokonutui/liquid-gauge.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",

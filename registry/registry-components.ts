@@ -428,6 +428,16 @@ export const component: Registry = [
     ],
   },
   {
+    name: "liquid-gauge",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/liquid-gauge.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "receipt-printer",
     type: "registry:component",
     files: [
