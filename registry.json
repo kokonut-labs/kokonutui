@@ -230,10 +230,7 @@
       "name": "background-paths",
       "type": "registry:component",
       "title": "Background Paths",
-      "description": "Animated background of flowing SVG line paths drawn across the hero section. Built with React, Tailwind CSS and Motion path animations.",
-      "dependencies": [
-        "motion"
-      ],
+      "description": "A ribbon of lines in one color that keeps flowing at any size and parts around the cursor.",
       "files": [
         {
           "path": "components/kokonutui/background-paths.tsx",
