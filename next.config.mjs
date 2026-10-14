@@ -149,7 +149,12 @@ const nextConfig = {
       },
       {
         source: "/docs/components/spotlight-cards",
-        destination: "/docs/cards/spotlight-cards",
+        destination: "/docs/cards/bento-grid",
+        permanent: true,
+      },
+      {
+        source: "/docs/cards/spotlight-cards",
+        destination: "/docs/cards/bento-grid",
         permanent: true,
       },
       {

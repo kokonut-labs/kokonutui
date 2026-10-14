@@ -273,34 +273,6 @@ export const component: Registry = [
         path: "components/kokonutui/bento-grid.tsx",
         type: "registry:component",
       },
-      {
-        path: "components/icons/anthropic.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/anthropic-dark.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/gemini.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/open-ai.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/open-ai-dark.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/mistral.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/deepseek.tsx",
-        type: "registry:component",
-      },
     ],
   },
   {
@@ -532,17 +504,6 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/morphic-navbar.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "spotlight-cards",
-    type: "registry:component",
-    dependencies: ["motion", "lucide-react"],
-    files: [
-      {
-        path: "components/kokonutui/spotlight-cards.tsx",
         type: "registry:component",
       },
     ],
