@@ -494,6 +494,9 @@ export default function DotField({
     let last = 0;
     let lastTone = 0;
     let carry = 0;
+    // What the last physics step found. Frames shorter than STEP (144Hz
+    // screens) run no step, so they go by this rather than settle early.
+    let stirring = false;
     let awake = false;
     let raf = 0;
     let visible = true;
@@ -515,7 +518,6 @@ export default function DotField({
     const physics = (dt: number) => {
       const pushed = applyPointer(field, pointer, dt);
       carry = Math.min(carry + dt, STEP * 6);
-      let moving = pushed || shocks.length > 0;
       while (carry >= STEP) {
         carry -= STEP;
         for (const shock of shocks) {
@@ -524,9 +526,9 @@ export default function DotField({
         while (shocks.length > 0 && shocks[0].age > SHOCK_LIFE) {
           shocks.shift();
         }
-        moving = integrate(field, shocks, STEP) || moving;
+        stirring = integrate(field, shocks, STEP);
       }
-      if (!(moving || shocks.length > 0)) {
+      if (!(pushed || stirring || shocks.length > 0)) {
         // Settled: put every dot exactly home and let the physics sleep.
         field.ox.fill(0);
         field.oy.fill(0);
@@ -571,6 +573,7 @@ export default function DotField({
       if (!awake) {
         awake = true;
         carry = 0;
+        stirring = true;
       }
       start();
     };
@@ -580,11 +583,28 @@ export default function DotField({
     canvas.style.opacity = "1";
     start();
 
-    const resizeObserver = new ResizeObserver(() => {
+    const redraw = () => {
       resize();
       draw(ctx, field, size, false);
-    });
+    };
+    const resizeObserver = new ResizeObserver(redraw);
     resizeObserver.observe(canvas);
+
+    // Moving the window to a screen with another pixel ratio doesn't resize
+    // the canvas, so watch the ratio too or the dots go soft.
+    let dprQuery: MediaQueryList | null = null;
+    const watchDpr = () => {
+      dprQuery?.removeEventListener("change", onDpr);
+      dprQuery = window.matchMedia(
+        `(resolution: ${window.devicePixelRatio}dppx)`
+      );
+      dprQuery.addEventListener("change", onDpr);
+    };
+    const onDpr = () => {
+      redraw();
+      watchDpr();
+    };
+    watchDpr();
 
     // Stop drawing entirely while the field is scrolled away or the tab is
     // in the background.
@@ -602,8 +622,12 @@ export default function DotField({
     intersection.observe(root);
     document.addEventListener("visibilitychange", updateVisible);
 
-    // Follow light and dark mode without asking the app for a theme.
+    // Follow light and dark mode without asking the app for a theme. Only
+    // checked while the field is on screen.
     const colorTimer = window.setInterval(() => {
+      if (!visible) {
+        return;
+      }
       const next = getComputedStyle(canvas).color;
       if (next !== size.color) {
         size.color = next;
@@ -638,8 +662,14 @@ export default function DotField({
       pointer.inside = false;
     };
     const onDown = (event: PointerEvent) => {
-      // Clicks on the content (links, buttons) are not meant for the field.
-      if ((event.target as HTMLElement).closest("a, button, input, textarea")) {
+      // Clicks on the content (links, buttons) are not meant for the field,
+      // and neither are right or middle clicks.
+      if (
+        event.button !== 0 ||
+        (event.target as HTMLElement).closest(
+          "a, button, input, textarea, select, label, [role='button']"
+        )
+      ) {
         return;
       }
       const point = local(event);
@@ -663,6 +693,7 @@ export default function DotField({
     return () => {
       cancelAnimationFrame(raf);
       resizeObserver.disconnect();
+      dprQuery?.removeEventListener("change", onDpr);
       intersection.disconnect();
       document.removeEventListener("visibilitychange", updateVisible);
       window.clearInterval(colorTimer);
