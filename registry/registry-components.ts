@@ -428,6 +428,16 @@ export const component: Registry = [
     ],
   },
   {
+    name: "receipt-printer",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/receipt-printer.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
