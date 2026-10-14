@@ -154,6 +154,8 @@ export default function CardFlip({
   const isFlipped = isControlled ? flipped : internalFlipped;
   // Which face is turned toward the viewer right now (changes at 90°).
   const [backVisible, setBackVisible] = useState(isFlipped);
+  // Bumped when a controlled card asks to turn; see the effect below.
+  const [request, setRequest] = useState(0);
   const hintId = useId();
 
   const rootRef = useRef<HTMLDivElement>(null);
@@ -279,7 +281,9 @@ export default function CardFlip({
       const next = sideOf(target);
       const p = latest.current;
       if (next !== p.isFlipped) {
-        if (!p.isControlled) {
+        if (p.isControlled) {
+          setRequest((n) => n + 1);
+        } else {
           setInternalFlipped(next);
         }
         p.onFlippedChange?.(next);
@@ -312,16 +316,26 @@ export default function CardFlip({
   }, []);
 
   // Controlled: follow the prop when it disagrees with where the card lands.
+  // `request` re-runs this after every turn the card asks for, so a parent
+  // that ignores onFlippedChange sends the card back to its side.
   useEffect(() => {
-    if (flipped === undefined) {
+    if (flipped === undefined || request < 0) {
       return;
     }
     const s = sim.current;
-    if (sideOf(s.target) !== flipped) {
-      s.target = nearestFace(s.target) + 180;
-      settle();
+    if (s.dragging || sideOf(s.target) === flipped) {
+      return;
     }
-  }, [flipped, settle]);
+    // The nearest face on the asked-for side, so a refused turn swings back
+    // the way it came.
+    const face = nearestFace(s.angle);
+    if (sideOf(face) === flipped) {
+      s.target = face;
+    } else {
+      s.target = face + (s.angle < face ? -180 : 180);
+    }
+    settle();
+  }, [flipped, request, settle]);
 
   // A new axis redraws the spring-owned transforms in place.
   useEffect(() => {
@@ -336,10 +350,15 @@ export default function CardFlip({
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0 || (e.target as Element).closest(INTERACTIVE)) {
+    const s = sim.current;
+    // One pointer at a time: a second finger does not steal the drag.
+    if (
+      s.pointerId !== null ||
+      e.button !== 0 ||
+      (e.target as Element).closest(INTERACTIVE)
+    ) {
       return;
     }
-    const s = sim.current;
     s.pointerId = e.pointerId;
     s.startX = e.clientX;
     s.startY = e.clientY;
