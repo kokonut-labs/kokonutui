@@ -347,6 +347,22 @@
       ]
     },
     {
+      "name": "marking-menu",
+      "type": "registry:component",
+      "title": "Marking Menu",
+      "description": "A radial menu you hold to open or flick to pick blind, built with React and Motion.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/marking-menu.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "team-selector",
       "type": "registry:component",
       "title": "Team Selector",
