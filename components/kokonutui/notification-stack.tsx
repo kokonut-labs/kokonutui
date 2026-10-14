@@ -189,6 +189,12 @@ export default function NotificationStack({
   // Live horizontal offset of each card, and its running animation frame.
   const swipeX = useRef(new Map<string, number>());
   const frames = useRef(new Map<string, number>());
+  // Cards already on their way out, so a repeated Delete or a double click
+  // can't dismiss (and report) the same card twice.
+  const dismissed = useRef(new Set<string>());
+  // Ends a gesture whose pointer was released off the card before it was
+  // captured (a vertical drag that left the card).
+  const stopListening = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const pending = timers.current;
@@ -200,6 +206,7 @@ export default function NotificationStack({
       for (const frame of running.values()) {
         cancelAnimationFrame(frame);
       }
+      stopListening.current?.();
     };
   }, []);
 
@@ -340,8 +347,24 @@ export default function NotificationStack({
    * a button or keyboard dismiss starts from rest at the minimum speed.
    */
   const dismiss = (id: string, direction: 1 | -1, velocity = 0) => {
+    if (dismissed.current.has(id)) {
+      return;
+    }
+    dismissed.current.add(id);
     setLeaving((prev) => new Set(prev).add(id));
     const node = swipeRefs.current.get(id);
+
+    // Keyboard and button dismissals keep focus in the stack: it moves to
+    // the next card (or the previous one, or the list once it is empty)
+    // instead of dropping to the page when this card unmounts.
+    if (node?.contains(document.activeElement)) {
+      const at = laidOut.findIndex((item) => item.id === id);
+      const next = laidOut[at + 1] ?? laidOut[at - 1];
+      const target = next
+        ? swipeRefs.current.get(next.id)?.querySelector("article")
+        : listRef.current;
+      target?.focus();
+    }
 
     if (!node || prefersReducedMotion()) {
       stopFrame(id);
@@ -390,6 +413,29 @@ export default function NotificationStack({
     }
     // Catch a card that is still springing back from the last swipe.
     stopFrame(id);
+    const { pointerId } = event;
+    const release = (up: globalThis.PointerEvent) => {
+      if (up.pointerId !== pointerId) {
+        return;
+      }
+      stopListening.current?.();
+      // The card's own handlers run first; this only clears a gesture that
+      // ended off the card, which would otherwise block the next one.
+      if (drag.current?.pointerId === pointerId) {
+        drag.current = null;
+        if (swipeX.current.get(id)) {
+          snapBack(id, 0);
+        }
+      }
+    };
+    stopListening.current?.();
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
+    stopListening.current = () => {
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+      stopListening.current = null;
+    };
     drag.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -463,6 +509,10 @@ export default function NotificationStack({
   const handleCardKeyDown = (event: KeyboardEvent<HTMLElement>, id: string) => {
     if (event.key === "Delete" || event.key === "Backspace") {
       event.preventDefault();
+      // A held key would clear the next card too, now that focus moves to it.
+      if (event.repeat) {
+        return;
+      }
       dismiss(id, 1);
     }
   };
@@ -510,9 +560,11 @@ export default function NotificationStack({
 
       <ol
         aria-label="Notifications"
-        className="relative transition-[height] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+        className="relative outline-none transition-[height] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
         ref={listRef}
         style={{ height: stackHeight }}
+        // Focus lands here when the last card is dismissed from the keyboard.
+        tabIndex={-1}
       >
         {items.map((item) => {
           const index = laidOut.findIndex((card) => card.id === item.id);
@@ -544,9 +596,15 @@ export default function NotificationStack({
             >
               <div
                 className="touch-pan-y"
-                onLostPointerCapture={(event) =>
-                  handlePointerUp(event, item.id)
-                }
+                onLostPointerCapture={(event) => {
+                  // Touch starts with an implicit capture on the element
+                  // under the finger; moving it to this card fires a
+                  // bubbling lostpointercapture that is not the end of the
+                  // swipe.
+                  if (event.target === event.currentTarget) {
+                    handlePointerUp(event, item.id);
+                  }
+                }}
                 onPointerCancel={(event) => handlePointerUp(event, item.id)}
                 onPointerDown={(event) =>
                   handlePointerDown(event, depth, item.id)
