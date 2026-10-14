@@ -670,6 +670,18 @@
       ]
     },
     {
+      "name": "activity-terrain",
+      "type": "registry:component",
+      "title": "Activity Terrain",
+      "description": "A contribution heatmap that tilts up into a 3D terrain you can turn, built with React and canvas.",
+      "files": [
+        {
+          "path": "components/kokonutui/activity-terrain.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",

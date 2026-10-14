@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 57 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 58 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -13,6 +13,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 ## Components
 
 - [Action Search Bar](https://kokonutui.com/docs/navigation/action-search-bar.md): Search bar with debounced input, shortcut hints, and an animated action suggestions dropdown, built with React, Motion, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/action-search-bar`
+- [Activity Terrain](https://kokonutui.com/docs/cards/activity-terrain.md): A contribution heatmap that tilts up into a 3D terrain you can turn, built with React and canvas. Install: `npx shadcn@latest add @kokonutui/activity-terrain`
 - [AI Input Search](https://kokonutui.com/docs/ai/ai-input-search.md): AI search chat input with toggleable web search mode, file attachment and auto-resizing textarea. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/ai-input-search`
 - [AI Input Selector](https://kokonutui.com/docs/ai/ai-prompt.md): AI chat input with a model picker, file chips you can drop or paste, and Stop while replying. Install: `npx shadcn@latest add @kokonutui/ai-prompt`
 - [AI State Loading](https://kokonutui.com/docs/ai/ai-loading.md): Agent progress as a list of steps with a live log, elapsed time and a summary when done. Install: `npx shadcn@latest add @kokonutui/ai-loading`
