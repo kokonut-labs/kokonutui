@@ -594,4 +594,37 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "topo-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/topo-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "pull-cord",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/pull-cord.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "paper-fold",
+    type: "registry:component",
+    dependencies: ["motion", "lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/paper-fold.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
