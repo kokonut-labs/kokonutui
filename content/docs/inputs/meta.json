@@ -6,6 +6,7 @@
     "team-selector",
     "loader",
     "detent-dial",
-    "wheel-picker"
+    "wheel-picker",
+    "signature-pad"
   ]
 }

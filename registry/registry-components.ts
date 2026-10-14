@@ -265,6 +265,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "signature-pad",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/signature-pad.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "switch-button",
     type: "registry:component",
     dependencies: ["lucide-react"],
