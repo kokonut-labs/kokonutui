@@ -7,7 +7,7 @@
       "name": "ai-prompt",
       "type": "registry:component",
       "title": "AI Input Selector",
-      "description": "Animated AI chat input with model selection dropdown, file attachment and auto-resizing textarea. Built with React, Tailwind CSS and Motion.",
+      "description": "AI chat input with a model picker, file chips you can drop or paste, and Stop while replying.",
       "dependencies": [
         "lucide-react",
         "motion"
