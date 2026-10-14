@@ -398,6 +398,7 @@ export const component: Registry = [
   {
     name: "ai-loading",
     type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
     files: [
       {
         path: "components/kokonutui/ai-loading.tsx",
