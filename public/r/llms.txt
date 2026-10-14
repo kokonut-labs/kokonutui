@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 53 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 54 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -59,6 +59,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Switch Button](https://kokonutui.com/docs/buttons/switch-button.md): Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes. Install: `npx shadcn@latest add @kokonutui/switch-button`
 - [Swoosh Text](https://kokonutui.com/docs/texts/swoosh-text.md): Hover text effect with layered colorful shadows that snap flat on mouseover, built with React and Tailwind CSS transitions. Install: `npx shadcn@latest add @kokonutui/swoosh-text`
 - [Team Selector](https://kokonutui.com/docs/inputs/team-selector.md): Animated team size selector with stacked overlapping avatars, spring transitions and increment controls. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/team-selector`
+- [Tear Button](https://kokonutui.com/docs/buttons/tear-button.md): A confirm button you tear off like a ticket stub, hole by hole. Install: `npx shadcn@latest add @kokonutui/tear-button`
 - [Toolbar](https://kokonutui.com/docs/navigation/toolbar.md): Figma-inspired toolbar where the selected tool expands to reveal its label with spring animations, built with React, Motion, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/toolbar`
 - [Topo Background](https://kokonutui.com/docs/backgrounds/topo-background.md): A living contour map that drifts, rises under the cursor and ripples on click, built with React and Canvas. Install: `npx shadcn@latest add @kokonutui/topo-background`
 - [Typing Text](https://kokonutui.com/docs/texts/type-writer.md): Typewriter text animation that types and deletes multiple sequences with a blinking cursor and auto loop, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/type-writer`

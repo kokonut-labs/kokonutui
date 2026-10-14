@@ -422,6 +422,19 @@
       ]
     },
     {
+      "name": "tear-button",
+      "type": "registry:component",
+      "title": "Tear Button",
+      "description": "A confirm button you tear off like a ticket stub, hole by hole.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/tear-button.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "bento-grid",
       "type": "registry:component",
       "title": "Bento Grid",
