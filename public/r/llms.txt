@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 60 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 61 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -23,6 +23,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Avatar Picker](https://kokonutui.com/docs/inputs/avatar-picker.md): Animated avatar picker with SVG avatar options, colored selection ring and username input. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/avatar-picker`
 - [Background Paths](https://kokonutui.com/docs/backgrounds/background-paths.md): A ribbon of lines in one color that keeps flowing at any size and parts around the cursor. Install: `npx shadcn@latest add @kokonutui/background-paths`
 - [Beams Background](https://kokonutui.com/docs/backgrounds/beams-background.md): Animated background of drifting light beams rendered on an HTML canvas with configurable intensity. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/beams-background`
+- [Bell Button](https://kokonutui.com/docs/buttons/bell-button.md): A subscribe button whose bell swings and rings, with a clapper that really strikes. Install: `npx shadcn@latest add @kokonutui/bell-button`
 - [Bento Grid](https://kokonutui.com/docs/cards/bento-grid.md): Responsive bento grid of feature cards with a spotlight list, a typing code snippet, logos, a timeline and a voice widget, built with React, Tailwind CSS and Motion animations. Install: `npx shadcn@latest add @kokonutui/bento-grid`
 - [Card Flip](https://kokonutui.com/docs/cards/card-flip.md): Interactive card that flips in 3D on hover to reveal features and a call to action, built with React and Tailwind CSS transforms and transitions. Install: `npx shadcn@latest add @kokonutui/card-flip`
 - [Carousel Cards](https://kokonutui.com/docs/cards/carousel-cards.md): Horizontally scrolling card carousel with ratings, badges and arrow navigation, built with React, Tailwind CSS and shadcn/ui primitives. Install: `npx shadcn@latest add @kokonutui/carousel-cards`

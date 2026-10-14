@@ -478,6 +478,19 @@
       ]
     },
     {
+      "name": "bell-button",
+      "type": "registry:component",
+      "title": "Bell Button",
+      "description": "A subscribe button whose bell swings and rings, with a clapper that really strikes.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/bell-button.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "bento-grid",
       "type": "registry:component",
       "title": "Bento Grid",
