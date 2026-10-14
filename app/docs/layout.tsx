@@ -3,7 +3,7 @@ import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import type { Metadata } from "next";
 import HeaderProSmall from "@/components/landing/header-pro-small";
 import { getParts } from "@/components/landing/home/parts";
-import { MONO } from "@/components/landing/home/styles";
+import { LEAF, MONO } from "@/components/landing/home/styles";
 import { source } from "@/lib/source";
 import { cn } from "@/lib/utils";
 import { baseOptions } from "../layout.config";
@@ -18,21 +18,35 @@ export const metadata: Metadata = {
 
 /**
  * The sidebar reads like the homepage's index: each component is listed by
- * its catalog code instead of an icon.
+ * its catalog code instead of an icon, and recent additions say "New".
  */
 function withCodes(tree: PageTree.Root): PageTree.Root {
-  const codes = new Map(getParts().map((part) => [part.url, part.code]));
+  const parts = getParts();
+  const codes = new Map(parts.map((part) => [part.url, part.code]));
+  const fresh = new Set(parts.filter((p) => p.isNew).map((p) => p.url));
 
   const visit = (node: PageTree.Node): PageTree.Node => {
     if (node.type === "folder") {
       return { ...node, children: node.children.map(visit) };
     }
     const code = node.type === "page" ? codes.get(node.url) : undefined;
+    const isNew = node.type === "page" && fresh.has(node.url);
     if (!code) {
       return node;
     }
     return {
       ...node,
+      name: isNew ? (
+        <span
+          className="flex w-full items-baseline justify-between gap-2"
+          key="name"
+        >
+          {node.name}
+          <span className={cn(MONO, "text-[10.5px]", LEAF)}>New</span>
+        </span>
+      ) : (
+        node.name
+      ),
       icon: (
         <span
           className={cn(

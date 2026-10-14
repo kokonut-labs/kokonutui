@@ -7,15 +7,22 @@ import {
   ViewOptionsPopover,
 } from "fumadocs-ui/layouts/docs/page";
 import defaultMdxComponents, { createRelativeLink } from "fumadocs-ui/mdx";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, META, MONO } from "@/components/landing/home/styles";
 import TocProBanner from "@/components/landing/toc-pro-banner";
+import { Release } from "@/components/mdx/changelog-release";
 import { Preview, type PreviewProps } from "@/components/mdx/preview";
 import { PreviewClient } from "@/components/mdx/preview-client";
 import PreviewTemplate from "@/components/mdx/preview-template";
 import WhatIncluded from "@/components/mdx/what-included";
 import { siteConfig } from "@/config/site";
+import {
+  CHANGELOG_URL,
+  formatReleaseDate,
+  releaseAnchor,
+} from "@/lib/changelog";
 import { source } from "@/lib/source";
 import { cn } from "@/lib/utils";
 
@@ -150,6 +157,14 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
             {part.code}
           </span>
           <span>{part.category}</span>
+          {part.isNew && part.added ? (
+            <Link
+              className="underline-offset-4 hover:text-black hover:underline dark:hover:text-white"
+              href={`${CHANGELOG_URL}#${releaseAnchor(part.added)}`}
+            >
+              New, {formatReleaseDate(part.added)}
+            </Link>
+          ) : null}
         </p>
       ) : null}
       <DocsTitle className="font-semibold text-4xl tracking-[-0.03em]">
@@ -174,6 +189,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
             Preview: DocsPreview,
             PreviewClient: DocsPreviewClient,
             PreviewTemplate,
+            Release,
             WhatIncluded,
           }}
         />

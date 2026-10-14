@@ -4,6 +4,12 @@ import { ArrowDownIcon, ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, Suspense, useState } from "react";
+import {
+  CHANGELOG_URL,
+  formatReleaseDate,
+  RELEASES,
+  releaseAnchor,
+} from "@/lib/changelog";
 import { cn } from "@/lib/utils";
 import { Avatar, CopyIconSwap, useCopy } from "./client";
 import { ClientPicker, CopyLine } from "./controls";
@@ -81,6 +87,7 @@ export function Catalog({
       <Cover featured={featured} />
       <Plates plates={plates} />
       <Index parts={parts} />
+      <Changelog parts={parts} />
       <Ordering />
       <References />
       <Supplement />
@@ -539,6 +546,17 @@ function Index({ parts }: { parts: Part[] }) {
                       {p.code}
                     </span>
                     <span className="truncate">{p.title}</span>
+                    {p.isNew ? (
+                      <span
+                        className={cn(
+                          MONO,
+                          "ml-auto shrink-0 text-[11px]",
+                          LEAF
+                        )}
+                      >
+                        New
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               ))}
@@ -574,6 +592,122 @@ function Index({ parts }: { parts: Part[] }) {
   );
 }
 
+/* Changelog ------------------------------------------------------------- */
+
+/** The latest releases, one row each, linking into the full changelog. */
+function Changelog({ parts }: { parts: Part[] }) {
+  const byName = new Map(parts.map((p) => [p.name, p]));
+  const releases = RELEASES.slice(0, 2);
+  return (
+    <section aria-labelledby="changelog" className="pt-24 md:pt-32">
+      <SectionHead
+        aside={
+          <>
+            The latest additions and changes. The{" "}
+            <Link
+              className={cn(
+                "rounded-sm underline underline-offset-4",
+                INK,
+                FOCUS
+              )}
+              href={CHANGELOG_URL}
+            >
+              changelog
+            </Link>{" "}
+            has every release, with a link to each pull request.
+          </>
+        }
+        id="changelog"
+        number="03"
+        title="What's new"
+      />
+      <ol className={cn("grid grid-cols-1 border", GRID, LINE)}>
+        {releases.map((release) => {
+          const added = release.added.flatMap((e) => byName.get(e.name) ?? []);
+          const improved = release.improved.flatMap(
+            (e) => byName.get(e.name) ?? []
+          );
+          return (
+            <li
+              className={cn(
+                "grid grid-cols-1 gap-4 p-5 sm:p-6 lg:grid-cols-3 lg:gap-x-6",
+                CELL
+              )}
+              key={release.date}
+            >
+              <Link
+                className={cn(
+                  "group/date flex w-fit flex-col gap-1 self-start rounded-sm",
+                  FOCUS
+                )}
+                href={`${CHANGELOG_URL}#${releaseAnchor(release.date)}`}
+              >
+                <span
+                  className={cn(
+                    "font-medium text-[17px] underline-offset-4 group-hover/date:underline",
+                    INK
+                  )}
+                >
+                  {formatReleaseDate(release.date)}
+                </span>
+                <span className={META}>
+                  {[
+                    added.length > 0 && `${added.length} new`,
+                    improved.length > 0 && `${improved.length} improved`,
+                    release.library && "fixes across the library",
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>
+              </Link>
+              <div className="flex flex-col gap-4 lg:col-span-2">
+                {added.length > 0 ? (
+                  <ReleaseParts label="New" parts={added} />
+                ) : null}
+                {improved.length > 0 ? (
+                  <ReleaseParts label="Improved" parts={improved} />
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+function ReleaseParts({ label, parts }: { label: string; parts: Part[] }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className={META}>{label}</p>
+      <ul className="flex flex-wrap gap-x-5 gap-y-1">
+        {parts.map((p) => (
+          <li key={p.name}>
+            <Link
+              className={cn(
+                "group/row inline-flex items-baseline gap-2 rounded-sm py-0.5 text-[14px] text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white",
+                EASE_COLORS,
+                FOCUS
+              )}
+              href={p.url}
+            >
+              <span
+                className={cn(
+                  MONO,
+                  "text-[11.5px] text-black/35 transition-colors duration-150 ease-out group-hover/row:text-[#1FA834] dark:text-white/35 dark:group-hover/row:text-[#3BB44B]"
+                )}
+              >
+                {p.code}
+              </span>
+              {p.title}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /* Ordering -------------------------------------------------------------- */
 
 function Ordering() {
@@ -582,7 +716,7 @@ function Ordering() {
       <SectionHead
         aside="Kokonut UI is a shadcn/ui registry, so every component arrives as source in your repo, with its dependencies installed."
         id="ordering"
-        number="03"
+        number="04"
         title="How to install"
       />
       <ol className={cn("grid grid-cols-1 border md:grid-cols-3", GRID, LINE)}>
@@ -660,7 +794,7 @@ function References() {
       <SectionHead
         aside="What developers said when they found it, including the person behind shadcn/ui."
         id="references"
-        number="04"
+        number="05"
         title="What developers say"
       />
       <div
@@ -749,7 +883,7 @@ function Supplement() {
       <SectionHead
         aside="Complete website templates and premium sections, on the same stack: Next.js, Tailwind CSS, Motion and shadcn/ui."
         id="supplement"
-        number="05"
+        number="06"
         title="Kokonut UI Pro"
       />
       <div className={cn("grid grid-cols-1 border md:grid-cols-3", GRID, LINE)}>
