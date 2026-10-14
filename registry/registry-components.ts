@@ -154,24 +154,12 @@ export const component: Registry = [
     ],
   },
   {
-    name: "mouse-effect-card",
+    name: "dot-field",
     type: "registry:component",
-    dependencies: ["motion"],
-    registryDependencies: ["card", "button"],
+    dependencies: [],
     files: [
       {
-        path: "components/kokonutui/mouse-effect-card.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "beams-background",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/beams-background.tsx",
+        path: "components/kokonutui/dot-field.tsx",
         type: "registry:component",
       },
     ],
