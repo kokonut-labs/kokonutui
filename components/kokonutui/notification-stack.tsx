@@ -3,8 +3,8 @@
 /**
  * @author: @dorianbaffier
  * @description: Notification Stack
- * @version: 1.0.0
- * @date: 2026-10-13
+ * @version: 1.1.0
+ * @date: 2026-10-14
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
@@ -96,6 +96,16 @@ const DISMISS_VELOCITY = 0.11;
 // Movement before we decide whether the gesture is a horizontal swipe or a
 // vertical scroll.
 const AXIS_LOCK = 6;
+// Snap-back spring (critically damped, so it never wobbles past rest but
+// still carries the release momentum a little further before it turns).
+const SPRING_STIFFNESS = 520;
+const SPRING_DAMPING = 2 * Math.sqrt(SPRING_STIFFNESS);
+// Dismiss flight: a released card keeps its own speed (px/s), never slower
+// than this, and picks up a little speed as it goes.
+const FLIGHT_MIN_SPEED = 1400;
+const FLIGHT_ACCEL = 4200;
+// Velocity is read from the last stretch of the gesture, not the average.
+const VELOCITY_WINDOW_MS = 80;
 const EXIT_MS = 200;
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
@@ -103,10 +113,51 @@ interface Drag {
   pointerId: number;
   startX: number;
   startY: number;
-  startTime: number;
+  /** Where the card already was when grabbed (mid snap-back). */
+  originX: number;
   dx: number;
   axis: "x" | "y" | null;
+  samples: { t: number; x: number }[];
 }
+
+const opacityFor = (x: number) => Math.max(1 - Math.abs(x) / 240, 0.3);
+
+/** Release velocity in px/ms from the most recent pointer samples. */
+function releaseVelocity(samples: { t: number; x: number }[]) {
+  const last = samples.at(-1);
+  if (!last) {
+    return 0;
+  }
+  let first = last;
+  for (let i = samples.length - 1; i >= 0; i--) {
+    const sample = samples[i];
+    if (last.t - sample.t > VELOCITY_WINDOW_MS) {
+      break;
+    }
+    first = sample;
+  }
+  const dt = last.t - first.t;
+  return dt > 0 ? (last.x - first.x) / dt : 0;
+}
+
+/**
+ * Which way a released card leaves, or 0 to spring back. A flick counts
+ * only when it moves away from rest; flicking a dragged card back toward
+ * the middle returns it.
+ */
+function dismissDirection(dx: number, velocity: number): 1 | -1 | 0 {
+  const flick =
+    Math.abs(velocity) > DISMISS_VELOCITY &&
+    Math.sign(velocity) === Math.sign(dx);
+  if (Math.abs(dx) < DISMISS_DISTANCE && !flick) {
+    return 0;
+  }
+  return (dx === 0 ? velocity : dx) > 0 ? 1 : -1;
+}
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export interface NotificationStackProps {
   /** Initial notifications, newest first. The stack tracks dismissals itself. */
@@ -135,12 +186,19 @@ export default function NotificationStack({
   const timers = useRef<number[]>([]);
   // Where each card last sat, so a leaving card slides out from there.
   const lastY = useRef(new Map<string, number>());
+  // Live horizontal offset of each card, and its running animation frame.
+  const swipeX = useRef(new Map<string, number>());
+  const frames = useRef(new Map<string, number>());
 
   useEffect(() => {
     const pending = timers.current;
+    const running = frames.current;
     return () => {
       for (const id of pending) {
         window.clearTimeout(id);
+      }
+      for (const frame of running.values()) {
+        cancelAnimationFrame(frame);
       }
     };
   }, []);
@@ -202,34 +260,125 @@ export default function NotificationStack({
     running += heightOf(item.id) + GAP;
   }
 
-  const dismiss = (id: string, direction: 1 | -1) => {
+  const stopFrame = (id: string) => {
+    const frame = frames.current.get(id);
+    if (frame !== undefined) {
+      cancelAnimationFrame(frame);
+      frames.current.delete(id);
+    }
+  };
+
+  const paint = (id: string, x: number) => {
+    swipeX.current.set(id, x);
     const node = swipeRefs.current.get(id);
     if (node) {
-      node.style.transition = `transform ${EXIT_MS}ms ${EASE_OUT}, opacity ${EXIT_MS}ms ${EASE_OUT}`;
-      node.style.transform = `translateX(${direction * 110}%)`;
-      node.style.opacity = "0";
+      node.style.transition = "none";
+      node.style.transform = x === 0 ? "" : `translateX(${x}px)`;
+      node.style.opacity = x === 0 ? "" : `${opacityFor(x)}`;
     }
+  };
+
+  /** Step a per-card simulation on rAF until it reports it is done. */
+  const run = (
+    id: string,
+    step: (dt: number) => boolean,
+    onDone?: () => void
+  ) => {
+    stopFrame(id);
+    let last = performance.now();
+    const tick = (now: number) => {
+      // Clamp the step so a dropped frame or a background tab can't fling
+      // the simulation.
+      const dt = Math.min((now - last) / 1000, 1 / 30);
+      last = now;
+      if (step(dt)) {
+        frames.current.delete(id);
+        onDone?.();
+        return;
+      }
+      frames.current.set(id, requestAnimationFrame(tick));
+    };
+    frames.current.set(id, requestAnimationFrame(tick));
+  };
+
+  /** Spring back to rest, starting with the speed the finger let go at. */
+  const snapBack = (id: string, velocity: number) => {
+    let x = swipeX.current.get(id) ?? 0;
+    let v = velocity * 1000;
+    if (prefersReducedMotion()) {
+      paint(id, 0);
+      return;
+    }
+    run(id, (dt) => {
+      const force = -SPRING_STIFFNESS * x - SPRING_DAMPING * v;
+      v += force * dt;
+      x += v * dt;
+      if (Math.abs(x) < 0.5 && Math.abs(v) < 10) {
+        paint(id, 0);
+        return true;
+      }
+      paint(id, x);
+      return false;
+    });
+  };
+
+  const finishDismiss = (id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+    lastY.current.delete(id);
+    swipeX.current.delete(id);
+    setLeaving((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    onDismiss?.(id);
+  };
+
+  /**
+   * Throw the card off the side. A swipe keeps the speed it was released
+   * at (so a hard flick leaves faster than a slow drag past the threshold);
+   * a button or keyboard dismiss starts from rest at the minimum speed.
+   */
+  const dismiss = (id: string, direction: 1 | -1, velocity = 0) => {
     setLeaving((prev) => new Set(prev).add(id));
-    const timer = window.setTimeout(() => {
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      lastY.current.delete(id);
-      setLeaving((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      onDismiss?.(id);
-    }, EXIT_MS);
-    timers.current.push(timer);
+    const node = swipeRefs.current.get(id);
+
+    if (!node || prefersReducedMotion()) {
+      stopFrame(id);
+      if (node) {
+        node.style.transition = `opacity ${EXIT_MS}ms ${EASE_OUT}`;
+        node.style.opacity = "0";
+      }
+      const timer = window.setTimeout(() => finishDismiss(id), EXIT_MS);
+      timers.current.push(timer);
+      return;
+    }
+
+    const distance = node.offsetWidth * 1.1;
+    let x = swipeX.current.get(id) ?? 0;
+    let speed = Math.max(Math.abs(velocity) * 1000, FLIGHT_MIN_SPEED);
+    run(
+      id,
+      (dt) => {
+        speed += FLIGHT_ACCEL * dt;
+        x += direction * speed * dt;
+        const done = Math.abs(x) >= distance;
+        paint(id, done ? direction * distance : x);
+        node.style.opacity = `${Math.max(1 - Math.abs(x) / distance, 0)}`;
+        return done;
+      },
+      () => finishDismiss(id)
+    );
   };
 
   const handlePointerDown = (
     event: PointerEvent<HTMLDivElement>,
-    index: number
+    index: number,
+    id: string
   ) => {
     // Only the front card can be swiped while the stack is collapsed, and a
     // second finger never takes over a drag that is already running.
-    if (drag.current || (!expanded && index > 0)) {
+    if (drag.current || leaving.has(id) || (!expanded && index > 0)) {
       return;
     }
     suppressClick.current = false;
@@ -239,13 +388,16 @@ export default function NotificationStack({
     if ((event.target as HTMLElement).closest("button")) {
       return;
     }
+    // Catch a card that is still springing back from the last swipe.
+    stopFrame(id);
     drag.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      startTime: performance.now(),
+      originX: swipeX.current.get(id) ?? 0,
       dx: 0,
       axis: null,
+      samples: [],
     };
   };
 
@@ -274,14 +426,13 @@ export default function NotificationStack({
       return;
     }
 
-    current.dx = dx;
-    const node = swipeRefs.current.get(id);
-    if (node) {
-      // Written straight to the element: no re-render per pointer move.
-      node.style.transition = "none";
-      node.style.transform = `translateX(${dx}px)`;
-      node.style.opacity = `${Math.max(1 - Math.abs(dx) / 240, 0.3)}`;
+    current.dx = current.originX + dx;
+    current.samples.push({ t: event.timeStamp, x: current.dx });
+    if (current.samples.length > 12) {
+      current.samples.shift();
     }
+    // Written straight to the element: no re-render per pointer move.
+    paint(id, current.dx);
   };
 
   const handlePointerUp = (event: PointerEvent<HTMLDivElement>, id: string) => {
@@ -291,26 +442,22 @@ export default function NotificationStack({
     }
     drag.current = null;
     if (current.axis !== "x") {
+      // A tap or scroll that caught a card mid spring lets it finish.
+      if (swipeX.current.get(id)) {
+        snapBack(id, 0);
+      }
       return;
     }
     suppressClick.current = true;
 
-    const elapsed = Math.max(performance.now() - current.startTime, 1);
-    const velocity = Math.abs(current.dx) / elapsed;
-    if (
-      Math.abs(current.dx) >= DISMISS_DISTANCE ||
-      velocity > DISMISS_VELOCITY
-    ) {
-      dismiss(id, current.dx > 0 ? 1 : -1);
+    const velocity = releaseVelocity(current.samples);
+    const direction = dismissDirection(current.dx, velocity);
+    if (direction === 0) {
+      snapBack(id, velocity);
       return;
     }
-
-    const node = swipeRefs.current.get(id);
-    if (node) {
-      node.style.transition = `transform 200ms ${EASE_OUT}, opacity 200ms ${EASE_OUT}`;
-      node.style.transform = "";
-      node.style.opacity = "";
-    }
+    // Never carry speed that points back toward the stack into the flight.
+    dismiss(id, direction, Math.sign(velocity) === direction ? velocity : 0);
   };
 
   const handleCardKeyDown = (event: KeyboardEvent<HTMLElement>, id: string) => {
@@ -401,7 +548,9 @@ export default function NotificationStack({
                   handlePointerUp(event, item.id)
                 }
                 onPointerCancel={(event) => handlePointerUp(event, item.id)}
-                onPointerDown={(event) => handlePointerDown(event, depth)}
+                onPointerDown={(event) =>
+                  handlePointerDown(event, depth, item.id)
+                }
                 onPointerMove={(event) => handlePointerMove(event, item.id)}
                 onPointerUp={(event) => handlePointerUp(event, item.id)}
                 ref={(node) => {
