@@ -428,6 +428,16 @@ export const component: Registry = [
     ],
   },
   {
+    name: "activity-terrain",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/activity-terrain.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
