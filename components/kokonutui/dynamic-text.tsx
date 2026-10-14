@@ -222,6 +222,8 @@ const FALL_FADE = 0.9;
 const ROLL = 0.75;
 const LAND_SQUASH = -0.16;
 const ENTER_STAGGER = 0.035;
+/** Long strings share this much stagger, so the last letter isn't late. */
+const MAX_ENTER_SPREAD = 0.45;
 const FADE_RATE = 7;
 
 function paint(g: Glyph) {
@@ -356,6 +358,17 @@ function rollDirection(previous: Glyph[], tokens: Token[]) {
       .join("")
   );
   return after < before ? -1 : 1;
+}
+
+/** Squeezes the entering stagger so a long string doesn't trickle in. */
+function capStagger(glyphs: Glyph[], entering: number) {
+  const spread = entering * ENTER_STAGGER;
+  if (spread <= MAX_ENTER_SPREAD) {
+    return;
+  }
+  for (const g of glyphs) {
+    g.delay *= MAX_ENTER_SPREAD / spread;
+  }
 }
 
 class MorphEngine {
@@ -553,6 +566,7 @@ class MorphEngine {
       this.enter(g, dir, instant, entering++);
       next.push(g);
     }
+    capStagger(next, entering);
     for (const list of letters.values()) {
       for (const g of list) {
         this.leave(g, dir, instant);
