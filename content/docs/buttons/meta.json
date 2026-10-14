@@ -10,6 +10,8 @@
     "command-button",
     "switch-button",
     "slide-text-button",
-    "pull-cord"
+    "pull-cord",
+    "tear-button",
+    "bell-button"
   ]
 }

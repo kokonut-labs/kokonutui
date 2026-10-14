@@ -265,6 +265,28 @@ export const component: Registry = [
     ],
   },
   {
+    name: "liquid-slider",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/liquid-slider.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "signature-pad",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/signature-pad.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "switch-button",
     type: "registry:component",
     dependencies: ["lucide-react"],
@@ -283,6 +305,28 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/pull-cord.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "tear-button",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/tear-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "bell-button",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/bell-button.tsx",
         type: "registry:component",
       },
     ],
