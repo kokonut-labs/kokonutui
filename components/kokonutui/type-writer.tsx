@@ -179,10 +179,17 @@ export default function TypewriterTitle({
     random.current = createRandom(seed);
   }, [seed]);
 
+  // Reduced motion: show the final phrase, no typing loop. Keyed on the
+  // phrase itself so new `sequences` still update the text.
+  const finalText = sequences.at(-1)?.text ?? "";
   useEffect(() => {
-    // Reduced motion: show the final phrase, no typing loop.
     if (shouldReduceMotion) {
-      setScreen({ text: sequencesRef.current.at(-1)?.text ?? "", selected: 0 });
+      setScreen({ text: finalText, selected: 0 });
+    }
+  }, [shouldReduceMotion, finalText]);
+
+  useEffect(() => {
+    if (shouldReduceMotion) {
       return;
     }
     // Paused or off screen: keep the current text. `position` remembers

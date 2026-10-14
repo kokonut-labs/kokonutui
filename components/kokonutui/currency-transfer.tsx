@@ -325,12 +325,28 @@ function StatusBadge({
   reduceMotion: boolean;
 }) {
   const badgeRef = useRef<HTMLDivElement>(null);
-  // Starts empty on the server; the creep towards 85% begins on mount.
+  // Starts empty on the server; the creep towards 85% begins on mount, and
+  // again from empty each time the transfer goes back to processing (a
+  // retry), instead of the arc unwinding from full.
   const [armed, setArmed] = useState(status !== "processing");
+  const [armedFor, setArmedFor] = useState(status);
+  if (armedFor !== status) {
+    setArmedFor(status);
+    if (status === "processing") {
+      setArmed(false);
+    }
+  }
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setArmed(true));
+    if (armed) {
+      return;
+    }
+    // Two frames: the empty arc has to be painted before the creep starts,
+    // or the browser has nothing to transition from.
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => setArmed(true));
+    });
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [armed]);
 
   const previous = useRef(status);
   useEffect(() => {
@@ -356,7 +372,10 @@ function StatusBadge({
   let arcTransition = `stroke-dashoffset 350ms ${EASE_OUT_CSS}, color 200ms ease`;
   if (status === "processing") {
     progress = armed ? ARC_PENDING : 0;
-    arcTransition = `stroke-dashoffset ${ARC_PENDING_MS}ms cubic-bezier(0.1, 0.7, 0.3, 1)`;
+    // Snap back to empty, then creep.
+    arcTransition = armed
+      ? `stroke-dashoffset ${ARC_PENDING_MS}ms cubic-bezier(0.1, 0.7, 0.3, 1)`
+      : "none";
   }
 
   return (
