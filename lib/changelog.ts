@@ -83,12 +83,6 @@ export const RELEASES: Release[] = [
         pr: 63,
         note: "A letter wave instead of a gradient shimmer.",
       },
-    ],
-  },
-  {
-    date: "2026-10-13",
-    added: [],
-    improved: [
       {
         name: "particle-button",
         pr: 25,

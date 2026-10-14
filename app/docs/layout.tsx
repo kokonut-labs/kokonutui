@@ -27,7 +27,28 @@ function withCodes(tree: PageTree.Root): PageTree.Root {
 
   const visit = (node: PageTree.Node): PageTree.Node => {
     if (node.type === "folder") {
-      return { ...node, children: node.children.map(visit) };
+      // Folders start closed, so they carry the count of new parts inside.
+      const count = node.children.filter(
+        (child) => child.type === "page" && fresh.has(child.url)
+      ).length;
+      return {
+        ...node,
+        name:
+          count > 0 ? (
+            <span
+              className="flex w-full items-baseline justify-between gap-2"
+              key="name"
+            >
+              {node.name}
+              <span className={cn(MONO, "text-[10.5px]", LEAF)}>
+                {count} new
+              </span>
+            </span>
+          ) : (
+            node.name
+          ),
+        children: node.children.map(visit),
+      };
     }
     const code = node.type === "page" ? codes.get(node.url) : undefined;
     const isNew = node.type === "page" && fresh.has(node.url);
