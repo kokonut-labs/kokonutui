@@ -1,276 +1,1137 @@
 "use client";
 
-import { CreditCard, FileText, LogOut, Settings, User } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+/**
+ * @author: @dorianbaffier
+ * @description: Account Menu
+ * @version: 2.0.0
+ * @date: 2026-10-14
+ * @license: MIT
+ * @website: https://kokonutui.com
+ * @github: https://github.com/kokonut-labs/kokonutui
+ */
+
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsUpDown,
+  CreditCard,
+  LogOut,
+  Monitor,
+  Moon,
+  Plus,
+  Settings,
+  Sun,
+  User,
+} from "lucide-react";
+import {
+  animate,
+  motion,
+  type Transition,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+} from "motion/react";
 import {
   type HTMLAttributes,
+  type KeyboardEvent,
+  type MouseEvent,
+  type PointerEvent,
   type ReactNode,
-  type SVGProps,
+  useEffect,
   useId,
+  useLayoutEffect,
+  useRef,
+  useState,
 } from "react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-interface Profile {
+export interface Account {
+  id: string;
   name: string;
   email: string;
-  avatar: string;
-  subscription?: string;
-  model?: string;
+  /** Shown in the avatar. Defaults to the first letters of `name`. */
+  initials?: string;
+  /** Plain label shown in the menu header, such as "Pro". */
+  plan?: string;
 }
+
+export type AccountStatus = "online" | "away" | "busy";
+export type AccountTheme = "light" | "dark" | "system";
 
 export interface ProfileMenuItem {
   label: string;
+  icon?: ReactNode;
+  /** Quiet text on the right, such as a plan name or a shortcut. */
   value?: string;
   /** Renders the item as a link. Without it the item is a button. */
   href?: string;
   /** Opens `href` in a new tab. */
   external?: boolean;
   onSelect?: () => void;
-  icon: ReactNode;
-  /** Colour of the `value` badge. */
-  tone?: "blue" | "purple";
 }
 
-const SAMPLE_PROFILE_DATA: Profile = {
-  name: "Eugene An",
-  email: "eugene@kokonutui.com",
-  avatar:
-    "https://ferf1mheo22r9ira.public.blob.vercel-storage.com/profile-mjss82WnWBRO86MHHGxvJ2TVZuyrDv.jpeg",
-  subscription: "PRO",
-  model: "Gemini 2.0 Flash",
-};
-
-const TONE_CLASSES = {
-  blue: "border border-blue-500/10 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
-  purple:
-    "border border-purple-500/10 bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400",
-};
-
-// Item classes go on DropdownMenuItem, not its child, so they are merged with
-// the base item classes instead of competing with them in CSS order. Radix
-// focuses an item on pointer move, so `focus:` styles cover hover too.
-const ITEM_CLASS =
-  "group flex w-full cursor-pointer items-center rounded-xl border border-transparent px-2 py-1.5 transition-none focus:border-zinc-200/50 focus:bg-zinc-100/80 focus:shadow-sm dark:focus:border-zinc-700/50 dark:focus:bg-zinc-800/60";
-
-const SIGN_OUT_CLASS =
-  "group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-transparent bg-red-500/10 px-2 py-1.5 transition-none focus:border-red-500/30 focus:bg-red-500/20 focus:shadow-sm dark:focus:bg-red-500/20";
-
-// Inlined so the component has no cross-file import to break on install.
-function GeminiIcon(props: SVGProps<SVGSVGElement>) {
-  const gradientId = useId();
-  return (
-    <svg
-      aria-hidden="true"
-      height="1em"
-      viewBox="0 0 24 24"
-      width="1em"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <defs>
-        <linearGradient
-          id={gradientId}
-          x1="0%"
-          x2="68.73%"
-          y1="100%"
-          y2="30.395%"
-        >
-          <stop offset="0%" stopColor="#1C7DFF" />
-          <stop offset="52.021%" stopColor="#1C69FF" />
-          <stop offset="100%" stopColor="#F0DCD6" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M12 24A14.304 14.304 0 000 12 14.304 14.304 0 0012 0a14.305 14.305 0 0012 12 14.305 14.305 0 00-12 12"
-        fill={`url(#${gradientId})`}
-        fillRule="nonzero"
-      />
-    </svg>
-  );
+interface ProfileDropdownProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, "onChange"> {
+  accounts?: Account[];
+  defaultAccountId?: string;
+  onAccountChange?: (account: Account) => void;
+  onAddAccount?: () => void;
+  /** Menu entries between the settings rows and Switch account. */
+  items?: ProfileMenuItem[];
+  /** Controlled theme. Leave it out to keep the choice in local state. */
+  theme?: AccountTheme;
+  defaultTheme?: AccountTheme;
+  onThemeChange?: (theme: AccountTheme) => void;
+  status?: AccountStatus;
+  defaultStatus?: AccountStatus;
+  onStatusChange?: (status: AccountStatus) => void;
+  /** Called once Sign out has been held for `holdDuration` ms. */
+  onSignOut?: () => void;
+  holdDuration?: number;
 }
 
-const sampleMenuItems = (data: Profile): ProfileMenuItem[] => [
+const SAMPLE_ACCOUNTS: Account[] = [
+  { id: "personal", name: "Maya Ortega", email: "maya@ortega.me", plan: "Pro" },
   {
-    label: "Profile",
-    href: "#",
-    icon: <User className="h-4 w-4" />,
+    id: "studio",
+    name: "Fieldwork Studio",
+    email: "team@fieldwork.studio",
+    plan: "Team",
   },
   {
-    label: "Model",
-    value: data.model,
-    href: "#",
-    icon: <GeminiIcon className="h-4 w-4" />,
-    tone: "blue",
-  },
-  {
-    label: "Subscription",
-    value: data.subscription,
-    href: "#",
-    icon: <CreditCard className="h-4 w-4" />,
-  },
-  {
-    label: "Settings",
-    href: "#",
-    icon: <Settings className="h-4 w-4" />,
-  },
-  {
-    label: "Terms & Policies",
-    href: "#",
-    icon: <FileText className="h-4 w-4" />,
-    external: true,
+    id: "side",
+    name: "Night Shift",
+    email: "hello@nightshift.dev",
+    plan: "Free",
   },
 ];
 
-interface ProfileDropdownProps extends HTMLAttributes<HTMLDivElement> {
-  data?: Profile;
-  /** Menu entries. Defaults to a sample menu built from `data`. */
-  items?: ProfileMenuItem[];
-  onSignOut?: () => void;
-  /** Has no effect. Kept so existing callers keep type-checking. */
-  showTopbar?: boolean;
+const SAMPLE_ITEMS: ProfileMenuItem[] = [
+  { label: "Profile", icon: <User className="size-4" /> },
+  { label: "Settings", icon: <Settings className="size-4" />, value: "⌘," },
+  { label: "Billing", icon: <CreditCard className="size-4" /> },
+];
+
+const STATUSES: {
+  id: AccountStatus;
+  label: string;
+  name: string;
+  dot: string;
+}[] = [
+  { id: "online", label: "Online", name: "Online", dot: "bg-emerald-500" },
+  { id: "away", label: "Away", name: "Away", dot: "bg-amber-400" },
+  { id: "busy", label: "DND", name: "Do not disturb", dot: "bg-red-500" },
+];
+
+const THEMES = [
+  { id: "light", label: "Light", Icon: Sun },
+  { id: "dark", label: "Dark", Icon: Moon },
+  { id: "system", label: "System", Icon: Monitor },
+] as const;
+
+const AVATAR_TONES = [
+  "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900",
+  "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100",
+  "bg-zinc-100 text-zinc-500 ring-1 ring-zinc-200 ring-inset dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-700",
+];
+
+const WHITESPACE = /\s+/;
+const PANEL_W = 288;
+const RADIUS = 16;
+const SPRING: Transition = { type: "spring", duration: 0.3, bounce: 0 };
+const INDICATOR_SPRING: Transition = {
+  type: "spring",
+  duration: 0.25,
+  bounce: 0,
+};
+const INSTANT: Transition = { duration: 0 };
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const NAV_KEYS = new Set([
+  "ArrowDown",
+  "ArrowUp",
+  "ArrowLeft",
+  "ArrowRight",
+  "Home",
+  "End",
+]);
+
+const ITEM_CLASS =
+  "flex w-full cursor-default items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left text-sm text-zinc-700 outline-none transition-colors duration-100 focus:bg-zinc-100 focus:text-zinc-950 dark:text-zinc-300 dark:focus:bg-zinc-800 dark:focus:text-zinc-50";
+
+type Phase = "closed" | "open" | "closing";
+type Page = "main" | "accounts";
+type Via = "pointer" | "keyboard";
+
+function initialsOf(account: Account) {
+  if (account.initials) {
+    return account.initials;
+  }
+  return account.name
+    .split(WHITESPACE)
+    .slice(0, 2)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .toUpperCase();
+}
+
+function viaOf(event: MouseEvent): Via {
+  // A click fired by Enter or Space carries no pointer detail.
+  return event.detail === 0 ? "keyboard" : "pointer";
+}
+
+function menuItems(root: HTMLElement | null) {
+  if (!root) {
+    return [];
+  }
+  return Array.from(root.querySelectorAll<HTMLElement>("[data-menu-item]"));
+}
+
+function sideTarget(items: HTMLElement[], current: HTMLElement, step: number) {
+  const row = items.filter((item) => item.dataset.row === current.dataset.row);
+  if (row.length < 2) {
+    return;
+  }
+  const index = row.indexOf(current);
+  return row[(index + step + row.length) % row.length];
+}
+
+function rowTarget(items: HTMLElement[], current: HTMLElement, step: number) {
+  const rows = [...new Set(items.map((item) => item.dataset.row))];
+  const index = rows.indexOf(current.dataset.row);
+  const next = rows[(index + step + rows.length) % rows.length];
+  const candidates = items.filter((item) => item.dataset.row === next);
+  return (
+    candidates.find((item) => item.getAttribute("aria-checked") === "true") ??
+    candidates[0]
+  );
+}
+
+/** Where arrow keys move focus: rows go up and down, radios left and right. */
+function nextTarget(
+  items: HTMLElement[],
+  active: Element | null,
+  key: string
+): HTMLElement | undefined {
+  if (key === "Home") {
+    return items[0];
+  }
+  if (key === "End") {
+    return items.at(-1);
+  }
+  const current = items.find((item) => item === active);
+  if (!current) {
+    return key === "ArrowUp" ? items.at(-1) : items[0];
+  }
+  if (key === "ArrowLeft" || key === "ArrowRight") {
+    return sideTarget(items, current, key === "ArrowRight" ? 1 : -1);
+  }
+  return rowTarget(items, current, key === "ArrowDown" ? 1 : -1);
+}
+
+function useControllable<T>(
+  value: T | undefined,
+  fallback: T,
+  onChange?: (next: T) => void
+) {
+  const [local, setLocal] = useState(fallback);
+  const set = (next: T) => {
+    setLocal(next);
+    onChange?.(next);
+  };
+  return [value ?? local, set] as const;
+}
+
+function Avatar({
+  account,
+  tone,
+  status,
+  className,
+}: {
+  account: Account;
+  tone: number;
+  status?: AccountStatus;
+  className?: string;
+}) {
+  const dot = STATUSES.find((entry) => entry.id === status)?.dot;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "relative grid shrink-0 select-none place-items-center rounded-full font-medium text-[11px] tracking-wide",
+        AVATAR_TONES[tone % AVATAR_TONES.length],
+        className
+      )}
+    >
+      {initialsOf(account)}
+      {dot ? (
+        <span
+          className={cn(
+            "absolute right-0 bottom-0 size-2.5 rounded-full ring-2 ring-white transition-colors duration-200 dark:ring-zinc-900",
+            dot
+          )}
+        />
+      ) : null}
+    </span>
+  );
+}
+
+/**
+ * The avatar, name and email. Rendered in the trigger while the menu is
+ * closed and in the menu header while it is open; shared layout ids let the
+ * three pieces travel between the two places.
+ */
+function Identity({
+  uid,
+  shared,
+  account,
+  tone,
+  status,
+  transition,
+  stacked,
+}: {
+  uid: string;
+  shared: boolean;
+  account: Account;
+  tone: number;
+  status: AccountStatus;
+  transition: Transition;
+  stacked: boolean;
+}) {
+  const hidden = shared ? undefined : "invisible";
+  return (
+    <span
+      className={cn(
+        "flex min-w-0",
+        stacked ? "flex-col items-start gap-3" : "items-center gap-2.5"
+      )}
+    >
+      <motion.span
+        className={cn("relative z-20 block", hidden)}
+        key={shared ? "avatar-shared" : "avatar-static"}
+        layoutId={shared ? `${uid}-avatar` : undefined}
+        transition={transition}
+      >
+        <Avatar
+          account={account}
+          className={stacked ? "size-10" : "size-8"}
+          status={status}
+          tone={tone}
+        />
+      </motion.span>
+      <span className="flex min-w-0 flex-col text-left">
+        <motion.span
+          className={cn(
+            "relative z-20 block truncate font-medium text-sm text-zinc-900 leading-5 dark:text-zinc-100",
+            hidden
+          )}
+          key={shared ? "name-shared" : "name-static"}
+          layoutId={shared ? `${uid}-name` : undefined}
+          transition={transition}
+        >
+          {account.name}
+        </motion.span>
+        <motion.span
+          className={cn(
+            "relative z-20 block truncate text-xs text-zinc-500 leading-4 dark:text-zinc-400",
+            hidden
+          )}
+          key={shared ? "email-shared" : "email-static"}
+          layoutId={shared ? `${uid}-email` : undefined}
+          transition={transition}
+        >
+          {account.email}
+        </motion.span>
+      </span>
+    </span>
+  );
+}
+
+function Separator() {
+  return (
+    <hr className="mx-2.5 my-1.5 h-px border-0 bg-zinc-100 dark:bg-zinc-800" />
+  );
+}
+
+function HoldSignOut({
+  duration,
+  onComplete,
+}: {
+  duration: number;
+  onComplete: (via: Via) => void;
+}) {
+  const [holding, setHolding] = useState(false);
+  const [done, setDone] = useState(false);
+  const [nudge, setNudge] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  const nudgeTimer = useRef<number | undefined>(undefined);
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(timer.current);
+      window.clearTimeout(nudgeTimer.current);
+    },
+    []
+  );
+
+  const start = (via: Via) => {
+    if (timer.current !== undefined || done) {
+      return;
+    }
+    window.clearTimeout(nudgeTimer.current);
+    setNudge(false);
+    setHolding(true);
+    timer.current = window.setTimeout(() => {
+      timer.current = undefined;
+      setHolding(false);
+      setDone(true);
+      onComplete(via);
+    }, duration);
+  };
+
+  const cancel = () => {
+    if (timer.current === undefined) {
+      return;
+    }
+    window.clearTimeout(timer.current);
+    timer.current = undefined;
+    setHolding(false);
+    setNudge(true);
+    nudgeTimer.current = window.setTimeout(() => setNudge(false), 1400);
+  };
+
+  const label = (
+    <>
+      <LogOut className="size-4" />
+      <span className="flex-1">Sign out</span>
+      <span className="text-xs opacity-60">
+        {nudge ? "Keep holding" : "Hold"}
+      </span>
+    </>
+  );
+
+  return (
+    <button
+      className={cn(ITEM_CLASS, "relative touch-none select-none")}
+      data-menu-item=""
+      data-row="sign-out"
+      onBlur={cancel}
+      onClick={(event) => event.preventDefault()}
+      onContextMenu={(event) => event.preventDefault()}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          if (!event.repeat) {
+            start("keyboard");
+          }
+        }
+      }}
+      onKeyUp={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          cancel();
+        }
+      }}
+      onPointerCancel={cancel}
+      onPointerDown={(event) => {
+        if (event.button !== 0) {
+          return;
+        }
+        event.currentTarget.setPointerCapture(event.pointerId);
+        start("pointer");
+      }}
+      onPointerUp={cancel}
+      role="menuitem"
+      tabIndex={-1}
+      type="button"
+    >
+      {label}
+      <span className="sr-only">, press and hold to confirm</span>
+      {/* The fill: an inverted copy of the row, revealed left to right. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 flex items-center gap-2.5 rounded-[10px] bg-zinc-900 px-2.5 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
+        style={{
+          clipPath:
+            holding || done
+              ? "inset(0 0 0 0 round 10px)"
+              : "inset(0 100% 0 0 round 10px)",
+          transition: holding
+            ? `clip-path ${duration}ms linear`
+            : "clip-path 240ms cubic-bezier(0.23, 1, 0.32, 1)",
+        }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function StatusRow({
+  status,
+  onChange,
+}: {
+  status: AccountStatus;
+  onChange: (status: AccountStatus) => void;
+}) {
+  return (
+    <fieldset
+      aria-label="Status"
+      className="m-0 flex min-w-0 items-center justify-between border-0 py-1 pr-1 pl-2.5"
+    >
+      <span className="text-sm text-zinc-500 dark:text-zinc-400">Status</span>
+      <span className="flex">
+        {STATUSES.map((entry) => {
+          const checked = entry.id === status;
+          return (
+            <button
+              aria-checked={checked}
+              aria-label={entry.name}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-zinc-500 outline-none transition-colors duration-100 focus:bg-zinc-100 aria-checked:text-zinc-900 dark:text-zinc-400 dark:aria-checked:text-zinc-100 dark:focus:bg-zinc-800"
+              data-menu-item=""
+              data-row="status"
+              key={entry.id}
+              onClick={() => onChange(entry.id)}
+              role="menuitemradio"
+              tabIndex={-1}
+              type="button"
+            >
+              <span
+                className={cn(
+                  "size-2 rounded-full transition-colors duration-200",
+                  checked ? entry.dot : "bg-zinc-300 dark:bg-zinc-600"
+                )}
+              />
+              {entry.label}
+            </button>
+          );
+        })}
+      </span>
+    </fieldset>
+  );
+}
+
+function ThemeRow({
+  uid,
+  theme,
+  onChange,
+  reduced,
+}: {
+  uid: string;
+  theme: AccountTheme;
+  onChange: (theme: AccountTheme) => void;
+  reduced: boolean;
+}) {
+  return (
+    <fieldset
+      aria-label="Theme"
+      className="m-0 flex min-w-0 items-center justify-between border-0 py-1 pr-1 pl-2.5"
+    >
+      <span className="text-sm text-zinc-500 dark:text-zinc-400">Theme</span>
+      <span className="flex rounded-[10px] bg-zinc-100 p-0.5 dark:bg-zinc-800">
+        {THEMES.map(({ id, label, Icon }) => {
+          const checked = id === theme;
+          return (
+            <button
+              aria-checked={checked}
+              aria-label={label}
+              className="relative grid h-7 w-9 place-items-center rounded-lg text-zinc-500 outline-none transition-colors duration-150 hover:text-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400 aria-checked:text-zinc-900 dark:text-zinc-400 dark:aria-checked:text-zinc-50 dark:hover:text-zinc-200"
+              data-menu-item=""
+              data-row="theme"
+              key={id}
+              onClick={() => onChange(id)}
+              role="menuitemradio"
+              tabIndex={-1}
+              type="button"
+            >
+              {checked ? (
+                <motion.span
+                  className="absolute inset-0 rounded-lg bg-white shadow-[0_1px_2px_rgb(0_0_0/0.08)] dark:bg-zinc-700"
+                  layoutId={`${uid}-theme`}
+                  transition={reduced ? INSTANT : INDICATOR_SPRING}
+                />
+              ) : null}
+              <Icon className="relative size-3.5" />
+            </button>
+          );
+        })}
+      </span>
+    </fieldset>
+  );
+}
+
+function LinkItem({
+  item,
+  index,
+  onSelect,
+}: {
+  item: ProfileMenuItem;
+  index: number;
+  onSelect: (event: MouseEvent, run?: () => void) => void;
+}) {
+  const inner = (
+    <>
+      <span className="text-zinc-400 dark:text-zinc-500">{item.icon}</span>
+      <span className="flex-1">{item.label}</span>
+      {item.value ? (
+        <span className="text-xs text-zinc-400 dark:text-zinc-500">
+          {item.value}
+        </span>
+      ) : null}
+    </>
+  );
+  const common = {
+    className: ITEM_CLASS,
+    "data-menu-item": "",
+    "data-row": `item-${index}`,
+    onClick: (event: MouseEvent) => onSelect(event, item.onSelect),
+    role: "menuitem",
+    tabIndex: -1,
+  } as const;
+  if (item.href) {
+    return (
+      <a
+        {...common}
+        href={item.href}
+        {...(item.external && { rel: "noopener noreferrer", target: "_blank" })}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <button {...common} type="button">
+      {inner}
+    </button>
+  );
 }
 
 export default function ProfileDropdown({
-  data = SAMPLE_PROFILE_DATA,
-  items,
+  accounts = SAMPLE_ACCOUNTS,
+  defaultAccountId,
+  onAccountChange,
+  onAddAccount,
+  items = SAMPLE_ITEMS,
+  theme: themeProp,
+  defaultTheme = "system",
+  onThemeChange,
+  status: statusProp,
+  defaultStatus = "online",
+  onStatusChange,
   onSignOut,
+  holdDuration = 1200,
   className,
-  showTopbar: _showTopbar,
   ...props
 }: ProfileDropdownProps) {
-  const menuItems = items ?? sampleMenuItems(data);
+  const uid = useId();
+  const reduced = useReducedMotion() === true;
+  const [phase, setPhase] = useState<Phase>("closed");
+  const [instant, setInstant] = useState(false);
+  const [page, setPage] = useState<Page>("main");
+  const [openSeq, setOpenSeq] = useState(0);
+  const [accountId, setAccountId] = useState(
+    defaultAccountId ?? accounts[0]?.id
+  );
+  const [theme, setTheme] = useControllable(
+    themeProp,
+    defaultTheme,
+    onThemeChange
+  );
+  const [status, setStatus] = useControllable(
+    statusProp,
+    defaultStatus,
+    onStatusChange
+  );
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const accountsRef = useRef<HTMLDivElement>(null);
+  const phaseRef = useRef<Phase>("closed");
+  phaseRef.current = phase;
+  const openIntent = useRef<{
+    focus: "first" | "last" | "menu";
+    resume: boolean;
+  }>({ focus: "menu", resume: false });
+  const pageFocus = useRef<"first" | "switch" | null>(null);
+  const closeSeq = useRef(0);
+  const targetH = useRef(0);
+
+  // The panel's visible box. The two surface layers (border and fill) and the
+  // content all clip to it, so the menu grows out of the trigger's own
+  // rectangle without any layout work per frame.
+  const w = useMotionValue(0);
+  const h = useMotionValue(0);
+  const pageX = useMotionValue(0);
+  const bodyOpacity = useMotionValue(1);
+  const outerClip = useMotionTemplate`inset(0px 0px calc(100% - ${h}px) calc(100% - ${w}px) round ${RADIUS}px)`;
+  const innerClip = useMotionTemplate`inset(1px 1px calc(100% - ${h}px + 1px) calc(100% - ${w}px + 1px) round ${RADIUS - 1}px)`;
+  const pageTransform = useMotionTemplate`translate3d(${pageX}px, 0, 0)`;
+
+  const account = accounts.find((entry) => entry.id === accountId) ??
+    accounts[0] ?? { id: "guest", name: "Guest", email: "" };
+  const tone = Math.max(0, accounts.indexOf(account));
+  const others = accounts.filter((entry) => entry.id !== account.id);
+  const sharedTransition = instant ? INSTANT : SPRING;
+  const sharedInPanel = phase === "open";
+  const menuId = `${uid}-menu`;
+
+  const pageEl = (target: Page) =>
+    target === "main" ? mainRef.current : accountsRef.current;
+
+  const openMenu = (via: Via, focus: "first" | "last" | "menu") => {
+    if (phaseRef.current === "open") {
+      return;
+    }
+    openIntent.current = { focus, resume: phaseRef.current === "closing" };
+    closeSeq.current += 1;
+    setInstant(via === "keyboard" || reduced);
+    setPage("main");
+    setPhase("open");
+    setOpenSeq((seq) => seq + 1);
+  };
+
+  const closeMenu = (via: Via, returnFocus: boolean) => {
+    if (phaseRef.current !== "open") {
+      return;
+    }
+    const trigger = triggerRef.current;
+    if (returnFocus) {
+      trigger?.focus({ preventScroll: true });
+    }
+    if (via === "keyboard" || reduced || !trigger) {
+      setInstant(true);
+      setPhase("closed");
+      return;
+    }
+    setInstant(false);
+    setPhase("closing");
+    const seq = ++closeSeq.current;
+    animate(bodyOpacity, 0, { duration: 0.12, ease: EASE_OUT });
+    animate(w, trigger.offsetWidth, SPRING);
+    animate(h, trigger.offsetHeight, SPRING).then(() => {
+      if (closeSeq.current === seq) {
+        setPhase("closed");
+      }
+    });
+  };
+
+  const goTo = (target: Page) => {
+    pageFocus.current = target === "accounts" ? "first" : "switch";
+    setPage(target);
+  };
+
+  const select = (event: MouseEvent, run?: () => void) => {
+    run?.();
+    closeMenu(viaOf(event), true);
+  };
+
+  // Opening: size the clip to the trigger, then spring it out to the menu.
+  // A keyboard open skips straight to the end.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once per open
+  useLayoutEffect(() => {
+    const trigger = triggerRef.current;
+    const main = mainRef.current;
+    if (openSeq === 0 || phaseRef.current !== "open" || !trigger || !main) {
+      return;
+    }
+    pageX.jump(0);
+    targetH.current = main.offsetHeight;
+    if (instant) {
+      w.jump(PANEL_W);
+      h.jump(targetH.current);
+      bodyOpacity.jump(1);
+    } else {
+      if (!openIntent.current.resume) {
+        w.jump(trigger.offsetWidth);
+        h.jump(trigger.offsetHeight);
+        bodyOpacity.jump(0);
+      }
+      animate(w, PANEL_W, SPRING);
+      animate(h, targetH.current, SPRING);
+      animate(bodyOpacity, 1, { duration: 0.2, delay: 0.05, ease: EASE_OUT });
+    }
+    const list = menuItems(main);
+    const targets = {
+      first: list[0],
+      last: list.at(-1),
+      menu: main.querySelector<HTMLElement>("[role=menu]"),
+    };
+    targets[openIntent.current.focus]?.focus({ preventScroll: true });
+  }, [openSeq]);
+
+  // Switching pages: push sideways and spring the height to the new page.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on page
+  useEffect(() => {
+    const el = pageEl(page);
+    if (phaseRef.current !== "open" || !el) {
+      return;
+    }
+    const x = page === "main" ? 0 : -PANEL_W;
+    targetH.current = el.offsetHeight;
+    if (reduced) {
+      pageX.jump(x);
+      h.jump(targetH.current);
+    } else {
+      animate(pageX, x, SPRING);
+      animate(h, targetH.current, SPRING);
+    }
+    const intent = pageFocus.current;
+    pageFocus.current = null;
+    if (intent === "first") {
+      const list = menuItems(el);
+      const checked = list.find(
+        (item) => item.getAttribute("aria-checked") === "true"
+      );
+      (checked ?? list[0])?.focus({ preventScroll: true });
+    } else if (intent === "switch") {
+      el.querySelector<HTMLElement>("[data-switch]")?.focus({
+        preventScroll: true,
+      });
+    }
+  }, [page]);
+
+  // Keep the height in step if a page's content changes size while open.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: observers read refs
+  useEffect(() => {
+    if (phase !== "open") {
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      const el = pageEl(page);
+      if (!el || phaseRef.current !== "open") {
+        return;
+      }
+      const next = el.offsetHeight;
+      if (Math.abs(next - targetH.current) < 0.5) {
+        return;
+      }
+      targetH.current = next;
+      animate(h, next, reduced ? INSTANT : SPRING);
+    });
+    for (const el of [mainRef.current, accountsRef.current]) {
+      if (el) {
+        observer.observe(el);
+      }
+    }
+    return () => observer.disconnect();
+  }, [phase, page]);
+
+  // A press anywhere outside closes, with the morph.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: closeMenu reads refs
+  useEffect(() => {
+    if (phase !== "open") {
+      return;
+    }
+    const onDown = (event: globalThis.PointerEvent) => {
+      if (!wrapperRef.current?.contains(event.target as Node)) {
+        closeMenu("pointer", false);
+      }
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [phase]);
+
+  const onPanelKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape" || event.key === "Tab") {
+      event.preventDefault();
+      closeMenu("keyboard", true);
+      return;
+    }
+    if (page === "accounts" && event.key === "Backspace") {
+      event.preventDefault();
+      goTo("main");
+      return;
+    }
+    if (!NAV_KEYS.has(event.key)) {
+      return;
+    }
+    event.preventDefault();
+    const active = document.activeElement;
+    const target = nextTarget(menuItems(pageEl(page)), active, event.key);
+    if (target) {
+      target.focus({ preventScroll: true });
+    } else if (page === "accounts" && event.key === "ArrowLeft") {
+      goTo("main");
+    } else if (
+      event.key === "ArrowRight" &&
+      active instanceof HTMLElement &&
+      active.dataset.switch !== undefined
+    ) {
+      goTo("accounts");
+    }
+  };
+
+  // Hovering an item focuses it, so pointer and keyboard share one highlight.
+  const onPanelPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "mouse") {
+      return;
+    }
+    const item = (event.target as HTMLElement).closest<HTMLElement>(
+      "[data-menu-item]"
+    );
+    if (item && document.activeElement !== item) {
+      item.focus({ preventScroll: true });
+    }
+  };
 
   return (
-    <div className={cn("relative", className)} {...props}>
-      <DropdownMenu>
-        <div className="group relative">
-          <DropdownMenuTrigger asChild>
-            <button
-              className="flex items-center gap-16 rounded-2xl border border-zinc-200/60 bg-white p-3 outline-hidden transition-[background-color,border-color,box-shadow,scale] duration-200 hover:border-zinc-300 hover:bg-zinc-50/80 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white motion-safe:active:scale-[0.97] dark:border-zinc-800/60 dark:bg-zinc-900 dark:focus-visible:ring-zinc-400 dark:focus-visible:ring-offset-zinc-950 dark:hover:border-zinc-700 dark:hover:bg-zinc-800/40"
-              type="button"
-            >
-              <div className="flex-1 text-left">
-                <div className="font-medium text-sm text-zinc-900 leading-tight tracking-tight dark:text-zinc-100">
-                  {data.name}
-                </div>
-                <div className="text-xs text-zinc-500 leading-tight tracking-tight dark:text-zinc-400">
-                  {data.email}
-                </div>
-              </div>
-              <div className="relative">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 p-0.5">
-                  <div className="h-full w-full overflow-hidden rounded-full bg-white dark:bg-zinc-900">
-                    <Image
-                      alt=""
-                      className="h-full w-full rounded-full object-cover"
-                      height={36}
-                      src={data.avatar}
-                      unoptimized
-                      width={36}
-                    />
-                  </div>
-                </div>
-              </div>
-            </button>
-          </DropdownMenuTrigger>
+    <div
+      className={cn(
+        "relative isolate inline-block",
+        phase !== "closed" && "z-50",
+        className
+      )}
+      ref={wrapperRef}
+      {...props}
+    >
+      <button
+        aria-controls={sharedInPanel ? menuId : undefined}
+        aria-expanded={sharedInPanel}
+        aria-haspopup="menu"
+        className="flex w-60 items-center gap-2.5 rounded-2xl border border-zinc-200 bg-white p-2 pr-3 text-left outline-none transition-colors duration-150 hover:border-zinc-300 hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-800 dark:bg-zinc-900 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950 dark:hover:border-zinc-700 dark:hover:bg-zinc-800/60"
+        onClick={(event) => {
+          const via = viaOf(event);
+          openMenu(via, via === "keyboard" ? "first" : "menu");
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            openMenu("keyboard", event.key === "ArrowDown" ? "first" : "last");
+          }
+        }}
+        ref={triggerRef}
+        type="button"
+      >
+        <span className="min-w-0 flex-1">
+          <Identity
+            account={account}
+            shared={!sharedInPanel}
+            stacked={false}
+            status={status}
+            tone={tone}
+            transition={sharedTransition}
+            uid={uid}
+          />
+        </span>
+        <ChevronsUpDown
+          aria-hidden="true"
+          className={cn(
+            "size-4 shrink-0 text-zinc-400 transition-opacity duration-150 dark:text-zinc-500",
+            phase !== "closed" && "opacity-0"
+          )}
+        />
+      </button>
 
-          {/* Bending line indicator, styled from the trigger's data-state */}
-          <div className="absolute top-1/2 -right-3 -translate-y-1/2 opacity-60 transition-opacity duration-200 group-hover:opacity-100 group-has-data-[state=open]:opacity-100">
-            <svg
-              aria-hidden="true"
-              className="text-zinc-400 transition-[color,scale] duration-200 group-hover:text-zinc-600 group-has-data-[state=open]:scale-110 group-has-data-[state=open]:text-blue-500 motion-reduce:scale-100 dark:text-zinc-500 dark:group-has-data-[state=open]:text-blue-400 dark:group-hover:text-zinc-300"
-              fill="none"
-              height="24"
-              viewBox="0 0 12 24"
-              width="12"
-            >
-              <path
-                d="M2 4C6 8 6 16 2 20"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeWidth="1.5"
-              />
-            </svg>
-          </div>
-
-          <DropdownMenuContent
-            align="end"
-            className="motion-reduce:data-[side=bottom]:slide-in-from-top-0 motion-reduce:data-[side=top]:slide-in-from-bottom-0 motion-reduce:data-[state=closed]:zoom-out-100 motion-reduce:data-[state=open]:zoom-in-100 w-64 origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border border-zinc-200/60 bg-white/95 p-2 shadow-xl shadow-zinc-900/5 dark:border-zinc-800/60 dark:bg-zinc-900/95 dark:shadow-zinc-950/20"
-            sideOffset={4}
+      {phase === "closed" ? null : (
+        <div
+          className="pointer-events-none absolute top-0 right-0 z-10"
+          style={{ width: PANEL_W }}
+        >
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 [filter:drop-shadow(0_12px_24px_rgb(0_0_0/0.08))_drop-shadow(0_2px_4px_rgb(0_0_0/0.04))] dark:[filter:drop-shadow(0_12px_28px_rgb(0_0_0/0.5))]"
           >
-            <div className="space-y-1">
-              {menuItems.map((item) => {
-                const content = (
-                  <>
-                    <span className="flex flex-1 items-center gap-2">
-                      {item.icon}
-                      <span className="whitespace-nowrap font-medium text-sm text-zinc-900 leading-tight tracking-tight group-focus:text-zinc-950 dark:text-zinc-100 dark:group-focus:text-zinc-50">
-                        {item.label}
-                      </span>
-                    </span>
-                    {item.value && (
-                      <span
-                        className={cn(
-                          "ml-auto flex-shrink-0 rounded-md px-2 py-1 font-medium text-xs tracking-tight",
-                          TONE_CLASSES[item.tone ?? "purple"]
-                        )}
-                      >
-                        {item.value}
-                      </span>
-                    )}
-                  </>
-                );
-                return (
-                  <DropdownMenuItem
-                    asChild
-                    className={ITEM_CLASS}
-                    key={item.label}
-                    onSelect={item.onSelect}
-                  >
-                    {item.href ? (
-                      <Link
-                        href={item.href}
-                        {...(item.external && {
-                          rel: "noopener noreferrer",
-                          target: "_blank",
-                        })}
-                      >
-                        {content}
-                      </Link>
-                    ) : (
-                      <button type="button">{content}</button>
-                    )}
-                  </DropdownMenuItem>
-                );
-              })}
-            </div>
-
-            <DropdownMenuSeparator className="my-3 bg-gradient-to-r from-transparent via-zinc-200 to-transparent dark:via-zinc-800" />
-
-            <DropdownMenuItem
-              asChild
-              className={SIGN_OUT_CLASS}
-              onSelect={onSignOut}
+            <motion.div
+              className="absolute inset-0 bg-zinc-200 dark:bg-zinc-800"
+              style={{ clipPath: outerClip }}
+            />
+            <motion.div
+              className="absolute inset-0 bg-white dark:bg-zinc-900"
+              style={{ clipPath: innerClip }}
+            />
+          </div>
+          <motion.div
+            className={cn("relative", sharedInPanel && "pointer-events-auto")}
+            onKeyDown={onPanelKeyDown}
+            onPointerMove={onPanelPointerMove}
+            style={{ clipPath: innerClip }}
+          >
+            <motion.div
+              className="flex w-max items-start"
+              style={{ transform: pageTransform }}
             >
-              <button type="button">
-                <LogOut className="h-4 w-4 text-red-500 group-focus:text-red-600" />
-                <span className="font-medium text-red-500 text-sm group-focus:text-red-600">
-                  Sign Out
-                </span>
-              </button>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
+              <div
+                className={cn(
+                  "shrink-0 p-1.5 transition-opacity duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                  page !== "main" && "opacity-0"
+                )}
+                inert={page !== "main"}
+                ref={mainRef}
+                style={{ width: PANEL_W }}
+              >
+                <div className="flex items-start justify-between px-2.5 pt-2.5 pb-3">
+                  <Identity
+                    account={account}
+                    shared={sharedInPanel}
+                    stacked
+                    status={status}
+                    tone={tone}
+                    transition={sharedTransition}
+                    uid={uid}
+                  />
+                  {account.plan ? (
+                    <motion.span
+                      className="shrink-0 pt-0.5 text-xs text-zinc-400 dark:text-zinc-500"
+                      style={{ opacity: bodyOpacity }}
+                    >
+                      {account.plan}
+                    </motion.span>
+                  ) : null}
+                </div>
+                <motion.div
+                  aria-label={account.name}
+                  className="outline-none"
+                  id={menuId}
+                  role="menu"
+                  style={{ opacity: bodyOpacity }}
+                  tabIndex={-1}
+                >
+                  <StatusRow onChange={setStatus} status={status} />
+                  <ThemeRow
+                    onChange={setTheme}
+                    reduced={reduced}
+                    theme={theme}
+                    uid={uid}
+                  />
+                  <Separator />
+                  {items.map((item, index) => (
+                    <LinkItem
+                      index={index}
+                      item={item}
+                      key={item.label}
+                      onSelect={select}
+                    />
+                  ))}
+                  {accounts.length > 1 ? (
+                    <button
+                      aria-expanded={page === "accounts"}
+                      aria-haspopup="menu"
+                      className={ITEM_CLASS}
+                      data-menu-item=""
+                      data-row="switch"
+                      data-switch=""
+                      onClick={() => goTo("accounts")}
+                      role="menuitem"
+                      tabIndex={-1}
+                      type="button"
+                    >
+                      <span className="flex -space-x-1.5">
+                        {others.slice(0, 2).map((entry) => (
+                          <Avatar
+                            account={entry}
+                            className="size-5 text-[7px] tracking-normal ring-2 ring-white dark:ring-zinc-900"
+                            key={entry.id}
+                            tone={accounts.indexOf(entry)}
+                          />
+                        ))}
+                      </span>
+                      <span className="flex-1">Switch account</span>
+                      <ChevronRight className="size-4 text-zinc-400 dark:text-zinc-500" />
+                    </button>
+                  ) : null}
+                  <Separator />
+                  <HoldSignOut
+                    duration={holdDuration}
+                    onComplete={(via) => {
+                      onSignOut?.();
+                      closeMenu(via, true);
+                    }}
+                  />
+                </motion.div>
+              </div>
+
+              <div
+                className={cn(
+                  "shrink-0 p-1.5 transition-opacity duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                  page !== "accounts" && "opacity-0"
+                )}
+                inert={page !== "accounts"}
+                ref={accountsRef}
+                style={{ width: PANEL_W }}
+              >
+                <motion.div
+                  aria-label="Switch account"
+                  className="outline-none"
+                  role="menu"
+                  style={{ opacity: bodyOpacity }}
+                  tabIndex={-1}
+                >
+                  <button
+                    className={cn(ITEM_CLASS, "gap-1.5 pl-1.5 font-medium")}
+                    data-menu-item=""
+                    data-row="back"
+                    onClick={() => goTo("main")}
+                    role="menuitem"
+                    tabIndex={-1}
+                    type="button"
+                  >
+                    <ChevronLeft className="size-4 text-zinc-400 dark:text-zinc-500" />
+                    <span className="sr-only">Back to </span>
+                    Switch account
+                  </button>
+                  <Separator />
+                  {accounts.map((entry, index) => {
+                    const checked = entry.id === account.id;
+                    return (
+                      <button
+                        aria-checked={checked}
+                        className={ITEM_CLASS}
+                        data-menu-item=""
+                        data-row={`account-${entry.id}`}
+                        key={entry.id}
+                        onClick={() => {
+                          if (!checked) {
+                            setAccountId(entry.id);
+                            onAccountChange?.(entry);
+                          }
+                          goTo("main");
+                        }}
+                        role="menuitemradio"
+                        tabIndex={-1}
+                        type="button"
+                      >
+                        <Avatar
+                          account={entry}
+                          className="size-7"
+                          status={checked ? status : undefined}
+                          tone={index}
+                        />
+                        <span className="flex min-w-0 flex-1 flex-col">
+                          <span className="truncate text-zinc-900 dark:text-zinc-100">
+                            {entry.name}
+                          </span>
+                          <span className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                            {entry.email}
+                          </span>
+                        </span>
+                        {checked ? (
+                          <Check className="size-4 text-zinc-900 dark:text-zinc-100" />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                  <Separator />
+                  <button
+                    className={ITEM_CLASS}
+                    data-menu-item=""
+                    data-row="add"
+                    onClick={(event) => select(event, onAddAccount)}
+                    role="menuitem"
+                    tabIndex={-1}
+                    type="button"
+                  >
+                    <span className="grid size-7 place-items-center rounded-full border border-zinc-300 border-dashed text-zinc-400 dark:border-zinc-700 dark:text-zinc-500">
+                      <Plus className="size-3.5" />
+                    </span>
+                    Add account
+                  </button>
+                </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
-      </DropdownMenu>
+      )}
     </div>
   );
 }

@@ -88,7 +88,12 @@ const nextConfig = {
       // Backgrounds
       {
         source: "/docs/components/beams-background",
-        destination: "/docs/backgrounds/beams-background",
+        destination: "/docs/backgrounds/dot-field",
+        permanent: true,
+      },
+      {
+        source: "/docs/backgrounds/beams-background",
+        destination: "/docs/backgrounds/dot-field",
         permanent: true,
       },
       {
@@ -129,12 +134,23 @@ const nextConfig = {
       },
       {
         source: "/docs/components/mouse-effect-card",
-        destination: "/docs/cards/mouse-effect-card",
+        destination: "/docs/backgrounds/dot-field",
+        permanent: true,
+      },
+      {
+        source: "/docs/cards/mouse-effect-card",
+        destination: "/docs/backgrounds/dot-field",
         permanent: true,
       },
       {
         source: "/docs/components/tweet-card",
-        destination: "/docs/cards/tweet-card",
+        destination: "/docs/cards/card-flip",
+        permanent: true,
+      },
+      // tweet-card was removed; send old links to a sibling component
+      {
+        source: "/docs/cards/tweet-card",
+        destination: "/docs/cards/card-flip",
         permanent: true,
       },
       {
@@ -144,7 +160,12 @@ const nextConfig = {
       },
       {
         source: "/docs/components/spotlight-cards",
-        destination: "/docs/cards/spotlight-cards",
+        destination: "/docs/cards/bento-grid",
+        permanent: true,
+      },
+      {
+        source: "/docs/cards/spotlight-cards",
+        destination: "/docs/cards/bento-grid",
         permanent: true,
       },
       {
@@ -245,7 +266,13 @@ const nextConfig = {
       // Text components moved from /docs/components/ to /docs/texts/
       {
         source: "/docs/components/scroll-text",
-        destination: "/docs/texts/scroll-text",
+        destination: "/docs/texts/type-writer",
+        permanent: true,
+      },
+      // scroll-text was removed; send old links to a sibling component
+      {
+        source: "/docs/texts/scroll-text",
+        destination: "/docs/texts/type-writer",
         permanent: true,
       },
       {
@@ -260,7 +287,12 @@ const nextConfig = {
       },
       {
         source: "/docs/components/matrix-text",
-        destination: "/docs/texts/matrix-text",
+        destination: "/docs/texts/dynamic-text",
+        permanent: true,
+      },
+      {
+        source: "/docs/texts/matrix-text",
+        destination: "/docs/texts/dynamic-text",
         permanent: true,
       },
       {
@@ -275,12 +307,23 @@ const nextConfig = {
       },
       {
         source: "/docs/components/shimmer-text",
-        destination: "/docs/texts/shimmer-text",
+        destination: "/docs/texts/type-writer",
+        permanent: true,
+      },
+      // shimmer-text was removed; send old links to a sibling component
+      {
+        source: "/docs/texts/shimmer-text",
+        destination: "/docs/texts/type-writer",
         permanent: true,
       },
       {
         source: "/docs/components/sliced-text",
-        destination: "/docs/texts/sliced-text",
+        destination: "/docs/texts/glitch-text",
+        permanent: true,
+      },
+      {
+        source: "/docs/texts/sliced-text",
+        destination: "/docs/texts/glitch-text",
         permanent: true,
       },
       {

@@ -1,14 +1,20 @@
 ---
-title: Flow Field
-description: Canvas particle flow field background with noise-driven streams of glowing light, color themes and density options. Built with React and Motion.
-keywords: ["perlin noise", "generative art", "starfield", "hero backdrop", "particle system"]
+title: Wind
+description: Streamlines that part around the cursor, swirl in its wake and scatter on click, built with React and Canvas.
+keywords: ["wind", "flow field", "streamlines", "particles", "fluid", "hero backdrop", "canvas"]
 icon: Wind
 full: true
 ---
 
-
 import FlowField from "@/components/kokonutui/flow-field";
 
-<Preview link="flow-field" comment={["Motion", "Canvas"]}>
-    <FlowField />
+<Preview link="flow-field" comment={["Canvas"]}>
+    <div className="relative min-h-[560px] w-full self-stretch overflow-hidden bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+        <FlowField>
+            <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+                <h2 className="font-semibold text-4xl tracking-tight sm:text-5xl">Ship with the wind</h2>
+                <p className="max-w-sm text-base text-zinc-500 dark:text-zinc-400">The air parts around your cursor and swirls in its wake. Click anywhere for a gust.</p>
+            </div>
+        </FlowField>
+    </div>
 </Preview>

@@ -57,8 +57,8 @@
     {
       "name": "card-flip",
       "type": "registry:component",
-      "title": "Card Flip",
-      "description": "Interactive card that flips in 3D on hover to reveal features and a call to action, built with React and Tailwind CSS transforms and transitions.",
+      "title": "Flick Card",
+      "description": "A two-sided card you spin with a drag or a flick, with thickness, light and a floor shadow that follow the angle.",
       "dependencies": [
         "lucide-react"
       ],
@@ -117,29 +117,12 @@
       ]
     },
     {
-      "name": "shimmer-text",
-      "type": "registry:component",
-      "title": "Shimmer Text",
-      "description": "Animated shimmer text with a looping gradient sweep across the letters, built with React and Tailwind CSS gradients and keyframes.",
-      "files": [
-        {
-          "path": "components/kokonutui/shimmer-text.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
       "name": "carousel-cards",
       "type": "registry:component",
-      "title": "Carousel Cards",
-      "description": "Horizontally scrolling card carousel with ratings, badges and arrow navigation, built with React, Tailwind CSS and shadcn/ui primitives.",
+      "title": "Momentum Rail",
+      "description": "A card rail you flick with momentum, snapping on a spring, with scroll-driven cover-flow depth and parallax.",
       "dependencies": [
         "lucide-react"
-      ],
-      "registryDependencies": [
-        "card",
-        "badge",
-        "button"
       ],
       "files": [
         {
@@ -167,14 +150,11 @@
     {
       "name": "action-search-bar",
       "type": "registry:component",
-      "title": "Action Search Bar",
-      "description": "Search bar with debounced input, shortcut hints, and an animated action suggestions dropdown, built with React, Motion, and Tailwind CSS.",
+      "title": "Command Palette",
+      "description": "⌘K command palette with nested pages, fuzzy matching and in-row progress for running actions.",
       "dependencies": [
         "lucide-react",
         "motion"
-      ],
-      "registryDependencies": [
-        "input"
       ],
       "files": [
         {
@@ -210,7 +190,7 @@
       "name": "currency-transfer",
       "type": "registry:component",
       "title": "Currency Transfer",
-      "description": "Currency exchange status card with animated progress and a drawn checkmark on completion, built with React, Tailwind CSS and Motion animations.",
+      "description": "Currency transfer card with odometer amounts, a live rate, a chip that carries the money across and a progress arc, built with React and Motion.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -239,35 +219,14 @@
       ]
     },
     {
-      "name": "mouse-effect-card",
+      "name": "dot-field",
       "type": "registry:component",
-      "title": "Mouse Effect Card",
-      "description": "Interactive card with an animated dot pattern that repels away from the cursor, powered by React, Tailwind CSS and Motion spring physics.",
-      "dependencies": [
-        "motion"
-      ],
-      "registryDependencies": [
-        "card",
-        "button"
-      ],
+      "title": "Dot Field",
+      "description": "A halftone dot membrane that ripples behind a swipe and rings out from a click, built with React and Canvas.",
+      "dependencies": [],
       "files": [
         {
-          "path": "components/kokonutui/mouse-effect-card.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
-      "name": "beams-background",
-      "type": "registry:component",
-      "title": "Beams Background",
-      "description": "Animated background of drifting light beams rendered on an HTML canvas with configurable intensity. Built with React, Tailwind CSS and Motion.",
-      "dependencies": [
-        "motion"
-      ],
-      "files": [
-        {
-          "path": "components/kokonutui/beams-background.tsx",
+          "path": "components/kokonutui/dot-field.tsx",
           "type": "registry:component"
         }
       ]
@@ -275,11 +234,9 @@
     {
       "name": "flow-field",
       "type": "registry:component",
-      "title": "Flow Field",
-      "description": "Canvas particle flow field background with noise-driven streams of glowing light, color themes and density options. Built with React and Motion.",
-      "dependencies": [
-        "motion"
-      ],
+      "title": "Wind",
+      "description": "Streamlines that part around the cursor, swirl in its wake and scatter on click, built with React and Canvas.",
+      "dependencies": [],
       "files": [
         {
           "path": "components/kokonutui/flow-field.tsx",
@@ -317,7 +274,7 @@
       "name": "apple-activity-card",
       "type": "registry:component",
       "title": "Apple Activity Card",
-      "description": "Animated activity rings card inspired by the Apple Fitness app, with progress circles built in React using Tailwind CSS and Motion animations.",
+      "description": "Activity rings that draw with a count-up, lap past 100% with a shadowed end cap and dim to focus, built with React and Motion.",
       "dependencies": [
         "motion"
       ],
@@ -347,8 +304,8 @@
     {
       "name": "smooth-tab",
       "type": "registry:component",
-      "title": "Smooth Tab",
-      "description": "Animated tab switcher with a sliding active indicator and smooth card content transitions, built with React, Motion, and Tailwind CSS.",
+      "title": "Swipe Tabs",
+      "description": "Tabs with a swipeable panel, a drag-tracked indicator and spring physics.",
       "dependencies": [
         "motion",
         "lucide-react"
@@ -493,8 +450,8 @@
     {
       "name": "bento-grid",
       "type": "registry:component",
-      "title": "Bento Grid",
-      "description": "Responsive bento grid of feature cards with a spotlight list, a typing code snippet, logos, a timeline and a voice widget, built with React, Tailwind CSS and Motion animations.",
+      "title": "Widget Grid",
+      "description": "Dashboard widgets you lift, drag and resize on a 6-column grid, with spring physics and full keyboard support.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -502,34 +459,6 @@
       "files": [
         {
           "path": "components/kokonutui/bento-grid.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "components/icons/anthropic.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "components/icons/anthropic-dark.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "components/icons/gemini.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "components/icons/open-ai.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "components/icons/open-ai-dark.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "components/icons/mistral.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "components/icons/deepseek.tsx",
           "type": "registry:component"
         }
       ]
@@ -624,8 +553,8 @@
     {
       "name": "toolbar",
       "type": "registry:component",
-      "title": "Toolbar",
-      "description": "Figma-inspired toolbar where the selected tool expands to reveal its label with spring animations, built with React, Motion, and Tailwind CSS.",
+      "title": "Tool Dock",
+      "description": "An editor tool dock with a sliding selection plate, shortcut tooltips and flyouts that you can throw to any edge.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -656,9 +585,10 @@
     {
       "name": "card-stack",
       "type": "registry:component",
-      "title": "Stack",
-      "description": "Stack of product cards that expands on click to reveal details and specs, animated with Motion and styled with React and Tailwind CSS.",
+      "title": "Throw Deck",
+      "description": "A pile of image cards you drag, flick off the top and send under the deck, with arrow keys and a details view.",
       "dependencies": [
+        "lucide-react",
         "motion"
       ],
       "files": [
@@ -723,15 +653,10 @@
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",
-      "description": "Animated avatar picker with SVG avatar options, colored selection ring and username input. Built with React, Tailwind CSS and Motion.",
+      "description": "Generated avatars from a name, morphing as you type, on a 3D coin you can flick, tap or shuffle.",
       "dependencies": [
         "lucide-react",
         "motion"
-      ],
-      "registryDependencies": [
-        "card",
-        "button",
-        "input"
       ],
       "files": [
         {
@@ -759,7 +684,7 @@
       "name": "type-writer",
       "type": "registry:component",
       "title": "Typing Text",
-      "description": "Typewriter text animation that types and deletes multiple sequences with a blinking cursor and auto loop, built with React and Motion.",
+      "description": "Typewriter text that makes the odd typo and corrects it, erases by selecting, and blinks its caret only when idle, built with React and Motion.",
       "dependencies": [
         "motion"
       ],
@@ -773,8 +698,8 @@
     {
       "name": "swoosh-text",
       "type": "registry:component",
-      "title": "Swoosh Text",
-      "description": "Hover text effect with layered colorful shadows that snap flat on mouseover, built with React and Tailwind CSS transitions.",
+      "title": "Extruded Text",
+      "description": "Zinc 3D extruded text lit by your pointer, with letters that press in like keycaps.",
       "files": [
         {
           "path": "components/kokonutui/swoosh-text.tsx",
@@ -796,28 +721,10 @@
       ]
     },
     {
-      "name": "sliced-text",
-      "type": "registry:component",
-      "title": "Sliced Text",
-      "description": "Text effect that splits into two offset slices and merges together on hover using clip-path, built with React, Tailwind CSS and Motion animations.",
-      "dependencies": [
-        "motion"
-      ],
-      "files": [
-        {
-          "path": "components/kokonutui/sliced-text.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
       "name": "glitch-text",
       "type": "registry:component",
       "title": "Glitch Text",
-      "description": "Customizable glitch text effect with adjustable intensity, colors and sizes, animated in React with Motion and styled with Tailwind CSS.",
-      "dependencies": [
-        "motion"
-      ],
+      "description": "Flat text that cuts into hard-shifted bands with a thin red/cyan split, on idle, hover or text change.",
       "files": [
         {
           "path": "components/kokonutui/glitch-text.tsx",
@@ -826,28 +733,11 @@
       ]
     },
     {
-      "name": "matrix-text",
-      "type": "registry:component",
-      "title": "Matrix Text",
-      "description": "Matrix-style text effect where letters scramble through binary characters before revealing, built with React, Tailwind CSS and Motion animations.",
-      "dependencies": [
-        "motion"
-      ],
-      "files": [
-        {
-          "path": "components/kokonutui/matrix-text.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
       "name": "dynamic-text",
       "type": "registry:component",
       "title": "Dynamic Text",
-      "description": "Animated text switcher that cycles through greetings in multiple languages, built with React, Tailwind CSS and Motion enter and exit transitions.",
-      "dependencies": [
-        "motion"
-      ],
+      "description": "Morphing text where shared letters travel, old ones fall and new ones land, with decode and cycle modes.",
+      "dependencies": [],
       "files": [
         {
           "path": "components/kokonutui/dynamic-text.tsx",
@@ -875,40 +765,10 @@
       ]
     },
     {
-      "name": "tweet-card",
-      "type": "registry:component",
-      "title": "X Card",
-      "description": "X (Twitter) style post card with author details, verified badge, reply thread and hover gradient, built with React and Tailwind CSS.",
-      "dependencies": [
-        "lucide-react"
-      ],
-      "files": [
-        {
-          "path": "components/kokonutui/tweet-card.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
-      "name": "scroll-text",
-      "type": "registry:component",
-      "title": "Scroll Text",
-      "description": "Scroll-driven text list that highlights the active word as you scroll, using IntersectionObserver with React, Tailwind CSS and Motion animations.",
-      "dependencies": [
-        "motion"
-      ],
-      "files": [
-        {
-          "path": "components/kokonutui/scroll-text.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
       "name": "liquid-glass-card",
       "type": "registry:component",
-      "title": "Liquid Glass",
-      "description": "Apple-inspired liquid glass card and buttons using SVG displacement filters for a refractive effect, built with React and Tailwind CSS.",
+      "title": "Now Playing",
+      "description": "Music card with a spinning disc you can grab and turn to scrub, built with React and Tailwind CSS.",
       "dependencies": [
         "class-variance-authority",
         "lucide-react"
@@ -927,13 +787,11 @@
     {
       "name": "profile-dropdown",
       "type": "registry:component",
-      "title": "Profile Dropdown",
-      "description": "User profile dropdown menu with avatar, subscription and model details, and quick action links, built with React, shadcn/ui, and Tailwind CSS.",
+      "title": "Account Menu",
+      "description": "An account card that morphs into its own menu, with account switching, status, theme and hold-to-sign-out.",
       "dependencies": [
-        "lucide-react"
-      ],
-      "registryDependencies": [
-        "dropdown-menu"
+        "lucide-react",
+        "motion"
       ],
       "files": [
         {
@@ -969,27 +827,14 @@
     {
       "name": "morphic-navbar",
       "type": "registry:component",
-      "title": "Morphic Navbar",
-      "description": "Navigation bar whose active link morphs into a rounded pill with smooth CSS transitions, built with React, Next.js Link, and Tailwind CSS.",
-      "files": [
-        {
-          "path": "components/kokonutui/morphic-navbar.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
-      "name": "spotlight-cards",
-      "type": "registry:component",
-      "title": "Spotlight Cards",
-      "description": "Feature card grid with ambient aurora glow, magnetic 3D tilt and focus dimming on hover, built with React, Tailwind CSS and Motion springs.",
+      "title": "Split Nav",
+      "description": "Navigation bar that splits around the active link, with drag-to-scrub, flick projection and an optional compact fold.",
       "dependencies": [
-        "motion",
-        "lucide-react"
+        "motion"
       ],
       "files": [
         {
-          "path": "components/kokonutui/spotlight-cards.tsx",
+          "path": "components/kokonutui/morphic-navbar.tsx",
           "type": "registry:component"
         }
       ]

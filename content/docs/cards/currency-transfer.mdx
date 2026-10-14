@@ -1,6 +1,6 @@
 ---
 title: Currency Transfer
-description: Currency exchange status card with animated progress and a drawn checkmark on completion, built with React, Tailwind CSS and Motion animations.
+description: Currency transfer card with odometer amounts, a live rate, a chip that carries the money across and a progress arc, built with React and Motion.
 keywords: ["payment", "fintech", "checkout", "transaction", "money", "success state"]
 icon: ArrowLeftRight
 full: false
@@ -41,4 +41,4 @@ With no props the card runs a demo: it shows "Transfer in Progress" and complete
 | `locale` | `string` | `"en-US"` | BCP 47 locale for amounts, currency symbols and the rate. |
 | `className` | `string` | — | Extra classes for the card. |
 
-`TransferAccount` is `{ amount: number; currency: string; symbol?: string; bank: string; last4?: string }`. Status changes are announced to screen readers, and motion is reduced to fades when the user prefers reduced motion.
+`TransferAccount` is `{ amount: number; currency: string; symbol?: string; bank: string; last4?: string }`. Status changes are announced to screen readers, and with reduced motion the amounts and arc jump to their values and the chip and shake are skipped.
