@@ -332,9 +332,10 @@
       "name": "ai-voice",
       "type": "registry:component",
       "title": "AI Voice",
-      "description": "AI voice input button with recording timer, pulsing waveform bars and listening state. Built with React and animated Tailwind CSS styles.",
+      "description": "Voice input with a scrolling waveform, then a take you can play back, discard or send.",
       "dependencies": [
-        "lucide-react"
+        "lucide-react",
+        "motion"
       ],
       "files": [
         {
