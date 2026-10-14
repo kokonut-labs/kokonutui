@@ -202,6 +202,34 @@ const SURFACE = "bg-zinc-900 dark:bg-zinc-100";
 const FOCUS_RING =
   "outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-inset";
 
+/**
+ * In-page anchors scroll to their target and record the hash with
+ * pushState. A native fragment navigation fires popstate, which routers
+ * that animate page changes (view transitions) treat as a new page, and
+ * re-clicking the current hash never settles one. A hash with no element
+ * (like the demo's) only moves the split.
+ */
+const followHash = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+  if (
+    event.defaultPrevented ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) {
+    return;
+  }
+  event.preventDefault();
+  const target = document.getElementById(decodeURIComponent(href.slice(1)));
+  if (!target) {
+    return;
+  }
+  target.scrollIntoView();
+  if (window.location.hash !== href) {
+    window.history.pushState(null, "", href);
+  }
+};
+
 function ChevronIcon() {
   return (
     <svg
@@ -264,8 +292,9 @@ function Segment({
     nextX ? capScale(nextX.get() - x.get(), fold.get()) : "scaleX(0)"
   );
   // Next's Link scrolls the page when a hash matches no element, so in-page
-  // anchors use a plain <a> and keep the browser's behaviour.
-  const NavLink = href.startsWith("#") ? "a" : Link;
+  // anchors use a plain <a>, handled by `followHash`.
+  const isHash = href.startsWith("#");
+  const NavLink = isHash ? "a" : Link;
 
   return (
     <motion.div
@@ -291,7 +320,12 @@ function Segment({
         draggable={false}
         href={href}
         inert={hidden}
-        onClick={onSelect}
+        onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+          onSelect();
+          if (isHash) {
+            followHash(event, href);
+          }
+        }}
         onDragStart={(event: MouseEvent) => event.preventDefault()}
         onFocus={onFocus}
         ref={linkRef}
