@@ -323,6 +323,8 @@ interface Engine {
   playing: boolean;
   held: boolean;
   barDrag: boolean;
+  /** The one pointer driving the disc or the bar; others are ignored. */
+  pointerId: number | null;
   visible: boolean;
   reduced: boolean;
   /** Meter envelope, 0 (rest) to 1 (full). */
@@ -346,6 +348,7 @@ function createEngine(duration: number, playing: boolean): Engine {
     playing,
     held: false,
     barDrag: false,
+    pointerId: null,
     visible: true,
     reduced: false,
     env: 0,
@@ -925,9 +928,10 @@ export function NowPlaying({
 
   const onDiscDown = (event: React.PointerEvent<HTMLDivElement>) => {
     const e = engineRef.current;
-    if (!e || event.button !== 0) {
+    if (!e || event.button !== 0 || e.pointerId !== null) {
       return;
     }
+    e.pointerId = event.pointerId;
     event.currentTarget.setPointerCapture(event.pointerId);
     const rect = event.currentTarget.getBoundingClientRect();
     e.center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
@@ -944,7 +948,7 @@ export function NowPlaying({
 
   const onDiscMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const e = engineRef.current;
-    if (!e?.held) {
+    if (!e?.held || e.pointerId !== event.pointerId) {
       return;
     }
     const { angle, distance } = pointerAngle(e, event.clientX, event.clientY);
@@ -985,9 +989,10 @@ export function NowPlaying({
 
   const onDiscUp = (event: React.PointerEvent<HTMLDivElement>) => {
     const e = engineRef.current;
-    if (!e?.held) {
+    if (!e?.held || e.pointerId !== event.pointerId) {
       return;
     }
+    e.pointerId = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -1036,25 +1041,28 @@ export function NowPlaying({
 
   const onBarDown = (event: React.PointerEvent<HTMLDivElement>) => {
     const e = engineRef.current;
-    if (!e || event.button !== 0) {
+    if (!e || event.button !== 0 || e.pointerId !== null) {
       return;
     }
+    e.pointerId = event.pointerId;
     event.currentTarget.setPointerCapture(event.pointerId);
     e.barDrag = true;
     seekFromPointer(event.clientX);
   };
 
   const onBarMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (engineRef.current?.barDrag) {
+    const e = engineRef.current;
+    if (e?.barDrag && e.pointerId === event.pointerId) {
       seekFromPointer(event.clientX);
     }
   };
 
-  const onBarUp = () => {
+  const onBarUp = (event: React.PointerEvent<HTMLDivElement>) => {
     const e = engineRef.current;
-    if (!e?.barDrag) {
+    if (!e?.barDrag || e.pointerId !== event.pointerId) {
       return;
     }
+    e.pointerId = null;
     e.barDrag = false;
     const rail = railRef.current;
     if (rail) {
