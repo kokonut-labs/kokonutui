@@ -80,6 +80,8 @@ function RollingNumber({ value }: { value: number }) {
 }
 
 export interface BellButtonProps {
+  /** `default` shows the label and count, `compact` the label, `icon` the bell alone. */
+  variant?: "default" | "compact" | "icon";
   /** Controlled state. */
   subscribed?: boolean;
   defaultSubscribed?: boolean;
@@ -92,6 +94,7 @@ export interface BellButtonProps {
 }
 
 export default function BellButton({
+  variant = "default",
   subscribed: subscribedProp,
   defaultSubscribed = false,
   onSubscribedChange,
@@ -288,9 +291,13 @@ export default function BellButton({
 
   return (
     <button
+      aria-label={variant === "icon" ? label : undefined}
       aria-pressed={subscribed}
       className={cn(
-        "group/bell inline-flex h-11 select-none items-center gap-2.5 rounded-full border pr-1.5 pl-4 font-medium text-sm outline-none transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:ring-offset-zinc-950",
+        "inline-flex h-11 select-none items-center gap-2.5 rounded-full border font-medium text-sm outline-none transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:ring-offset-zinc-950",
+        variant === "default" && "pr-1.5 pl-4",
+        variant === "compact" && "px-4",
+        variant === "icon" && "w-11 justify-center",
         subscribed
           ? "border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800 active:bg-zinc-700 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
           : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 active:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:active:bg-zinc-800 dark:hover:bg-zinc-900",
@@ -339,37 +346,41 @@ export default function BellButton({
         </g>
       </svg>
 
-      <span className="relative grid">
-        {[
-          { key: "off", on: !subscribed, text: label },
-          { key: "on", on: subscribed, text: subscribedLabel },
-        ].map((line) => (
-          <span
-            aria-hidden={!line.on}
-            className={cn(
-              "col-start-1 row-start-1 whitespace-nowrap transition-[opacity,filter] duration-200 ease-out",
-              line.on ? "opacity-100 blur-0" : "opacity-0 blur-[2px]"
-            )}
-            key={line.key}
-          >
-            {line.text}
-          </span>
-        ))}
-      </span>
-
-      <span
-        className={cn(
-          "rounded-full px-2.5 py-1 text-xs transition-colors duration-200 ease-out",
-          subscribed
-            ? "bg-white/15 text-white/80 dark:bg-zinc-900/10 dark:text-zinc-900/70"
-            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400"
-        )}
-      >
-        <RollingNumber value={count + (subscribed ? 1 : 0)} />
-        <span className="sr-only">
-          {(count + (subscribed ? 1 : 0)).toLocaleString("en-US")} subscribers
+      {variant === "icon" ? null : (
+        <span className="relative grid">
+          {[
+            { key: "off", on: !subscribed, text: label },
+            { key: "on", on: subscribed, text: subscribedLabel },
+          ].map((line) => (
+            <span
+              aria-hidden={!line.on}
+              className={cn(
+                "col-start-1 row-start-1 whitespace-nowrap transition-[opacity,filter] duration-200 ease-out",
+                line.on ? "opacity-100 blur-0" : "opacity-0 blur-[2px]"
+              )}
+              key={line.key}
+            >
+              {line.text}
+            </span>
+          ))}
         </span>
-      </span>
+      )}
+
+      {variant === "default" ? (
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 text-xs transition-colors duration-200 ease-out",
+            subscribed
+              ? "bg-white/15 text-white/80 dark:bg-zinc-900/10 dark:text-zinc-900/70"
+              : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400"
+          )}
+        >
+          <RollingNumber value={count + (subscribed ? 1 : 0)} />
+          <span className="sr-only">
+            {(count + (subscribed ? 1 : 0)).toLocaleString("en-US")} subscribers
+          </span>
+        </span>
+      ) : null}
     </button>
   );
 }

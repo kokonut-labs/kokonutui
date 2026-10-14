@@ -13,6 +13,7 @@
 import {
   type KeyboardEvent,
   type PointerEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useRef,
@@ -97,7 +98,53 @@ const NOTCH = 7;
 const bodyMask = `radial-gradient(circle at 100% 0, #0000 ${NOTCH}px, #000 ${NOTCH + 0.5}px) top / 100% 51% no-repeat, radial-gradient(circle at 100% 100%, #0000 ${NOTCH}px, #000 ${NOTCH + 0.5}px) bottom / 100% 51% no-repeat`;
 const stubMask = `radial-gradient(circle at 0 0, #0000 ${NOTCH}px, #000 ${NOTCH + 0.5}px) top / 100% 51% no-repeat, radial-gradient(circle at 0 100%, #0000 ${NOTCH}px, #000 ${NOTCH + 0.5}px) bottom / 100% 51% no-repeat`;
 
+const TONES = {
+  default: {
+    paper: "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900",
+    chip: "bg-white/10 dark:bg-zinc-900/10",
+    chipDone: "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-white",
+    sub: "text-white/55 dark:text-zinc-900/55",
+    stub: "text-white/60 dark:text-zinc-900/60",
+    perforation: "border-white/30 dark:border-zinc-900/30",
+  },
+  muted: {
+    paper: "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100",
+    chip: "bg-zinc-900/5 dark:bg-white/10",
+    chipDone: "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900",
+    sub: "text-zinc-500 dark:text-zinc-400",
+    stub: "text-zinc-500 dark:text-zinc-400",
+    perforation: "border-zinc-900/20 dark:border-white/25",
+  },
+  danger: {
+    paper: "bg-red-600 text-white",
+    chip: "bg-white/15",
+    chipDone: "bg-white text-red-600",
+    sub: "text-white/70",
+    stub: "text-white/75",
+    perforation: "border-white/40",
+  },
+} as const;
+
+const TRASH = (
+  <svg
+    aria-hidden="true"
+    className="size-4"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={2}
+    viewBox="0 0 24 24"
+  >
+    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+  </svg>
+);
+
 export interface TearButtonProps {
+  /** Paper colour. */
+  tone?: keyof typeof TONES;
+  /** Shown in the round chip until the stub is torn; a trash can by default. */
+  icon?: ReactNode;
   label?: string;
   description?: string;
   stubLabel?: string;
@@ -111,6 +158,8 @@ export interface TearButtonProps {
 }
 
 export default function TearButton({
+  tone = "default",
+  icon = TRASH,
   label = "Delete workspace",
   description = "Tear off the stub to confirm",
   stubLabel = "Tear",
@@ -440,6 +489,7 @@ export default function TearButton({
   };
 
   const done = phase === "flying" || phase === "torn";
+  const colors = TONES[tone];
 
   return (
     <div
@@ -448,7 +498,10 @@ export default function TearButton({
       style={{ width: BODY_WIDTH + STUB_WIDTH, height: HEIGHT }}
     >
       <div
-        className="absolute inset-y-0 left-0 flex items-center gap-3 rounded-l-2xl bg-zinc-900 pr-4 pl-4 text-white dark:bg-zinc-100 dark:text-zinc-900"
+        className={cn(
+          "absolute inset-y-0 left-0 flex items-center gap-3 rounded-l-2xl px-4",
+          colors.paper
+        )}
         ref={bodyRef}
         style={{ width: BODY_WIDTH, mask: bodyMask, WebkitMask: bodyMask }}
       >
@@ -456,27 +509,25 @@ export default function TearButton({
           aria-hidden="true"
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ease-out",
-            done
-              ? "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-white"
-              : "bg-white/10 text-white dark:bg-zinc-900/10 dark:text-zinc-900"
+            done ? colors.chipDone : colors.chip
           )}
         >
-          <svg
-            aria-hidden="true"
-            className="size-4"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            {done ? (
+          {done ? (
+            <svg
+              aria-hidden="true"
+              className="size-4"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
               <path d="M5 12.5l4.5 4.5L19 7.5" />
-            ) : (
-              <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
-            )}
-          </svg>
+            </svg>
+          ) : (
+            icon
+          )}
         </span>
         <span className="relative grid min-w-0 flex-1">
           {[
@@ -501,7 +552,7 @@ export default function TearButton({
               <span className="block truncate font-medium text-sm">
                 {line.title}
               </span>
-              <span className="block truncate text-white/55 text-xs dark:text-zinc-900/55">
+              <span className={cn("block truncate text-xs", colors.sub)}>
                 {line.sub}
               </span>
             </span>
@@ -513,7 +564,9 @@ export default function TearButton({
         <button
           aria-label={`${label}: ${description}`}
           className={cn(
-            "absolute inset-y-0 flex touch-none flex-col items-center justify-center gap-1 rounded-r-2xl bg-zinc-900 text-white/60 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:bg-zinc-100 dark:text-zinc-900/60 dark:ring-offset-zinc-950",
+            "absolute inset-y-0 flex touch-none flex-col items-center justify-center gap-1 rounded-r-2xl outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:ring-offset-zinc-950",
+            colors.paper,
+            colors.stub,
             "starting:-translate-x-3 starting:opacity-0 transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
             phase === "tearing" ? "cursor-grabbing" : "cursor-grab"
           )}
@@ -538,7 +591,10 @@ export default function TearButton({
           {/* The perforation. */}
           <span
             aria-hidden="true"
-            className="absolute inset-y-2.5 left-0 border-white/30 border-l-2 border-dotted dark:border-zinc-900/30"
+            className={cn(
+              "absolute inset-y-2.5 left-0 border-l-2 border-dotted",
+              colors.perforation
+            )}
           />
           <svg
             aria-hidden="true"

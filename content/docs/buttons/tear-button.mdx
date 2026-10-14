@@ -7,7 +7,26 @@ full: false
 ---
 
 import TearButton from "@/components/kokonutui/tear-button";
+import { Ticket, X } from "lucide-react";
 
 <Preview link="tear-button">
-    <TearButton />
+    <div className="flex flex-col items-center gap-6">
+        <TearButton />
+        <TearButton
+            confirmedDescription="20% off applied at checkout"
+            confirmedLabel="Coupon redeemed"
+            description="Tear off to use 20% off"
+            icon={<Ticket className="size-4" />}
+            label="Redeem coupon"
+            tone="muted"
+        />
+        <TearButton
+            confirmedDescription="Access until 14 November"
+            confirmedLabel="Plan cancelled"
+            description="Tear off to end your plan"
+            icon={<X className="size-4" />}
+            label="Cancel Pro plan"
+            tone="danger"
+        />
+    </div>
 </Preview>

@@ -9,5 +9,9 @@ full: false
 import BellButton from "@/components/kokonutui/bell-button";
 
 <Preview link="bell-button">
-    <BellButton />
+    <div className="flex flex-wrap items-center justify-center gap-4">
+        <BellButton />
+        <BellButton label="Follow" subscribedLabel="Following" variant="compact" defaultSubscribed />
+        <BellButton label="Notifications" variant="icon" />
+    </div>
 </Preview>
