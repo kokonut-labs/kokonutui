@@ -105,7 +105,7 @@
       "name": "ai-text-loading",
       "type": "registry:component",
       "title": "AI Text Loading",
-      "description": "Animated AI thinking indicator that cycles status messages with a shimmering gradient text effect. Built with React, Tailwind CSS and Motion.",
+      "description": "AI thinking text with a soft wave through the letters and words that swap letter by letter.",
       "dependencies": [
         "motion"
       ],
