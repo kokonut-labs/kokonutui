@@ -7,7 +7,7 @@
       "name": "ai-prompt",
       "type": "registry:component",
       "title": "AI Input Selector",
-      "description": "Animated AI chat input with model selection dropdown, file attachment and auto-resizing textarea. Built with React, Tailwind CSS and Motion.",
+      "description": "AI chat input with a model picker, file chips you can drop or paste, and Stop while replying.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -105,7 +105,7 @@
       "name": "ai-text-loading",
       "type": "registry:component",
       "title": "AI Text Loading",
-      "description": "Animated AI thinking indicator that cycles status messages with a shimmering gradient text effect. Built with React, Tailwind CSS and Motion.",
+      "description": "AI thinking text with a soft wave through the letters and words that swap letter by letter.",
       "dependencies": [
         "motion"
       ],
@@ -421,6 +421,19 @@
       ]
     },
     {
+      "name": "signature-pad",
+      "type": "registry:component",
+      "title": "Signature Pad",
+      "description": "A signature field with a sprung pen tip, speed-weighted ink and SVG output.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/signature-pad.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "switch-button",
       "type": "registry:component",
       "title": "Switch Button",
@@ -615,7 +628,11 @@
       "name": "ai-loading",
       "type": "registry:component",
       "title": "AI State Loading",
-      "description": "Animated AI loading state cycling task statuses through a scrolling code-style log with an SVG progress spinner. Built with React and Tailwind CSS.",
+      "description": "Agent progress as a list of steps with a live log, elapsed time and a summary when done.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
       "files": [
         {
           "path": "components/kokonutui/ai-loading.tsx",
@@ -661,6 +678,30 @@
       "files": [
         {
           "path": "components/kokonutui/liquid-gauge.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "activity-terrain",
+      "type": "registry:component",
+      "title": "Activity Terrain",
+      "description": "A contribution heatmap that tilts up into a 3D terrain you can turn, built with React and canvas.",
+      "files": [
+        {
+          "path": "components/kokonutui/activity-terrain.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "receipt-printer",
+      "type": "registry:component",
+      "title": "Receipt Printer",
+      "description": "A receipt that prints line by line, then tears off and falls when you pull it, built with React.",
+      "files": [
+        {
+          "path": "components/kokonutui/receipt-printer.tsx",
           "type": "registry:component"
         }
       ]
