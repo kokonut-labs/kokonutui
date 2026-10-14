@@ -95,7 +95,6 @@ export const component: Registry = [
     name: "carousel-cards",
     type: "registry:component",
     dependencies: ["lucide-react"],
-    registryDependencies: ["card", "badge", "button"],
     files: [
       {
         path: "components/kokonutui/carousel-cards.tsx",
