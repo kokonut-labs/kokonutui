@@ -210,6 +210,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "drape-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/drape-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "apple-activity-card",
     type: "registry:component",
     dependencies: ["motion"],
@@ -223,7 +234,7 @@ export const component: Registry = [
   {
     name: "ai-voice",
     type: "registry:component",
-    dependencies: ["lucide-react"],
+    dependencies: ["lucide-react", "motion"],
     files: [
       {
         path: "components/kokonutui/ai-voice.tsx",
@@ -238,6 +249,17 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/smooth-tab.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "marking-menu",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/marking-menu.tsx",
         type: "registry:component",
       },
     ],
@@ -265,6 +287,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "liquid-slider",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/liquid-slider.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "switch-button",
     type: "registry:component",
     dependencies: ["lucide-react"],
@@ -283,6 +316,17 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/pull-cord.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "tear-button",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/tear-button.tsx",
         type: "registry:component",
       },
     ],
@@ -398,6 +442,7 @@ export const component: Registry = [
   {
     name: "ai-loading",
     type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
     files: [
       {
         path: "components/kokonutui/ai-loading.tsx",
@@ -433,6 +478,16 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/liquid-gauge.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "activity-terrain",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/activity-terrain.tsx",
         type: "registry:component",
       },
     ],
@@ -487,6 +542,17 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/swoosh-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "plucked-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/plucked-text.tsx",
         type: "registry:component",
       },
     ],
