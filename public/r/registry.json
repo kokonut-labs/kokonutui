@@ -301,6 +301,19 @@
       ]
     },
     {
+      "name": "drape-background",
+      "type": "registry:component",
+      "title": "Drape Background",
+      "description": "A pleated curtain in a breeze that you can push and pull, built with React, WebGL and a cloth simulation.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/drape-background.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "apple-activity-card",
       "type": "registry:component",
       "title": "Apple Activity Card",
