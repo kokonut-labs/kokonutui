@@ -61,6 +61,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "halftone-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/halftone-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "shape-hero",
     type: "registry:component",
     files: [
@@ -127,6 +138,17 @@ export const component: Registry = [
       {
         path: "hooks/use-auto-resize-textarea.ts",
         type: "registry:hook",
+      },
+    ],
+  },
+  {
+    name: "cradle-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/cradle-text.tsx",
+        type: "registry:component",
       },
     ],
   },
@@ -473,6 +495,16 @@ export const component: Registry = [
     ],
   },
   {
+    name: "metric-card",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/metric-card.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "uptime-card",
     type: "registry:component",
     dependencies: ["lucide-react"],
@@ -522,6 +554,17 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/swoosh-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "scroll-index",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/scroll-index.tsx",
         type: "registry:component",
       },
     ],

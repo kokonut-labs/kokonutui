@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 55 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 56 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -26,6 +26,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Changelog](https://kokonutui.com/docs/changelog.md): New and updated Kokonut UI components, release by release, with a link to each component and its pull request. Install: `npx shadcn@latest add @kokonutui/changelog`
 - [Command Button](https://kokonutui.com/docs/buttons/command-button.md): Keyboard shortcut button with a Command icon, hover shimmer sweep, and smooth CSS transitions, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/command-button`
 - [Command Palette](https://kokonutui.com/docs/navigation/action-search-bar.md): ⌘K command palette with nested pages, fuzzy matching and in-row progress for running actions. Install: `npx shadcn@latest add @kokonutui/action-search-bar`
+- [Cradle Text](https://kokonutui.com/docs/texts/cradle-text.md): A headline hung like a Newton's cradle, so a knock on one letter clacks through the word, built with React and pendulum physics. Install: `npx shadcn@latest add @kokonutui/cradle-text`
 - [Currency Transfer](https://kokonutui.com/docs/cards/currency-transfer.md): Currency transfer card with odometer amounts, a live rate, a chip that carries the money across and a progress arc, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/currency-transfer`
 - [Detent Dial](https://kokonutui.com/docs/inputs/detent-dial.md): Rotary knob that clicks from notch to notch and coasts when flicked, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/detent-dial`
 - [Dot Field](https://kokonutui.com/docs/backgrounds/dot-field.md): A halftone dot membrane that ripples behind a swipe and rings out from a click, built with React and Canvas. Install: `npx shadcn@latest add @kokonutui/dot-field`
