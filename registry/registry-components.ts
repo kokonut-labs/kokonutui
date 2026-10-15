@@ -473,6 +473,16 @@ export const component: Registry = [
     ],
   },
   {
+    name: "spending-ring",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/spending-ring.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],

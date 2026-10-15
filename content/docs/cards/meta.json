@@ -11,6 +11,7 @@
     "notification-stack",
     "liquid-gauge",
     "activity-terrain",
-    "receipt-printer"
+    "receipt-printer",
+    "spending-ring"
   ]
 }
