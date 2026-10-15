@@ -443,6 +443,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "ai-citations",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-citations.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "card-stack",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
