@@ -391,54 +391,6 @@
       ]
     },
     {
-      "name": "verification-code",
-      "type": "registry:component",
-      "title": "Verification Code",
-      "description": "A one-time code field that fills from typing, paste or autofill, and folds into a single Verified pill when the code is right.",
-      "dependencies": [
-        "motion",
-        "lucide-react"
-      ],
-      "files": [
-        {
-          "path": "components/kokonutui/verification-code.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
-      "name": "reaction-button",
-      "type": "registry:component",
-      "title": "Reaction Button",
-      "description": "Tap to like, or press and hold to slide across a tray of reactions and let go on the one you want.",
-      "dependencies": [
-        "motion",
-        "lucide-react"
-      ],
-      "files": [
-        {
-          "path": "components/kokonutui/reaction-button.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
-      "name": "swatch-fan",
-      "type": "registry:component",
-      "title": "Swatch Fan",
-      "description": "A color picker shaped like a paint fan deck. Drag it open, pick a hue and a shade, and copy the hex.",
-      "dependencies": [
-        "motion",
-        "lucide-react"
-      ],
-      "files": [
-        {
-          "path": "components/kokonutui/swatch-fan.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
       "name": "switch-button",
       "type": "registry:component",
       "title": "Switch Button",

@@ -285,39 +285,6 @@ export const component: Registry = [
     ],
   },
   {
-    name: "verification-code",
-    type: "registry:component",
-    dependencies: ["motion", "lucide-react"],
-    files: [
-      {
-        path: "components/kokonutui/verification-code.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "reaction-button",
-    type: "registry:component",
-    dependencies: ["motion", "lucide-react"],
-    files: [
-      {
-        path: "components/kokonutui/reaction-button.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "swatch-fan",
-    type: "registry:component",
-    dependencies: ["motion", "lucide-react"],
-    files: [
-      {
-        path: "components/kokonutui/swatch-fan.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "switch-button",
     type: "registry:component",
     dependencies: ["lucide-react"],
