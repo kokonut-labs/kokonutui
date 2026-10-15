@@ -131,6 +131,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "cradle-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/cradle-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "currency-transfer",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
