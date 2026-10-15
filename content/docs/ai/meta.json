@@ -8,6 +8,7 @@
     "ai-voice",
     "ai-tool-approval",
     "ai-context-meter",
-    "ai-citations"
+    "ai-citations",
+    "ai-diff-review"
   ]
 }
