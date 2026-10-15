@@ -625,6 +625,21 @@
       ]
     },
     {
+      "name": "ai-context-meter",
+      "type": "registry:component",
+      "title": "AI Context Meter",
+      "description": "How full the context window is, as a ring in the prompt footer that opens a breakdown by source and compacts when it fills.",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-context-meter.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "card-stack",
       "type": "registry:component",
       "title": "Throw Deck",
