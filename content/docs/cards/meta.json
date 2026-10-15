@@ -14,6 +14,7 @@
     "receipt-printer",
     "metric-card",
     "uptime-card",
-    "spending-ring"
+    "spending-ring",
+    "lightbox-grid"
   ]
 }

@@ -732,4 +732,37 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "status-island",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/status-island.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "morph-popover",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/morph-popover.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "lightbox-grid",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/lightbox-grid.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
