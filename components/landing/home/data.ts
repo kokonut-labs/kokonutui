@@ -31,7 +31,7 @@ export const REGISTRY_ENTRY = `"${REGISTRY_NAMESPACE}": "https://kokonutui.com/r
 export const installCommand = (name: string) =>
   `npx shadcn@latest add ${REGISTRY_NAMESPACE}/${name}`;
 
-// The four clients with first-class `mcp init` support (see /docs/mcp).
+// The four clients with first-class `mcp init` support (see /docs/agents).
 export const MCP_CLIENTS = [
   { id: "claude", label: "Claude Code" },
   { id: "cursor", label: "Cursor" },

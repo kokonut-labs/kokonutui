@@ -1,0 +1,51 @@
+---
+title: Agents
+description: Use Kokonut UI with Claude Code, Cursor, VS Code or Codex. Connect the shadcn MCP server, add a rules file, and give your agent the docs as Markdown.
+keywords: ["mcp", "mcp server", "ai", "llm", "llms.txt", "claude code", "cursor", "codex", "copilot", "agents.md", "rules"]
+---
+
+Kokonut UI is a shadcn/ui registry, so any agent that can run the shadcn CLI can install its components. Ask for a component by name, or describe what you need, and the agent finds it, installs it with its dependencies, and edits it in your codebase like any other file.
+
+<SetupChoice />
+
+## Add the registry
+
+Agents install from the `@kokonutui` namespace, so add it to your `components.json` once. If you don't have one yet, run `shadcn init` first, as shown in [Installation](/docs).
+
+```json title="components.json"
+{
+  "registries": {
+    "@kokonutui": "https://kokonutui.com/r/{name}.json"
+  }
+}
+```
+
+## Connect your editor
+
+The [shadcn MCP server](https://ui.shadcn.com/docs/mcp) lets your agent list, search and install components from any registry in `components.json`. One command sets it up for your editor:
+
+<McpSetup />
+
+Any other client that speaks the Model Context Protocol works too: point it at `npx shadcn@latest mcp`.
+
+## Ask your agent
+
+Restart your editor, then ask in plain language. Each prompt copies.
+
+<AgentPrompts />
+
+The agent installs a component's shadcn/ui primitives (like `button` or `textarea`) and npm packages (like `motion` or `lucide-react`) along with it, exactly as the CLI does.
+
+## Add a rules file
+
+A short rules file tells your agent to check Kokonut UI before building a component from scratch, and to install rather than paste code. Save it in your project under the file name shown for your editor.
+
+<AgentRules />
+
+## Docs for agents
+
+Every page on this site is also served as Markdown, so an agent can read the docs without a browser. Each component page includes its install command and full source.
+
+<AgentEndpoints />
+
+At the top of every page, **Copy Markdown** copies the page for a chat, and **Open** sends it to ChatGPT, Claude or Cursor.

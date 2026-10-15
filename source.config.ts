@@ -15,7 +15,23 @@ import { z } from "zod";
  * content instead of an empty shell.
  */
 const llmsOptions: LLMsOptions = {
-  mdxAsPlaceholder: ["Preview", "PreviewClient", "PreviewTemplate"],
+  // The page's own blocks (commands, notes, the agent setup, the changelog)
+  // are rendered as Markdown there too, so no raw JSX reaches the `.md`.
+  mdxAsPlaceholder: [
+    "Preview",
+    "PreviewClient",
+    "PreviewTemplate",
+    "Command",
+    "Note",
+    "McpSetup",
+    "AgentRules",
+    "AgentPrompts",
+    "AgentEndpoints",
+    "Release",
+    "SetupChoice",
+  ],
+  // Heading ids would print as `[#slug]` after every heading.
+  headingIds: false,
 };
 
 export const docs = defineDocs({

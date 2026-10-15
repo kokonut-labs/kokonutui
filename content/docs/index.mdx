@@ -3,126 +3,58 @@ title: Installation
 description: Install KokonutUI components in any React or Next.js project with the shadcn CLI, using namespaces or direct registry URLs. No extra setup required.
 ---
 
+<SetupChoice />
 
-### 1. Add namespaces with components.json
+## Add the registry
 
-The components.json file holds configuration for your project, and allow easy installation of any components.
+Kokonut UI is a shadcn/ui registry. The shadcn CLI reads its configuration from `components.json`; if your project doesn't have one yet, create it:
 
-<Card
-title="Note: The `components.json` file is optional"
->
-It is only required if you're using the CLI to add components to your project. If you're using the copy and paste method, you don't need this file.
-</Card>
+<Command run="shadcn@latest init" />
 
-You can create a components.json file in your project by running the following command:
+Then add the `@kokonutui` namespace to it, so components install by name:
 
-<Tabs items={["bun", "npx", "pnpm"]}>
- 
-```bash tab="bun"
-bunx --bun shadcn@latest init
-```
- 
-```bash tab="npx"
-npx shadcn@latest init
-```
-
-```bash tab="pnpm"
-pnpm dlx shadcn@latest init
-```
-
-</Tabs>
-
-Then, you'll need to add this to your `components.json` to allow kokonutUI registry.
-
-```json
+```json title="components.json"
 {
-    "registries": {
-        "@kokonutui": "https://kokonutui.com/r/{name}.json"
-    }
+  "registries": {
+    "@kokonutui": "https://kokonutui.com/r/{name}.json"
+  }
 }
 ```
 
-### 2. Install utilities
+<Note title="Copying code instead?">
+  `components.json` is only needed for the CLI. If you copy a component's source by hand, you can skip it, but you'll have to install its dependencies yourself.
+</Note>
 
-All components use [Tailwind CSS v4](https://tailwindcss.com/docs/installation/framework-guides/nextjs), so ensure it's installed in your project.
-Many components also use the `cn` utility function—install it with the following command:
+## Install the utilities
 
-<Tabs items={["bun", "npx", "pnpm"]}>
- 
-```bash tab="bun"
-bunx --bun shadcn@latest add https://kokonutui.com/r/utils.json 
-```
- 
-```bash tab="npx"
-npx shadcn@latest add https://kokonutui.com/r/utils.json
-```
+Components are styled with [Tailwind CSS v4](https://tailwindcss.com/docs/installation/framework-guides/nextjs), so make sure it's set up. Most of them also use the `cn` helper:
 
-```bash tab="pnpm"
-pnpm dlx shadcn@latest add https://kokonutui.com/r/utils.json
-```
+<Command run="shadcn@latest add https://kokonutui.com/r/utils.json" />
 
-</Tabs>
+## Add a component
 
-### 3. That's it
+Name the component. The CLI writes it to `components/kokonutui/` and installs what it needs, such as [lucide-react](https://lucide.dev/guide/installation) icons, [shadcn/ui](https://ui.shadcn.com/) primitives and `motion`:
 
-We use [lucide-icons](https://lucide.dev/guide/installation) for most components that include icons, along with some [shadcn/ui](https://ui.shadcn.com/) components. These dependencies will be automatically installed when using the CLI.
+<Command run="shadcn@latest add @kokonutui/particle-button" />
 
-For exemple to add `particle-button` component to your project, it will be easy as:
+Then use it like any component in your project:
 
-<Tabs items={["bun", "npx", "pnpm"]}>
- 
-```bash tab="bun"
-bunx --bun shadcn@latest add @kokonutui/particle-button
-```
- 
-```bash tab="npx"
-npx shadcn@latest add @kokonutui/particle-button
-```
-
-```bash tab="pnpm"
-pnpm dlx shadcn@latest add @kokonutui/particle-button
-```
-
-</Tabs>
-
-_While we provide a convenient 'copy' button for the code, we strongly recommend using the CLI for installing components, as it ensures all necessary files are included._
-
-Add to your page and it works!
-
-```jsx
+```tsx title="app/page.tsx"
 import ParticleButton from "@/components/kokonutui/particle-button";
 
 export default function Page() {
-    return <ParticleButton />;
+  return <ParticleButton />;
 }
 ```
 
-import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+Each component page lists the packages it installs above its demo. Prefer the CLI over copying the source: it brings every file and dependency the component needs.
 
-### 4. Using an AI assistant?
+## Use an AI agent
 
-KokonutUI works with the shadcn MCP server, so Claude Code, Cursor, VS Code, and Codex can browse and install components through natural language. See the [MCP Server guide](/docs/mcp) to set it up.
+Claude Code, Cursor, VS Code and Codex can find and install components for you through the shadcn MCP server. See [Agents](/docs/agents) to connect your editor and add a rules file.
 
-### 5. Optional dependencies
+## Monorepos
 
-Some components require additional libraries, listed at the bottom of each components. Make sure to install them to ensure the component works properly.
+In a monorepo, pass the workspace the component belongs to with `-c`:
 
-### 6. Monorepo
-
-For monorepo `shadcn/ui` CLI contain the options `-c` to the path to your workspace for exemple:
-
-<Tabs items={["bun", "npx", "pnpm"]}>
- 
-```bash tab="bun"
-bunx --bun shadcn@latest add @kokonutui/particle-button -c ./apps/www
-```
- 
-```bash tab="npx"
-npx shadcn@latest add @kokonutui/particle-button -c ./apps/www
-```
-
-```bash tab="pnpm"
-pnpm dlx shadcn@latest add @kokonutui/particle-button -c ./apps/www
-```
-
-</Tabs>
+<Command run="shadcn@latest add @kokonutui/particle-button -c ./apps/www" />

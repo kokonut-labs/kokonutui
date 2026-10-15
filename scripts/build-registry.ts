@@ -153,7 +153,7 @@ const getComponentsInfo = async (): Promise<ComponentInfo[]> => {
   try {
     const mdxFiles = await glob("content/docs/**/*.mdx", {
       cwd: REGISTRY_BASE_PATH,
-      ignore: ["content/docs/index.mdx", "content/docs/mcp.mdx"],
+      ignore: ["content/docs/index.mdx", "content/docs/agents.mdx"],
     });
     const components: ComponentInfo[] = [];
 
@@ -259,7 +259,7 @@ Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
 Agents can also browse and install components through the shadcn MCP server
 (npx shadcn@latest mcp) once the @kokonutui registry is configured in
-components.json. Setup guide: https://kokonutui.com/docs/mcp
+components.json. Setup guide: https://kokonutui.com/docs/agents
 
 The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 

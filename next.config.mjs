@@ -69,6 +69,17 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // The MCP guide grew into the Agents page.
+      {
+        source: "/docs/mcp",
+        destination: "/docs/agents",
+        permanent: true,
+      },
+      {
+        source: "/docs/mcp.md",
+        destination: "/docs/agents.md",
+        permanent: true,
+      },
       {
         source: "/components",
         destination: "/docs",

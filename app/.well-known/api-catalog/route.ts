@@ -26,9 +26,10 @@ export function GET() {
             title: "KokonutUI component documentation",
           },
           {
-            href: `${siteConfig.url}/docs/mcp`,
+            href: `${siteConfig.url}/docs/agents`,
             type: "text/html",
-            title: "Using the registry through the shadcn MCP server",
+            title:
+              "Using the registry from AI agents and the shadcn MCP server",
           },
           {
             href: `${siteConfig.url}/llms.txt`,

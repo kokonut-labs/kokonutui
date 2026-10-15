@@ -13,6 +13,16 @@ import { getParts } from "@/components/landing/home/parts";
 import { LEAF, META, MONO } from "@/components/landing/home/styles";
 import TocProBanner from "@/components/landing/toc-pro-banner";
 import { Release } from "@/components/mdx/changelog-release";
+import { DocsPre } from "@/components/mdx/code-block";
+import {
+  AgentEndpoints,
+  AgentPrompts,
+  AgentRules,
+  Command,
+  McpSetup,
+  Note,
+  SetupChoice,
+} from "@/components/mdx/docs-blocks";
 import { Preview, type PreviewProps } from "@/components/mdx/preview";
 import { PreviewClient } from "@/components/mdx/preview-client";
 import PreviewTemplate from "@/components/mdx/preview-template";
@@ -186,6 +196,14 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
           components={{
             ...defaultMdxComponents,
             a: createRelativeLink(source, page),
+            pre: DocsPre,
+            AgentEndpoints,
+            AgentPrompts,
+            AgentRules,
+            Command,
+            McpSetup,
+            Note,
+            SetupChoice,
             Preview: DocsPreview,
             PreviewClient: DocsPreviewClient,
             PreviewTemplate,

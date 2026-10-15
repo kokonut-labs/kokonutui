@@ -13,16 +13,10 @@ import {
   LINE,
   MONO,
 } from "@/components/landing/home/styles";
+import { useInstallVia, usePackageManager } from "@/components/mdx/docs-prefs";
 import { copyComponent } from "@/lib/action";
+import { componentPrompt, PACKAGE_MANAGERS, runWith } from "@/lib/agents";
 import { cn } from "@/lib/utils";
-
-const MANAGERS = [
-  { id: "bun", run: "bunx --bun" },
-  { id: "npm", run: "npx" },
-  { id: "pnpm", run: "pnpm dlx" },
-] as const;
-
-type Manager = (typeof MANAGERS)[number]["id"];
 
 const COPIED_MS = 1600;
 
@@ -35,8 +29,9 @@ const TAB =
   "inline-flex h-8 items-center gap-1.5 px-3 text-[12px] text-black/55 hover:text-black dark:text-white/55 dark:hover:text-white";
 
 /**
- * The install row above every demo: pick a package manager, then click the
- * command anywhere to copy it. v0 and the raw source sit beside the picker.
+ * The install row above every demo: a prompt for your agent first, or a
+ * package manager, then click the line anywhere to copy it. v0 and the raw
+ * source sit beside the picker.
  */
 export function InstallBar({
   name,
@@ -47,33 +42,48 @@ export function InstallBar({
   prePath: string;
   showSource?: boolean;
 }) {
-  const [manager, setManager] = useState<Manager>("bun");
+  const [manager, setManager] = usePackageManager();
+  const [via, setVia] = useInstallVia();
   const { copied, copy } = useCopy();
-  const run = MANAGERS.find((m) => m.id === manager)?.run ?? "npx";
-  const command = `${run} shadcn@latest add ${prePath}/${name}`;
+  const agent = via === "agent";
+  const command = agent
+    ? componentPrompt(name)
+    : runWith(manager, `shadcn@latest add ${prePath}/${name}`);
+  const tab = (selected: boolean) =>
+    cn(
+      TAB,
+      MONO,
+      "border-r",
+      LINE,
+      selected && "bg-[#f4f4f4] text-black dark:bg-[#161616] dark:text-white",
+      EASE_COLORS,
+      FOCUS_INSET
+    );
 
   return (
     <div className={cn("grid grid-cols-1 border-b", GRID, LINE)}>
       <div className={cn("flex flex-wrap items-stretch justify-between", CELL)}>
         <fieldset className="m-0 flex min-w-0 border-0 p-0">
-          <legend className="sr-only">Package manager</legend>
-          {MANAGERS.map((m) => {
-            const selected = m.id === manager;
+          <legend className="sr-only">Install with</legend>
+          <button
+            aria-pressed={agent}
+            className={tab(agent)}
+            onClick={() => setVia("agent")}
+            type="button"
+          >
+            Agent
+          </button>
+          {PACKAGE_MANAGERS.map((m) => {
+            const selected = !agent && m.id === manager;
             return (
               <button
                 aria-pressed={selected}
-                className={cn(
-                  TAB,
-                  MONO,
-                  "border-r",
-                  LINE,
-                  selected &&
-                    "bg-[#f4f4f4] text-black dark:bg-[#161616] dark:text-white",
-                  EASE_COLORS,
-                  FOCUS_INSET
-                )}
+                className={tab(selected)}
                 key={m.id}
-                onClick={() => setManager(m.id)}
+                onClick={() => {
+                  setVia("cli");
+                  setManager(m.id);
+                }}
                 type="button"
               >
                 {m.id}
@@ -102,7 +112,11 @@ export function InstallBar({
         </div>
       </div>
       <button
-        aria-label={copied ? "Copied" : `Copy the install command: ${command}`}
+        aria-label={
+          copied
+            ? "Copied"
+            : `Copy the install ${agent ? "prompt" : "command"}: ${command}`
+        }
         className={cn(
           "group flex w-full min-w-0 items-start gap-2.5 px-3 py-3 text-left text-[13px] leading-[1.6] hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
           MONO,
@@ -115,7 +129,7 @@ export function InstallBar({
         type="button"
       >
         <span aria-hidden className={LEAF}>
-          $
+          {agent ? "\u203A" : "$"}
         </span>
         <span className="wrap-anywhere min-w-0 flex-1">{command}</span>
         <CopyIconSwap
