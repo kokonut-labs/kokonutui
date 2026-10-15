@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import HeaderProSmall from "@/components/landing/header-pro-small";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, MONO } from "@/components/landing/home/styles";
+import { PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
 import { source } from "@/lib/source";
 import { cn } from "@/lib/utils";
 import { baseOptions } from "../layout.config";
@@ -48,6 +49,24 @@ function withCodes(tree: PageTree.Root): PageTree.Root {
             node.name
           ),
         children: node.children.map(visit),
+      };
+    }
+    // Templates are Pro, and the sidebar says so before anyone clicks; the
+    // page itself stays on this site.
+    if (node.type === "page" && node.url === PRO_TEMPLATES_PAGE) {
+      return {
+        ...node,
+        name: (
+          <span
+            className="flex w-full items-baseline justify-between gap-2"
+            key="name"
+          >
+            {node.name}
+            <span className={cn(MONO, "text-[#FF2D55] text-[10.5px]")}>
+              PRO
+            </span>
+          </span>
+        ),
       };
     }
     const code = node.type === "page" ? codes.get(node.url) : undefined;

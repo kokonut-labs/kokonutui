@@ -26,6 +26,7 @@ import {
 import { Preview, type PreviewProps } from "@/components/mdx/preview";
 import { PreviewClient } from "@/components/mdx/preview-client";
 import PreviewTemplate from "@/components/mdx/preview-template";
+import { ProTemplates } from "@/components/mdx/pro-templates";
 import WhatIncluded from "@/components/mdx/what-included";
 import { siteConfig } from "@/config/site";
 import {
@@ -207,6 +208,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
             Preview: DocsPreview,
             PreviewClient: DocsPreviewClient,
             PreviewTemplate,
+            ProTemplates,
             Release,
             WhatIncluded,
           }}

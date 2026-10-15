@@ -12,6 +12,7 @@ import {
   SETUP_URL,
 } from "@/lib/agents";
 import { RELEASES } from "@/lib/changelog";
+import { PRO_TEMPLATE_LIST, proTemplateUrl } from "@/lib/pro-templates";
 
 // Markdown for the docs' own MDX blocks, so the `.md` pages agents read carry
 // the same commands and files as the page, never raw JSX.
@@ -127,6 +128,12 @@ const setupChoice: Renderer = () =>
     "",
   ].join("\n");
 
+const proTemplates: Renderer = () =>
+  PRO_TEMPLATE_LIST.map(
+    (t) =>
+      `- **${t.name}** (${t.category}, $${t.price}): ${t.blurb} Live preview: ${t.previewLink} · Get it: ${proTemplateUrl(t.slug)}`
+  ).join("\n");
+
 export const BLOCK_RENDERERS: Record<string, Renderer> = {
   Command: command,
   Note: note,
@@ -136,4 +143,5 @@ export const BLOCK_RENDERERS: Record<string, Renderer> = {
   AgentEndpoints: agentEndpoints,
   Release: release,
   SetupChoice: setupChoice,
+  ProTemplates: proTemplates,
 };
