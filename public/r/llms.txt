@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 59 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 60 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -67,6 +67,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Tool Dock](https://kokonutui.com/docs/navigation/toolbar.md): An editor tool dock with a sliding selection plate, shortcut tooltips and flyouts that you can throw to any edge. Install: `npx shadcn@latest add @kokonutui/toolbar`
 - [Topo Background](https://kokonutui.com/docs/backgrounds/topo-background.md): A living contour map that drifts, rises under the cursor and ripples on click, built with React and Canvas. Install: `npx shadcn@latest add @kokonutui/topo-background`
 - [Typing Text](https://kokonutui.com/docs/texts/type-writer.md): Typewriter text that makes the odd typo and corrects it, erases by selecting, and blinks its caret only when idle, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/type-writer`
+- [Uptime Card](https://kokonutui.com/docs/cards/uptime-card.md): A status page card with 90 days per service that swell under the cursor, and a day you click opens its incident log. Install: `npx shadcn@latest add @kokonutui/uptime-card`
 - [V0 Button](https://kokonutui.com/docs/buttons/v0-button.md): Open in v0 button that sends a component registry JSON to v0.dev for instant editing, built with React, the shadcn Button, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/v0-button`
 - [Wheel Picker](https://kokonutui.com/docs/inputs/wheel-picker.md): iOS-style 3D drum picker with flick momentum, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/wheel-picker`
 - [Widget Grid](https://kokonutui.com/docs/cards/bento-grid.md): Dashboard widgets you lift, drag and resize on a 6-column grid, with spring physics and full keyboard support. Install: `npx shadcn@latest add @kokonutui/bento-grid`

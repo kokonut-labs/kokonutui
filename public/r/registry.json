@@ -688,6 +688,21 @@
       ]
     },
     {
+      "name": "uptime-card",
+      "type": "registry:component",
+      "title": "Uptime Card",
+      "description": "A status page card with 90 days per service that swell under the cursor, and a day you click opens its incident log.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/uptime-card.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",
