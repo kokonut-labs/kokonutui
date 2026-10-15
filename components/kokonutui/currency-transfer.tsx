@@ -70,14 +70,20 @@ const DEFAULT_TO: TransferAccount = {
 };
 
 const EASE_OUT_CSS = "cubic-bezier(0.23, 1, 0.32, 1)";
+const EASE_IN_OUT_CSS = "cubic-bezier(0.77, 0, 0.175, 1)";
 // Each step takes this long in the demo, and while processing.
 const STEP_MS = 1100;
 // Steps done at first render: the payment has already been taken.
 const FIRST_DONE = 1;
 // While processing, the run waits on the last step (arrival).
 const WAIT_AT = 3;
-const DIGIT_STAGGER_MS = 35;
-const DIGIT_ROLL_MS = 650;
+const DIGIT_STAGGER_MS = 30;
+// Longer than a UI transition on purpose: it is the one moment the card
+// explains (the money changing currency), and it happens once.
+const DIGIT_ROLL_MS = 550;
+// How long the rail takes to reach the next step; that step's spinner
+// waits for it, so progress reads as flowing down the line.
+const RAIL_MS = 350;
 const COPIED_MS = 1500;
 const NOT_LETTER = /[^\p{L}]+/u;
 
@@ -171,7 +177,7 @@ function SwapSymbol({
   showTo: boolean;
 }) {
   const face =
-    "col-start-1 row-start-1 text-right transition-[opacity,filter] duration-300 motion-reduce:transition-none";
+    "col-start-1 row-start-1 text-right transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-[opacity]";
   return (
     <span aria-hidden="true" className="inline-grid">
       <span className={cn(face, showTo && "opacity-0 blur-[3px]")}>{from}</span>
@@ -188,7 +194,7 @@ function StepNode({ state }: { state: StepState }) {
       {/* Pending: an empty ring. Active: the ring with a turning arc. */}
       <span
         className={cn(
-          "absolute inset-0 rounded-full border-[1.5px] transition-colors duration-300",
+          "absolute inset-0 rounded-full border-[1.5px] transition-colors duration-200 ease-out",
           (state === "pending" || state === "active") &&
             "border-zinc-200 dark:border-zinc-700",
           state === "done" &&
@@ -197,19 +203,26 @@ function StepNode({ state }: { state: StepState }) {
         )}
       />
       {state === "active" && (
-        <svg
-          aria-hidden="true"
-          className="absolute inset-0 animate-spin text-zinc-900 [animation-duration:900ms] motion-reduce:animate-none dark:text-zinc-100"
-          fill="none"
-          viewBox="0 0 20 20"
+        // Fades in once the rail has arrived, then turns. A quick turn
+        // reads as fast progress; reduced motion keeps the still arc.
+        <span
+          className="absolute inset-0 animate-[ct-in_200ms_ease-out_both] motion-reduce:animate-none"
+          style={{ animationDelay: `${RAIL_MS - 100}ms` }}
         >
-          <path
-            d="M10 1.25A8.75 8.75 0 0 1 18.75 10"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth="1.5"
-          />
-        </svg>
+          <svg
+            aria-hidden="true"
+            className="size-full animate-spin text-zinc-900 [animation-duration:750ms] motion-reduce:animate-none dark:text-zinc-100"
+            fill="none"
+            viewBox="0 0 20 20"
+          >
+            <path
+              d="M10 1.25A8.75 8.75 0 0 1 18.75 10"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="1.5"
+            />
+          </svg>
+        </span>
       )}
       {state === "done" && (
         <svg
@@ -254,7 +267,7 @@ function TxnId({ id }: { id: string }) {
   }, [copied]);
 
   const icon =
-    "col-start-1 row-start-1 size-3 transition-[opacity,filter] duration-150";
+    "col-start-1 row-start-1 size-3 transition-[opacity,filter] duration-150 ease-out";
   return (
     <button
       aria-label={copied ? "Reference copied" : `Copy reference ${id}`}
@@ -286,6 +299,8 @@ function TxnId({ id }: { id: string }) {
     </button>
   );
 }
+
+const STATUSES: TransferStatus[] = ["processing", "completed", "failed"];
 
 const PILL: Record<TransferStatus, { label: string; className: string }> = {
   processing: {
@@ -391,9 +406,11 @@ export default function CurrencyTransfer({
         className
       )}
     >
-      {/* Draws the step ticks; a scoped name so it can't clash with app CSS. */}
+      {/* Tick draw and text blur-in; scoped names so they cannot clash with app CSS. */}
       <style>
-        {"@keyframes ct-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}"}
+        {
+          "@keyframes ct-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}@keyframes ct-in{from{opacity:0;filter:blur(2px)}}"
+        }
       </style>
       <output aria-live="polite" className="sr-only">
         {arrived &&
@@ -418,13 +435,26 @@ export default function CurrencyTransfer({
             {toAccount}
           </p>
         </div>
+        {/* Every label sits in one cell, so the pill keeps its width and
+            the words crossfade instead of snapping. */}
         <span
           className={cn(
-            "inline-flex h-6 shrink-0 items-center rounded-full px-2 font-medium text-[11px] transition-colors duration-300",
+            "inline-grid h-6 shrink-0 items-center rounded-full px-2 font-medium text-[11px] transition-colors duration-200 ease-out",
             PILL[current].className
           )}
         >
-          {PILL[current].label}
+          {STATUSES.map((key) => (
+            <span
+              aria-hidden={key !== current}
+              className={cn(
+                "col-start-1 row-start-1 text-center transition-[opacity,filter] duration-200 ease-out motion-reduce:transition-[opacity]",
+                key === current ? "opacity-100" : "opacity-0 blur-[2px]"
+              )}
+              key={key}
+            >
+              {PILL[key].label}
+            </span>
+          ))}
         </span>
       </div>
 
@@ -456,14 +486,17 @@ export default function CurrencyTransfer({
               <div className="flex flex-col items-center">
                 <StepNode state={state} />
                 {!last && (
-                  // The rail fills down from each finished step.
+                  // When a step finishes, the rail runs down to the next one.
                   <span className="relative my-1 w-[1.5px] flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
                     <span
                       className={cn(
-                        "absolute inset-0 origin-top bg-zinc-900 transition-[scale] duration-500 motion-reduce:transition-none dark:bg-zinc-100",
-                        index < done - 1 ? "scale-y-100" : "scale-y-0"
+                        "absolute inset-0 origin-top bg-zinc-900 transition-[scale] motion-reduce:transition-none dark:bg-zinc-100",
+                        index < done ? "scale-y-100" : "scale-y-0"
                       )}
-                      style={{ transitionTimingFunction: EASE_OUT_CSS }}
+                      style={{
+                        transitionDuration: `${RAIL_MS}ms`,
+                        transitionTimingFunction: EASE_IN_OUT_CSS,
+                      }}
                     />
                   </span>
                 )}
@@ -471,30 +504,41 @@ export default function CurrencyTransfer({
               <div className={cn("min-w-0 flex-1", !last && "pb-4")}>
                 <p
                   className={cn(
-                    "text-sm leading-5 transition-colors duration-300",
+                    "text-sm leading-5 transition-colors duration-200 ease-out",
                     state === "pending"
                       ? "text-zinc-400 dark:text-zinc-500"
                       : "text-zinc-900 dark:text-zinc-100",
                     state === "failed" && "text-red-600 dark:text-red-400"
                   )}
                 >
-                  {state === "failed" ? "Couldn't complete" : step.title}
+                  {/* Keyed, so changed words blur in rather than snap. */}
+                  <span
+                    className="block animate-[ct-in_200ms_ease-out_both] motion-reduce:animate-none"
+                    key={state === "failed" ? "failed" : step.title}
+                  >
+                    {state === "failed" ? "Couldn't complete" : step.title}
+                  </span>
                 </p>
                 <p
                   className={cn(
-                    "mt-0.5 text-xs tabular-nums transition-colors duration-300",
+                    "mt-0.5 text-xs tabular-nums transition-colors duration-200 ease-out",
                     state === "pending"
                       ? "text-zinc-400 dark:text-zinc-500"
                       : "text-zinc-500 dark:text-zinc-400"
                   )}
                 >
-                  {state === "failed"
-                    ? `Refunded to ${fromAccount}`
-                    : step.detail}
+                  <span
+                    className="block animate-[ct-in_200ms_ease-out_both] motion-reduce:animate-none"
+                    key={state === "failed" ? "failed" : step.detail}
+                  >
+                    {state === "failed"
+                      ? `Refunded to ${fromAccount}`
+                      : step.detail}
+                  </span>
                 </p>
                 {state === "failed" && onRetry && (
                   <button
-                    className="mt-2 inline-flex h-7 items-center gap-1.5 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs transition-colors duration-150 hover:bg-zinc-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                    className="mt-2 inline-flex h-7 animate-[ct-in_200ms_ease-out_150ms_both] items-center gap-1.5 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs transition-colors duration-150 hover:bg-zinc-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/50 motion-reduce:animate-none dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
                     onClick={onRetry}
                     type="button"
                   >

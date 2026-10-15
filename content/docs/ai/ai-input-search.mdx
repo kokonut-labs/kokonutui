@@ -1,7 +1,7 @@
 ---
 title: AI Input Search
-description: "AI search box where site:, after: and type: turn into filter chips as you type, with Web, News, Papers and Code scopes and a Deep research mode. Built with React, Tailwind CSS and Motion."
-keywords: ["ai search", "search box", "search operators", "filters", "deep research", "perplexity"]
+description: AI search input with Quick and Research modes and a live trace underneath that stacks each source as it is read, times the run and opens into the full source list. Built with React, Tailwind CSS and Motion.
+keywords: ["ai search", "search box", "deep research", "sources", "citations", "perplexity"]
 icon: Globe
 ---
 
@@ -14,20 +14,22 @@ import AI_Input_Search from "@/components/kokonutui/ai-input-search";
 
 ## Usage
 
-Type an operator and a space, for example `site:github.com `, and it becomes a chip. Backspace in an empty field opens the last chip back up as text. `onSubmit` gets the query with the operators taken out.
+With no `onSearch` the component plays a pretend search. Wire it to your own search by calling `onSource` as each source comes in and resolving when the answer is ready. Stop, or Esc, aborts `signal`.
 
 ```tsx
 <AI_Input_Search
-  scopes={["Web", "News", "Papers", "Code"]}
-  onSubmit={(query, { filters, scope, deep }) => search(query, filters, scope, deep)}
+  onSearch={async (query, { mode, signal, onSource }) => {
+    for await (const source of mySearch(query, { deep: mode === "research", signal })) {
+      onSource({ domain: source.host, title: source.title });
+    }
+  }}
 />
 ```
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `placeholder` | `string` | `"Search anything"` | Placeholder text. |
-| `scopes` | `string[]` | Web, News, Papers, Code | Where to search. |
-| `defaultScope` | `string` | first scope | Scope selected at first. |
-| `defaultDeep` | `boolean` | `false` | Start with Deep research on. |
-| `onSubmit` | `(query, { filters, scope, deep }) => void` | — | `filters` is `{ kind: "site" \| "after" \| "before" \| "type"; value: string }[]`. |
+| `placeholder` | `string` | `"Ask anything"` | Placeholder in Quick mode. |
+| `researchPlaceholder` | `string` | `"Research a topic in depth"` | Placeholder in Research mode. |
+| `defaultMode` | `"quick" \| "research"` | `"quick"` | Mode selected at first. |
+| `onSearch` | `(query, { mode, signal, onSource }) => Promise<void> \| void` | — | Runs the search. Omit it for the demo. |
 | `className` | `string` | — | Extra classes for the wrapper. |
