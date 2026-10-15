@@ -48,7 +48,14 @@ function live<M extends { default: unknown }>(
 export const LIVE: Record<string, LiveEntry> = {
   "apple-activity-card": live(
     () => import("@/components/kokonutui/apple-activity-card"),
-    ({ default: C }) => <C />,
+    // The cover tile is narrower than the card's side-by-side breakpoint, so
+    // the card is laid out at that width with its title hidden (the plate
+    // names it), and the wrapper hands Fit only the rings and legend.
+    ({ default: C }) => (
+      <div className="flex w-[384px] justify-center">
+        <C className="w-[448px] max-w-none shrink-0 p-0 [&_h2]:hidden" />
+      </div>
+    ),
     "Rings fill as it mounts"
   ),
   "ai-prompt": live(
