@@ -527,6 +527,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "scroll-index",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/scroll-index.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "plucked-text",
     type: "registry:component",
     dependencies: [],
