@@ -494,12 +494,11 @@ export const component: Registry = [
     ],
   },
   {
-    name: "order-tracker",
+    name: "spending-ring",
     type: "registry:component",
-    dependencies: ["lucide-react"],
     files: [
       {
-        path: "components/kokonutui/order-tracker.tsx",
+        path: "components/kokonutui/spending-ring.tsx",
         type: "registry:component",
       },
     ],
