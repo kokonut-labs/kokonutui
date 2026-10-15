@@ -640,6 +640,22 @@
       ]
     },
     {
+      "name": "ai-citations",
+      "type": "registry:component",
+      "title": "AI Inline Citations",
+      "description": "An answer with source chips beside each claim. One preview glides between chips and lights up the sentence it backs.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-citations.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "card-stack",
       "type": "registry:component",
       "title": "Throw Deck",
