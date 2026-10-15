@@ -7,14 +7,13 @@
       "name": "ai-prompt",
       "type": "registry:component",
       "title": "AI Input Selector",
-      "description": "AI chat input with a model picker, file chips you can drop or paste, and Stop while replying.",
+      "description": "AI chat input with a model menu, a separate Effort control, file chips you can drop or paste, a / command menu, and Stop while replying.",
       "dependencies": [
         "lucide-react",
         "motion"
       ],
       "registryDependencies": [
         "textarea",
-        "button",
         "dropdown-menu"
       ],
       "files": [
@@ -25,14 +24,6 @@
         {
           "path": "hooks/use-auto-resize-textarea.ts",
           "type": "registry:hook"
-        },
-        {
-          "path": "components/icons/anthropic.tsx",
-          "type": "registry:component"
-        },
-        {
-          "path": "components/icons/anthropic-dark.tsx",
-          "type": "registry:component"
         }
       ]
     },
@@ -180,7 +171,7 @@
       "name": "ai-input-search",
       "type": "registry:component",
       "title": "AI Input Search",
-      "description": "AI search chat input with toggleable web search mode, file attachment and auto-resizing textarea. Built with React, Tailwind CSS and Motion.",
+      "description": "AI search input with Quick and Research modes and a live trace underneath that stacks each source as it is read, times the run and opens into the full source list. Built with React, Tailwind CSS and Motion.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -216,14 +207,9 @@
       "name": "currency-transfer",
       "type": "registry:component",
       "title": "Currency Transfer",
-      "description": "Currency transfer card with odometer amounts, a live rate, a chip that carries the money across and a progress arc, built with React and Motion.",
+      "description": "Transfer tracker that converts the amount in place, walks through each step on a filling rail, and ends with a copyable reference. Built with React and Tailwind CSS.",
       "dependencies": [
-        "lucide-react",
-        "motion"
-      ],
-      "registryDependencies": [
-        "card",
-        "tooltip"
+        "lucide-react"
       ],
       "files": [
         {
