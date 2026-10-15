@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 65 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 66 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -19,6 +19,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [AI Inline Citations](https://kokonutui.com/docs/ai/ai-citations.md): An answer with source chips beside each claim. One preview glides between chips and lights up the sentence it backs. Install: `npx shadcn@latest add @kokonutui/ai-citations`
 - [AI Input Search](https://kokonutui.com/docs/ai/ai-input-search.md): AI search chat input with toggleable web search mode, file attachment and auto-resizing textarea. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/ai-input-search`
 - [AI Input Selector](https://kokonutui.com/docs/ai/ai-prompt.md): AI chat input with a model picker, file chips you can drop or paste, and Stop while replying. Install: `npx shadcn@latest add @kokonutui/ai-prompt`
+- [AI Model Selector](https://kokonutui.com/docs/ai/ai-model-selector.md): Pick a model and how hard it thinks. Effort is a detent track that reshapes for each model and keeps your level when you switch. Install: `npx shadcn@latest add @kokonutui/ai-model-selector`
 - [AI State Loading](https://kokonutui.com/docs/ai/ai-loading.md): Agent progress as a list of steps with a live log, elapsed time and a summary when done. Install: `npx shadcn@latest add @kokonutui/ai-loading`
 - [AI Text Loading](https://kokonutui.com/docs/ai/ai-text-loading.md): AI thinking text with a soft wave through the letters and words that swap letter by letter. Install: `npx shadcn@latest add @kokonutui/ai-text-loading`
 - [AI Tool Approval](https://kokonutui.com/docs/ai/ai-tool-approval.md): Approve or deny an agent's tool calls. Destructive calls need a press and hold, and decided calls fold into a trace with their output. Install: `npx shadcn@latest add @kokonutui/ai-tool-approval`

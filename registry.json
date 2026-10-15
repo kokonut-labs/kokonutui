@@ -672,6 +672,22 @@
       ]
     },
     {
+      "name": "ai-model-selector",
+      "type": "registry:component",
+      "title": "AI Model Selector",
+      "description": "Pick a model and how hard it thinks. Effort is a detent track that reshapes for each model and keeps your level when you switch.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-model-selector.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "card-stack",
       "type": "registry:component",
       "title": "Throw Deck",
