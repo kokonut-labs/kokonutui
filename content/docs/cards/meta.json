@@ -11,6 +11,9 @@
     "notification-stack",
     "liquid-gauge",
     "activity-terrain",
-    "receipt-printer"
+    "receipt-printer",
+    "strip-chart",
+    "bean-machine",
+    "punch-card"
   ]
 }

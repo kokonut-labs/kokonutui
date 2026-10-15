@@ -473,6 +473,36 @@ export const component: Registry = [
     ],
   },
   {
+    name: "strip-chart",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/strip-chart.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "bean-machine",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/bean-machine.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "punch-card",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/punch-card.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
