@@ -12,8 +12,8 @@
     "liquid-gauge",
     "activity-terrain",
     "receipt-printer",
-    "strip-chart",
-    "bean-machine",
-    "punch-card"
+    "metric-card",
+    "uptime-card",
+    "order-tracker"
   ]
 }

@@ -473,31 +473,33 @@ export const component: Registry = [
     ],
   },
   {
-    name: "strip-chart",
+    name: "metric-card",
     type: "registry:component",
     files: [
       {
-        path: "components/kokonutui/strip-chart.tsx",
+        path: "components/kokonutui/metric-card.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "bean-machine",
+    name: "uptime-card",
     type: "registry:component",
+    dependencies: ["lucide-react"],
     files: [
       {
-        path: "components/kokonutui/bean-machine.tsx",
+        path: "components/kokonutui/uptime-card.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "punch-card",
+    name: "order-tracker",
     type: "registry:component",
+    dependencies: ["lucide-react"],
     files: [
       {
-        path: "components/kokonutui/punch-card.tsx",
+        path: "components/kokonutui/order-tracker.tsx",
         type: "registry:component",
       },
     ],
