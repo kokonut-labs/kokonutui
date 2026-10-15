@@ -61,12 +61,12 @@ export const component: Registry = [
     ],
   },
   {
-    name: "sand-garden",
+    name: "halftone-background",
     type: "registry:component",
     dependencies: [],
     files: [
       {
-        path: "components/kokonutui/sand-garden.tsx",
+        path: "components/kokonutui/halftone-background.tsx",
         type: "registry:component",
       },
     ],
@@ -538,12 +538,12 @@ export const component: Registry = [
     ],
   },
   {
-    name: "peek-preview",
+    name: "scroll-index",
     type: "registry:component",
-    dependencies: ["lucide-react"],
+    dependencies: [],
     files: [
       {
-        path: "components/kokonutui/peek-preview.tsx",
+        path: "components/kokonutui/scroll-index.tsx",
         type: "registry:component",
       },
     ],
