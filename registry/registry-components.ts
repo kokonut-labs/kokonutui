@@ -61,6 +61,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "sand-garden",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/sand-garden.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "shape-hero",
     type: "registry:component",
     files: [
@@ -127,6 +138,17 @@ export const component: Registry = [
       {
         path: "hooks/use-auto-resize-textarea.ts",
         type: "registry:hook",
+      },
+    ],
+  },
+  {
+    name: "cradle-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/cradle-text.tsx",
+        type: "registry:component",
       },
     ],
   },
@@ -511,6 +533,17 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/swoosh-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "peek-preview",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/peek-preview.tsx",
         type: "registry:component",
       },
     ],
