@@ -3,8 +3,8 @@
 /**
  * @author: @dorianbaffier
  * @description: Currency Transfer
- * @version: 2.1.0
- * @date: 2026-10-14
+ * @version: 2.2.0
+ * @date: 2026-10-15
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
@@ -14,7 +14,10 @@ import {
   ArrowDownIcon,
   ArrowUpDown,
   ArrowUpIcon,
+  CheckIcon,
+  CopyIcon,
   InfoIcon,
+  RotateCcwIcon,
   XIcon,
 } from "lucide-react";
 import {
@@ -65,6 +68,8 @@ export interface CurrencyTransferProps {
   status?: TransferStatus;
   /** BCP 47 locale for amounts, symbols and the rate. */
   locale?: string;
+  /** Shows a Retry button when the transfer has failed. */
+  onRetry?: () => void;
   className?: string;
 }
 
@@ -399,12 +404,15 @@ function StatusBadge({
           stroke="currentColor"
           strokeWidth="2.5"
         />
+        {/* Neutral while it runs; green only once the money has landed,
+            so the colour itself says "done". */}
         <circle
-          className={
-            status === "failed"
-              ? "text-red-500"
-              : "text-emerald-500 dark:text-emerald-400"
-          }
+          className={cn(
+            "transition-colors duration-300",
+            status === "failed" && "text-red-500",
+            status === "completed" && "text-emerald-500 dark:text-emerald-400",
+            status === "processing" && "text-zinc-900 dark:text-zinc-100"
+          )}
           cx="50"
           cy="50"
           fill="none"
@@ -457,7 +465,8 @@ function StatusBadge({
           {status === "processing" && (
             <ArrowUpDown
               aria-hidden="true"
-              className="h-10 w-10 text-emerald-500 dark:text-emerald-400"
+              className="h-10 w-10 text-zinc-900 dark:text-zinc-100"
+              strokeWidth={2.25}
             />
           )}
         </motion.div>
@@ -467,10 +476,60 @@ function StatusBadge({
 }
 
 const TITLES: Record<TransferStatus, string> = {
-  processing: "Transfer in Progress",
-  completed: "Transfer Completed",
-  failed: "Transfer Failed",
+  processing: "Transfer in progress",
+  completed: "Transfer complete",
+  failed: "Transfer failed",
 };
+
+const COPIED_MS = 1500;
+
+/** The reference, with a copy button that confirms in place. */
+function TxnId({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) {
+      return;
+    }
+    const timer = setTimeout(() => setCopied(false), COPIED_MS);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  return (
+    <button
+      aria-label={
+        copied ? "Transaction ID copied" : `Copy transaction ID ${id}`
+      }
+      className="-my-1 inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-zinc-500 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+      onClick={() => {
+        navigator.clipboard
+          ?.writeText(id)
+          .then(() => setCopied(true))
+          .catch(() => {
+            // Clipboard blocked (permissions, insecure origin): no tick.
+          });
+      }}
+      type="button"
+    >
+      {id}
+      {/* Both icons share one cell and crossfade, so nothing shifts. */}
+      <span aria-hidden="true" className="grid size-3 place-items-center">
+        <CopyIcon
+          className={cn(
+            "col-start-1 row-start-1 size-3 transition-[opacity,filter] duration-150",
+            copied ? "opacity-0 blur-[2px]" : "opacity-100"
+          )}
+        />
+        <CheckIcon
+          className={cn(
+            "col-start-1 row-start-1 size-3 text-emerald-500 transition-[opacity,filter] duration-150",
+            copied ? "opacity-100" : "opacity-0 blur-[2px]"
+          )}
+          strokeWidth={3}
+        />
+      </span>
+    </button>
+  );
+}
 
 /**
  * Wobbles the rate a little while the transfer is processing, as a live
@@ -585,6 +644,7 @@ export default function CurrencyTransfer({
   timestamp = "10:45 AM",
   status,
   locale = "en-US",
+  onRetry,
   className,
 }: CurrencyTransferProps = {}) {
   const reduceMotion = useReducedMotion() ?? false;
@@ -676,7 +736,7 @@ export default function CurrencyTransfer({
               <AnimatePresence initial={false} mode="wait">
                 <motion.h2
                   animate="animate"
-                  className="font-semibold text-lg text-zinc-900 uppercase tracking-wide dark:text-zinc-100"
+                  className="font-semibold text-lg text-zinc-900 tracking-tight dark:text-zinc-100"
                   exit="exit"
                   initial="initial"
                   key={`${currentStatus}-title`}
@@ -689,19 +749,29 @@ export default function CurrencyTransfer({
                 <motion.div
                   animate="animate"
                   className={cn(
-                    "font-medium text-xs",
+                    "flex min-h-6 items-center justify-center gap-2 text-xs",
                     failed
                       ? "text-red-600 dark:text-red-400"
-                      : "text-emerald-600 dark:text-emerald-400"
+                      : "text-zinc-500 dark:text-zinc-400"
                   )}
                   exit="exit"
                   initial="initial"
                   key={`${currentStatus}-detail`}
                   variants={swap}
                 >
-                  {completed && `Transaction ID: ${txnId}`}
-                  {failed && "Please try again"}
-                  {processing && "Processing Transaction..."}
+                  {completed && <TxnId id={txnId} />}
+                  {failed && "Nothing was sent."}
+                  {failed && onRetry && (
+                    <button
+                      className="-my-1 inline-flex items-center gap-1 rounded-md px-1.5 py-1 font-medium text-zinc-900 transition-colors duration-150 hover:bg-zinc-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                      onClick={onRetry}
+                      type="button"
+                    >
+                      <RotateCcwIcon aria-hidden="true" className="size-3" />
+                      Retry
+                    </button>
+                  )}
+                  {processing && "Converting at the live rate…"}
                 </motion.div>
               </AnimatePresence>
 
@@ -747,8 +817,7 @@ export default function CurrencyTransfer({
 
               <div className="mt-2 flex items-center justify-center gap-2 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
                 <span>
-                  {processing ? "Live rate" : "Exchange Rate"}: 1{" "}
-                  {from.currency} ={" "}
+                  {processing ? "Live rate" : "Rate"}: 1 {from.currency} ={" "}
                   <RollingNumber value={formatNumber(liveRate, locale, 4)} />{" "}
                   {to.currency}
                 </span>

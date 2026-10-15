@@ -3,8 +3,8 @@
 /**
  * @author: @kokonutui
  * @description: AI Prompt Input
- * @version: 1.0.0
- * @date: 2025-06-26
+ * @version: 1.1.0
+ * @date: 2026-10-15
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
@@ -12,7 +12,7 @@
 
 import {
   AlignLeft,
-  ArrowRight,
+  ArrowUp,
   Bot,
   Check,
   ChevronDown,
@@ -26,8 +26,6 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
-import Anthropic from "@/components/icons/anthropic";
-import AnthropicDark from "@/components/icons/anthropic-dark";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -105,8 +103,12 @@ interface AIPromptProps {
   models?: string[];
   defaultModel?: string;
   placeholder?: string;
+  /** One line above the box, e.g. a promo. Pass "" to hide the header. */
   headerText?: string;
+  /** Label of the header button, which switches to `promotedModel`. */
   headerAction?: string;
+  /** The model the header talks about; its icon leads the header. */
+  promotedModel?: string;
   /**
    * Sends the message. Return a promise to show the Stop button until it
    * settles; `signal` aborts when the user presses Stop. Without it, the
@@ -285,26 +287,56 @@ function AttachmentChip({
   );
 }
 
+/** Bolds the part of the label the user has typed after "/". */
+function MatchedLabel({ label, query }: { label: string; query: string }) {
+  const start = query ? label.toLowerCase().indexOf(query) : -1;
+  if (start < 0) {
+    return <>{label}</>;
+  }
+  const end = start + query.length;
+  return (
+    <>
+      {label.slice(0, start)}
+      <span className="font-medium text-black dark:text-white">
+        {label.slice(start, end)}
+      </span>
+      {label.slice(end)}
+    </>
+  );
+}
+
+function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="inline-flex h-4 min-w-4 items-center justify-center rounded bg-black/5 px-1 font-sans text-[10px] text-black/60 dark:bg-white/10 dark:text-white/60">
+      {children}
+    </kbd>
+  );
+}
+
 function CommandMenu({
   id,
   commands,
+  query,
   activeIndex,
   onHover,
   onSelect,
 }: {
   id: string;
   commands: PromptCommand[];
+  query: string | null;
   activeIndex: number;
   onHover: (index: number) => void;
   onSelect: (command: PromptCommand) => void;
 }) {
+  // Opened by typing, so it only fades: nothing travels between the
+  // keystroke and the list.
   return (
     <motion.div
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="absolute inset-x-0 bottom-full z-10 mb-2 origin-bottom rounded-xl bg-white p-1 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
-      exit={{ opacity: 0, y: 2, scale: 0.98, transition: { duration: 0.1 } }}
-      initial={{ opacity: 0, y: 4, scale: 0.98 }}
-      transition={{ duration: 0.15, ease: EASE_OUT }}
+      animate={{ opacity: 1 }}
+      className="absolute inset-x-0 bottom-full z-10 mb-2 rounded-xl bg-white p-1 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
+      exit={{ opacity: 0, transition: { duration: 0.08 } }}
+      initial={{ opacity: 0 }}
+      transition={{ duration: 0.12, ease: EASE_OUT }}
     >
       {/* The highlight follows the keyboard instantly, without a transition. */}
       <div aria-label="Commands" id={id} role="listbox">
@@ -327,8 +359,8 @@ function CommandMenu({
             <span className="flex size-6 shrink-0 items-center justify-center text-black/50 dark:text-white/60 [&_svg]:size-4">
               {command.icon ?? <Slash />}
             </span>
-            <span className="text-black text-sm dark:text-white">
-              {command.label}
+            <span className="shrink-0 text-black/80 text-sm dark:text-white/80">
+              <MatchedLabel label={command.label} query={query ?? ""} />
             </span>
             {command.description && (
               <span className="min-w-0 truncate text-black/40 text-xs dark:text-white/40">
@@ -337,6 +369,21 @@ function CommandMenu({
             )}
           </div>
         ))}
+      </div>
+      <div className="mt-1 flex items-center gap-3 border-black/5 border-t px-2 pt-1.5 pb-1 text-[11px] text-black/40 dark:border-white/5 dark:text-white/40">
+        <span className="flex items-center gap-1">
+          <Kbd>↑</Kbd>
+          <Kbd>↓</Kbd>
+          to move
+        </span>
+        <span className="flex items-center gap-1">
+          <Kbd>↵</Kbd>
+          to pick
+        </span>
+        <span className="flex items-center gap-1">
+          <Kbd>esc</Kbd>
+          to close
+        </span>
       </div>
     </motion.div>
   );
@@ -399,10 +446,12 @@ function SendButton({
       className={cn(
         "relative size-8 rounded-lg",
         "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500",
-        "transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
-        responding
-          ? "bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80"
-          : "bg-black/5 hover:bg-black/10 disabled:pointer-events-none dark:bg-white/5 dark:hover:bg-white/10"
+        "transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
+        // Fills in once there is something to send, so the button says
+        // "ready" before it is pressed. Stop keeps the same fill.
+        responding || canSend
+          ? "bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/85"
+          : "bg-black/5 text-black/30 dark:bg-white/5 dark:text-white/30"
       )}
       disabled={!(responding || canSend)}
       onClick={responding ? onStop : onSend}
@@ -415,12 +464,7 @@ function SendButton({
           responding ? "opacity-0 blur-[2px]" : "opacity-100 blur-0"
         )}
       >
-        <ArrowRight
-          className={cn(
-            "h-4 w-4 transition-opacity duration-200 dark:text-white",
-            canSend ? "opacity-100" : "opacity-30"
-          )}
-        />
+        <ArrowUp className="size-4" strokeWidth={2.25} />
       </span>
       <span
         aria-hidden="true"
@@ -435,12 +479,65 @@ function SendButton({
   );
 }
 
+function PromoHeader({
+  model,
+  text,
+  action,
+  canSwitch,
+  inUse,
+  onAction,
+}: {
+  model: string;
+  text: string;
+  action: string;
+  /** False when the promoted model is not in the menu: no button then. */
+  canSwitch: boolean;
+  inUse: boolean;
+  onAction: () => void;
+}) {
+  return (
+    <div className="flex h-8 items-center gap-2 pr-1 pl-2.5 text-xs">
+      <span className="flex size-3.5 shrink-0 items-center justify-center text-black dark:text-white [&_svg]:size-3.5">
+        {getModelIcon(model)}
+      </span>
+      <p className="min-w-0 flex-1 truncate text-black/70 dark:text-white/70">
+        {text}
+      </p>
+      {action && canSwitch && (
+        <button
+          className={cn(
+            "flex h-6 shrink-0 items-center gap-1 rounded-md px-2 font-medium",
+            "transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
+            "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500",
+            inUse
+              ? "text-black/40 dark:text-white/40"
+              : "text-black hover:bg-black/5 dark:text-white dark:hover:bg-white/10"
+          )}
+          disabled={inUse}
+          onClick={onAction}
+          type="button"
+        >
+          {inUse ? (
+            <>
+              <Check aria-hidden="true" className="size-3" />
+              In use
+            </>
+          ) : (
+            action
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function AI_Prompt({
   models = DEFAULT_MODELS,
-  defaultModel = "Claude Fable 5",
-  placeholder = "What can I do for you? Type / for commands",
-  headerText = "is free this weekend!",
-  headerAction = "Ship Now!",
+  defaultModel = "GPT-5.6",
+  placeholder = "Ask anything. Type / for commands",
+  headerText = "Claude Fable 5 is free this weekend",
+  headerAction = "Try it",
+  promotedModel = "Claude Fable 5",
   onSubmit,
   onStop,
   onAttach,
@@ -457,6 +554,8 @@ export default function AI_Prompt({
   const [isDragging, setIsDragging] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const nextIdRef = useRef(0);
+  // The last message sent, for ↑ in an empty prompt (as in a terminal).
+  const lastSentRef = useRef("");
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 72,
     maxHeight: 300,
@@ -521,6 +620,7 @@ export default function AI_Prompt({
     abortRef.current = controller;
     const files = attachments.map((a) => a.file);
     const sentCommand = command;
+    lastSentRef.current = value;
     setValue("");
     setAttachments([]);
     setCommand(null);
@@ -570,6 +670,32 @@ export default function AI_Prompt({
     return false;
   };
 
+  // ↑ in an empty prompt brings the last message back to edit.
+  const recallLast = () => {
+    setValue(lastSentRef.current);
+    // After React writes the value: grow to fit, caret at the end.
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      adjustHeight();
+      el?.setSelectionRange(el.value.length, el.value.length);
+    });
+  };
+
+  const handleEmptyKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "ArrowUp" && lastSentRef.current) {
+      e.preventDefault();
+      recallLast();
+      return true;
+    }
+    // Backspace in an empty prompt takes the command off first.
+    if (e.key === "Backspace" && command) {
+      e.preventDefault();
+      setCommand(null);
+      return true;
+    }
+    return false;
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.nativeEvent.isComposing) {
       return;
@@ -577,10 +703,7 @@ export default function AI_Prompt({
     if (menuOpen && handleMenuKey(e)) {
       return;
     }
-    // Backspace in an empty prompt takes the command off first.
-    if (e.key === "Backspace" && command && value === "") {
-      e.preventDefault();
-      setCommand(null);
+    if (value === "" && handleEmptyKey(e)) {
       return;
     }
     // Enter during IME composition confirms the candidate; it must not submit.
@@ -598,19 +721,20 @@ export default function AI_Prompt({
 
   return (
     <div className={cn("w-full max-w-md py-4", className)}>
-      <div className="rounded-2xl bg-black/5 p-1.5 pt-4 dark:bg-white/5">
-        <div className="mx-2 mb-2.5 flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2">
-            <Anthropic className="h-3.5 w-3.5 text-black dark:hidden" />
-            <AnthropicDark className="hidden h-3.5 w-3.5 dark:block" />
-            <p className="text-black text-xs tracking-tighter dark:text-white/90">
-              {headerText}
-            </p>
-          </div>
-          <p className="text-black text-xs tracking-tighter dark:text-white/90">
-            {headerAction}
-          </p>
-        </div>
+      <div className="rounded-2xl bg-black/5 p-1.5 dark:bg-white/5">
+        {headerText && (
+          <PromoHeader
+            action={headerAction}
+            canSwitch={models.includes(promotedModel)}
+            inUse={selectedModel === promotedModel}
+            model={promotedModel}
+            onAction={() => {
+              setSelectedModel(promotedModel);
+              textareaRef.current?.focus();
+            }}
+            text={headerText}
+          />
+        )}
         {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions: drop target for files; keyboard users have the attach button */}
         <div
           className={cn(
@@ -687,6 +811,7 @@ export default function AI_Prompt({
                 id={menuId}
                 onHover={setMenuIndex}
                 onSelect={pickCommand}
+                query={slashQuery}
               />
             )}
           </AnimatePresence>
@@ -698,7 +823,7 @@ export default function AI_Prompt({
             aria-controls={menuOpen ? menuId : undefined}
             aria-expanded={menuOpen}
             className={cn(
-              "w-full resize-none rounded-xl rounded-b-none border-none bg-black/5 px-4 py-3 placeholder:text-black/70 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-white/5 dark:text-white dark:placeholder:text-white/70",
+              "w-full resize-none rounded-xl rounded-b-none border-none bg-black/5 px-4 py-3 text-black leading-relaxed placeholder:text-black/40 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40",
               "min-h-[72px]",
               (attachments.length > 0 || command) && "rounded-t-none"
             )}
@@ -718,7 +843,9 @@ export default function AI_Prompt({
                 addFiles(e.clipboardData.files);
               }
             }}
-            placeholder={placeholder}
+            placeholder={
+              responding ? "Replying… Esc to stop, or keep typing" : placeholder
+            }
             ref={textareaRef}
             value={value}
           />
@@ -728,7 +855,7 @@ export default function AI_Prompt({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    className="relative flex h-8 items-center gap-1 rounded-md pr-2 pl-1 text-xs hover:bg-black/10 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:ring-offset-0 dark:text-white dark:hover:bg-white/10"
+                    className="group relative flex h-8 items-center gap-1 rounded-lg pr-1.5 pl-2 text-xs hover:bg-black/5 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:ring-offset-0 data-[state=open]:bg-black/5 dark:text-white dark:data-[state=open]:bg-white/10 dark:hover:bg-white/10"
                     variant="ghost"
                   >
                     <AnimatePresence initial={false} mode="popLayout">
@@ -737,7 +864,7 @@ export default function AI_Prompt({
                           opacity: 1,
                           y: 0,
                         }}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1.5"
                         exit={{
                           opacity: 0,
                           y: labelOffset,
@@ -754,24 +881,38 @@ export default function AI_Prompt({
                       >
                         {getModelIcon(selectedModel)}
                         {selectedModel}
-                        <ChevronDown className="h-3 w-3 opacity-50" />
                       </motion.div>
                     </AnimatePresence>
+                    {/* Outside the swap, so it doesn't jump on every pick. */}
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="size-3 opacity-50 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-data-[state=open]:rotate-180"
+                    />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="min-w-[10rem] border-black/10 dark:border-white/10">
+                {/* Opens upward, since the prompt sits at the bottom of a
+                    chat, and grows out of the trigger. */}
+                <DropdownMenuContent
+                  align="start"
+                  className="min-w-48 origin-(--radix-dropdown-menu-content-transform-origin) rounded-xl border-black/10 p-1 dark:border-white/10 dark:bg-zinc-900"
+                  side="top"
+                  sideOffset={8}
+                >
                   {models.map((model) => (
                     <DropdownMenuItem
-                      className="flex items-center justify-between gap-2"
+                      className="flex h-8 items-center justify-between gap-2 rounded-lg px-2 text-xs"
                       key={model}
                       onSelect={() => setSelectedModel(model)}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 [&_svg]:size-3.5">
                         {getModelIcon(model)}
                         <span>{model}</span>
                       </div>
                       {selectedModel === model && (
-                        <Check className="h-4 w-4 text-blue-500" />
+                        <Check
+                          aria-hidden="true"
+                          className="size-3.5 text-black dark:text-white"
+                        />
                       )}
                     </DropdownMenuItem>
                   ))}
@@ -780,11 +921,12 @@ export default function AI_Prompt({
               <div className="mx-0.5 h-4 w-px bg-black/10 dark:bg-white/10" />
               <label
                 className={cn(
-                  "cursor-pointer rounded-lg bg-black/5 p-2 dark:bg-white/5",
-                  "hover:bg-black/10 has-focus-visible:ring-1 has-focus-visible:ring-blue-500 has-focus-visible:ring-offset-0 dark:hover:bg-white/10",
-                  "text-black/40 hover:text-black dark:text-white/40 dark:hover:text-white",
+                  "flex size-8 cursor-pointer items-center justify-center rounded-lg",
+                  "hover:bg-black/5 has-focus-visible:ring-1 has-focus-visible:ring-blue-500 has-focus-visible:ring-offset-0 dark:hover:bg-white/10",
+                  "text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white",
                   "transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                 )}
+                title="Attach files, or drop or paste them"
               >
                 <input
                   aria-label="Attach files"
@@ -799,7 +941,7 @@ export default function AI_Prompt({
                   }}
                   type="file"
                 />
-                <Paperclip className="h-4 w-4 transition-colors" />
+                <Paperclip aria-hidden="true" className="size-4" />
               </label>
             </div>
             <SendButton

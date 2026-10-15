@@ -15,14 +15,6 @@ export const component: Registry = [
         path: "hooks/use-auto-resize-textarea.ts",
         type: "registry:hook",
       },
-      {
-        path: "components/icons/anthropic.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/anthropic-dark.tsx",
-        type: "registry:component",
-      },
     ],
   },
   {

@@ -35,10 +35,11 @@ With no props the card runs a demo: it shows "Transfer in Progress" and complete
 | `from` | `TransferAccount` | 500.00 USD, Chase Bank ••••4589 | Sending account and amount. |
 | `to` | `TransferAccount` | 460.00 EUR, Deutsche Bank ••••7823 | Receiving account and amount. |
 | `rate` | `number` | `0.92` | Units of `to.currency` per one `from.currency`. |
-| `txnId` | `string` | `"TXN-DAB3UL494"` | Transaction ID shown on completion. |
+| `txnId` | `string` | `"TXN-DAB3UL494"` | Transaction ID shown on completion, with a copy button. |
 | `timestamp` | `string` | `"10:45 AM"` | When the rate was set, shown in the info tooltip. |
 | `status` | `"processing" \| "completed" \| "failed"` | — | Controlled status. Omit it for the self-completing demo. |
 | `locale` | `string` | `"en-US"` | BCP 47 locale for amounts, currency symbols and the rate. |
+| `onRetry` | `() => void` | — | Shows a Retry button next to the failure message. |
 | `className` | `string` | — | Extra classes for the card. |
 
 `TransferAccount` is `{ amount: number; currency: string; symbol?: string; bank: string; last4?: string }`. Status changes are announced to screen readers, and with reduced motion the amounts and arc jump to their values and the chip and shake are skipped.
