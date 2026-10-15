@@ -391,44 +391,46 @@
       ]
     },
     {
-      "name": "rotary-dial",
+      "name": "scrub-input",
       "type": "registry:component",
-      "title": "Rotary Dial",
-      "description": "A code input you dial like an old phone, with a finger stop and a governed return.",
-      "dependencies": [
-        "lucide-react"
-      ],
-      "files": [
-        {
-          "path": "components/kokonutui/rotary-dial.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
-      "name": "tape-measure",
-      "type": "registry:component",
-      "title": "Tape Measure",
-      "description": "A length input you pull out like a tape measure, with a lock and a spring that whips it home.",
+      "title": "Scrub Input",
+      "description": "A number field you drag by its label, like the inspector in a design tool, that also does math.",
       "dependencies": [],
       "files": [
         {
-          "path": "components/kokonutui/tape-measure.tsx",
+          "path": "components/kokonutui/scrub-input.tsx",
           "type": "registry:component"
         }
       ]
     },
     {
-      "name": "zip-reveal",
+      "name": "tag-input",
       "type": "registry:component",
-      "title": "Zip Reveal",
-      "description": "A secret field you unzip to read, that zips itself back up if you let go early.",
+      "title": "Tag Input",
+      "description": "A field that turns what you type or paste into chips you can select, remove and drag into order.",
       "dependencies": [
+        "motion",
         "lucide-react"
       ],
       "files": [
         {
-          "path": "components/kokonutui/zip-reveal.tsx",
+          "path": "components/kokonutui/tag-input.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "cart-stepper",
+      "type": "registry:component",
+      "title": "Cart Stepper",
+      "description": "An add to cart button that turns into a quantity stepper, and folds back when you remove the item.",
+      "dependencies": [
+        "motion",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/cart-stepper.tsx",
           "type": "registry:component"
         }
       ]

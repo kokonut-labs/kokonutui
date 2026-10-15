@@ -9,8 +9,7 @@
     "wheel-picker",
     "liquid-slider",
     "signature-pad",
-    "rotary-dial",
-    "tape-measure",
-    "zip-reveal"
+    "scrub-input",
+    "tag-input"
   ]
 }

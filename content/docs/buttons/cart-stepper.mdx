@@ -1,0 +1,16 @@
+---
+title: Cart Stepper
+description: An add to cart button that turns into a quantity stepper, and folds back when you remove the item.
+keywords: ["cart", "quantity", "stepper", "ecommerce", "counter", "button", "shop"]
+icon: ShoppingBag
+full: false
+---
+
+import CartStepper from "@/components/kokonutui/cart-stepper";
+
+<Preview link="cart-stepper">
+    <div className="flex flex-wrap items-center justify-center gap-4">
+        <CartStepper />
+        <CartStepper defaultQuantity={2} max={3} />
+    </div>
+</Preview>

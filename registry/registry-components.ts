@@ -285,34 +285,34 @@ export const component: Registry = [
     ],
   },
   {
-    name: "rotary-dial",
-    type: "registry:component",
-    dependencies: ["lucide-react"],
-    files: [
-      {
-        path: "components/kokonutui/rotary-dial.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "tape-measure",
+    name: "scrub-input",
     type: "registry:component",
     dependencies: [],
     files: [
       {
-        path: "components/kokonutui/tape-measure.tsx",
+        path: "components/kokonutui/scrub-input.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "zip-reveal",
+    name: "tag-input",
     type: "registry:component",
-    dependencies: ["lucide-react"],
+    dependencies: ["motion", "lucide-react"],
     files: [
       {
-        path: "components/kokonutui/zip-reveal.tsx",
+        path: "components/kokonutui/tag-input.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "cart-stepper",
+    type: "registry:component",
+    dependencies: ["motion", "lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/cart-stepper.tsx",
         type: "registry:component",
       },
     ],

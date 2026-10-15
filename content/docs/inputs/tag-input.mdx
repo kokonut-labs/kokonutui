@@ -1,0 +1,25 @@
+---
+title: Tag Input
+description: A field that turns what you type or paste into chips you can select, remove and drag into order.
+keywords: ["tags", "chips", "email", "input", "multi", "token", "labels"]
+icon: Tags
+full: false
+---
+
+import TagInput from "@/components/kokonutui/tag-input";
+
+<Preview link="tag-input">
+    <div className="flex w-full max-w-md flex-col gap-6">
+        <TagInput
+            defaultValue={["maya@studio.com", "leo@studio.com", "ana@"]}
+            label="Invite"
+            placeholder="Add emails, separated by commas"
+            type="email"
+        />
+        <TagInput
+            defaultValue={["Design", "Frontend", "Q4"]}
+            label="Labels"
+            max={6}
+        />
+    </div>
+</Preview>
