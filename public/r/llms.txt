@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 60 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 61 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -58,6 +58,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Slide Text Button](https://kokonutui.com/docs/buttons/slide-text-button.md): Animated link button with a vertical text slide on hover and default and ghost variants, built with React, Next.js Link, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/slide-text-button`
 - [Smooth Drawer](https://kokonutui.com/docs/navigation/smooth-drawer.md): Bottom drawer with spring-based slide-in and staggered content reveal, built on Vaul with React, Motion, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/smooth-drawer`
 - [Social Button](https://kokonutui.com/docs/buttons/social-button.md): Share button that expands into a row of social icon buttons with staggered Motion animations on hover, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/social-button`
+- [Spending Ring](https://kokonutui.com/docs/cards/spending-ring.md): A spending breakdown you spin like a dial; flick the ring and it settles with a category under the marker. Install: `npx shadcn@latest add @kokonutui/spending-ring`
 - [Split Nav](https://kokonutui.com/docs/navigation/morphic-navbar.md): Navigation bar that splits around the active link, with drag-to-scrub, flick projection and an optional compact fold. Install: `npx shadcn@latest add @kokonutui/morphic-navbar`
 - [Swipe Tabs](https://kokonutui.com/docs/navigation/smooth-tab.md): Tabs with a swipeable panel, a drag-tracked indicator and spring physics. Install: `npx shadcn@latest add @kokonutui/smooth-tab`
 - [Switch Button](https://kokonutui.com/docs/buttons/switch-button.md): Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes. Install: `npx shadcn@latest add @kokonutui/switch-button`

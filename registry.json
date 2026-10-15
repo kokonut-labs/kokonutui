@@ -703,6 +703,18 @@
       ]
     },
     {
+      "name": "spending-ring",
+      "type": "registry:component",
+      "title": "Spending Ring",
+      "description": "A spending breakdown you spin like a dial; flick the ring and it settles with a category under the marker.",
+      "files": [
+        {
+          "path": "components/kokonutui/spending-ring.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",
