@@ -5,6 +5,7 @@
     "ai-input-search",
     "ai-loading",
     "ai-text-loading",
-    "ai-voice"
+    "ai-voice",
+    "ai-diff-review"
   ]
 }

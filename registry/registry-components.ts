@@ -443,6 +443,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "ai-diff-review",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-diff-review.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "card-stack",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
