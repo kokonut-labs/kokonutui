@@ -34,6 +34,17 @@ export const NEW_FOR_DAYS = 30;
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-15",
+    added: [
+      { name: "ai-tool-approval", pr: 76 },
+      { name: "ai-context-meter", pr: 77 },
+      { name: "ai-citations", pr: 78 },
+      { name: "ai-diff-review", pr: 79 },
+      { name: "ai-model-selector", pr: 80 },
+    ],
+    improved: [],
+  },
+  {
     date: "2026-10-14",
     added: [
       { name: "notification-stack", pr: 39 },
