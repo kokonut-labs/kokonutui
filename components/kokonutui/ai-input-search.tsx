@@ -3,16 +3,24 @@
 /**
  * @author: @kokonutui
  * @description: AI Input Search
- * @version: 1.1.0
+ * @version: 2.0.0
  * @date: 2026-10-15
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { ArrowUp, FileText, Globe, Paperclip, X } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useRef, useState } from "react";
+import {
+  ArrowUp,
+  CalendarDays,
+  FileText,
+  Globe,
+  Search,
+  Telescope,
+  X,
+} from "lucide-react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
+import { type ComponentType, useId, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
 import { cn } from "@/lib/utils";
@@ -20,36 +28,72 @@ import { cn } from "@/lib/utils";
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const EASE_OUT_CSS = "ease-[cubic-bezier(0.23,1,0.32,1)]";
 
+export type SearchFilterKind = "site" | "after" | "before" | "type";
+
+export interface SearchFilter {
+  kind: SearchFilterKind;
+  value: string;
+}
+
 export interface AIInputSearchProps {
-  /** Placeholder while web search is on. */
   placeholder?: string;
-  /** Placeholder while web search is off, when the input is a plain chat. */
-  chatPlaceholder?: string;
-  searchLabel?: string;
-  /** Receives the text, whether web search was on, and the attached files. */
+  /** Where to search. The first one is selected unless `defaultScope` says. */
+  scopes?: string[];
+  defaultScope?: string;
+  /** Start with deep research on: reads more sources, takes longer. */
+  defaultDeep?: boolean;
+  /**
+   * Receives the query with operators taken out, plus the filters they
+   * became, the scope and whether deep research was on.
+   */
   onSubmit?: (
-    value: string,
-    options: { webSearch: boolean; files: File[] }
+    query: string,
+    options: { filters: SearchFilter[]; scope: string; deep: boolean }
   ) => void;
-  /** Called with the files picked through the attach button. */
-  onFilesSelected?: (files: File[]) => void;
-  /** Controlled web-search state. Leave unset to let the component own it. */
-  webSearch?: boolean;
-  defaultWebSearch?: boolean;
-  onWebSearchChange?: (webSearch: boolean) => void;
   className?: string;
 }
 
-interface Attachment {
-  id: number;
-  file: File;
-}
+const WWW = /^www\./;
 
-function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
+const OPERATORS: Record<
+  SearchFilterKind,
+  {
+    icon: ComponentType<{ className?: string }>;
+    label: (value: string) => string;
+  }
+> = {
+  site: { icon: Globe, label: (v) => v.replace(WWW, "") },
+  after: { icon: CalendarDays, label: (v) => `After ${v}` },
+  before: { icon: CalendarDays, label: (v) => `Before ${v}` },
+  type: { icon: FileText, label: (v) => v.toUpperCase() },
+};
+
+// An operator the user just finished with a space, e.g. "site:github.com ".
+const FINISHED_OPERATOR = /(^|\s)(site|after|before|type):(\S+)\s$/i;
+// Operators still in the text on submit, e.g. typed last with no space.
+const ANY_OPERATOR = /(^|\s)(site|after|before|type):(\S+)/gi;
+const EXTRA_SPACES = /\s+/g;
+
+const HINTS = ["site:", "after:", "type:pdf"];
+
+/** Adds a filter; a second one of the same kind replaces the first. */
+const withFilter = (filters: SearchFilter[], next: SearchFilter) => [
+  ...filters.filter((f) => f.kind !== next.kind),
+  next,
+];
+
+function FilterChip({
+  filter,
+  onRemove,
+}: {
+  filter: SearchFilter;
+  onRemove: () => void;
+}) {
+  const { icon: Icon, label } = OPERATORS[filter.kind];
   return (
     <motion.li
       animate={{ opacity: 1, filter: "blur(0px)" }}
-      className="flex h-7 max-w-48 items-center gap-1.5 rounded-md bg-white pr-0.5 pl-2 text-black/70 text-xs ring-1 ring-black/5 dark:bg-white/10 dark:text-white/80 dark:ring-white/10"
+      className="flex h-7 items-center gap-1.5 rounded-md bg-sky-500/10 pr-0.5 pl-2 text-sky-700 text-xs dark:bg-sky-400/10 dark:text-sky-300"
       exit={{
         opacity: 0,
         filter: "blur(2px)",
@@ -59,15 +103,15 @@ function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
       layout="position"
       transition={{ duration: 0.18, ease: EASE_OUT }}
     >
-      <FileText aria-hidden="true" className="size-3.5 shrink-0 opacity-60" />
-      <span className="truncate">{file.name}</span>
+      <Icon aria-hidden="true" className="size-3.5 shrink-0 opacity-70" />
+      <span className="max-w-40 truncate">{label(filter.value)}</span>
       <button
-        aria-label={`Remove ${file.name}`}
+        aria-label={`Remove filter ${filter.kind}:${filter.value}`}
         className={cn(
-          "flex size-6 shrink-0 items-center justify-center rounded text-black/40 hover:bg-black/5 hover:text-black dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white",
-          "transition-[background-color,color] duration-150",
+          "flex size-6 shrink-0 items-center justify-center rounded opacity-60 hover:bg-sky-500/10 hover:opacity-100",
+          "transition-[background-color,opacity] duration-150",
           EASE_OUT_CSS,
-          "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-sky-500"
+          "focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-sky-500"
         )}
         onClick={onRemove}
         type="button"
@@ -78,117 +122,184 @@ function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
   );
 }
 
-function SearchToggle({
-  on,
-  label,
-  onToggle,
+function ScopeTabs({
+  scopes,
+  value,
+  onChange,
 }: {
-  on: boolean;
-  label: string;
-  onToggle: () => void;
+  scopes: string[];
+  value: string;
+  onChange: (scope: string) => void;
 }) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const layoutId = useId();
+
+  // Arrow keys move along the tabs, like a radio group.
+  const onKeyDown = (event: React.KeyboardEvent, index: number) => {
+    const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+    if (step === undefined) {
+      return;
+    }
+    event.preventDefault();
+    const next = (index + step + scopes.length) % scopes.length;
+    refs.current[next]?.focus();
+    onChange(scopes[next]);
+  };
+
   return (
-    <button
-      aria-pressed={on}
-      className={cn(
-        "flex h-8 cursor-pointer items-center rounded-full border pr-2 pl-[7px]",
-        "transition-[color,background-color,border-color] duration-150",
-        EASE_OUT_CSS,
-        "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-sky-500",
-        on
-          ? "border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-400"
-          : "border-transparent text-black/50 hover:bg-black/5 hover:text-black dark:text-white/50 dark:hover:bg-white/10 dark:hover:text-white"
-      )}
-      onClick={onToggle}
-      title={on ? `${label} on` : `${label} off`}
-      type="button"
-    >
-      <Globe aria-hidden="true" className="size-4 shrink-0" />
-      {/* The label is always there for screen readers; it only folds away
-          visually, with a clip so the pill closes around the icon. */}
-      <span
-        className={cn(
-          "grid transition-[grid-template-columns,opacity] duration-200",
-          EASE_OUT_CSS,
-          on ? "grid-cols-[1fr] opacity-100" : "grid-cols-[0fr] opacity-0"
-        )}
+    <LayoutGroup id={layoutId}>
+      <div
+        aria-label="Search in"
+        className="flex items-center rounded-full bg-black/[0.04] p-0.5 dark:bg-white/[0.06]"
+        role="radiogroup"
       >
-        <span className="overflow-hidden whitespace-nowrap pl-1.5 text-sm">
-          {label}
-        </span>
-      </span>
-    </button>
+        {scopes.map((scope, index) => {
+          const selected = scope === value;
+          return (
+            // biome-ignore lint/a11y/useSemanticElements: a pill tab with a sliding thumb doesn't fit a native radio input
+            <button
+              aria-checked={selected}
+              className={cn(
+                "relative h-7 rounded-full px-2.5 text-xs outline-hidden",
+                "transition-colors duration-150",
+                EASE_OUT_CSS,
+                "focus-visible:ring-2 focus-visible:ring-sky-500/50",
+                selected
+                  ? "text-black dark:text-white"
+                  : "text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
+              )}
+              key={scope}
+              onClick={() => onChange(scope)}
+              onKeyDown={(event) => onKeyDown(event, index)}
+              ref={(node) => {
+                refs.current[index] = node;
+              }}
+              role="radio"
+              tabIndex={selected ? 0 : -1}
+              type="button"
+            >
+              {selected && (
+                <motion.span
+                  aria-hidden="true"
+                  className="absolute inset-0 rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-black/5 dark:bg-zinc-700 dark:ring-white/10"
+                  layoutId="scope-thumb"
+                  transition={{ duration: 0.22, ease: EASE_OUT }}
+                />
+              )}
+              <span className="relative">{scope}</span>
+            </button>
+          );
+        })}
+      </div>
+    </LayoutGroup>
   );
 }
 
 export default function AI_Input_Search({
-  placeholder = "Search the web…",
-  chatPlaceholder = "Ask anything…",
-  searchLabel = "Search",
+  placeholder = "Search anything",
+  scopes = ["Web", "News", "Papers", "Code"],
+  defaultScope,
+  defaultDeep = false,
   onSubmit,
-  onFilesSelected,
-  webSearch: webSearchProp,
-  defaultWebSearch = true,
-  onWebSearchChange,
   className,
 }: AIInputSearchProps) {
   const [value, setValue] = useState("");
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const nextIdRef = useRef(0);
+  const [filters, setFilters] = useState<SearchFilter[]>([]);
+  const [scope, setScope] = useState(
+    defaultScope && scopes.includes(defaultScope)
+      ? defaultScope
+      : (scopes[0] ?? "")
+  );
+  const [deep, setDeep] = useState(defaultDeep);
+  const [focused, setFocused] = useState(false);
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
-    minHeight: 52,
-    maxHeight: 200,
+    minHeight: 44,
+    maxHeight: 160,
   });
-  const [uncontrolledWebSearch, setUncontrolledWebSearch] =
-    useState(defaultWebSearch);
-  const webSearch = webSearchProp ?? uncontrolledWebSearch;
 
-  const toggleWebSearch = () => {
-    const next = !webSearch;
-    if (webSearchProp === undefined) {
-      setUncontrolledWebSearch(next);
+  const focusEnd = () => {
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      el?.focus();
+      el?.setSelectionRange(el.value.length, el.value.length);
+      adjustHeight();
+    });
+  };
+
+  // A finished "kind:value " turns into a chip, and the text loses it.
+  const handleChange = (next: string) => {
+    const match = FINISHED_OPERATOR.exec(next);
+    if (match) {
+      const [, lead, kind, operand] = match;
+      setFilters((current) =>
+        withFilter(current, {
+          kind: kind.toLowerCase() as SearchFilterKind,
+          value: operand,
+        })
+      );
+      setValue(next.slice(0, match.index + lead.length));
+    } else {
+      setValue(next);
     }
-    onWebSearchChange?.(next);
-    // Back to typing: the toggle is a modifier on what you're writing.
+    adjustHeight();
+  };
+
+  const removeFilter = (kind: SearchFilterKind) => {
+    setFilters((current) => current.filter((f) => f.kind !== kind));
     textareaRef.current?.focus();
   };
 
-  const addFiles = (files: File[]) => {
-    onFilesSelected?.(files);
-    setAttachments((current) => [
-      ...current,
-      ...files.map((file) => {
-        nextIdRef.current += 1;
-        return { id: nextIdRef.current, file };
-      }),
-    ]);
+  // Backspace in an empty field opens the last chip back up as text.
+  const reopenLastFilter = () => {
+    const last = filters.at(-1);
+    if (!last) {
+      return false;
+    }
+    setFilters(filters.slice(0, -1));
+    setValue(`${last.kind}:${last.value}`);
+    focusEnd();
+    return true;
   };
 
-  const removeAttachment = (id: number) => {
-    setAttachments((current) => current.filter((a) => a.id !== id));
-    textareaRef.current?.focus();
+  const insertHint = (hint: string) => {
+    const spacer = value === "" || value.endsWith(" ") ? "" : " ";
+    // A complete hint like "type:pdf" becomes a chip straight away.
+    handleChange(`${value}${spacer}${hint}${hint.endsWith(":") ? "" : " "}`);
+    focusEnd();
   };
 
   const handleSubmit = () => {
-    if (!value.trim()) {
+    let all = filters;
+    const query = value
+      .replace(ANY_OPERATOR, (_, lead: string, kind: string, operand) => {
+        all = withFilter(all, {
+          kind: kind.toLowerCase() as SearchFilterKind,
+          value: operand,
+        });
+        return lead;
+      })
+      .replace(EXTRA_SPACES, " ")
+      .trim();
+    if (!query && all.length === 0) {
       return;
     }
-    onSubmit?.(value, { webSearch, files: attachments.map((a) => a.file) });
+    onSubmit?.(query, { filters: all, scope, deep });
     setValue("");
-    setAttachments([]);
+    setFilters([]);
     adjustHeight(true);
   };
 
   // Mouse convenience: clicking the box around the field focuses it. Clicks
   // on the controls keep their own behaviour.
   const handleContainerClick = (target: EventTarget) => {
-    if (target instanceof Element && target.closest("button, label, input")) {
+    if (target instanceof Element && target.closest("button")) {
       return;
     }
     textareaRef.current?.focus();
   };
 
-  const canSubmit = value.trim().length > 0;
+  const canSubmit = value.trim().length > 0 || filters.length > 0;
+  const showHints = focused && value === "" && filters.length === 0;
 
   return (
     <div className={cn("w-full py-4", className)}>
@@ -196,105 +307,143 @@ export default function AI_Input_Search({
         {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents lint/a11y/noNoninteractiveElementInteractions: pointer-only shortcut; the textarea and buttons inside are keyboard reachable */}
         <div
           className={cn(
-            "relative flex w-full cursor-text flex-col rounded-xl bg-black/5 text-left dark:bg-white/5",
-            "ring-1 ring-black/10 transition-shadow duration-150 dark:ring-white/10",
-            "has-[textarea:focus-visible]:ring-sky-500/70 dark:has-[textarea:focus-visible]:ring-sky-400/60"
+            "relative flex w-full cursor-text flex-col rounded-2xl bg-white text-left ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
+            "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_6px_20px_-10px_rgb(0_0_0/0.12)]",
+            "transition-shadow duration-150 has-[textarea:focus-visible]:ring-sky-500/60 dark:has-[textarea:focus-visible]:ring-sky-400/50"
           )}
           onClick={(e) => handleContainerClick(e.target)}
         >
-          <AnimatePresence initial={false}>
-            {attachments.length > 0 && (
-              <motion.div
-                animate={{ height: "auto", opacity: 1 }}
-                className="overflow-hidden"
-                exit={{ height: 0, opacity: 0 }}
-                initial={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: EASE_OUT }}
-              >
-                <ul
-                  aria-label="Attached files"
-                  className="flex flex-wrap gap-1.5 px-3 pt-3"
-                >
-                  <AnimatePresence initial={false} mode="popLayout">
-                    {attachments.map((a) => (
-                      <FileChip
-                        file={a.file}
-                        key={a.id}
-                        onRemove={() => removeAttachment(a.id)}
-                      />
-                    ))}
-                  </AnimatePresence>
-                </ul>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <Textarea
-            aria-label={webSearch ? placeholder : chatPlaceholder}
-            className="min-h-[52px] w-full resize-none rounded-xl border-none bg-transparent px-4 py-3 text-black leading-relaxed placeholder:text-black/40 focus-visible:ring-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/40"
-            onChange={(e) => {
-              setValue(e.target.value);
-              adjustHeight();
-            }}
-            onKeyDown={(e) => {
-              if (
-                e.key === "Enter" &&
-                !e.shiftKey &&
-                !e.nativeEvent.isComposing
-              ) {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
-            // The placeholder says what Enter will do in each mode.
-            placeholder={webSearch ? placeholder : chatPlaceholder}
-            ref={textareaRef}
-            value={value}
-          />
-
-          <div className="flex items-center justify-between px-3 pt-1 pb-3">
-            <div className="flex items-center gap-1">
-              <label
-                className={cn(
-                  "flex size-8 cursor-pointer items-center justify-center rounded-lg text-black/50 hover:bg-black/5 hover:text-black dark:text-white/50 dark:hover:bg-white/10 dark:hover:text-white",
-                  "transition-[background-color,color] duration-150",
-                  EASE_OUT_CSS,
-                  "has-focus-visible:ring-1 has-focus-visible:ring-sky-500"
+          <div className="flex items-start gap-1 pt-1.5 pr-3 pl-3.5">
+            <Search
+              aria-hidden="true"
+              className="mt-[13px] size-4 shrink-0 text-black/40 dark:text-white/40"
+            />
+            <div className="min-w-0 flex-1">
+              <AnimatePresence initial={false}>
+                {filters.length > 0 && (
+                  <motion.div
+                    animate={{ height: "auto", opacity: 1 }}
+                    className="overflow-hidden"
+                    exit={{ height: 0, opacity: 0 }}
+                    initial={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.18, ease: EASE_OUT }}
+                  >
+                    <ul
+                      aria-label="Filters"
+                      className="flex flex-wrap gap-1.5 px-2 pt-2"
+                    >
+                      <AnimatePresence initial={false} mode="popLayout">
+                        {filters.map((filter) => (
+                          <FilterChip
+                            filter={filter}
+                            key={filter.kind}
+                            onRemove={() => removeFilter(filter.kind)}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </ul>
+                  </motion.div>
                 )}
-                title="Attach files"
-              >
-                <input
-                  aria-label="Attach files"
-                  className="sr-only"
-                  multiple
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files ?? []);
-                    // Clear so picking the same file again still fires onChange.
-                    e.target.value = "";
-                    if (files.length > 0) {
-                      addFiles(files);
-                    }
-                  }}
-                  type="file"
-                />
-                <Paperclip aria-hidden="true" className="size-4" />
-              </label>
-              <SearchToggle
-                label={searchLabel}
-                on={webSearch}
-                onToggle={toggleWebSearch}
+              </AnimatePresence>
+              <Textarea
+                aria-label="Search"
+                className="min-h-[44px] w-full resize-none rounded-none border-none bg-transparent px-2 py-2.5 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
+                onBlur={() => setFocused(false)}
+                onChange={(e) => handleChange(e.target.value)}
+                onFocus={() => setFocused(true)}
+                onKeyDown={(e) => {
+                  if (e.nativeEvent.isComposing) {
+                    return;
+                  }
+                  if (
+                    e.key === "Backspace" &&
+                    value === "" &&
+                    reopenLastFilter()
+                  ) {
+                    e.preventDefault();
+                  } else if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
+                placeholder={placeholder}
+                ref={textareaRef}
+                value={value}
               />
             </div>
+          </div>
+
+          {/* Operator hints for an empty, focused field. Space is kept so
+              nothing jumps when they fade. */}
+          <div
+            aria-hidden={!showHints}
+            className={cn(
+              "flex h-6 items-center gap-1 pl-[42px] text-[11px] transition-opacity duration-150",
+              showHints ? "opacity-100" : "pointer-events-none opacity-0"
+            )}
+          >
+            <span className="mr-0.5 text-black/35 dark:text-white/35">Try</span>
+            {HINTS.map((hint) => (
+              <button
+                className="rounded px-1 font-mono text-black/55 transition-colors duration-150 hover:bg-black/5 hover:text-black dark:text-white/55 dark:hover:bg-white/10 dark:hover:text-white"
+                key={hint}
+                // Keeps the field focused, so the hints don't vanish mid-click.
+                onClick={() => insertHint(hint)}
+                onMouseDown={(e) => e.preventDefault()}
+                tabIndex={showHints ? 0 : -1}
+                type="button"
+              >
+                {hint}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 px-2.5 pt-1.5 pb-2.5">
+            <ScopeTabs onChange={setScope} scopes={scopes} value={scope} />
             <button
-              aria-label={webSearch ? "Search" : "Send"}
+              aria-pressed={deep}
               className={cn(
-                "flex size-8 items-center justify-center rounded-lg transition-[color,background-color] duration-150",
+                "flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs",
+                "transition-[background-color,color,box-shadow] duration-150",
                 EASE_OUT_CSS,
                 "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/50",
-                // Fills once there is something to send.
+                deep
+                  ? "bg-sky-500/10 text-sky-700 ring-1 ring-sky-500/30 dark:text-sky-300"
+                  : "text-black/50 hover:bg-black/5 hover:text-black dark:text-white/50 dark:hover:bg-white/10 dark:hover:text-white"
+              )}
+              onClick={() => setDeep((d) => !d)}
+              title="Deep research reads more sources and takes longer"
+              type="button"
+            >
+              <Telescope aria-hidden="true" className="size-3.5" />
+              Deep
+            </button>
+            <div className="flex-1" />
+            {/* What the mode costs, in plain numbers. */}
+            <span className="relative hidden h-5 w-20 text-[11px] text-black/40 tabular-nums sm:block dark:text-white/40">
+              <AnimatePresence initial={false} mode="popLayout">
+                <motion.span
+                  animate={{ opacity: 1, filter: "blur(0px)" }}
+                  className="absolute inset-0 flex items-center justify-end"
+                  exit={{ opacity: 0, filter: "blur(2px)" }}
+                  initial={{ opacity: 0, filter: "blur(2px)" }}
+                  key={String(deep)}
+                  transition={{ duration: 0.15, ease: EASE_OUT }}
+                >
+                  {deep ? "~40 sources" : "~8 sources"}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+            <button
+              aria-label="Search"
+              className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded-full transition-[color,background-color] duration-150",
+                EASE_OUT_CSS,
+                "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/50",
+                // Fills once there is something to search for.
                 canSubmit
                   ? "cursor-pointer bg-sky-500 text-white hover:bg-sky-600"
-                  : "bg-black/5 text-black/30 dark:bg-white/5 dark:text-white/30"
+                  : "bg-black/5 text-black/30 dark:bg-white/10 dark:text-white/30"
               )}
               disabled={!canSubmit}
               onClick={handleSubmit}

@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Prompt Input
- * @version: 1.1.0
+ * @version: 2.0.0
  * @date: 2026-10-15
  * @license: MIT
  * @website: https://kokonutui.com
@@ -20,17 +20,19 @@ import {
   FileText,
   Languages,
   Lightbulb,
-  Paperclip,
+  Plus,
   Slash,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,8 +101,22 @@ export interface PromptAttachment {
   file: File;
 }
 
+export interface PromptModel {
+  name: string;
+  /** One line under the name in the menu. */
+  description?: string;
+  /**
+   * Effort levels, lowest first, e.g. ["Low", "Medium", "High"]. Leave out
+   * for a model without a thinking control: the Effort button hides.
+   */
+  efforts?: string[];
+  /** Effort to start on when the model is picked fresh. */
+  defaultEffort?: string;
+}
+
 interface AIPromptProps {
-  models?: string[];
+  models?: PromptModel[];
+  /** Name of the model selected at first. */
   defaultModel?: string;
   placeholder?: string;
   /** One line above the box, e.g. a promo. Pass "" to hide the header. */
@@ -118,6 +134,8 @@ interface AIPromptProps {
     value: string,
     model: string,
     options: {
+      /** The effort level, or null for a model without one. */
+      effort: string | null;
       files: File[];
       signal: AbortSignal;
       command: PromptCommand | null;
@@ -159,13 +177,81 @@ const DEFAULT_COMMANDS: PromptCommand[] = [
   },
 ];
 
-const DEFAULT_MODELS = [
-  "Gemini 3 Pro",
-  "GPT-5.6 Mini",
-  "Claude Fable 5",
-  "GPT-5.6 Codex",
-  "GPT-5.6",
+const DEFAULT_MODELS: PromptModel[] = [
+  {
+    name: "Claude Fable 5",
+    description: "Most capable, for writing and analysis",
+    efforts: ["Low", "Medium", "High", "Max"],
+    defaultEffort: "High",
+  },
+  {
+    name: "GPT-5.6",
+    description: "A strong all-rounder",
+    efforts: ["Minimal", "Low", "Medium", "High"],
+    defaultEffort: "Medium",
+  },
+  {
+    name: "GPT-5.6 Codex",
+    description: "Tuned for agentic coding",
+    efforts: ["Low", "Medium", "High"],
+    defaultEffort: "Medium",
+  },
+  {
+    name: "Gemini 3 Pro",
+    description: "Long context and images",
+    efforts: ["Low", "High"],
+    defaultEffort: "High",
+  },
+  {
+    name: "GPT-5.6 Mini",
+    description: "Fastest, no thinking step",
+  },
 ];
+
+/** Hints for the usual effort names; other names show without one. */
+const EFFORT_HINTS: Record<string, string> = {
+  Minimal: "Skips reasoning almost entirely",
+  Low: "Answers right away",
+  Medium: "Thinks briefly first",
+  High: "Thinks longer on hard problems",
+  Max: "No limit on thinking",
+};
+
+const effortsOf = (model: PromptModel | undefined) => model?.efforts ?? [];
+
+const startEffort = (model: PromptModel | undefined) => {
+  const efforts = effortsOf(model);
+  if (efforts.length === 0) {
+    return null;
+  }
+  return model?.defaultEffort && efforts.includes(model.defaultEffort)
+    ? model.defaultEffort
+    : (efforts.at(-1) ?? null);
+};
+
+/**
+ * The effort to keep when switching models: the same level if the new model
+ * has it, otherwise the one at the same height on its scale.
+ */
+function carryEffort(
+  from: PromptModel | undefined,
+  to: PromptModel,
+  effort: string | null
+) {
+  const next = effortsOf(to);
+  if (next.length === 0) {
+    return null;
+  }
+  if (effort && next.includes(effort)) {
+    return effort;
+  }
+  const previous = effortsOf(from);
+  if (!effort || previous.length < 2) {
+    return startEffort(to);
+  }
+  const share = previous.indexOf(effort) / (previous.length - 1);
+  return next[Math.round(share * (next.length - 1))] ?? startEffort(to);
+}
 
 const ANTHROPIC_ICON = (
   <svg
@@ -243,7 +329,7 @@ function AttachmentChip({
   return (
     <motion.li
       animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      className="flex h-11 max-w-52 items-center gap-2 rounded-lg bg-white py-1 pr-1.5 pl-1 ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10"
+      className="flex h-11 max-w-52 items-center gap-2 rounded-xl bg-black/[0.03] py-1 pr-1.5 pl-1 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10"
       exit={{
         opacity: 0,
         filter: "blur(2px)",
@@ -399,7 +485,7 @@ function CommandPill({
   return (
     <motion.li
       animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      className="flex h-11 items-center gap-1.5 rounded-lg bg-blue-500/10 pr-1.5 pl-2.5 text-blue-600 text-sm dark:text-blue-400"
+      className="flex h-11 items-center gap-1.5 rounded-xl bg-blue-500/10 pr-1.5 pl-2.5 text-blue-600 text-sm dark:text-blue-400"
       exit={{
         opacity: 0,
         filter: "blur(2px)",
@@ -444,14 +530,14 @@ function SendButton({
     <button
       aria-label={responding ? "Stop response" : "Send message"}
       className={cn(
-        "relative size-8 rounded-lg",
-        "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500",
+        "relative size-8 shrink-0 rounded-full",
+        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500/60",
         "transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
         // Fills in once there is something to send, so the button says
         // "ready" before it is pressed. Stop keeps the same fill.
         responding || canSend
           ? "bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/85"
-          : "bg-black/5 text-black/30 dark:bg-white/5 dark:text-white/30"
+          : "bg-black/5 text-black/30 dark:bg-white/10 dark:text-white/30"
       )}
       disabled={!(responding || canSend)}
       onClick={responding ? onStop : onSend}
@@ -496,11 +582,11 @@ function PromoHeader({
   onAction: () => void;
 }) {
   return (
-    <div className="flex h-8 items-center gap-2 pr-1 pl-2.5 text-xs">
+    <div className="flex h-9 items-center gap-2 pr-1.5 pl-3 text-xs">
       <span className="flex size-3.5 shrink-0 items-center justify-center text-black dark:text-white [&_svg]:size-3.5">
         {getModelIcon(model)}
       </span>
-      <p className="min-w-0 flex-1 truncate text-black/70 dark:text-white/70">
+      <p className="min-w-0 flex-1 truncate text-black/60 dark:text-white/60">
         {text}
       </p>
       {action && canSwitch && (
@@ -531,6 +617,191 @@ function PromoHeader({
   );
 }
 
+/** Rising bars, filled up to the current effort, like a signal meter. */
+function EffortBars({ count, level }: { count: number; level: number }) {
+  return (
+    <span aria-hidden="true" className="flex h-3 items-end gap-[2px]">
+      {Array.from({ length: count }, (_, i) => (
+        <span
+          className={cn(
+            "w-[3px] rounded-[1px] transition-colors duration-200",
+            i <= level
+              ? "bg-black/80 dark:bg-white/85"
+              : "bg-black/15 dark:bg-white/20"
+          )}
+          // biome-ignore lint/suspicious/noArrayIndexKey: fixed bars, never reordered
+          key={i}
+          style={{ height: `${((i + 1) / count) * 100}%` }}
+        />
+      ))}
+    </span>
+  );
+}
+
+const ghostButton = cn(
+  "flex h-8 items-center gap-1.5 rounded-full px-2.5 text-black/70 text-xs dark:text-white/70",
+  "hover:bg-black/5 hover:text-black data-[state=open]:bg-black/5 data-[state=open]:text-black",
+  "dark:data-[state=open]:bg-white/10 dark:data-[state=open]:text-white dark:hover:bg-white/10 dark:hover:text-white",
+  "transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
+  "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500/60"
+);
+
+const menuPanel =
+  "origin-(--radix-dropdown-menu-content-transform-origin) rounded-xl border-black/10 p-1 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] dark:border-white/10 dark:bg-zinc-900";
+
+function ModelMenu({
+  models,
+  selected,
+  onSelect,
+}: {
+  models: PromptModel[];
+  selected: string;
+  onSelect: (model: PromptModel) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className={cn(ghostButton, "group pr-2")} type="button">
+          <span className="flex items-center [&_svg]:size-3.5">
+            {getModelIcon(selected)}
+          </span>
+          {/* Only the name swaps; the chevron stays put. */}
+          <span className="relative inline-grid">
+            <AnimatePresence initial={false} mode="popLayout">
+              <motion.span
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                className="col-start-1 row-start-1 whitespace-nowrap font-medium"
+                exit={{ opacity: 0, filter: "blur(2px)" }}
+                initial={{ opacity: 0, filter: "blur(2px)" }}
+                key={selected}
+                transition={{ duration: 0.15, ease: EASE_OUT }}
+              >
+                {selected}
+              </motion.span>
+            </AnimatePresence>
+          </span>
+          <ChevronDown
+            aria-hidden="true"
+            className="size-3 opacity-50 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-data-[state=open]:rotate-180"
+          />
+        </button>
+      </DropdownMenuTrigger>
+      {/* Opens upward, as the prompt sits at the bottom of a chat, and
+          grows out of its trigger. */}
+      <DropdownMenuContent
+        align="start"
+        className={cn(menuPanel, "w-72")}
+        side="top"
+        sideOffset={8}
+      >
+        <DropdownMenuLabel className="px-2 pt-1.5 pb-1 font-normal text-[11px] text-black/40 dark:text-white/40">
+          Model
+        </DropdownMenuLabel>
+        {models.map((model) => (
+          <DropdownMenuItem
+            className="flex items-center gap-2.5 rounded-lg px-2 py-1.5"
+            key={model.name}
+            onSelect={() => onSelect(model)}
+          >
+            <span className="flex size-4 shrink-0 items-center justify-center [&_svg]:size-3.5">
+              {getModelIcon(model.name)}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-black text-xs dark:text-white">
+                {model.name}
+              </span>
+              {model.description && (
+                <span className="block truncate text-[11px] text-black/45 dark:text-white/45">
+                  {model.description}
+                </span>
+              )}
+            </span>
+            <Check
+              aria-hidden="true"
+              className={cn(
+                "size-3.5 shrink-0 text-black dark:text-white",
+                model.name !== selected && "invisible"
+              )}
+            />
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/**
+ * How hard the model thinks. A separate control from the model, so it can
+ * be turned up for one hard question without opening the model list.
+ */
+function EffortMenu({
+  efforts,
+  value,
+  onChange,
+}: {
+  efforts: string[];
+  value: string;
+  onChange: (effort: string) => void;
+}) {
+  const level = Math.max(0, efforts.indexOf(value));
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label={`Effort: ${value}. Change`}
+          className={ghostButton}
+          type="button"
+        >
+          <EffortBars count={efforts.length} level={level} />
+          <span className="tabular-nums">{value}</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className={cn(menuPanel, "w-60")}
+        side="top"
+        sideOffset={8}
+      >
+        <DropdownMenuLabel className="px-2 pt-1.5 pb-1 font-normal text-[11px] text-black/40 dark:text-white/40">
+          Effort
+        </DropdownMenuLabel>
+        {/* Highest first, so the list reads like the bars: up is more. */}
+        <DropdownMenuRadioGroup onValueChange={onChange} value={value}>
+          {[...efforts].reverse().map((effort) => {
+            const index = efforts.indexOf(effort);
+            return (
+              <DropdownMenuRadioItem
+                className="flex items-center gap-2.5 rounded-lg py-1.5 pr-2 pl-2 [&>span:first-child]:hidden"
+                key={effort}
+                value={effort}
+              >
+                <EffortBars count={efforts.length} level={index} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-black text-xs dark:text-white">
+                    {effort}
+                  </span>
+                  {EFFORT_HINTS[effort] && (
+                    <span className="block truncate text-[11px] text-black/45 dark:text-white/45">
+                      {EFFORT_HINTS[effort]}
+                    </span>
+                  )}
+                </span>
+                <Check
+                  aria-hidden="true"
+                  className={cn(
+                    "size-3.5 shrink-0 text-black dark:text-white",
+                    effort !== value && "invisible"
+                  )}
+                />
+              </DropdownMenuRadioItem>
+            );
+          })}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export default function AI_Prompt({
   models = DEFAULT_MODELS,
   defaultModel = "GPT-5.6",
@@ -557,18 +828,26 @@ export default function AI_Prompt({
   // The last message sent, for ↑ in an empty prompt (as in a terminal).
   const lastSentRef = useRef("");
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
-    minHeight: 72,
-    maxHeight: 300,
+    minHeight: 56,
+    maxHeight: 280,
   });
   // A default that is not in `models` would show a model the menu can't pick.
   const [selectedModel, setSelectedModel] = useState(() =>
-    models.includes(defaultModel) ? defaultModel : (models[0] ?? defaultModel)
+    models.some((m) => m.name === defaultModel)
+      ? defaultModel
+      : (models[0]?.name ?? defaultModel)
   );
+  const currentModel = models.find((m) => m.name === selectedModel);
+  const [effort, setEffort] = useState(() => startEffort(currentModel));
   const textareaId = useId();
   const shouldReduceMotion = useReducedMotion();
-  const labelOffset = shouldReduceMotion ? 0 : 5;
 
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  const pickModel = (next: PromptModel) => {
+    setEffort(carryEffort(currentModel, next, effort));
+    setSelectedModel(next.name);
+  };
 
   const addFiles = (files: FileList | File[]) => {
     const list = Array.from(files);
@@ -629,6 +908,7 @@ export default function AI_Prompt({
     try {
       await (onSubmit
         ? onSubmit(value, selectedModel, {
+            effort,
             files,
             signal: controller.signal,
             command: sentCommand,
@@ -697,6 +977,7 @@ export default function AI_Prompt({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter during IME composition confirms the candidate; it must not submit.
     if (e.nativeEvent.isComposing) {
       return;
     }
@@ -706,7 +987,6 @@ export default function AI_Prompt({
     if (value === "" && handleEmptyKey(e)) {
       return;
     }
-    // Enter during IME composition confirms the candidate; it must not submit.
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       submit();
@@ -719,17 +999,23 @@ export default function AI_Prompt({
   const hasFiles = (e: React.DragEvent) =>
     Array.from(e.dataTransfer.types).includes("Files");
 
+  const efforts = effortsOf(currentModel);
+  const hasTray = attachments.length > 0 || command !== null;
+
   return (
-    <div className={cn("w-full max-w-md py-4", className)}>
-      <div className="rounded-2xl bg-black/5 p-1.5 dark:bg-white/5">
+    <div className={cn("w-full max-w-lg py-4", className)}>
+      <div className="rounded-[22px] bg-black/[0.04] p-1 dark:bg-white/[0.04]">
         {headerText && (
           <PromoHeader
             action={headerAction}
-            canSwitch={models.includes(promotedModel)}
+            canSwitch={models.some((m) => m.name === promotedModel)}
             inUse={selectedModel === promotedModel}
             model={promotedModel}
             onAction={() => {
-              setSelectedModel(promotedModel);
+              const promoted = models.find((m) => m.name === promotedModel);
+              if (promoted) {
+                pickModel(promoted);
+              }
               textareaRef.current?.focus();
             }}
             text={headerText}
@@ -738,8 +1024,10 @@ export default function AI_Prompt({
         {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions: drop target for files; keyboard users have the attach button */}
         <div
           className={cn(
-            "relative flex flex-col rounded-xl has-[textarea:focus-visible]:ring-1 has-[textarea:focus-visible]:ring-blue-500",
-            isDragging && "ring-1 ring-blue-500"
+            "relative flex flex-col rounded-[18px] bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
+            "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_6px_20px_-10px_rgb(0_0_0/0.12)]",
+            "transition-shadow duration-150 has-[textarea:focus-visible]:ring-black/20 dark:has-[textarea:focus-visible]:ring-white/25",
+            isDragging && "ring-blue-500/60 dark:ring-blue-400/60"
           )}
           onDragLeave={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
@@ -762,10 +1050,10 @@ export default function AI_Prompt({
           }}
         >
           <AnimatePresence initial={false}>
-            {(attachments.length > 0 || command) && (
+            {hasTray && (
               <motion.div
                 animate={{ height: "auto", opacity: 1 }}
-                className="overflow-hidden rounded-t-xl bg-black/5 dark:bg-white/5"
+                className="overflow-hidden"
                 exit={{ height: 0, opacity: 0 }}
                 initial={{ height: 0, opacity: 0 }}
                 transition={{
@@ -822,11 +1110,7 @@ export default function AI_Prompt({
             aria-autocomplete="list"
             aria-controls={menuOpen ? menuId : undefined}
             aria-expanded={menuOpen}
-            className={cn(
-              "w-full resize-none rounded-xl rounded-b-none border-none bg-black/5 px-4 py-3 text-black leading-relaxed placeholder:text-black/40 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40",
-              "min-h-[72px]",
-              (attachments.length > 0 || command) && "rounded-t-none"
-            )}
+            className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
             id={textareaId}
             onBlur={() => setMenuDismissed(true)}
             onChange={(e) => {
@@ -850,100 +1134,44 @@ export default function AI_Prompt({
             value={value}
           />
 
-          <div className="flex h-14 items-center justify-between rounded-b-xl bg-black/5 px-3 dark:bg-white/5">
-            <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    className="group relative flex h-8 items-center gap-1 rounded-lg pr-1.5 pl-2 text-xs hover:bg-black/5 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:ring-offset-0 data-[state=open]:bg-black/5 dark:text-white dark:data-[state=open]:bg-white/10 dark:hover:bg-white/10"
-                    variant="ghost"
-                  >
-                    <AnimatePresence initial={false} mode="popLayout">
-                      <motion.div
-                        animate={{
-                          opacity: 1,
-                          y: 0,
-                        }}
-                        className="flex items-center gap-1.5"
-                        exit={{
-                          opacity: 0,
-                          y: labelOffset,
-                        }}
-                        initial={{
-                          opacity: 0,
-                          y: -labelOffset,
-                        }}
-                        key={selectedModel}
-                        transition={{
-                          duration: 0.15,
-                          ease: EASE_OUT,
-                        }}
-                      >
-                        {getModelIcon(selectedModel)}
-                        {selectedModel}
-                      </motion.div>
-                    </AnimatePresence>
-                    {/* Outside the swap, so it doesn't jump on every pick. */}
-                    <ChevronDown
-                      aria-hidden="true"
-                      className="size-3 opacity-50 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-data-[state=open]:rotate-180"
-                    />
-                  </Button>
-                </DropdownMenuTrigger>
-                {/* Opens upward, since the prompt sits at the bottom of a
-                    chat, and grows out of the trigger. */}
-                <DropdownMenuContent
-                  align="start"
-                  className="min-w-48 origin-(--radix-dropdown-menu-content-transform-origin) rounded-xl border-black/10 p-1 dark:border-white/10 dark:bg-zinc-900"
-                  side="top"
-                  sideOffset={8}
-                >
-                  {models.map((model) => (
-                    <DropdownMenuItem
-                      className="flex h-8 items-center justify-between gap-2 rounded-lg px-2 text-xs"
-                      key={model}
-                      onSelect={() => setSelectedModel(model)}
-                    >
-                      <div className="flex items-center gap-2 [&_svg]:size-3.5">
-                        {getModelIcon(model)}
-                        <span>{model}</span>
-                      </div>
-                      {selectedModel === model && (
-                        <Check
-                          aria-hidden="true"
-                          className="size-3.5 text-black dark:text-white"
-                        />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <div className="mx-0.5 h-4 w-px bg-black/10 dark:bg-white/10" />
-              <label
-                className={cn(
-                  "flex size-8 cursor-pointer items-center justify-center rounded-lg",
-                  "hover:bg-black/5 has-focus-visible:ring-1 has-focus-visible:ring-blue-500 has-focus-visible:ring-offset-0 dark:hover:bg-white/10",
-                  "text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white",
-                  "transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
-                )}
-                title="Attach files, or drop or paste them"
-              >
-                <input
-                  aria-label="Attach files"
-                  className="sr-only"
-                  multiple
-                  onChange={(e) => {
-                    if (e.target.files?.length) {
-                      addFiles(e.target.files);
-                    }
-                    // Cleared so picking the same file again still fires.
-                    e.target.value = "";
-                  }}
-                  type="file"
-                />
-                <Paperclip aria-hidden="true" className="size-4" />
-              </label>
-            </div>
+          <div className="flex items-center gap-1 px-2.5 pt-1 pb-2.5">
+            <label
+              className={cn(
+                "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full ring-1 ring-black/10 dark:ring-white/15",
+                "text-black/60 hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white",
+                "has-focus-visible:ring-2 has-focus-visible:ring-blue-500/60",
+                "transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
+              )}
+              title="Attach files, or drop or paste them"
+            >
+              <input
+                aria-label="Attach files"
+                className="sr-only"
+                multiple
+                onChange={(e) => {
+                  if (e.target.files?.length) {
+                    addFiles(e.target.files);
+                  }
+                  // Cleared so picking the same file again still fires.
+                  e.target.value = "";
+                }}
+                type="file"
+              />
+              <Plus aria-hidden="true" className="size-4" />
+            </label>
+            <ModelMenu
+              models={models}
+              onSelect={pickModel}
+              selected={selectedModel}
+            />
+            {efforts.length > 0 && effort && (
+              <EffortMenu
+                efforts={efforts}
+                onChange={setEffort}
+                value={effort}
+              />
+            )}
+            <div className="flex-1" />
             <SendButton
               canSend={canSend}
               onSend={submit}
@@ -956,7 +1184,7 @@ export default function AI_Prompt({
           <div
             aria-hidden="true"
             className={cn(
-              "pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl border border-blue-500/50 border-dashed bg-white/80 text-blue-600 text-xs transition-opacity duration-150 dark:bg-black/70 dark:text-blue-400",
+              "pointer-events-none absolute inset-0 flex items-center justify-center rounded-[18px] border border-blue-500/50 border-dashed bg-white/85 text-blue-600 text-xs transition-opacity duration-150 dark:bg-zinc-900/85 dark:text-blue-400",
               isDragging ? "opacity-100" : "opacity-0"
             )}
           >

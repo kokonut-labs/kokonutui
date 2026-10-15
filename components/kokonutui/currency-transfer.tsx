@@ -3,38 +3,15 @@
 /**
  * @author: @dorianbaffier
  * @description: Currency Transfer
- * @version: 2.2.0
+ * @version: 3.0.0
  * @date: 2026-10-15
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import {
-  ArrowDownIcon,
-  ArrowUpDown,
-  ArrowUpIcon,
-  CheckIcon,
-  CopyIcon,
-  InfoIcon,
-  RotateCcwIcon,
-  XIcon,
-} from "lucide-react";
-import {
-  AnimatePresence,
-  motion,
-  type Transition,
-  useReducedMotion,
-  type Variants,
-} from "motion/react";
-import { type RefObject, useEffect, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { CheckIcon, CopyIcon, RotateCcwIcon, XIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export type TransferStatus = "processing" | "completed" | "failed";
@@ -44,12 +21,14 @@ export interface TransferAccount {
   amount: number;
   /** ISO currency code, e.g. "USD". */
   currency: string;
-  /** Short symbol shown in the badge, e.g. "$". Defaults to the currency's own symbol. */
+  /** Short symbol, e.g. "$". Defaults to the currency's own symbol. */
   symbol?: string;
   /** Bank or account name, e.g. "Chase Bank". */
   bank: string;
   /** Last digits of the account number, shown masked. */
   last4?: string;
+  /** Account holder, shown on the receiving side, e.g. "Lena Fischer". */
+  name?: string;
 }
 
 export interface CurrencyTransferProps {
@@ -57,13 +36,13 @@ export interface CurrencyTransferProps {
   to?: TransferAccount;
   /** Units of `to.currency` per one unit of `from.currency`. */
   rate?: number;
-  /** Transaction reference shown once the transfer completes. */
+  /** Transaction reference, copyable from the footer. */
   txnId?: string;
-  /** When the exchange rate was set, shown in the info tooltip (e.g. "10:45 AM"). */
+  /** When the rate was locked, e.g. "10:45 AM". */
   timestamp?: string;
   /**
-   * Controlled status. When omitted, the card runs a demo: it starts as
-   * "processing" and completes on its own after a short delay.
+   * Controlled status. While "processing" the steps run up to the last
+   * one and wait there. Leave unset for a demo that completes on its own.
    */
   status?: TransferStatus;
   /** BCP 47 locale for amounts, symbols and the rate. */
@@ -77,7 +56,7 @@ const DEFAULT_FROM: TransferAccount = {
   amount: 500,
   currency: "USD",
   symbol: "$",
-  bank: "Chase Bank",
+  bank: "Chase",
   last4: "4589",
 };
 
@@ -87,28 +66,20 @@ const DEFAULT_TO: TransferAccount = {
   symbol: "€",
   bank: "Deutsche Bank",
   last4: "7823",
+  name: "Lena Fischer",
 };
 
-const DEMO_COMPLETE_DELAY_MS = 2600;
-
-const EASE_OUT = [0.23, 1, 0.32, 1] as const;
-const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
 const EASE_OUT_CSS = "cubic-bezier(0.23, 1, 0.32, 1)";
-const EASE_IN_OUT_CSS = "cubic-bezier(0.77, 0, 0.175, 1)";
-
-// While processing, the live rate wobbles by up to this fraction, this often.
-const RATE_TICK_MS = 750;
-const RATE_WOBBLE = 0.0008;
-// The currency chip's trip from the From row to the To row.
-const CHIP_MS = 600;
-// Each digit column starts this much after the one to its right.
-const DIGIT_STAGGER_MS = 40;
-const DIGIT_ROLL_MS = 600;
-// Progress arc: creeps towards 85% while processing, closes on completion.
-const ARC_PENDING = 0.85;
-const ARC_PENDING_MS = 4000;
-const ARC_RADIUS = 48;
-const ARC_LENGTH = 2 * Math.PI * ARC_RADIUS;
+// Each step takes this long in the demo, and while processing.
+const STEP_MS = 1100;
+// Steps done at first render: the payment has already been taken.
+const FIRST_DONE = 1;
+// While processing, the run waits on the last step (arrival).
+const WAIT_AT = 3;
+const DIGIT_STAGGER_MS = 35;
+const DIGIT_ROLL_MS = 650;
+const COPIED_MS = 1500;
+const NOT_LETTER = /[^\p{L}]+/u;
 
 function formatNumber(value: number, locale: string, digits: number) {
   return new Intl.NumberFormat(locale, {
@@ -137,48 +108,13 @@ function getCurrencySymbol(currency: string, locale: string) {
 const symbolOf = (account: TransferAccount, locale: string) =>
   account.symbol ?? getCurrencySymbol(account.currency, locale);
 
-/** Text that swaps between states: short rise in, short rise out. */
-const swapVariants: Variants = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.2, ease: EASE_OUT } },
-  exit: { opacity: 0, y: -6, transition: { duration: 0.15, ease: EASE_OUT } },
-};
-
-/**
- * Same swap without movement, for prefers-reduced-motion. `y` and `scale` are
- * pinned at rest so the server (which can't know the preference) and the
- * client render the same transform.
- */
-const fadeVariants: Variants = {
-  initial: { opacity: 0, y: 0, scale: 1 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.2, ease: EASE_OUT },
-  },
-  exit: {
-    opacity: 0,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.15, ease: EASE_OUT },
-  },
-};
-
-/** Status icon swap: never from scale(0), a slight 0.9 -> 1 settle. */
-const iconVariants: Variants = {
-  initial: { opacity: 0, scale: 0.9 },
-  animate: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.25, ease: EASE_OUT },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.9,
-    transition: { duration: 0.15, ease: EASE_OUT },
-  },
-};
+const initialsOf = (name: string) =>
+  name
+    .split(NOT_LETTER)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
 
 /**
  * An odometer: each digit is a 0-9 strip in a one-digit window, moved with
@@ -188,300 +124,123 @@ const iconVariants: Variants = {
 function RollingNumber({ value }: { value: string }) {
   const chars = Array.from(value);
   return (
-    <>
-      <span className="sr-only">{value}</span>
-      <span aria-hidden="true" className="inline-flex select-none tabular-nums">
-        {chars.map((char, index) => {
-          const fromRight = chars.length - index;
-          const digit = Number.parseInt(char, 10);
-          if (Number.isNaN(digit)) {
-            return <span key={`s-${fromRight}`}>{char}</span>;
-          }
-          return (
-            <span
-              className="relative inline-block h-[1lh] overflow-hidden"
-              key={`d-${fromRight}`}
-            >
-              {/* Sizes the window to one digit. */}
-              <span className="invisible">0</span>
-              <span
-                // Reduced motion is handled in CSS: the server can't know the
-                // preference, so it must not change the markup.
-                className="absolute inset-x-0 top-0 flex flex-col motion-reduce:transition-none!"
-                style={{
-                  transform: `translateY(${-digit * 10}%)`,
-                  transition: `transform ${DIGIT_ROLL_MS}ms ${EASE_OUT_CSS} ${(fromRight - 1) * DIGIT_STAGGER_MS}ms`,
-                }}
-              >
-                {"0123456789".split("").map((n) => (
-                  <span className="h-[1lh]" key={n}>
-                    {n}
-                  </span>
-                ))}
-              </span>
-            </span>
-          );
-        })}
-      </span>
-    </>
-  );
-}
-
-interface AccountRowProps {
-  direction: "from" | "to";
-  account: TransferAccount;
-  /** The amount shown; the To row shows zero until the money lands. */
-  amount: number;
-  /** Rows join once the money has landed. */
-  joined: boolean;
-  /** Full colour once the amount is final. */
-  settled: boolean;
-  locale: string;
-  reduceMotion: boolean;
-  badgeRef: RefObject<HTMLSpanElement | null>;
-}
-
-function AccountRow({
-  direction,
-  account,
-  amount,
-  joined,
-  settled,
-  locale,
-  reduceMotion,
-  badgeRef,
-}: AccountRowProps) {
-  const isFrom = direction === "from";
-  const DirectionIcon = isFrom ? ArrowUpIcon : ArrowDownIcon;
-  // The two rows sit 12px apart; once joined each moves 6px toward the
-  // other so they form one block (transform only, no layout animation).
-  const joinOffset = isFrom ? 6 : -6;
-  const transition: Transition = reduceMotion
-    ? { duration: 0 }
-    : { duration: 0.3, ease: EASE_IN_OUT };
-  // The facing corners square off once the rows meet, not as they start
-  // moving; they round again as soon as the rows start to part.
-  const [hasMet, setHasMet] = useState(joined);
-  const squared = joined && hasMet;
-
-  return (
-    <motion.div
-      animate={{ y: joined ? joinOffset : 0 }}
-      className={cn(
-        "w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 dark:border-zinc-700/50 dark:bg-zinc-800/50",
-        squared && isFrom && "rounded-b-none border-b-0",
-        squared && !isFrom && "rounded-t-none border-t-0"
-      )}
-      initial={false}
-      onAnimationComplete={() => setHasMet(joined)}
-      transition={transition}
-    >
-      <div className="w-full space-y-1">
-        <span className="flex items-center gap-1.5 font-medium text-xs text-zinc-500 dark:text-zinc-400">
-          <DirectionIcon aria-hidden="true" className="h-3 w-3" />
-          {isFrom ? "From" : "To"}
-        </span>
-        <div className="flex items-center gap-2.5">
+    <span aria-hidden="true" className="inline-flex select-none tabular-nums">
+      {chars.map((char, index) => {
+        const fromRight = chars.length - index;
+        const digit = Number.parseInt(char, 10);
+        if (Number.isNaN(digit)) {
+          return <span key={`s-${fromRight}`}>{char}</span>;
+        }
+        return (
           <span
-            aria-hidden="true"
-            className={cn(
-              "inline-flex h-7 w-7 items-center justify-center rounded-lg border bg-white font-medium text-sm text-zinc-900 transition-colors duration-300 dark:bg-zinc-900 dark:text-zinc-100",
-              !isFrom && settled
-                ? "border-emerald-500/70"
-                : "border-zinc-300 dark:border-zinc-700"
-            )}
-            ref={badgeRef}
+            className="relative inline-block h-[1lh] overflow-hidden"
+            key={`d-${fromRight}`}
           >
-            {symbolOf(account, locale)}
-          </span>
-          <div className="flex flex-col items-start">
+            {/* Sizes the window to one digit. */}
+            <span className="invisible">0</span>
             <span
-              className={cn(
-                "font-medium tracking-tight transition-colors duration-200",
-                settled
-                  ? "text-zinc-900 dark:text-zinc-100"
-                  : "text-zinc-500 dark:text-zinc-400"
-              )}
+              // Reduced motion is handled in CSS, so the server and the
+              // client render the same markup.
+              className="absolute inset-x-0 top-0 flex flex-col motion-reduce:transition-none!"
+              style={{
+                transform: `translateY(${-digit * 10}%)`,
+                transition: `transform ${DIGIT_ROLL_MS}ms ${EASE_OUT_CSS} ${(fromRight - 1) * DIGIT_STAGGER_MS}ms`,
+              }}
             >
-              <RollingNumber value={formatNumber(amount, locale, 2)} />{" "}
-              {account.currency}
+              {"0123456789".split("").map((n) => (
+                <span className="h-[1lh]" key={n}>
+                  {n}
+                </span>
+              ))}
             </span>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              {account.bank}
-              {account.last4 ? ` ••••${account.last4}` : null}
-            </span>
-          </div>
-        </div>
-      </div>
-    </motion.div>
+          </span>
+        );
+      })}
+    </span>
   );
 }
 
-/**
- * The progress arc stands in for a spinner: it eases towards 85% while the
- * transfer is processing (an honest "almost"), then closes on completion.
- * On failure it turns red and only this badge shakes.
- */
-function StatusBadge({
-  status,
-  reduceMotion,
+/** Two symbols in one cell, crossfading, so the amount never shifts. */
+function SwapSymbol({
+  from,
+  to,
+  showTo,
 }: {
-  status: TransferStatus;
-  reduceMotion: boolean;
+  from: string;
+  to: string;
+  showTo: boolean;
 }) {
-  const badgeRef = useRef<HTMLDivElement>(null);
-  // Starts empty on the server; the creep towards 85% begins on mount, and
-  // again from empty each time the transfer goes back to processing (a
-  // retry), instead of the arc unwinding from full.
-  const [armed, setArmed] = useState(status !== "processing");
-  const [armedFor, setArmedFor] = useState(status);
-  if (armedFor !== status) {
-    setArmedFor(status);
-    if (status === "processing") {
-      setArmed(false);
-    }
-  }
-  useEffect(() => {
-    if (armed) {
-      return;
-    }
-    // Two frames: the empty arc has to be painted before the creep starts,
-    // or the browser has nothing to transition from.
-    let frame = requestAnimationFrame(() => {
-      frame = requestAnimationFrame(() => setArmed(true));
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [armed]);
-
-  const previous = useRef(status);
-  useEffect(() => {
-    const was = previous.current;
-    previous.current = status;
-    if (status !== "failed" || was === "failed" || reduceMotion) {
-      return;
-    }
-    badgeRef.current?.animate(
-      [
-        { transform: "translateX(0)" },
-        { transform: "translateX(-7px)" },
-        { transform: "translateX(6px)" },
-        { transform: "translateX(-4px)" },
-        { transform: "translateX(2px)" },
-        { transform: "translateX(0)" },
-      ],
-      { duration: 420, easing: "ease-out" }
-    );
-  }, [status, reduceMotion]);
-
-  let progress = 1;
-  let arcTransition = `stroke-dashoffset 350ms ${EASE_OUT_CSS}, color 200ms ease`;
-  if (status === "processing") {
-    progress = armed ? ARC_PENDING : 0;
-    // Snap back to empty, then creep.
-    arcTransition = armed
-      ? `stroke-dashoffset ${ARC_PENDING_MS}ms cubic-bezier(0.1, 0.7, 0.3, 1)`
-      : "none";
-  }
-
+  const face =
+    "col-start-1 row-start-1 text-right transition-[opacity,filter] duration-300 motion-reduce:transition-none";
   return (
-    <div
-      className="relative flex h-[100px] w-[100px] items-center justify-center"
-      ref={badgeRef}
-    >
-      <svg
-        aria-hidden="true"
-        className="absolute inset-0 -rotate-90 [&_circle]:motion-reduce:transition-none!"
-        height="100"
-        viewBox="0 0 100 100"
-        width="100"
-      >
-        <circle
-          className="text-zinc-200 dark:text-zinc-800"
-          cx="50"
-          cy="50"
-          fill="none"
-          r={ARC_RADIUS}
-          stroke="currentColor"
-          strokeWidth="2.5"
-        />
-        {/* Neutral while it runs; green only once the money has landed,
-            so the colour itself says "done". */}
-        <circle
-          className={cn(
-            "transition-colors duration-300",
-            status === "failed" && "text-red-500",
-            status === "completed" && "text-emerald-500 dark:text-emerald-400",
-            status === "processing" && "text-zinc-900 dark:text-zinc-100"
-          )}
-          cx="50"
-          cy="50"
-          fill="none"
-          r={ARC_RADIUS}
-          stroke="currentColor"
-          strokeDasharray={ARC_LENGTH}
-          strokeLinecap="round"
-          strokeWidth="2.5"
-          style={{
-            strokeDashoffset: (1 - progress) * ARC_LENGTH,
-            transition: arcTransition,
-          }}
-        />
-      </svg>
-      <AnimatePresence initial={false} mode="wait">
-        <motion.div
-          animate="animate"
-          className="relative rounded-full p-5"
-          exit="exit"
-          initial="initial"
-          key={status}
-          variants={reduceMotion ? fadeVariants : iconVariants}
-        >
-          {status === "failed" && (
-            <XIcon
-              aria-hidden="true"
-              className="h-10 w-10 text-red-500"
-              strokeWidth={3}
-            />
-          )}
-          {status === "completed" && (
-            <svg
-              aria-hidden="true"
-              className="h-10 w-10 text-emerald-500 dark:text-emerald-400"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={3}
-              viewBox="0 0 24 24"
-            >
-              <motion.path
-                animate={{ pathLength: 1 }}
-                d="M20 6 9 17l-5-5"
-                initial={{ pathLength: reduceMotion ? 1 : 0 }}
-                transition={{ duration: 0.3, delay: 0.15, ease: EASE_OUT }}
-              />
-            </svg>
-          )}
-          {status === "processing" && (
-            <ArrowUpDown
-              aria-hidden="true"
-              className="h-10 w-10 text-zinc-900 dark:text-zinc-100"
-              strokeWidth={2.25}
-            />
-          )}
-        </motion.div>
-      </AnimatePresence>
-    </div>
+    <span aria-hidden="true" className="inline-grid">
+      <span className={cn(face, showTo && "opacity-0 blur-[3px]")}>{from}</span>
+      <span className={cn(face, !showTo && "opacity-0 blur-[3px]")}>{to}</span>
+    </span>
   );
 }
 
-const TITLES: Record<TransferStatus, string> = {
-  processing: "Transfer in progress",
-  completed: "Transfer complete",
-  failed: "Transfer failed",
-};
+type StepState = "done" | "active" | "pending" | "failed";
 
-const COPIED_MS = 1500;
+function StepNode({ state }: { state: StepState }) {
+  return (
+    <span className="relative flex size-5 shrink-0 items-center justify-center">
+      {/* Pending: an empty ring. Active: the ring with a turning arc. */}
+      <span
+        className={cn(
+          "absolute inset-0 rounded-full border-[1.5px] transition-colors duration-300",
+          (state === "pending" || state === "active") &&
+            "border-zinc-200 dark:border-zinc-700",
+          state === "done" &&
+            "border-zinc-900 bg-zinc-900 dark:border-zinc-100 dark:bg-zinc-100",
+          state === "failed" && "border-red-500 bg-red-500"
+        )}
+      />
+      {state === "active" && (
+        <svg
+          aria-hidden="true"
+          className="absolute inset-0 animate-spin text-zinc-900 [animation-duration:900ms] motion-reduce:animate-none dark:text-zinc-100"
+          fill="none"
+          viewBox="0 0 20 20"
+        >
+          <path
+            d="M10 1.25A8.75 8.75 0 0 1 18.75 10"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.5"
+          />
+        </svg>
+      )}
+      {state === "done" && (
+        <svg
+          aria-hidden="true"
+          className="relative size-3 text-white dark:text-zinc-900"
+          fill="none"
+          viewBox="0 0 12 12"
+        >
+          {/* The tick draws once, as the step finishes. */}
+          <path
+            className="animate-[ct-draw_300ms_cubic-bezier(0.23,1,0.32,1)_both] motion-reduce:animate-none"
+            d="M2.5 6.25 5 8.5l4.5-5"
+            pathLength={1}
+            stroke="currentColor"
+            strokeDasharray="1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.75"
+          />
+        </svg>
+      )}
+      {state === "failed" && (
+        <XIcon
+          aria-hidden="true"
+          className="relative size-3 text-white"
+          strokeWidth={3}
+        />
+      )}
+    </span>
+  );
+}
 
 /** The reference, with a copy button that confirms in place. */
 function TxnId({ id }: { id: string }) {
@@ -494,12 +253,12 @@ function TxnId({ id }: { id: string }) {
     return () => clearTimeout(timer);
   }, [copied]);
 
+  const icon =
+    "col-start-1 row-start-1 size-3 transition-[opacity,filter] duration-150";
   return (
     <button
-      aria-label={
-        copied ? "Transaction ID copied" : `Copy transaction ID ${id}`
-      }
-      className="-my-1 inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-zinc-500 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+      aria-label={copied ? "Reference copied" : `Copy reference ${id}`}
+      className="-mx-1.5 -my-1 inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-zinc-600 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
       onClick={() => {
         navigator.clipboard
           ?.writeText(id)
@@ -511,17 +270,14 @@ function TxnId({ id }: { id: string }) {
       type="button"
     >
       {id}
-      {/* Both icons share one cell and crossfade, so nothing shifts. */}
       <span aria-hidden="true" className="grid size-3 place-items-center">
         <CopyIcon
-          className={cn(
-            "col-start-1 row-start-1 size-3 transition-[opacity,filter] duration-150",
-            copied ? "opacity-0 blur-[2px]" : "opacity-100"
-          )}
+          className={cn(icon, copied ? "opacity-0 blur-[2px]" : "opacity-60")}
         />
         <CheckIcon
           className={cn(
-            "col-start-1 row-start-1 size-3 text-emerald-500 transition-[opacity,filter] duration-150",
+            icon,
+            "text-emerald-600 dark:text-emerald-400",
             copied ? "opacity-100" : "opacity-0 blur-[2px]"
           )}
           strokeWidth={3}
@@ -531,109 +287,44 @@ function TxnId({ id }: { id: string }) {
   );
 }
 
-/**
- * Wobbles the rate a little while the transfer is processing, as a live
- * quote would, and settles back on the agreed rate otherwise.
- */
-function useLiveRate(rate: number, processing: boolean, reduceMotion: boolean) {
-  const [live, setLive] = useState(rate);
-  useEffect(() => {
-    setLive(rate);
-    if (!processing || reduceMotion) {
-      return;
-    }
-    const timer = window.setInterval(() => {
-      setLive(rate * (1 + (Math.random() * 2 - 1) * RATE_WOBBLE));
-    }, RATE_TICK_MS);
-    return () => window.clearInterval(timer);
-  }, [rate, processing, reduceMotion]);
-  return live;
-}
+const PILL: Record<TransferStatus, { label: string; className: string }> = {
+  processing: {
+    label: "In progress",
+    className: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
+  },
+  completed: {
+    label: "Arrived",
+    className:
+      "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300",
+  },
+  failed: {
+    label: "Failed",
+    className:
+      "bg-red-500/10 text-red-700 dark:bg-red-400/10 dark:text-red-300",
+  },
+};
 
 /**
- * Plays the currency chip's trip from the From badge to the To badge when
- * the transfer completes. `landed` turns true when it arrives (at once
- * with reduced motion, or when the card first renders as completed).
+ * Steps done so far. Runs a step at a time while processing and waits on
+ * the last one; a fresh "processing" (a retry) starts over.
  */
-function useChipFlight(
-  completed: boolean,
-  reduceMotion: boolean,
-  refs: {
-    area: RefObject<HTMLDivElement | null>;
-    fromBadge: RefObject<HTMLSpanElement | null>;
-    toBadge: RefObject<HTMLSpanElement | null>;
-    chip: RefObject<HTMLSpanElement | null>;
+function useProgress(status: TransferStatus) {
+  const [progress, setProgress] = useState(FIRST_DONE);
+  const [runFor, setRunFor] = useState(status);
+  if (runFor !== status) {
+    setRunFor(status);
+    if (status === "processing") {
+      setProgress(FIRST_DONE);
+    }
   }
-) {
-  const [landed, setLanded] = useState(completed);
-  const { area, fromBadge, toBadge, chip } = refs;
   useEffect(() => {
-    if (!completed) {
-      setLanded(false);
+    if (status !== "processing" || progress >= WAIT_AT) {
       return;
     }
-    const node = chip.current;
-    const box = area.current?.getBoundingClientRect();
-    const start = fromBadge.current?.getBoundingClientRect();
-    const end = toBadge.current?.getBoundingClientRect();
-    if (reduceMotion || !(node && box && start && end)) {
-      setLanded(true);
-      return;
-    }
-    node.style.left = `${start.left - box.left}px`;
-    node.style.top = `${start.top - box.top}px`;
-    const dy = end.top - start.top;
-    // A slight bow to the right, as if handed over, not slid down a rail.
-    const flight = node.animate(
-      [
-        { transform: "translate(0, 0)", opacity: 0, offset: 0 },
-        { transform: "translate(0, 0)", opacity: 1, offset: 0.08 },
-        {
-          transform: `translate(14px, ${dy * 0.5}px)`,
-          opacity: 1,
-          offset: 0.5,
-        },
-        { transform: `translate(0, ${dy}px)`, opacity: 1, offset: 0.92 },
-        { transform: `translate(0, ${dy}px)`, opacity: 0, offset: 1 },
-      ],
-      { duration: CHIP_MS, easing: EASE_IN_OUT_CSS }
-    );
-    // The symbol changes currency on the way.
-    const [fromSymbol, toSymbol] = Array.from(node.children);
-    const swap = { duration: CHIP_MS, easing: "linear" };
-    fromSymbol?.animate(
-      [
-        { opacity: 1 },
-        { opacity: 1, offset: 0.4 },
-        { opacity: 0, offset: 0.6 },
-      ],
-      swap
-    );
-    toSymbol?.animate(
-      [
-        { opacity: 0 },
-        { opacity: 0, offset: 0.4 },
-        { opacity: 1, offset: 0.6 },
-        { opacity: 1 },
-      ],
-      swap
-    );
-    let cancelled = false;
-    flight.finished
-      .then(() => {
-        if (!cancelled) {
-          setLanded(true);
-        }
-      })
-      .catch(() => {
-        // Cancelled by unmount.
-      });
-    return () => {
-      cancelled = true;
-      flight.cancel();
-    };
-  }, [completed, reduceMotion, area, fromBadge, toBadge, chip]);
-  return landed && completed;
+    const timer = setTimeout(() => setProgress((p) => p + 1), STEP_MS);
+    return () => clearTimeout(timer);
+  }, [status, progress]);
+  return status === "completed" ? 4 : progress;
 }
 
 export default function CurrencyTransfer({
@@ -647,203 +338,182 @@ export default function CurrencyTransfer({
   onRetry,
   className,
 }: CurrencyTransferProps = {}) {
-  const reduceMotion = useReducedMotion() ?? false;
   const isControlled = status !== undefined;
   const [demoStatus, setDemoStatus] = useState<TransferStatus>("processing");
-  const currentStatus = status ?? demoStatus;
-  const completed = currentStatus === "completed";
-  const failed = currentStatus === "failed";
-  const processing = currentStatus === "processing";
+  const current = status ?? demoStatus;
+  const done = useProgress(current);
 
-  const liveRate = useLiveRate(rate, processing, reduceMotion);
-  const areaRef = useRef<HTMLDivElement>(null);
-  const fromBadgeRef = useRef<HTMLSpanElement>(null);
-  const toBadgeRef = useRef<HTMLSpanElement>(null);
-  const chipRef = useRef<HTMLSpanElement>(null);
-  const landed = useChipFlight(completed, reduceMotion, {
-    area: areaRef,
-    fromBadge: fromBadgeRef,
-    toBadge: toBadgeRef,
-    chip: chipRef,
-  });
-  // Nothing has arrived until the chip lands; then the amount rolls up.
-  const toAmount = landed ? to.amount : 0;
-
-  // Demo mode only: auto-complete after a short delay. Controlled usage
-  // (status passed in) never starts a timer.
+  // Demo only: once the run reaches the last step, the money arrives.
   useEffect(() => {
-    if (isControlled) {
+    if (isControlled || current !== "processing" || done < WAIT_AT) {
       return;
     }
-    const timer = setTimeout(() => {
-      setDemoStatus("completed");
-    }, DEMO_COMPLETE_DELAY_MS);
+    const timer = setTimeout(() => setDemoStatus("completed"), STEP_MS);
     return () => clearTimeout(timer);
-  }, [isControlled]);
+  }, [isControlled, current, done]);
 
-  const swap = reduceMotion ? fadeVariants : swapVariants;
-  // The hidden pose is the same on server and client; reduced motion drops
-  // the rise by giving `y` no duration.
-  const entry: Variants = {
-    hidden: { opacity: 0, y: 8 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.25,
-        delay: i * 0.06,
-        ease: EASE_OUT,
-        y: reduceMotion ? { duration: 0 } : undefined,
-      },
-    }),
+  const converted = done >= 2;
+  const shown = converted ? to : from;
+  const recipient = to.name ?? to.bank;
+  const toAccount = `${to.bank}${to.last4 ? ` ••${to.last4}` : ""}`;
+  const fromAccount = `${from.bank}${from.last4 ? ` ••${from.last4}` : ""}`;
+  const rateText = `1 ${from.currency} = ${formatNumber(rate, locale, 4)} ${to.currency}`;
+  const arrived = current === "completed";
+
+  const steps = [
+    { id: "paid", title: "Payment received", detail: `From ${fromAccount}` },
+    { id: "converted", title: `Converted to ${to.currency}`, detail: rateText },
+    { id: "sent", title: `Sent to ${to.bank}`, detail: toAccount },
+    {
+      id: "arrived",
+      title: arrived ? "Arrived" : "Arriving",
+      detail: arrived
+        ? `${recipient} can use it now`
+        : "Usually within a minute",
+    },
+  ];
+
+  const stateOf = (index: number): StepState => {
+    if (index < done) {
+      return "done";
+    }
+    if (index === done) {
+      return current === "failed" ? "failed" : "active";
+    }
+    return "pending";
   };
 
   return (
-    <TooltipProvider>
-      {/* Sized by its content, so the icon and rows no longer overflow
-          fixed slots into the card's padding. */}
-      <Card
-        className={cn(
-          "mx-auto flex w-full max-w-sm flex-col border border-zinc-200/60 bg-white p-6 dark:border-zinc-800/60 dark:bg-zinc-900",
-          className
-        )}
-      >
-        <CardContent className="flex flex-1 flex-col justify-center space-y-4 py-0">
-          <output aria-live="polite" className="sr-only">
-            {completed && `Transfer completed. Transaction ID ${txnId}.`}
-            {failed && "Transfer failed."}
-            {processing && "Transfer in progress."}
-          </output>
+    <div
+      className={cn(
+        "mx-auto w-full max-w-sm rounded-2xl bg-white p-5 ring-1 ring-zinc-200/80 dark:bg-zinc-900 dark:ring-zinc-800",
+        "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)]",
+        className
+      )}
+    >
+      {/* Draws the step ticks; a scoped name so it can't clash with app CSS. */}
+      <style>
+        {"@keyframes ct-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}"}
+      </style>
+      <output aria-live="polite" className="sr-only">
+        {arrived &&
+          `Transfer arrived. ${formatNumber(to.amount, locale, 2)} ${to.currency} to ${recipient}.`}
+        {current === "failed" && `Transfer failed. Refunded to ${fromAccount}.`}
+        {current === "processing" && steps[Math.min(done, 3)].title}
+      </output>
 
-          <motion.div
-            animate="visible"
-            className="flex items-center justify-center"
-            custom={0}
-            initial="hidden"
-            variants={entry}
-          >
-            <StatusBadge reduceMotion={reduceMotion} status={currentStatus} />
-          </motion.div>
+      {/* Who it's for, and where it stands. */}
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 font-medium text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+        >
+          {initialsOf(recipient)}
+        </span>
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="truncate font-medium text-sm text-zinc-900 dark:text-zinc-100">
+            {recipient}
+          </p>
+          <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+            {toAccount}
+          </p>
+        </div>
+        <span
+          className={cn(
+            "inline-flex h-6 shrink-0 items-center rounded-full px-2 font-medium text-[11px] transition-colors duration-300",
+            PILL[current].className
+          )}
+        >
+          {PILL[current].label}
+        </span>
+      </div>
 
-          <motion.div
-            animate="visible"
-            className="flex flex-col"
-            custom={1}
-            initial="hidden"
-            variants={entry}
-          >
-            <div className="w-full space-y-2 text-center">
-              <AnimatePresence initial={false} mode="wait">
-                <motion.h2
-                  animate="animate"
-                  className="font-semibold text-lg text-zinc-900 tracking-tight dark:text-zinc-100"
-                  exit="exit"
-                  initial="initial"
-                  key={`${currentStatus}-title`}
-                  variants={swap}
-                >
-                  {TITLES[currentStatus]}
-                </motion.h2>
-              </AnimatePresence>
-              <AnimatePresence initial={false} mode="wait">
-                <motion.div
-                  animate="animate"
-                  className={cn(
-                    "flex min-h-6 items-center justify-center gap-2 text-xs",
-                    failed
-                      ? "text-red-600 dark:text-red-400"
-                      : "text-zinc-500 dark:text-zinc-400"
-                  )}
-                  exit="exit"
-                  initial="initial"
-                  key={`${currentStatus}-detail`}
-                  variants={swap}
-                >
-                  {completed && <TxnId id={txnId} />}
-                  {failed && "Nothing was sent."}
-                  {failed && onRetry && (
-                    <button
-                      className="-my-1 inline-flex items-center gap-1 rounded-md px-1.5 py-1 font-medium text-zinc-900 transition-colors duration-150 hover:bg-zinc-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                      onClick={onRetry}
-                      type="button"
-                    >
-                      <RotateCcwIcon aria-hidden="true" className="size-3" />
-                      Retry
-                    </button>
-                  )}
-                  {processing && "Converting at the live rate…"}
-                </motion.div>
-              </AnimatePresence>
+      {/* The amount converts in place once the conversion step is done. */}
+      <div className="mt-6">
+        <p className="font-semibold text-4xl text-zinc-900 tracking-tight dark:text-zinc-50">
+          <span className="sr-only">
+            {formatNumber(shown.amount, locale, 2)} {shown.currency}
+          </span>
+          <SwapSymbol
+            from={symbolOf(from, locale)}
+            showTo={converted}
+            to={symbolOf(to, locale)}
+          />
+          <RollingNumber value={formatNumber(shown.amount, locale, 2)} />
+        </p>
+        <p className="mt-1 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+          {formatNumber(from.amount, locale, 2)} {from.currency} sent ·{" "}
+          {formatNumber(to.amount, locale, 2)} {to.currency} received
+        </p>
+      </div>
 
-              <div
-                className="relative mt-4 flex flex-col items-start gap-3"
-                ref={areaRef}
-              >
-                <AccountRow
-                  account={from}
-                  amount={from.amount}
-                  badgeRef={fromBadgeRef}
-                  direction="from"
-                  joined={landed}
-                  locale={locale}
-                  reduceMotion={reduceMotion}
-                  settled={landed}
-                />
-                <AccountRow
-                  account={to}
-                  amount={toAmount}
-                  badgeRef={toBadgeRef}
-                  direction="to"
-                  joined={landed}
-                  locale={locale}
-                  reduceMotion={reduceMotion}
-                  settled={landed}
-                />
-                {/* The money in transit: a copy of the From badge that
-                    travels to the To badge, changing currency on the way. */}
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute z-10 grid h-7 w-7 place-items-center rounded-lg border border-emerald-500/70 bg-white font-medium text-sm text-zinc-900 opacity-0 shadow-sm dark:bg-zinc-900 dark:text-zinc-100"
-                  ref={chipRef}
-                >
-                  <span className="col-start-1 row-start-1">
-                    {symbolOf(from, locale)}
+      <ol className="mt-6">
+        {steps.map((step, index) => {
+          const state = stateOf(index);
+          const last = index === steps.length - 1;
+          return (
+            <li className="flex gap-3" key={step.id}>
+              <div className="flex flex-col items-center">
+                <StepNode state={state} />
+                {!last && (
+                  // The rail fills down from each finished step.
+                  <span className="relative my-1 w-[1.5px] flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                    <span
+                      className={cn(
+                        "absolute inset-0 origin-top bg-zinc-900 transition-[scale] duration-500 motion-reduce:transition-none dark:bg-zinc-100",
+                        index < done - 1 ? "scale-y-100" : "scale-y-0"
+                      )}
+                      style={{ transitionTimingFunction: EASE_OUT_CSS }}
+                    />
                   </span>
-                  <span className="col-start-1 row-start-1 opacity-0">
-                    {symbolOf(to, locale)}
-                  </span>
-                </span>
-              </div>
-
-              <div className="mt-2 flex items-center justify-center gap-2 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
-                <span>
-                  {processing ? "Live rate" : "Rate"}: 1 {from.currency} ={" "}
-                  <RollingNumber value={formatNumber(liveRate, locale, 4)} />{" "}
-                  {to.currency}
-                </span>
-                {/* Only once there is a rate to explain. The padding gives
-                    the 12px icon a 24px target without moving the layout. */}
-                {!processing && (
-                  <Tooltip>
-                    <TooltipTrigger
-                      aria-label="Exchange rate details"
-                      className="-m-1.5 rounded-sm p-1.5 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/50"
-                    >
-                      <InfoIcon
-                        aria-hidden="true"
-                        className="h-3 w-3 text-zinc-400 transition-colors hover:text-zinc-600 dark:hover:text-zinc-300"
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Rate updated at {timestamp}</p>
-                    </TooltipContent>
-                  </Tooltip>
                 )}
               </div>
-            </div>
-          </motion.div>
-        </CardContent>
-      </Card>
-    </TooltipProvider>
+              <div className={cn("min-w-0 flex-1", !last && "pb-4")}>
+                <p
+                  className={cn(
+                    "text-sm leading-5 transition-colors duration-300",
+                    state === "pending"
+                      ? "text-zinc-400 dark:text-zinc-500"
+                      : "text-zinc-900 dark:text-zinc-100",
+                    state === "failed" && "text-red-600 dark:text-red-400"
+                  )}
+                >
+                  {state === "failed" ? "Couldn't complete" : step.title}
+                </p>
+                <p
+                  className={cn(
+                    "mt-0.5 text-xs tabular-nums transition-colors duration-300",
+                    state === "pending"
+                      ? "text-zinc-400 dark:text-zinc-500"
+                      : "text-zinc-500 dark:text-zinc-400"
+                  )}
+                >
+                  {state === "failed"
+                    ? `Refunded to ${fromAccount}`
+                    : step.detail}
+                </p>
+                {state === "failed" && onRetry && (
+                  <button
+                    className="mt-2 inline-flex h-7 items-center gap-1.5 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs transition-colors duration-150 hover:bg-zinc-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                    onClick={onRetry}
+                    type="button"
+                  >
+                    <RotateCcwIcon aria-hidden="true" className="size-3" />
+                    Retry
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+
+      <div className="mt-5 flex items-center justify-between border-zinc-100 border-t pt-4 text-xs dark:border-zinc-800">
+        <TxnId id={txnId} />
+        <span className="text-zinc-400 dark:text-zinc-500">
+          Rate locked {timestamp}
+        </span>
+      </div>
+    </div>
   );
 }

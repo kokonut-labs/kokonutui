@@ -1,7 +1,7 @@
 ---
 title: Currency Transfer
-description: Currency transfer card with odometer amounts, a live rate, a chip that carries the money across and a progress arc, built with React and Motion.
-keywords: ["payment", "fintech", "checkout", "transaction", "money", "success state"]
+description: Transfer tracker that converts the amount in place, walks through each step on a filling rail, and ends with a copyable reference. Built with React and Tailwind CSS.
+keywords: ["payment", "fintech", "transfer tracker", "transaction", "money", "timeline", "success state"]
 icon: ArrowLeftRight
 full: false
 ---
@@ -9,22 +9,23 @@ full: false
 
 import CurrencyTransfer from "@/components/kokonutui/currency-transfer";
 
-<PreviewClient link="currency-transfer" comment={["Motion"]}>
+<PreviewClient link="currency-transfer">
     <CurrencyTransfer />
 </PreviewClient>
 
 ## Usage
 
-With no props the card runs a demo: it shows "Transfer in Progress" and completes on its own. Pass `status` to drive it from your own transfer state.
+With no props the card runs a demo: the payment is taken, converted, sent and arrives on its own. Pass `status` to drive it from your own transfer state. While `status` is `"processing"` the steps run up to the last one and wait there.
 
 ```tsx
 <CurrencyTransfer
   from={{ amount: 1200, currency: "GBP", symbol: "£", bank: "Monzo", last4: "1180" }}
-  to={{ amount: 1404, currency: "USD", symbol: "$", bank: "Chase Bank", last4: "4589" }}
+  to={{ amount: 1404, currency: "USD", symbol: "$", bank: "Chase", last4: "4589", name: "Sam Carter" }}
   rate={1.17}
   txnId="TXN-8F2K19QZ"
   timestamp="2:30 PM"
-  status={isDone ? "completed" : "processing"}
+  status={state}
+  onRetry={retry}
 />
 ```
 
@@ -32,14 +33,14 @@ With no props the card runs a demo: it shows "Transfer in Progress" and complete
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `from` | `TransferAccount` | 500.00 USD, Chase Bank ••••4589 | Sending account and amount. |
-| `to` | `TransferAccount` | 460.00 EUR, Deutsche Bank ••••7823 | Receiving account and amount. |
+| `from` | `TransferAccount` | 500.00 USD, Chase ••4589 | Sending account and amount. |
+| `to` | `TransferAccount` | 460.00 EUR, Lena Fischer, Deutsche Bank ••7823 | Receiving account and amount. |
 | `rate` | `number` | `0.92` | Units of `to.currency` per one `from.currency`. |
-| `txnId` | `string` | `"TXN-DAB3UL494"` | Transaction ID shown on completion, with a copy button. |
-| `timestamp` | `string` | `"10:45 AM"` | When the rate was set, shown in the info tooltip. |
-| `status` | `"processing" \| "completed" \| "failed"` | — | Controlled status. Omit it for the self-completing demo. |
+| `txnId` | `string` | `"TXN-DAB3UL494"` | Reference shown in the footer, with a copy button. |
+| `timestamp` | `string` | `"10:45 AM"` | When the rate was locked. |
+| `status` | `"processing" \| "completed" \| "failed"` | — | Controlled status. Omit it for the self-running demo. |
 | `locale` | `string` | `"en-US"` | BCP 47 locale for amounts, currency symbols and the rate. |
-| `onRetry` | `() => void` | — | Shows a Retry button next to the failure message. |
+| `onRetry` | `() => void` | — | Shows a Retry button on the step that failed. |
 | `className` | `string` | — | Extra classes for the card. |
 
-`TransferAccount` is `{ amount: number; currency: string; symbol?: string; bank: string; last4?: string }`. Status changes are announced to screen readers, and with reduced motion the amounts and arc jump to their values and the chip and shake are skipped.
+`TransferAccount` is `{ amount: number; currency: string; symbol?: string; bank: string; last4?: string; name?: string }`. The receiving `name` labels the card and its initials avatar. Status changes are announced to screen readers, and with reduced motion the digits, rail and ticks jump to their state.
