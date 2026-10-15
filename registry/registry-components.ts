@@ -454,6 +454,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "ai-context-meter",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-context-meter.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "card-stack",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
