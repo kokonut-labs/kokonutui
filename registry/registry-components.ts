@@ -487,6 +487,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "ai-model-selector",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-model-selector.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "card-stack",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],

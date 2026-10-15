@@ -9,6 +9,7 @@
     "ai-tool-approval",
     "ai-context-meter",
     "ai-citations",
-    "ai-diff-review"
+    "ai-diff-review",
+    "ai-model-selector"
   ]
 }
