@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 64 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 65 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -15,6 +15,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Account Menu](https://kokonutui.com/docs/navigation/profile-dropdown.md): An account card that morphs into its own menu, with account switching, status, theme and hold-to-sign-out. Install: `npx shadcn@latest add @kokonutui/profile-dropdown`
 - [Activity Terrain](https://kokonutui.com/docs/cards/activity-terrain.md): A contribution heatmap that tilts up into a 3D terrain you can turn, built with React and canvas. Install: `npx shadcn@latest add @kokonutui/activity-terrain`
 - [AI Context Meter](https://kokonutui.com/docs/ai/ai-context-meter.md): How full the context window is, as a ring in the prompt footer that opens a breakdown by source and compacts when it fills. Install: `npx shadcn@latest add @kokonutui/ai-context-meter`
+- [AI Diff Review](https://kokonutui.com/docs/ai/ai-diff-review.md): A coding agent's edits streaming in file by file, then reviewed per file with accept, reject and undo. Install: `npx shadcn@latest add @kokonutui/ai-diff-review`
 - [AI Inline Citations](https://kokonutui.com/docs/ai/ai-citations.md): An answer with source chips beside each claim. One preview glides between chips and lights up the sentence it backs. Install: `npx shadcn@latest add @kokonutui/ai-citations`
 - [AI Input Search](https://kokonutui.com/docs/ai/ai-input-search.md): AI search chat input with toggleable web search mode, file attachment and auto-resizing textarea. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/ai-input-search`
 - [AI Input Selector](https://kokonutui.com/docs/ai/ai-prompt.md): AI chat input with a model picker, file chips you can drop or paste, and Stop while replying. Install: `npx shadcn@latest add @kokonutui/ai-prompt`

@@ -656,6 +656,22 @@
       ]
     },
     {
+      "name": "ai-diff-review",
+      "type": "registry:component",
+      "title": "AI Diff Review",
+      "description": "A coding agent's edits streaming in file by file, then reviewed per file with accept, reject and undo.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-diff-review.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "card-stack",
       "type": "registry:component",
       "title": "Throw Deck",
