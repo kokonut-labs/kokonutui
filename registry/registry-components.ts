@@ -285,34 +285,34 @@ export const component: Registry = [
     ],
   },
   {
-    name: "scrub-input",
+    name: "verification-code",
     type: "registry:component",
-    dependencies: [],
+    dependencies: ["motion", "lucide-react"],
     files: [
       {
-        path: "components/kokonutui/scrub-input.tsx",
+        path: "components/kokonutui/verification-code.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "tag-input",
+    name: "reaction-button",
     type: "registry:component",
     dependencies: ["motion", "lucide-react"],
     files: [
       {
-        path: "components/kokonutui/tag-input.tsx",
+        path: "components/kokonutui/reaction-button.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "cart-stepper",
+    name: "swatch-fan",
     type: "registry:component",
     dependencies: ["motion", "lucide-react"],
     files: [
       {
-        path: "components/kokonutui/cart-stepper.tsx",
+        path: "components/kokonutui/swatch-fan.tsx",
         type: "registry:component",
       },
     ],

@@ -391,46 +391,49 @@
       ]
     },
     {
-      "name": "scrub-input",
+      "name": "verification-code",
       "type": "registry:component",
-      "title": "Scrub Input",
-      "description": "A number field you drag by its label, like the inspector in a design tool, that also does math.",
-      "dependencies": [],
-      "files": [
-        {
-          "path": "components/kokonutui/scrub-input.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
-      "name": "tag-input",
-      "type": "registry:component",
-      "title": "Tag Input",
-      "description": "A field that turns what you type or paste into chips you can select, remove and drag into order.",
+      "title": "Verification Code",
+      "description": "A one-time code field that fills from typing, paste or autofill, and folds into a single Verified pill when the code is right.",
       "dependencies": [
         "motion",
         "lucide-react"
       ],
       "files": [
         {
-          "path": "components/kokonutui/tag-input.tsx",
+          "path": "components/kokonutui/verification-code.tsx",
           "type": "registry:component"
         }
       ]
     },
     {
-      "name": "cart-stepper",
+      "name": "reaction-button",
       "type": "registry:component",
-      "title": "Cart Stepper",
-      "description": "An add to cart button that turns into a quantity stepper, and folds back when you remove the item.",
+      "title": "Reaction Button",
+      "description": "Tap to like, or press and hold to slide across a tray of reactions and let go on the one you want.",
       "dependencies": [
         "motion",
         "lucide-react"
       ],
       "files": [
         {
-          "path": "components/kokonutui/cart-stepper.tsx",
+          "path": "components/kokonutui/reaction-button.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "swatch-fan",
+      "type": "registry:component",
+      "title": "Swatch Fan",
+      "description": "A color picker shaped like a paint fan deck. Drag it open, pick a hue and a shade, and copy the hex.",
+      "dependencies": [
+        "motion",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/swatch-fan.tsx",
           "type": "registry:component"
         }
       ]

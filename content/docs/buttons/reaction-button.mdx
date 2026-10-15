@@ -1,0 +1,21 @@
+---
+title: Reaction Button
+description: Tap to like, or press and hold to slide across a tray of reactions and let go on the one you want.
+keywords: ["reaction", "like", "emoji", "feedback", "social", "hold", "tray"]
+icon: ThumbsUp
+full: false
+---
+
+import ReactionButton from "@/components/kokonutui/reaction-button";
+
+<Preview link="reaction-button">
+    <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex flex-col gap-1">
+            <div className="font-medium text-sm text-zinc-900 dark:text-zinc-100">Maya Chen</div>
+            <div className="text-sm text-zinc-600 dark:text-zinc-400">The new onboarding is live. Sign-ups that finish setup went from 41% to 63% in the first week.</div>
+        </div>
+        <div className="flex items-center gap-2">
+            <ReactionButton count={128} />
+        </div>
+    </div>
+</Preview>
