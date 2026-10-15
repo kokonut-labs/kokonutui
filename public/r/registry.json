@@ -609,6 +609,53 @@
       ]
     },
     {
+      "name": "ai-tool-approval",
+      "type": "registry:component",
+      "title": "AI Tool Approval",
+      "description": "Approve or deny an agent's tool calls. Destructive calls need a press and hold, and decided calls fold into a trace with their output.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-tool-approval.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-context-meter",
+      "type": "registry:component",
+      "title": "AI Context Meter",
+      "description": "How full the context window is, as a ring in the prompt footer that opens a breakdown by source and compacts when it fills.",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-context-meter.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-citations",
+      "type": "registry:component",
+      "title": "AI Inline Citations",
+      "description": "An answer with source chips beside each claim. One preview glides between chips and lights up the sentence it backs.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-citations.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "card-stack",
       "type": "registry:component",
       "title": "Throw Deck",

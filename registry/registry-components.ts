@@ -443,6 +443,50 @@ export const component: Registry = [
     ],
   },
   {
+    name: "ai-tool-approval",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-tool-approval.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-context-meter",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-context-meter.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-citations",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-citations.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-diff-review",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-diff-review.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "ai-model-selector",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
