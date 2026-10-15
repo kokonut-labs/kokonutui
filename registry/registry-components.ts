@@ -443,6 +443,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "ai-tool-approval",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-tool-approval.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "ai-context-meter",
     type: "registry:component",
     dependencies: ["motion"],

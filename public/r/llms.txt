@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 61 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 62 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -18,6 +18,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [AI Input Selector](https://kokonutui.com/docs/ai/ai-prompt.md): AI chat input with a model picker, file chips you can drop or paste, and Stop while replying. Install: `npx shadcn@latest add @kokonutui/ai-prompt`
 - [AI State Loading](https://kokonutui.com/docs/ai/ai-loading.md): Agent progress as a list of steps with a live log, elapsed time and a summary when done. Install: `npx shadcn@latest add @kokonutui/ai-loading`
 - [AI Text Loading](https://kokonutui.com/docs/ai/ai-text-loading.md): AI thinking text with a soft wave through the letters and words that swap letter by letter. Install: `npx shadcn@latest add @kokonutui/ai-text-loading`
+- [AI Tool Approval](https://kokonutui.com/docs/ai/ai-tool-approval.md): Approve or deny an agent's tool calls. Destructive calls need a press and hold, and decided calls fold into a trace with their output. Install: `npx shadcn@latest add @kokonutui/ai-tool-approval`
 - [AI Voice](https://kokonutui.com/docs/ai/ai-voice.md): Voice input with a scrolling waveform, then a take you can play back, discard or send. Install: `npx shadcn@latest add @kokonutui/ai-voice`
 - [Apple Activity Card](https://kokonutui.com/docs/cards/apple-activity-card.md): Activity rings that draw with a count-up, lap past 100% with a shadowed end cap and dim to focus, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/apple-activity-card`
 - [Avatar Picker](https://kokonutui.com/docs/inputs/avatar-picker.md): Generated avatars from a name, morphing as you type, on a 3D coin you can flick, tap or shuffle. Install: `npx shadcn@latest add @kokonutui/avatar-picker`
