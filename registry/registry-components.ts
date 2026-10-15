@@ -495,6 +495,16 @@ export const component: Registry = [
     ],
   },
   {
+    name: "metric-card",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/metric-card.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
