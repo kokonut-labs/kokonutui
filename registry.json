@@ -391,6 +391,49 @@
       ]
     },
     {
+      "name": "rotary-dial",
+      "type": "registry:component",
+      "title": "Rotary Dial",
+      "description": "A code input you dial like an old phone, with a finger stop and a governed return.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/rotary-dial.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "tape-measure",
+      "type": "registry:component",
+      "title": "Tape Measure",
+      "description": "A length input you pull out like a tape measure, with a lock and a spring that whips it home.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/tape-measure.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "zip-reveal",
+      "type": "registry:component",
+      "title": "Zip Reveal",
+      "description": "A secret field you unzip to read, that zips itself back up if you let go early.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/zip-reveal.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "switch-button",
       "type": "registry:component",
       "title": "Switch Button",

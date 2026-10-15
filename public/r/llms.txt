@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 55 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 58 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -49,6 +49,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Plucked Text](https://kokonutui.com/docs/texts/plucked-text.md): A headline sitting on a string you can pluck, strum and let ring, built with React and real string physics. Install: `npx shadcn@latest add @kokonutui/plucked-text`
 - [Pull Cord](https://kokonutui.com/docs/buttons/pull-cord.md): A lamp switch you pull on a swinging cord, built with React and a rope simulation. Install: `npx shadcn@latest add @kokonutui/pull-cord`
 - [Receipt Printer](https://kokonutui.com/docs/cards/receipt-printer.md): A receipt that prints line by line, then tears off and falls when you pull it, built with React. Install: `npx shadcn@latest add @kokonutui/receipt-printer`
+- [Rotary Dial](https://kokonutui.com/docs/inputs/rotary-dial.md): A code input you dial like an old phone, with a finger stop and a governed return. Install: `npx shadcn@latest add @kokonutui/rotary-dial`
 - [Shape Hero](https://kokonutui.com/docs/backgrounds/shape-hero.md): A landing hero where shapes drop in, pile up under the headline and can be grabbed and thrown. Install: `npx shadcn@latest add @kokonutui/shape-hero`
 - [Signature Pad](https://kokonutui.com/docs/inputs/signature-pad.md): A signature field with a sprung pen tip, speed-weighted ink and SVG output. Install: `npx shadcn@latest add @kokonutui/signature-pad`
 - [Slide Text Button](https://kokonutui.com/docs/buttons/slide-text-button.md): Animated link button with a vertical text slide on hover and default and ghost variants, built with React, Next.js Link, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/slide-text-button`
@@ -57,6 +58,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Split Nav](https://kokonutui.com/docs/navigation/morphic-navbar.md): Navigation bar that splits around the active link, with drag-to-scrub, flick projection and an optional compact fold. Install: `npx shadcn@latest add @kokonutui/morphic-navbar`
 - [Swipe Tabs](https://kokonutui.com/docs/navigation/smooth-tab.md): Tabs with a swipeable panel, a drag-tracked indicator and spring physics. Install: `npx shadcn@latest add @kokonutui/smooth-tab`
 - [Switch Button](https://kokonutui.com/docs/buttons/switch-button.md): Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes. Install: `npx shadcn@latest add @kokonutui/switch-button`
+- [Tape Measure](https://kokonutui.com/docs/inputs/tape-measure.md): A length input you pull out like a tape measure, with a lock and a spring that whips it home. Install: `npx shadcn@latest add @kokonutui/tape-measure`
 - [Team Selector](https://kokonutui.com/docs/inputs/team-selector.md): Animated team size selector with stacked overlapping avatars, spring transitions and increment controls. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/team-selector`
 - [Tear Button](https://kokonutui.com/docs/buttons/tear-button.md): A confirm button you tear off like a ticket stub, hole by hole. Install: `npx shadcn@latest add @kokonutui/tear-button`
 - [Throw Deck](https://kokonutui.com/docs/cards/card-stack.md): A pile of image cards you drag, flick off the top and send under the deck, with arrow keys and a details view. Install: `npx shadcn@latest add @kokonutui/card-stack`
@@ -67,6 +69,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Wheel Picker](https://kokonutui.com/docs/inputs/wheel-picker.md): iOS-style 3D drum picker with flick momentum, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/wheel-picker`
 - [Widget Grid](https://kokonutui.com/docs/cards/bento-grid.md): Dashboard widgets you lift, drag and resize on a 6-column grid, with spring physics and full keyboard support. Install: `npx shadcn@latest add @kokonutui/bento-grid`
 - [Wind](https://kokonutui.com/docs/backgrounds/flow-field.md): Streamlines that part around the cursor, swirl in its wake and scatter on click, built with React and Canvas. Install: `npx shadcn@latest add @kokonutui/flow-field`
+- [Zip Reveal](https://kokonutui.com/docs/inputs/zip-reveal.md): A secret field you unzip to read, that zips itself back up if you let go early. Install: `npx shadcn@latest add @kokonutui/zip-reveal`
 
 ## Templates and Premium Components (Kokonut UI Pro)
 

@@ -8,6 +8,9 @@
     "detent-dial",
     "wheel-picker",
     "liquid-slider",
-    "signature-pad"
+    "signature-pad",
+    "rotary-dial",
+    "tape-measure",
+    "zip-reveal"
   ]
 }
