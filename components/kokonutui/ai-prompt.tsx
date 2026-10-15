@@ -39,56 +39,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
 import { cn } from "@/lib/utils";
 
-// Decorative: each icon sits next to the model name, which carries the label.
-const OPENAI_ICON = (
-  <svg
-    aria-hidden="true"
-    fill="currentColor"
-    height="1em"
-    preserveAspectRatio="xMidYMid"
-    viewBox="0 0 256 260"
-    width="1em"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M239.184 106.203a64.716 64.716 0 0 0-5.576-53.103C219.452 28.459 191 15.784 163.213 21.74A65.586 65.586 0 0 0 52.096 45.22a64.716 64.716 0 0 0-43.23 31.36c-14.31 24.602-11.061 55.634 8.033 76.74a64.665 64.665 0 0 0 5.525 53.102c14.174 24.65 42.644 37.324 70.446 31.36a64.72 64.72 0 0 0 48.754 21.744c28.481.025 53.714-18.361 62.414-45.481a64.767 64.767 0 0 0 43.229-31.36c14.137-24.558 10.875-55.423-8.083-76.483Zm-97.56 136.338a48.397 48.397 0 0 1-31.105-11.255l1.535-.87 51.67-29.825a8.595 8.595 0 0 0 4.247-7.367v-72.85l21.845 12.636c.218.111.37.32.409.563v60.367c-.056 26.818-21.783 48.545-48.601 48.601Zm-104.466-44.61a48.345 48.345 0 0 1-5.781-32.589l1.534.921 51.722 29.826a8.339 8.339 0 0 0 8.441 0l63.181-36.425v25.221a.87.87 0 0 1-.358.665l-52.335 30.184c-23.257 13.398-52.97 5.431-66.404-17.803ZM23.549 85.38a48.499 48.499 0 0 1 25.58-21.333v61.39a8.288 8.288 0 0 0 4.195 7.316l62.874 36.272-21.845 12.636a.819.819 0 0 1-.767 0L41.353 151.53c-23.211-13.454-31.171-43.144-17.804-66.405v.256Zm179.466 41.695-63.08-36.63L161.73 77.86a.819.819 0 0 1 .768 0l52.233 30.184a48.6 48.6 0 0 1-7.316 87.635v-61.391a8.544 8.544 0 0 0-4.4-7.213Zm21.742-32.69-1.535-.922-51.619-30.081a8.39 8.39 0 0 0-8.492 0L99.98 99.808V74.587a.716.716 0 0 1 .307-.665l52.233-30.133a48.652 48.652 0 0 1 72.236 50.391v.205ZM88.061 139.097l-21.845-12.585a.87.87 0 0 1-.41-.614V65.685a48.652 48.652 0 0 1 79.757-37.346l-1.535.87-51.67 29.825a8.595 8.595 0 0 0-4.246 7.367l-.051 72.697Zm11.868-25.58 28.138-16.217 28.188 16.218v32.434l-28.086 16.218-28.188-16.218-.052-32.434Z" />
-  </svg>
-);
-
-// Rendered once in the trigger and once in the menu, so every instance needs
-// its own gradient id.
-function GeminiIcon() {
-  const gradientId = useId();
-
-  return (
-    <svg
-      aria-hidden="true"
-      height="1em"
-      style={{ flex: "none", lineHeight: "1" }}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <linearGradient
-          id={gradientId}
-          x1="0%"
-          x2="68.73%"
-          y1="100%"
-          y2="30.395%"
-        >
-          <stop offset="0%" stopColor="#1C7DFF" />
-          <stop offset="52.021%" stopColor="#1C69FF" />
-          <stop offset="100%" stopColor="#F0DCD6" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M12 24A14.304 14.304 0 000 12 14.304 14.304 0 0012 0a14.305 14.305 0 0012 12 14.305 14.305 0 00-12 12"
-        fill={`url(#${gradientId})`}
-        fillRule="nonzero"
-      />
-    </svg>
-  );
-}
-
 export interface PromptCommand {
   id: string;
   label: string;
@@ -179,31 +129,25 @@ const DEFAULT_COMMANDS: PromptCommand[] = [
 
 const DEFAULT_MODELS: PromptModel[] = [
   {
-    name: "Claude Fable 5",
-    description: "Most capable, for writing and analysis",
+    name: "Claude Opus 5.5",
+    description: "Most capable, for complex work",
     efforts: ["Low", "Medium", "High", "Max"],
     defaultEffort: "High",
   },
   {
-    name: "GPT-5.6",
-    description: "A strong all-rounder",
-    efforts: ["Minimal", "Low", "Medium", "High"],
+    name: "Claude Sonnet 5.5",
+    description: "Fast and smart for everyday tasks",
+    efforts: ["Low", "Medium", "High", "Max"],
     defaultEffort: "Medium",
   },
   {
-    name: "GPT-5.6 Codex",
-    description: "Tuned for agentic coding",
+    name: "Claude Fable 5.1",
+    description: "Newest model, free to try this weekend",
     efforts: ["Low", "Medium", "High"],
     defaultEffort: "Medium",
   },
   {
-    name: "Gemini 3 Pro",
-    description: "Long context and images",
-    efforts: ["Low", "High"],
-    defaultEffort: "High",
-  },
-  {
-    name: "GPT-5.6 Mini",
+    name: "Claude Haiku 5.5",
     description: "Fastest, no thinking step",
   },
 ];
@@ -253,6 +197,7 @@ function carryEffort(
   return next[Math.round(share * (next.length - 1))] ?? startEffort(to);
 }
 
+// Decorative: the icon sits next to the model name, which carries the label.
 const ANTHROPIC_ICON = (
   <svg
     aria-hidden="true"
@@ -268,16 +213,10 @@ const ANTHROPIC_ICON = (
   </svg>
 );
 
-const MODEL_ICONS: Record<string, ReactNode> = {
-  "GPT-5.6 Mini": OPENAI_ICON,
-  "Gemini 3 Pro": <GeminiIcon />,
-  "Claude Fable 5": ANTHROPIC_ICON,
-  "GPT-5.6 Codex": OPENAI_ICON,
-  "GPT-5.6": OPENAI_ICON,
-};
-
 const getModelIcon = (model: string) =>
-  MODEL_ICONS[model] ?? (
+  model.startsWith("Claude") ? (
+    ANTHROPIC_ICON
+  ) : (
     <Bot aria-hidden="true" className="h-4 w-4 opacity-50" />
   );
 
@@ -804,11 +743,11 @@ function EffortMenu({
 
 export default function AI_Prompt({
   models = DEFAULT_MODELS,
-  defaultModel = "GPT-5.6",
+  defaultModel = "Claude Opus 5.5",
   placeholder = "Ask anything. Type / for commands",
-  headerText = "Claude Fable 5 is free this weekend",
+  headerText = "Claude Fable 5.1 is free this weekend",
   headerAction = "Try it",
-  promotedModel = "Claude Fable 5",
+  promotedModel = "Claude Fable 5.1",
   onSubmit,
   onStop,
   onAttach,
