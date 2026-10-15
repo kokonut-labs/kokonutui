@@ -5,7 +5,7 @@ export const component: Registry = [
     name: "ai-prompt",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
-    registryDependencies: ["textarea", "button", "dropdown-menu"],
+    registryDependencies: ["textarea", "dropdown-menu"],
     files: [
       {
         path: "components/kokonutui/ai-prompt.tsx",
@@ -14,14 +14,6 @@ export const component: Registry = [
       {
         path: "hooks/use-auto-resize-textarea.ts",
         type: "registry:hook",
-      },
-      {
-        path: "components/icons/anthropic.tsx",
-        type: "registry:component",
-      },
-      {
-        path: "components/icons/anthropic-dark.tsx",
-        type: "registry:component",
       },
     ],
   },
@@ -155,8 +147,7 @@ export const component: Registry = [
   {
     name: "currency-transfer",
     type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    registryDependencies: ["card", "tooltip"],
+    dependencies: ["lucide-react"],
     files: [
       {
         path: "components/kokonutui/currency-transfer.tsx",

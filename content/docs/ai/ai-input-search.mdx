@@ -1,7 +1,7 @@
 ---
 title: AI Input Search
-description: AI search chat input with toggleable web search mode, file attachment and auto-resizing textarea. Built with React, Tailwind CSS and Motion.
-keywords: ["chatbot", "prompt box", "message composer", "assistant", "chat ui", "gpt"]
+description: AI search input with Quick and Research modes and a live trace underneath that stacks each source as it is read, times the run and opens into the full source list. Built with React, Tailwind CSS and Motion.
+keywords: ["ai search", "search box", "deep research", "sources", "citations", "perplexity"]
 icon: Globe
 ---
 
@@ -11,3 +11,25 @@ import AI_Input_Search from "@/components/kokonutui/ai-input-search";
 <Preview link="ai-input-search">
     <AI_Input_Search />
 </Preview>
+
+## Usage
+
+With no `onSearch` the component plays a pretend search. Wire it to your own search by calling `onSource` as each source comes in and resolving when the answer is ready. Stop, or Esc, aborts `signal`.
+
+```tsx
+<AI_Input_Search
+  onSearch={async (query, { mode, signal, onSource }) => {
+    for await (const source of mySearch(query, { deep: mode === "research", signal })) {
+      onSource({ domain: source.host, title: source.title });
+    }
+  }}
+/>
+```
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `placeholder` | `string` | `"Ask anything"` | Placeholder in Quick mode. |
+| `researchPlaceholder` | `string` | `"Research a topic in depth"` | Placeholder in Research mode. |
+| `defaultMode` | `"quick" \| "research"` | `"quick"` | Mode selected at first. |
+| `onSearch` | `(query, { mode, signal, onSource }) => Promise<void> \| void` | — | Runs the search. Omit it for the demo. |
+| `className` | `string` | — | Extra classes for the wrapper. |
