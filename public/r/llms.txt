@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 66 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 70 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -44,6 +44,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Gradient Button](https://kokonutui.com/docs/buttons/gradient-button.md): Layered gradient button with emerald, purple, and orange variants, a gradient border in light and dark mode, soft inner glow, press feedback, and an optional icon, styled entirely with Tailwind CSS in React. Install: `npx shadcn@latest add @kokonutui/gradient-button`
 - [Halftone Background](https://kokonutui.com/docs/backgrounds/halftone-background.md): Any image, or a lit sphere, printed as a halftone dot screen, with a loupe that looks closer under the cursor, built with React and canvas. Install: `npx shadcn@latest add @kokonutui/halftone-background`
 - [Hold Button](https://kokonutui.com/docs/buttons/hold-button.md): Press-and-hold confirmation button with an animated progress fill, configurable hold duration, and color variants, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/hold-button`
+- [Lightbox Grid](https://kokonutui.com/docs/cards/lightbox-grid.md): A photo grid whose thumbnails grow into a full view and fly back to their slot when you drag them down. Install: `npx shadcn@latest add @kokonutui/lightbox-grid`
 - [Liquid Gauge](https://kokonutui.com/docs/cards/liquid-gauge.md): A usage meter filled with liquid that sloshes, ripples and bubbles, built with React and a wave simulation. Install: `npx shadcn@latest add @kokonutui/liquid-gauge`
 - [Liquid Slider](https://kokonutui.com/docs/inputs/liquid-slider.md): A vertical slider you fill like a glass, with a sloshing surface and rising bubbles. Install: `npx shadcn@latest add @kokonutui/liquid-slider`
 - [Loader](https://kokonutui.com/docs/inputs/loader.md): Animated loading indicator with rotating gradient rings, size variants and customizable title text. Built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/loader`
@@ -51,6 +52,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Marking Menu](https://kokonutui.com/docs/navigation/marking-menu.md): A radial menu you hold to open or flick to pick blind, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/marking-menu`
 - [Metric Card](https://kokonutui.com/docs/cards/metric-card.md): A KPI card whose number rolls to any day you scrub, with periods that reshape the line instead of swapping it. Install: `npx shadcn@latest add @kokonutui/metric-card`
 - [Momentum Rail](https://kokonutui.com/docs/cards/carousel-cards.md): A card rail you flick with momentum, snapping on a spring, with scroll-driven cover-flow depth and parallax. Install: `npx shadcn@latest add @kokonutui/carousel-cards`
+- [Morph Popover](https://kokonutui.com/docs/buttons/morph-popover.md): A button that grows into the form it opens, with its label sliding up to become the title, then shrinks into a confirmation. Install: `npx shadcn@latest add @kokonutui/morph-popover`
 - [Notification Stack](https://kokonutui.com/docs/cards/notification-stack.md): Stacked notifications that fan out on hover and swipe away, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/notification-stack`
 - [Now Playing](https://kokonutui.com/docs/cards/liquid-glass-card.md): Music card with a spinning disc you can grab and turn to scrub, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/liquid-glass-card`
 - [Particle Button](https://kokonutui.com/docs/buttons/particle-button.md): Button that bursts animated particles from its center on click with a quick scale press effect, built with React, Motion, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/particle-button`
@@ -65,10 +67,12 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Social Button](https://kokonutui.com/docs/buttons/social-button.md): Share button that expands into a row of social icon buttons with staggered Motion animations on hover, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/social-button`
 - [Spending Ring](https://kokonutui.com/docs/cards/spending-ring.md): A spending breakdown you spin like a dial; flick the ring and it settles with a category under the marker. Install: `npx shadcn@latest add @kokonutui/spending-ring`
 - [Split Nav](https://kokonutui.com/docs/navigation/morphic-navbar.md): Navigation bar that splits around the active link, with drag-to-scrub, flick projection and an optional compact fold. Install: `npx shadcn@latest add @kokonutui/morphic-navbar`
+- [Status Island](https://kokonutui.com/docs/navigation/status-island.md): A pill that reports background work, reshaping as tasks change and opening into a list of everything in flight. Install: `npx shadcn@latest add @kokonutui/status-island`
 - [Swipe Tabs](https://kokonutui.com/docs/navigation/smooth-tab.md): Tabs with a swipeable panel, a drag-tracked indicator and spring physics. Install: `npx shadcn@latest add @kokonutui/smooth-tab`
 - [Switch Button](https://kokonutui.com/docs/buttons/switch-button.md): Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes. Install: `npx shadcn@latest add @kokonutui/switch-button`
 - [Team Selector](https://kokonutui.com/docs/inputs/team-selector.md): Animated team size selector with stacked overlapping avatars, spring transitions and increment controls. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/team-selector`
 - [Tear Button](https://kokonutui.com/docs/buttons/tear-button.md): A confirm button you tear off like a ticket stub, hole by hole. Install: `npx shadcn@latest add @kokonutui/tear-button`
+- [Templates](https://kokonutui.com/docs/templates.md): Full websites built with Kokonut UI, available with Kokonut UI Pro. Open a live preview, or get the source when one fits your project. Install: `npx shadcn@latest add @kokonutui/templates`
 - [Throw Deck](https://kokonutui.com/docs/cards/card-stack.md): A pile of image cards you drag, flick off the top and send under the deck, with arrow keys and a details view. Install: `npx shadcn@latest add @kokonutui/card-stack`
 - [Tool Dock](https://kokonutui.com/docs/navigation/toolbar.md): An editor tool dock with a sliding selection plate, shortcut tooltips and flyouts that you can throw to any edge. Install: `npx shadcn@latest add @kokonutui/toolbar`
 - [Topo Background](https://kokonutui.com/docs/backgrounds/topo-background.md): A living contour map that drifts, rises under the cursor and ripples on click, built with React and Canvas. Install: `npx shadcn@latest add @kokonutui/topo-background`

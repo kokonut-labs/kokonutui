@@ -997,6 +997,51 @@
       ]
     },
     {
+      "name": "status-island",
+      "type": "registry:component",
+      "title": "Status Island",
+      "description": "A pill that reports background work, reshaping as tasks change and opening into a list of everything in flight.",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/status-island.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "morph-popover",
+      "type": "registry:component",
+      "title": "Morph Popover",
+      "description": "A button that grows into the form it opens, with its label sliding up to become the title, then shrinks into a confirmation.",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/morph-popover.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "lightbox-grid",
+      "type": "registry:component",
+      "title": "Lightbox Grid",
+      "description": "A photo grid whose thumbnails grow into a full view and fly back to their slot when you drag them down.",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/lightbox-grid.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "use-auto-resize-textarea",
       "type": "registry:hook",
       "title": "Use Auto Resize Textarea",
