@@ -187,6 +187,19 @@
       ]
     },
     {
+      "name": "cradle-text",
+      "type": "registry:component",
+      "title": "Cradle Text",
+      "description": "A headline hung like a Newton's cradle, so a knock on one letter clacks through the word, built with React and pendulum physics.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/cradle-text.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "currency-transfer",
       "type": "registry:component",
       "title": "Currency Transfer",
