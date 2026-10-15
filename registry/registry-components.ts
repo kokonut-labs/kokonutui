@@ -61,6 +61,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "halftone-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/halftone-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "shape-hero",
     type: "registry:component",
     files: [
