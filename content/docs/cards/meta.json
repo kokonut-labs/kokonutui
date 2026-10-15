@@ -12,6 +12,8 @@
     "liquid-gauge",
     "activity-terrain",
     "receipt-printer",
+    "metric-card",
+    "uptime-card",
     "spending-ring"
   ]
 }

@@ -90,6 +90,19 @@
       ]
     },
     {
+      "name": "halftone-background",
+      "type": "registry:component",
+      "title": "Halftone Background",
+      "description": "Any image, or a lit sphere, printed as a halftone dot screen, with a loupe that looks closer under the cursor, built with React and canvas.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/halftone-background.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "shape-hero",
       "type": "registry:component",
       "title": "Shape Hero",
@@ -183,6 +196,19 @@
         {
           "path": "hooks/use-auto-resize-textarea.ts",
           "type": "registry:hook"
+        }
+      ]
+    },
+    {
+      "name": "cradle-text",
+      "type": "registry:component",
+      "title": "Cradle Text",
+      "description": "A headline hung like a Newton's cradle, so a knock on one letter clacks through the word, built with React and pendulum physics.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/cradle-text.tsx",
+          "type": "registry:component"
         }
       ]
     },
@@ -650,6 +676,18 @@
       ]
     },
     {
+      "name": "metric-card",
+      "type": "registry:component",
+      "title": "Metric Card",
+      "description": "A KPI card whose number rolls to any day you scrub, with periods that reshape the line instead of swapping it.",
+      "files": [
+        {
+          "path": "components/kokonutui/metric-card.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",
@@ -703,6 +741,19 @@
       "files": [
         {
           "path": "components/kokonutui/swoosh-text.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "scroll-index",
+      "type": "registry:component",
+      "title": "Scroll Index",
+      "description": "A section rail for long pages, with a tick per heading that you can hover, click or drag to scrub, built with React.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/scroll-index.tsx",
           "type": "registry:component"
         }
       ]

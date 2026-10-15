@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 55 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 59 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -26,6 +26,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Changelog](https://kokonutui.com/docs/changelog.md): New and updated Kokonut UI components, release by release, with a link to each component and its pull request. Install: `npx shadcn@latest add @kokonutui/changelog`
 - [Command Button](https://kokonutui.com/docs/buttons/command-button.md): Keyboard shortcut button with a Command icon, hover shimmer sweep, and smooth CSS transitions, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/command-button`
 - [Command Palette](https://kokonutui.com/docs/navigation/action-search-bar.md): ⌘K command palette with nested pages, fuzzy matching and in-row progress for running actions. Install: `npx shadcn@latest add @kokonutui/action-search-bar`
+- [Cradle Text](https://kokonutui.com/docs/texts/cradle-text.md): A headline hung like a Newton's cradle, so a knock on one letter clacks through the word, built with React and pendulum physics. Install: `npx shadcn@latest add @kokonutui/cradle-text`
 - [Currency Transfer](https://kokonutui.com/docs/cards/currency-transfer.md): Currency transfer card with odometer amounts, a live rate, a chip that carries the money across and a progress arc, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/currency-transfer`
 - [Detent Dial](https://kokonutui.com/docs/inputs/detent-dial.md): Rotary knob that clicks from notch to notch and coasts when flicked, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/detent-dial`
 - [Dot Field](https://kokonutui.com/docs/backgrounds/dot-field.md): A halftone dot membrane that ripples behind a swipe and rings out from a click, built with React and Canvas. Install: `npx shadcn@latest add @kokonutui/dot-field`
@@ -36,12 +37,14 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Flick Card](https://kokonutui.com/docs/cards/card-flip.md): A two-sided card you spin with a drag or a flick, with thickness, light and a floor shadow that follow the angle. Install: `npx shadcn@latest add @kokonutui/card-flip`
 - [Glitch Text](https://kokonutui.com/docs/texts/glitch-text.md): Flat text that cuts into hard-shifted bands with a thin red/cyan split, on idle, hover or text change. Install: `npx shadcn@latest add @kokonutui/glitch-text`
 - [Gradient Button](https://kokonutui.com/docs/buttons/gradient-button.md): Layered gradient button with emerald, purple, and orange variants, a gradient border in light and dark mode, soft inner glow, press feedback, and an optional icon, styled entirely with Tailwind CSS in React. Install: `npx shadcn@latest add @kokonutui/gradient-button`
+- [Halftone Background](https://kokonutui.com/docs/backgrounds/halftone-background.md): Any image, or a lit sphere, printed as a halftone dot screen, with a loupe that looks closer under the cursor, built with React and canvas. Install: `npx shadcn@latest add @kokonutui/halftone-background`
 - [Hold Button](https://kokonutui.com/docs/buttons/hold-button.md): Press-and-hold confirmation button with an animated progress fill, configurable hold duration, and color variants, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/hold-button`
 - [Liquid Gauge](https://kokonutui.com/docs/cards/liquid-gauge.md): A usage meter filled with liquid that sloshes, ripples and bubbles, built with React and a wave simulation. Install: `npx shadcn@latest add @kokonutui/liquid-gauge`
 - [Liquid Slider](https://kokonutui.com/docs/inputs/liquid-slider.md): A vertical slider you fill like a glass, with a sloshing surface and rising bubbles. Install: `npx shadcn@latest add @kokonutui/liquid-slider`
 - [Loader](https://kokonutui.com/docs/inputs/loader.md): Animated loading indicator with rotating gradient rings, size variants and customizable title text. Built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/loader`
 - [Magnet Button](https://kokonutui.com/docs/buttons/attract-button.md): Magnetic button that pulls floating particles to its center on hover using Motion spring animations, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/attract-button`
 - [Marking Menu](https://kokonutui.com/docs/navigation/marking-menu.md): A radial menu you hold to open or flick to pick blind, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/marking-menu`
+- [Metric Card](https://kokonutui.com/docs/cards/metric-card.md): A KPI card whose number rolls to any day you scrub, with periods that reshape the line instead of swapping it. Install: `npx shadcn@latest add @kokonutui/metric-card`
 - [Momentum Rail](https://kokonutui.com/docs/cards/carousel-cards.md): A card rail you flick with momentum, snapping on a spring, with scroll-driven cover-flow depth and parallax. Install: `npx shadcn@latest add @kokonutui/carousel-cards`
 - [Notification Stack](https://kokonutui.com/docs/cards/notification-stack.md): Stacked notifications that fan out on hover and swipe away, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/notification-stack`
 - [Now Playing](https://kokonutui.com/docs/cards/liquid-glass-card.md): Music card with a spinning disc you can grab and turn to scrub, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/liquid-glass-card`
@@ -49,6 +52,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Plucked Text](https://kokonutui.com/docs/texts/plucked-text.md): A headline sitting on a string you can pluck, strum and let ring, built with React and real string physics. Install: `npx shadcn@latest add @kokonutui/plucked-text`
 - [Pull Cord](https://kokonutui.com/docs/buttons/pull-cord.md): A lamp switch you pull on a swinging cord, built with React and a rope simulation. Install: `npx shadcn@latest add @kokonutui/pull-cord`
 - [Receipt Printer](https://kokonutui.com/docs/cards/receipt-printer.md): A receipt that prints line by line, then tears off and falls when you pull it, built with React. Install: `npx shadcn@latest add @kokonutui/receipt-printer`
+- [Scroll Index](https://kokonutui.com/docs/navigation/scroll-index.md): A section rail for long pages, with a tick per heading that you can hover, click or drag to scrub, built with React. Install: `npx shadcn@latest add @kokonutui/scroll-index`
 - [Shape Hero](https://kokonutui.com/docs/backgrounds/shape-hero.md): A landing hero where shapes drop in, pile up under the headline and can be grabbed and thrown. Install: `npx shadcn@latest add @kokonutui/shape-hero`
 - [Signature Pad](https://kokonutui.com/docs/inputs/signature-pad.md): A signature field with a sprung pen tip, speed-weighted ink and SVG output. Install: `npx shadcn@latest add @kokonutui/signature-pad`
 - [Slide Text Button](https://kokonutui.com/docs/buttons/slide-text-button.md): Animated link button with a vertical text slide on hover and default and ghost variants, built with React, Next.js Link, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/slide-text-button`
