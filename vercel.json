@@ -1,3 +1,5 @@
 {
-  "buildCommand": "bun run build"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "bun run ./scripts/build-registry.ts && bun run build",
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh"
 }
