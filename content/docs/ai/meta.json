@@ -7,6 +7,7 @@
     "ai-text-loading",
     "ai-voice",
     "ai-tool-approval",
-    "ai-context-meter"
+    "ai-context-meter",
+    "ai-citations"
   ]
 }
