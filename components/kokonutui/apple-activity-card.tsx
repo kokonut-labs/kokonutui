@@ -222,12 +222,19 @@ function CircleProgress({
         aria-label={progressLabel}
         className={cn(
           "-rotate-90 overflow-visible rounded-full outline-none transition-opacity duration-200 ease-out focus-visible:ring-2 focus-visible:ring-zinc-400",
+          // Neon hues wash out on white, so light mode caps their lightness
+          // (hue and chroma kept) and the gradient deepens instead of fading.
+          "[--ring-from:oklch(from_var(--ring)_min(l,0.8)_c_h)] [--ring-to:oklch(from_var(--ring)_min(l,0.7)_c_h)]",
+          "dark:[--ring-from:var(--ring)] dark:[--ring-to:var(--ring-end)]",
           dimmed && "opacity-25"
         )}
         height={data.size}
         onBlur={() => onActive(false)}
         onFocus={() => onActive(true)}
         role="img"
+        style={
+          { "--ring": data.color, "--ring-end": data.colorEnd } as CSSProperties
+        }
         // biome-ignore lint/a11y/noNoninteractiveTabindex: see above; focus only dims the other rings.
         tabIndex={0}
         viewBox={`0 0 ${data.size} ${data.size}`}
@@ -236,8 +243,8 @@ function CircleProgress({
         <title>{progressLabel}</title>
         <defs>
           <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="100%">
-            <stop offset="0%" stopColor={data.color} />
-            <stop offset="100%" stopColor={data.colorEnd} />
+            <stop offset="0%" style={{ stopColor: "var(--ring-from)" }} />
+            <stop offset="100%" style={{ stopColor: "var(--ring-to)" }} />
           </linearGradient>
           {/* Lets the second lap read as lying on top of the first. */}
           <filter height="300%" id={shadowId} width="300%" x="-100%" y="-100%">
@@ -293,12 +300,11 @@ function CircleProgress({
           ref={(node) => {
             nodes.current.lap = node;
           }}
-          stroke={data.colorEnd}
           strokeDasharray={circumference}
           strokeDashoffset={circumference}
           strokeLinecap="round"
           strokeWidth={STROKE}
-          style={{ opacity: 0 }}
+          style={{ opacity: 0, stroke: "var(--ring-to)" }}
         />
         {/* End cap of the overflow lap; its shadow shows it passing over
             the start of the ring. */}
@@ -316,9 +322,9 @@ function CircleProgress({
           <circle
             cx={center + radius}
             cy={center}
-            fill={data.colorEnd}
             filter={`url(#${shadowId})`}
             r={STROKE / 2}
+            style={{ fill: "var(--ring-to)" }}
           />
         </g>
         {/* Goal pulse, at the top of the ring where the first lap closes. */}
@@ -331,10 +337,10 @@ function CircleProgress({
           ref={(node) => {
             nodes.current.pulse = node;
           }}
-          stroke={data.colorEnd}
           strokeWidth={2}
           style={{
             opacity: 0,
+            stroke: "var(--ring-to)",
             transformBox: "fill-box",
             transformOrigin: "center",
           }}
@@ -384,9 +390,10 @@ function DetailedActivityInfo({
             {activity.label}
           </span>
           {/* The ring hues are too light for text on white, so light mode
-              darkens them (3:1 or better for this large text). */}
+              sets them to a fixed, deeper lightness with the same hue and
+              chroma (3:1 or better for this large text). */}
           <span
-            className="font-semibold text-2xl text-[color-mix(in_oklab,var(--activity-color)_70%,black)] tabular-nums dark:text-(--activity-color)"
+            className="font-semibold text-2xl text-[oklch(from_var(--activity-color)_0.6_c_h)] tabular-nums dark:text-(--activity-color)"
             style={{ "--activity-color": activity.color } as CSSProperties}
           >
             <span className="sr-only">
