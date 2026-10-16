@@ -9,6 +9,7 @@
     "smooth-drawer",
     "marking-menu",
     "scroll-index",
-    "status-island"
+    "status-island",
+    "stack-panel"
   ]
 }

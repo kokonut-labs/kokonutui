@@ -799,4 +799,37 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "spoiler-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/spoiler-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "stack-panel",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/stack-panel.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-autocomplete",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/ai-autocomplete.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
