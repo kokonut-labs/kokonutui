@@ -354,18 +354,6 @@ export const component: Registry = [
     ],
   },
   {
-    name: "social-button",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    registryDependencies: ["button"],
-    files: [
-      {
-        path: "components/kokonutui/social-button.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "hold-button",
     type: "registry:component",
     dependencies: ["class-variance-authority", "lucide-react"],

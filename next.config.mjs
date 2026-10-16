@@ -358,7 +358,13 @@ const nextConfig = {
       },
       {
         source: "/docs/components/social-button",
-        destination: "/docs/buttons/social-button",
+        destination: "/docs/buttons/morph-popover",
+        permanent: true,
+      },
+      // social-button was removed; send old links to a sibling component
+      {
+        source: "/docs/buttons/social-button",
+        destination: "/docs/buttons/morph-popover",
         permanent: true,
       },
       {
