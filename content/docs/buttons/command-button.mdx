@@ -1,7 +1,7 @@
 ---
 title: Command Button
-description: Keyboard shortcut button with a Command icon, hover shimmer sweep, and smooth CSS transitions, built with React and Tailwind CSS.
-keywords: ["cmd k", "hotkey", "kbd", "shortcut key", "search trigger"]
+description: A button with its shortcut drawn as keycaps that sink as you press the real keys.
+keywords: ["cmd k", "hotkey", "kbd", "keycap", "shortcut key", "search trigger"]
 icon: Command
 full: false
 ---
@@ -10,5 +10,9 @@ full: false
 import CommandButton from "@/components/kokonutui/command-button";
 
 <Preview link="command-button">
-    <CommandButton />
+    <div className="flex flex-wrap items-center justify-center gap-3">
+        <CommandButton global={false} />
+        <CommandButton shortcut="c">New issue</CommandButton>
+        <CommandButton shortcut="shift+n">New project</CommandButton>
+    </div>
 </Preview>

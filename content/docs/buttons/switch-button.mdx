@@ -1,6 +1,6 @@
 ---
 title: Switch Button
-description: Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes.
+description: Light and dark theme toggle whose sun folds into a moon while the new theme spreads from the button as a circle.
 keywords: ["dark mode", "theme toggle", "light mode", "appearance", "color scheme"]
 icon: Link
 full: false
@@ -16,6 +16,8 @@ import SwitchButtonDemo from "@/components/mdx/switch-button-demo";
 ## Usage
 
 With no props, the button toggles the `dark` class on `<html>`, which is what Tailwind's class-based `dark:` variant reads. It does not save the choice.
+
+The new theme spreads out from the button as a circle, using the View Transitions API. In browsers without it, or with reduced motion turned on, the theme switches instantly.
 
 If a theme provider already owns the theme, pass the applied theme and a setter instead. With next-themes:
 
@@ -41,5 +43,6 @@ export function ThemeSwitch() {
 |---|---|---|---|
 | `theme` | `"light" \| "dark"` | — | The applied theme, when a provider owns it. Without it the button toggles the `dark` class itself. |
 | `onThemeChange` | `(theme: "light" \| "dark") => void` | — | Called with the theme to switch to. |
+| `reveal` | `boolean` | `true` | Spreads the new theme from the button as a circle. Set `false` to switch instantly. |
 | `size` | `"sm" \| "default" \| "lg"` | `"default"` | Button size. |
 | `showLabel` | `boolean` | `true` | Shows "Light" or "Dark" next to the icon. |
