@@ -60,7 +60,7 @@
       "name": "smooth-drawer",
       "type": "registry:component",
       "title": "Smooth Drawer",
-      "description": "Bottom drawer with spring-based slide-in and staggered content reveal, built on Vaul with React, Motion, and Tailwind CSS.",
+      "description": "Checkout bottom sheet on Vaul snap points, peeking at the total and dragging up for details.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -345,7 +345,7 @@
       "name": "team-selector",
       "type": "registry:component",
       "title": "Team Selector",
-      "description": "Animated team size selector with stacked overlapping avatars, spring transitions and increment controls. Built with React, Tailwind CSS and Motion.",
+      "description": "Seat picker with a scrubbable number, generated avatars and an optional rolling price line.",
       "dependencies": [
         "motion",
         "lucide-react"
@@ -468,25 +468,6 @@
       ]
     },
     {
-      "name": "social-button",
-      "type": "registry:component",
-      "title": "Social Button",
-      "description": "Share button that expands into a row of social icon buttons with staggered Motion animations on hover, built with React and Tailwind CSS.",
-      "dependencies": [
-        "lucide-react",
-        "motion"
-      ],
-      "registryDependencies": [
-        "button"
-      ],
-      "files": [
-        {
-          "path": "components/kokonutui/social-button.tsx",
-          "type": "registry:component"
-        }
-      ]
-    },
-    {
       "name": "hold-button",
       "type": "registry:component",
       "title": "Hold Button",
@@ -508,14 +489,11 @@
       "name": "attract-button",
       "type": "registry:component",
       "title": "Magnet Button",
-      "description": "Magnetic button that pulls floating particles to its center on hover using Motion spring animations, built with React and Tailwind CSS.",
+      "description": "A call-to-action button wrapped in a field of iron filings that align to its magnetic field and lean toward your cursor.",
       "dependencies": [
-        "lucide-react",
-        "motion"
+        "lucide-react"
       ],
-      "registryDependencies": [
-        "button"
-      ],
+      "registryDependencies": [],
       "files": [
         {
           "path": "components/kokonutui/attract-button.tsx",
