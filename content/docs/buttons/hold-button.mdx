@@ -1,7 +1,7 @@
 ---
 title: Hold Button
-description: Press-and-hold confirmation button with an animated progress fill, configurable hold duration, and color variants, built with React and Motion.
-keywords: ["long press", "confirm action", "destructive", "delete confirmation", "progress bar"]
+description: Press and hold to confirm, with a fill that drains back on early release and a drawn check on completion.
+keywords: ["long press", "confirm action", "destructive", "delete confirmation", "press and hold"]
 icon: Fingerprint
 full: false
 ---
@@ -10,11 +10,9 @@ full: false
 import HoldButton from "@/components/kokonutui/hold-button";
 
 <Preview link="hold-button">
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col items-center gap-3">
         <HoldButton />
-        <HoldButton variant="green" holdDuration={1000} />
-        <HoldButton variant="blue" holdDuration={2000} />
-        <HoldButton variant="orange" />
-        <HoldButton variant="grey" />
+        <HoldButton variant="green" />
+        <HoldButton variant="grey" holdDuration={2000} />
     </div>
 </Preview>
