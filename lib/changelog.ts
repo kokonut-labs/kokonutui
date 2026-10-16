@@ -71,6 +71,21 @@ export const RELEASES: Release[] = [
         pr: 90,
         note: "Keycaps that sink as you press the real shortcut, which now works page-wide.",
       },
+      {
+        name: "attract-button",
+        pr: 93,
+        note: "A field of iron filings that traces the button, turns toward the cursor and pulls in on hover.",
+      },
+      {
+        name: "team-selector",
+        pr: 93,
+        note: "Drag the number to scrub, local avatars, up to 12 seats with a +N chip, optional seat price.",
+      },
+      {
+        name: "smooth-drawer",
+        pr: 93,
+        note: "An order summary sheet on Vaul snap points: peek at the total, drag up for details.",
+      },
     ],
   },
   {
