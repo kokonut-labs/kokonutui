@@ -58,24 +58,6 @@ export const PRO_TEMPLATE_LIST: ProTemplate[] = [
     previewLink: "https://template-sonae.vercel.app/",
   },
   {
-    slug: "ai",
-    name: "AI",
-    category: "Tools",
-    blurb: "A clean and modern landing page for AI projects.",
-    price: 59,
-    video: "https://cdn.kokonutui.pro/AI%20Template.mp4",
-    previewLink: "https://template-07-startup.vercel.app/",
-  },
-  {
-    slug: "postly",
-    name: "Postly",
-    category: "SaaS",
-    blurb: "A SaaS template for selling online products.",
-    price: 49,
-    video: "https://cdn.kokonutui.pro/Postly%20Template.mp4",
-    previewLink: "https://template-07-saas.vercel.app/",
-  },
-  {
     slug: "futur",
     name: "Futur",
     category: "Commerce",
@@ -83,15 +65,6 @@ export const PRO_TEMPLATE_LIST: ProTemplate[] = [
     price: 49,
     video: "https://cdn.kokonutui.pro/Futur%20Template.mp4",
     previewLink: "https://futur-template.vercel.app/",
-  },
-  {
-    slug: "startup",
-    name: "Startup",
-    category: "Tools",
-    blurb: "A modern and elegant template for your startup.",
-    price: 49,
-    video: "https://cdn.kokonutui.pro/Startup%20Template.mp4",
-    previewLink: "https://template-founder.vercel.app/",
   },
 ];
 
