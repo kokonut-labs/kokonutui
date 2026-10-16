@@ -380,8 +380,8 @@ export const component: Registry = [
   {
     name: "attract-button",
     type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    registryDependencies: ["button"],
+    dependencies: ["lucide-react"],
+    registryDependencies: [],
     files: [
       {
         path: "components/kokonutui/attract-button.tsx",

@@ -3,208 +3,473 @@
 /**
  * @author: @dorianbaffier
  * @description: Smooth Drawer
- * @version: 1.0.0
- * @date: 2025-06-26
+ * @version: 2.0.0
+ * @date: 2026-10-16
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { Fingerprint } from "lucide-react";
-import { motion, useReducedMotion, type Variants } from "motion/react";
-import Image from "next/image";
-import Link from "next/link";
-import type * as React from "react";
+import { ChevronUp, CreditCard } from "lucide-react";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  type Variants,
+} from "motion/react";
+import {
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import { cn } from "@/lib/utils";
 
-interface PriceTagProps {
+export interface OrderItem {
+  id: string;
+  name: string;
+  /** Variant line, e.g. "Sand · M". */
+  detail?: string;
+  /** Unit price. */
   price: number;
-  discountedPrice: number;
+  quantity?: number;
 }
 
-function PriceTag({ price, discountedPrice }: PriceTagProps) {
-  return (
-    <div className="mx-auto flex max-w-fit items-center justify-around gap-4">
-      <div className="flex items-baseline gap-2">
-        <span className="font-bold text-4xl text-zinc-900 dark:text-white">
-          ${discountedPrice}
-        </span>
-        <span className="text-lg text-zinc-400 line-through dark:text-zinc-500">
-          ${price}
-        </span>
-      </div>
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
-          Lifetime access
-        </span>
-        <span className="text-xs text-zinc-700 dark:text-zinc-300">
-          One-time payment
-        </span>
-      </div>
-    </div>
-  );
+export type DeliverySpeed = "standard" | "express";
+
+export interface OrderSummary {
+  delivery: DeliverySpeed;
+  subtotal: number;
+  shipping: number;
+  tax: number;
+  total: number;
 }
 
-interface SmoothDrawerProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface SmoothDrawerProps {
   title?: string;
+  /** Line under the title. Defaults to the item count and arrival estimate. */
   description?: string;
-  primaryButtonText?: string;
-  secondaryButtonText?: string;
-  onPrimaryAction?: () => void;
-  /** Link for the primary button. Defaults to the demo's pricing page. */
-  primaryHref?: string;
-  onSecondaryAction?: () => void;
-  price?: number;
-  discountedPrice?: number;
+  items?: OrderItem[];
+  /** Tax rate applied to the subtotal. */
+  taxRate?: number;
+  /** ISO 4217 currency code. */
+  currency?: string;
+  triggerLabel?: string;
+  confirmLabel?: string;
+  /** Called with the final breakdown; the sheet closes afterwards. */
+  onConfirm?: (summary: OrderSummary) => void;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
+
+const DEFAULT_ITEMS: OrderItem[] = [
+  { id: "overshirt", name: "Linen overshirt", detail: "Sand · M", price: 88 },
+  {
+    id: "socks",
+    name: "Merino crew socks",
+    detail: "Charcoal · 2 pairs",
+    price: 14,
+    quantity: 2,
+  },
+  { id: "tote", name: "Canvas tote", detail: "Natural", price: 32 },
+];
+
+const DELIVERY = {
+  standard: { label: "Standard", price: 0, eta: "3–5 business days" },
+  express: { label: "Express", price: 12, eta: "Tomorrow" },
+} as const;
+
+/** Visible height of the sheet at its first snap point. */
+const PEEK_HEIGHT = 200;
+/** Tallest the sheet gets, and the gap it keeps from the top of the screen. */
+const MAX_SHEET_HEIGHT = 680;
+const TOP_GAP = 24;
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
-// vaul already slides the sheet in, so the content only staggers a short
-// fade-up instead of sliding in a second time.
-const drawerVariants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.04 },
-  },
+/** Each digit slides in the direction the total moved. */
+const digitVariants = {
+  enter: (direction: number) => ({ y: `${direction * 70}%`, opacity: 0 }),
+  center: { y: "0%", opacity: 1 },
+  exit: (direction: number) => ({ y: `${direction * -70}%`, opacity: 0 }),
 } satisfies Variants;
 
-const itemVariants = {
-  hidden: { y: 8, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.2, ease: EASE_OUT },
-  },
+const fadeVariants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 },
 } satisfies Variants;
 
-const reducedItemVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { duration: 0.2, ease: EASE_OUT },
-  },
-} satisfies Variants;
+function RollingAmount({ value, format }: { value: number; format: string }) {
+  const reduceMotion = useReducedMotion();
+  const previous = useRef(value);
+  const direction = value >= previous.current ? 1 : -1;
 
-// Hovering the CTA sweeps the shine across once and wiggles the icon once;
-// leaving snaps the shine back out of view instead of sweeping it back.
-const shineVariants = {
-  rest: { x: "-100%", transition: { duration: 0 } },
-  hover: { x: "100%", transition: { duration: 1.5, ease: "easeInOut" } },
-} satisfies Variants;
+  useEffect(() => {
+    previous.current = value;
+  }, [value]);
 
-const fingerprintVariants = {
-  rest: { rotate: 0, y: 0, transition: { duration: 0.2, ease: EASE_OUT } },
-  hover: {
-    rotate: [0, 15, -15, 0],
-    y: [0, -2, 2, 0],
-    transition: { duration: 0.6, ease: "easeInOut" },
-  },
-} satisfies Variants;
-
-export default function SmoothDrawer({
-  title = "KokonutUI - Pro",
-  description = "100+ collection of UI Components and templates built for React, Next.js, and Tailwind CSS. Spend no time on design and focus on shipping.",
-  primaryButtonText = "Buy Now",
-  secondaryButtonText = "Maybe Later",
-  onPrimaryAction,
-  primaryHref = "https://kokonutui.pro/#pricing",
-  onSecondaryAction,
-  price = 169,
-  discountedPrice = 99,
-}: SmoothDrawerProps) {
-  const shouldReduceMotion = useReducedMotion();
-  const item = shouldReduceMotion ? reducedItemVariants : itemVariants;
+  const chars = format.split("");
 
   return (
-    <Drawer>
-      <DrawerTrigger asChild>
-        <Button variant="outline">Open Drawer</Button>
-      </DrawerTrigger>
-      <DrawerContent className="mx-auto max-w-fit rounded-2xl p-6 shadow-xl data-[vaul-drawer-direction=bottom]:rounded-t-2xl">
-        <motion.div
-          animate="visible"
-          className="mx-auto w-full max-w-[340px] space-y-6"
-          initial="hidden"
-          variants={drawerVariants}
-        >
-          <motion.div variants={item}>
-            <DrawerHeader className="space-y-2.5 px-0">
-              <DrawerTitle className="flex items-center gap-2.5 font-semibold text-2xl tracking-tighter">
-                {/* Spans: a heading only allows phrasing content. */}
-                <motion.span className="block" variants={item}>
-                  <span className="block rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 p-1.5 shadow-inner dark:from-zinc-800 dark:to-zinc-900">
-                    <Image
-                      alt=""
-                      height={32}
-                      src="https://kokonutui.com/logo.svg"
-                      unoptimized
-                      width={32}
-                    />
-                  </span>
-                </motion.span>
-                <motion.span variants={item}>{title}</motion.span>
-              </DrawerTitle>
-              <motion.div variants={item}>
-                <DrawerDescription className="text-sm text-zinc-600 leading-relaxed dark:text-zinc-400">
-                  {description}
-                </DrawerDescription>
-              </motion.div>
-            </DrawerHeader>
-          </motion.div>
-
-          <motion.div variants={item}>
-            <PriceTag discountedPrice={discountedPrice} price={price} />
-          </motion.div>
-
-          <motion.div variants={item}>
-            <DrawerFooter className="flex flex-col gap-3 px-0">
-              <motion.div
-                animate="rest"
-                className="w-full"
-                initial="rest"
-                whileHover={shouldReduceMotion ? undefined : "hover"}
+    <span className="relative inline-flex tabular-nums">
+      <span className="sr-only">{format}</span>
+      <span aria-hidden="true" className="inline-flex">
+        {chars.map((char, index) => {
+          // Keyed from the right so cents stay put when dollars gain a digit.
+          const slot = chars.length - index;
+          if (char < "0" || char > "9") {
+            return <span key={`s${slot}`}>{char}</span>;
+          }
+          return (
+            <span
+              className="relative inline-flex overflow-hidden"
+              key={`d${slot}`}
+            >
+              <AnimatePresence
+                custom={direction}
+                initial={false}
+                mode="popLayout"
               >
-                <Link
-                  className="group relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 font-semibold text-sm text-white shadow-lg shadow-rose-500/20 transition-[--tw-gradient-from,--tw-gradient-to,box-shadow,scale] duration-200 ease-out hover:from-rose-600 hover:to-pink-600 hover:shadow-rose-500/30 hover:shadow-xl motion-safe:active:scale-[0.97] dark:from-rose-600 dark:to-pink-600 dark:hover:from-rose-500 dark:hover:to-pink-500"
-                  href={primaryHref}
-                  onClick={onPrimaryAction}
-                  target="_blank"
+                <motion.span
+                  animate="center"
+                  className="inline-block"
+                  custom={direction}
+                  exit="exit"
+                  initial="enter"
+                  key={char}
+                  transition={{ duration: 0.24, ease: EASE_OUT }}
+                  variants={reduceMotion ? fadeVariants : digitVariants}
                 >
-                  <motion.span
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    variants={shineVariants}
-                  />
-                  <div className="relative flex items-center gap-2">
-                    {primaryButtonText}
-                    <motion.div variants={fingerprintVariants}>
-                      <Fingerprint className="h-4 w-4" />
-                    </motion.div>
-                  </div>
-                </Link>
-              </motion.div>
-              <DrawerClose asChild>
-                <Button
-                  className="h-11 w-full rounded-xl border-zinc-200 font-semibold text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800/80"
-                  onClick={onSecondaryAction}
-                  variant="outline"
-                >
-                  {secondaryButtonText}
-                </Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </motion.div>
-        </motion.div>
+                  {char}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+          );
+        })}
+      </span>
+    </span>
+  );
+}
+
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+
+export default function SmoothDrawer({
+  title = "Order summary",
+  description,
+  items = DEFAULT_ITEMS,
+  taxRate = 0.08,
+  currency = "USD",
+  triggerLabel = "Review order",
+  confirmLabel = "Pay",
+  onConfirm,
+  open,
+  defaultOpen = false,
+  onOpenChange,
+}: SmoothDrawerProps) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const isOpen = open ?? internalOpen;
+  const [expanded, setExpanded] = useState(false);
+  const [delivery, setDelivery] = useState<DeliverySpeed>("standard");
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const frame = useRef(0);
+  const reduceMotion = useReducedMotion();
+  const deliveryName = useId();
+
+  useEffect(() => {
+    const measure = () => setViewportHeight(window.innerHeight);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  const money = useMemo(
+    () => new Intl.NumberFormat("en-US", { style: "currency", currency }),
+    [currency]
+  );
+
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.price * (item.quantity ?? 1),
+    0
+  );
+  const shipping = DELIVERY[delivery].price;
+  const tax = Math.round(subtotal * taxRate * 100) / 100;
+  const total = subtotal + shipping + tax;
+  const itemCount = items.reduce((sum, item) => sum + (item.quantity ?? 1), 0);
+  const arrival =
+    delivery === "express" ? "Arrives tomorrow" : "Arrives in 3–5 days";
+
+  // Vaul measures snap points from the top of the window, so the sheet is
+  // given an explicit height and the peek point is offset by the gap above it.
+  const sheetHeight = Math.max(
+    PEEK_HEIGHT,
+    Math.min(MAX_SHEET_HEIGHT, viewportHeight - TOP_GAP)
+  );
+  const snapPoints = useMemo(
+    () => [`${PEEK_HEIGHT + Math.max(0, viewportHeight - sheetHeight)}px`, 1],
+    [viewportHeight, sheetHeight]
+  );
+
+  const handleOpenChange = (next: boolean) => {
+    if (open === undefined) {
+      setInternalOpen(next);
+    }
+    if (next) {
+      setExpanded(false);
+    }
+    onOpenChange?.(next);
+  };
+
+  const clearDragStyles = useCallback(() => {
+    cancelAnimationFrame(frame.current);
+    const details = detailsRef.current;
+    if (details) {
+      details.style.transition = "";
+      details.style.opacity = "";
+      details.style.translate = "";
+    }
+  }, []);
+
+  // Hand the details back to their class-driven transition.
+  const setSnap = (next: boolean) => {
+    clearDragStyles();
+    setExpanded(next);
+  };
+
+  // While Vaul drags the sheet, the details track its position directly.
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const sheet = event.currentTarget;
+    cancelAnimationFrame(frame.current);
+    frame.current = requestAnimationFrame(() => {
+      const details = detailsRef.current;
+      if (!(details && sheet.classList.contains("vaul-dragging"))) {
+        return;
+      }
+      const peekTop = window.innerHeight - PEEK_HEIGHT;
+      const fullTop = window.innerHeight - sheetHeight;
+      const top = sheet.getBoundingClientRect().top;
+      const progress = clamp01((peekTop - top) / (peekTop - fullTop || 1));
+      details.style.transition = "none";
+      details.style.opacity = String(progress);
+      details.style.translate = reduceMotion
+        ? ""
+        : `0 ${Math.round((1 - progress) * 12)}px`;
+    });
+  };
+
+  const handleConfirm = () => {
+    onConfirm?.({ delivery, subtotal, shipping, tax, total });
+    handleOpenChange(false);
+  };
+
+  return (
+    <Drawer
+      activeSnapPoint={snapPoints[expanded ? 1 : 0]}
+      fadeFromIndex={0}
+      onOpenChange={handleOpenChange}
+      open={isOpen}
+      setActiveSnapPoint={(point) => setSnap(point === 1)}
+      snapPoints={snapPoints}
+    >
+      <DrawerTrigger asChild>
+        <Button className="h-10 rounded-lg px-4" variant="outline">
+          {triggerLabel}
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent
+        className={cn(
+          "mx-auto w-full max-w-[420px] rounded-t-2xl border border-zinc-200 border-b-0 bg-white outline-none dark:border-zinc-800 dark:bg-zinc-950",
+          "mb-0! data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-none data-[vaul-drawer-direction=bottom]:rounded-t-2xl",
+          // Sit flush on the bottom edge even if the host styles dialogs with a
+          // margin. Swap the stock wide handle for a small pill.
+          "[&>div:first-child]:hidden"
+        )}
+        onPointerCancel={clearDragStyles}
+        onPointerMove={handlePointerMove}
+        onPointerUp={clearDragStyles}
+        style={{ height: sheetHeight }}
+      >
+        <div className="flex h-full flex-col">
+          <div
+            aria-hidden="true"
+            className="flex h-6 shrink-0 items-center justify-center"
+          >
+            <span className="h-1 w-9 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+          </div>
+
+          <div className="shrink-0 px-5 pt-1">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <DrawerTitle className="font-semibold text-[15px] text-zinc-900 tracking-tight dark:text-zinc-50">
+                  {title}
+                </DrawerTitle>
+                <DrawerDescription className="mt-0.5 text-[13px] text-zinc-500 dark:text-zinc-400">
+                  {description ??
+                    `${itemCount} ${itemCount === 1 ? "item" : "items"} · ${arrival}`}
+                </DrawerDescription>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-[13px] text-zinc-500 dark:text-zinc-400">
+                  Total
+                </p>
+                <p className="mt-0.5 font-semibold text-lg text-zinc-900 leading-6 tracking-tight dark:text-zinc-50">
+                  <RollingAmount format={money.format(total)} value={total} />
+                </p>
+              </div>
+            </div>
+
+            <button
+              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 font-medium text-sm text-white outline-none transition-colors duration-150 ease-out hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-offset-zinc-950 dark:hover:bg-zinc-200"
+              onClick={handleConfirm}
+              type="button"
+            >
+              {confirmLabel}
+            </button>
+
+            <button
+              aria-expanded={expanded}
+              className="mt-1 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg text-[13px] text-zinc-500 outline-none transition-colors duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-400 dark:hover:text-zinc-100"
+              onClick={() => setSnap(!expanded)}
+              type="button"
+            >
+              {expanded ? "Hide details" : "Order details"}
+              <ChevronUp
+                aria-hidden="true"
+                className={cn(
+                  "size-3.5 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+                  expanded && "rotate-180"
+                )}
+              />
+            </button>
+          </div>
+
+          <div
+            className={cn(
+              "min-h-0 flex-1 px-5 pb-6",
+              "transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:translate-y-0",
+              expanded
+                ? "translate-y-0 overflow-y-auto opacity-100"
+                : "translate-y-3 overflow-hidden opacity-0"
+            )}
+            inert={!expanded}
+            ref={detailsRef}
+          >
+            <div className="border-zinc-200 border-t pt-4 dark:border-zinc-800">
+              <ul className="space-y-3">
+                {items.map((item) => (
+                  <li className="flex items-center gap-3" key={item.id}>
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 font-medium text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                      {item.name.charAt(0)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-sm text-zinc-900 dark:text-zinc-100">
+                        {item.name}
+                      </p>
+                      {item.detail ? (
+                        <p className="truncate text-[13px] text-zinc-500 dark:text-zinc-400">
+                          {item.detail}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span className="text-sm text-zinc-900 tabular-nums dark:text-zinc-100">
+                      {money.format(item.price * (item.quantity ?? 1))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <fieldset className="mt-5">
+                <legend className="font-medium text-[13px] text-zinc-500 dark:text-zinc-400">
+                  Delivery
+                </legend>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(Object.keys(DELIVERY) as DeliverySpeed[]).map((speed) => {
+                    const option = DELIVERY[speed];
+                    const checked = delivery === speed;
+                    return (
+                      <label
+                        className={cn(
+                          "relative flex cursor-pointer flex-col rounded-xl border px-3 py-2.5 transition-colors duration-150 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-zinc-400",
+                          checked
+                            ? "border-zinc-900 bg-zinc-50 dark:border-zinc-200 dark:bg-zinc-900"
+                            : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700"
+                        )}
+                        key={speed}
+                      >
+                        <input
+                          checked={checked}
+                          className="sr-only"
+                          name={deliveryName}
+                          onChange={() => setDelivery(speed)}
+                          type="radio"
+                          value={speed}
+                        />
+                        <span className="flex items-baseline justify-between gap-2">
+                          <span className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
+                            {option.label}
+                          </span>
+                          <span className="text-[13px] text-zinc-900 tabular-nums dark:text-zinc-100">
+                            {option.price === 0
+                              ? "Free"
+                              : money.format(option.price)}
+                          </span>
+                        </span>
+                        <span className="mt-0.5 text-[13px] text-zinc-500 dark:text-zinc-400">
+                          {option.eta}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <dl className="mt-5 space-y-1.5 text-sm tabular-nums">
+                <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
+                  <dt>Subtotal</dt>
+                  <dd>{money.format(subtotal)}</dd>
+                </div>
+                <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
+                  <dt>Delivery</dt>
+                  <dd>{shipping === 0 ? "Free" : money.format(shipping)}</dd>
+                </div>
+                <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
+                  <dt>Estimated tax</dt>
+                  <dd>{money.format(tax)}</dd>
+                </div>
+                <div className="flex justify-between border-zinc-200 border-t pt-2 font-medium text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
+                  <dt>Total</dt>
+                  <dd>{money.format(total)}</dd>
+                </div>
+              </dl>
+
+              <div className="mt-5 flex items-center gap-3 rounded-xl border border-zinc-200 px-3 py-2.5 dark:border-zinc-800">
+                <CreditCard
+                  aria-hidden="true"
+                  className="size-4 text-zinc-500 dark:text-zinc-400"
+                />
+                <span className="flex-1 text-sm text-zinc-900 dark:text-zinc-100">
+                  Visa ending 4242
+                </span>
+                <span className="text-[13px] text-zinc-500 dark:text-zinc-400">
+                  Default
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </DrawerContent>
     </Drawer>
   );
