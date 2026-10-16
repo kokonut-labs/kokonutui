@@ -28,12 +28,13 @@ function withCodes(tree: PageTree.Root): PageTree.Root {
 
   const visit = (node: PageTree.Node): PageTree.Node => {
     if (node.type === "folder") {
-      // Folders start closed, so they carry the count of new parts inside.
+      // Folders start open, and still carry the count of new parts inside.
       const count = node.children.filter(
         (child) => child.type === "page" && fresh.has(child.url)
       ).length;
       return {
         ...node,
+        defaultOpen: true,
         name:
           count > 0 ? (
             <span
