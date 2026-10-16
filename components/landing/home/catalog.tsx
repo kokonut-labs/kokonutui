@@ -3,6 +3,7 @@
 import { ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type ComponentType, type ReactNode, Suspense, useState } from "react";
 import AttractButton from "@/components/kokonutui/attract-button";
 import { componentPrompt } from "@/lib/agents";
@@ -219,17 +220,7 @@ function Cover({
  * meet on the page is itself a component, and the note under it names it.
  */
 function BrowseAll({ count, part }: { count: number; part?: Part }) {
-  const browse = () => {
-    const target = document.getElementById("all-components");
-    if (!target) {
-      return;
-    }
-    const reduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-    target.scrollIntoView({ behavior: reduced ? "auto" : "smooth" });
-    history.replaceState(null, "", "#all-components");
-  };
+  const router = useRouter();
   return (
     <div
       className={cn(
@@ -266,7 +257,9 @@ function BrowseAll({ count, part }: { count: number; part?: Part }) {
           FOCUS
         )}
         containerClassName="shrink-0"
-        onClick={browse}
+        onClick={() => router.push("/docs")}
+        onFocus={() => router.prefetch("/docs")}
+        onPointerEnter={() => router.prefetch("/docs")}
         // Small enough that the field fades out inside the cell instead of
         // being cut at its corner.
         radius={26}
