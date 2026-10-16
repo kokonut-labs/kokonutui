@@ -39,6 +39,7 @@ export const RELEASES: Release[] = [
       { name: "spoiler-text", pr: 89 },
       { name: "stack-panel", pr: 89 },
       { name: "ai-autocomplete", pr: 89 },
+      { name: "undo-button", pr: 91 },
     ],
     improved: [],
   },
