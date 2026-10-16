@@ -1,18 +1,13 @@
 "use client";
 
-import {
-  ArrowUpRightIcon,
-  BotIcon,
-  type LucideIcon,
-  RotateCcwIcon,
-} from "lucide-react";
+import { ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { type ReactNode, Suspense, useState } from "react";
+import { type ComponentType, type ReactNode, Suspense, useState } from "react";
 import AttractButton from "@/components/kokonutui/attract-button";
 import { componentPrompt } from "@/lib/agents";
 import { cn } from "@/lib/utils";
-import { Avatar, CopyIconSwap, useCopy } from "./client";
+import { AgentIcon, Avatar, CopyIconSwap, useCopy } from "./client";
 import { ClientPicker, CopyLine } from "./controls";
 import {
   GITHUB_URL,
@@ -477,7 +472,7 @@ function PlateFoot({ part }: { part: Part }) {
       </span>
       <span className="flex shrink-0 gap-1.5">
         <PlateCopy
-          icon={BotIcon}
+          icon={AgentIcon}
           label="Agent"
           target={`prompt for your agent to add ${part.name}`}
           value={componentPrompt(part.name)}
@@ -501,7 +496,7 @@ function PlateCopy({
   label: string;
   target: string;
   value: string;
-  icon?: LucideIcon;
+  icon?: ComponentType<{ className?: string }>;
 }) {
   const { copied, copy } = useCopy();
   return (
