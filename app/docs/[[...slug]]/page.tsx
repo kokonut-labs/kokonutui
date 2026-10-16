@@ -9,6 +9,7 @@ import {
 import defaultMdxComponents, { createRelativeLink } from "fumadocs-ui/mdx";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getCategories } from "@/components/landing/home/get-categories";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, META, MONO } from "@/components/landing/home/styles";
 import TocProBanner from "@/components/landing/toc-pro-banner";
@@ -26,6 +27,7 @@ import {
 import { Preview, type PreviewProps } from "@/components/mdx/preview";
 import { PreviewClient } from "@/components/mdx/preview-client";
 import PreviewTemplate from "@/components/mdx/preview-template";
+import { ProPeek } from "@/components/mdx/pro-peek";
 import { ProTemplates } from "@/components/mdx/pro-templates";
 import WhatIncluded from "@/components/mdx/what-included";
 import { siteConfig } from "@/config/site";
@@ -34,6 +36,7 @@ import {
   formatReleaseDate,
   releaseAnchor,
 } from "@/lib/changelog";
+import { isProPeekUrl } from "@/lib/pro-peeks";
 import { source } from "@/lib/source";
 import { cn } from "@/lib/utils";
 
@@ -131,6 +134,11 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
 
   // A component page documents one catalog part, and its code heads the page.
   const part = getParts().find((p) => p.url === page.url);
+  // A Pro component shown here as a peek: it heads the page with PRO instead.
+  const proCategory = isProPeekUrl(page.url)
+    ? (getCategories().find((c) => c.slug === params.slug?.[0])?.title ??
+      "Components")
+    : undefined;
 
   // Component pages are a single plate with no markdown headings, so the
   // default TOC would render nothing but its "No Headings" empty state. Those
@@ -151,7 +159,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
 
   return (
     <DocsPage
-      breadcrumb={{ enabled: !part }}
+      breadcrumb={{ enabled: !(part || proCategory) }}
       full={page.data.full}
       tableOfContent={tableOfContent}
       tableOfContentPopover={{ enabled: hasHeadings }}
@@ -176,6 +184,14 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
               New, {formatReleaseDate(part.added)}
             </Link>
           ) : null}
+        </p>
+      ) : null}
+      {proCategory ? (
+        <p className={cn(META, "flex items-baseline gap-3")}>
+          <span className={cn(MONO, "font-medium text-[#FF2D55] text-[12px]")}>
+            PRO
+          </span>
+          <span>{proCategory}</span>
         </p>
       ) : null}
       <DocsTitle className="font-semibold text-4xl tracking-[-0.03em]">
@@ -208,6 +224,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
             Preview: DocsPreview,
             PreviewClient: DocsPreviewClient,
             PreviewTemplate,
+            ProPeek,
             ProTemplates,
             Release,
             WhatIncluded,

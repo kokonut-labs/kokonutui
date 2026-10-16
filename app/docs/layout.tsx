@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import HeaderProSmall from "@/components/landing/header-pro-small";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, MONO } from "@/components/landing/home/styles";
+import { isProPeekUrl } from "@/lib/pro-peeks";
 import { PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
 import { source } from "@/lib/source";
 import { cn } from "@/lib/utils";
@@ -52,9 +53,12 @@ function withCodes(tree: PageTree.Root): PageTree.Root {
         children: node.children.map(visit),
       };
     }
-    // Templates are Pro, and the sidebar says so before anyone clicks; the
-    // page itself stays on this site.
-    if (node.type === "page" && node.url === PRO_TEMPLATES_PAGE) {
+    // Templates and the Pro peeks are Pro, and the sidebar says so before
+    // anyone clicks; the pages themselves stay on this site.
+    if (
+      node.type === "page" &&
+      (node.url === PRO_TEMPLATES_PAGE || isProPeekUrl(node.url))
+    ) {
       return {
         ...node,
         name: (
