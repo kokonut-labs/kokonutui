@@ -1028,6 +1028,48 @@
       ]
     },
     {
+      "name": "spoiler-text",
+      "type": "registry:component",
+      "title": "Spoiler Text",
+      "description": "Inline text hidden under drifting specks, like a chat spoiler. A click blows the specks away from the point you touched.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/spoiler-text.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "stack-panel",
+      "type": "registry:component",
+      "title": "Stack Panel",
+      "description": "A panel that drills into pages like settings on a phone. The tapped row's label flies up into the title, and a swipe right takes you back.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/stack-panel.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-autocomplete",
+      "type": "registry:component",
+      "title": "AI Autocomplete",
+      "description": "A text box that suggests how your sentence ends in grey after the caret. Tab takes it all, the right arrow takes one word, and typing the same letters keeps it.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-autocomplete.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "use-auto-resize-textarea",
       "type": "registry:hook",
       "title": "Use Auto Resize Textarea",

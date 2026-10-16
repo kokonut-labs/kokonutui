@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 70 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 73 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -14,6 +14,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 
 - [Account Menu](https://kokonutui.com/docs/navigation/profile-dropdown.md): An account card that morphs into its own menu, with account switching, status, theme and hold-to-sign-out. Install: `npx shadcn@latest add @kokonutui/profile-dropdown`
 - [Activity Terrain](https://kokonutui.com/docs/cards/activity-terrain.md): A contribution heatmap that tilts up into a 3D terrain you can turn, built with React and canvas. Install: `npx shadcn@latest add @kokonutui/activity-terrain`
+- [AI Autocomplete](https://kokonutui.com/docs/ai/ai-autocomplete.md): A text box that suggests how your sentence ends in grey after the caret. Tab takes it all, the right arrow takes one word, and typing the same letters keeps it. Install: `npx shadcn@latest add @kokonutui/ai-autocomplete`
 - [AI Context Meter](https://kokonutui.com/docs/ai/ai-context-meter.md): How full the context window is, as a ring in the prompt footer that opens a breakdown by source and compacts when it fills. Install: `npx shadcn@latest add @kokonutui/ai-context-meter`
 - [AI Diff Review](https://kokonutui.com/docs/ai/ai-diff-review.md): A coding agent's edits streaming in file by file, then reviewed per file with accept, reject and undo. Install: `npx shadcn@latest add @kokonutui/ai-diff-review`
 - [AI Inline Citations](https://kokonutui.com/docs/ai/ai-citations.md): An answer with source chips beside each claim. One preview glides between chips and lights up the sentence it backs. Install: `npx shadcn@latest add @kokonutui/ai-citations`
@@ -67,6 +68,8 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Social Button](https://kokonutui.com/docs/buttons/social-button.md): Share button that expands into a row of social icon buttons with staggered Motion animations on hover, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/social-button`
 - [Spending Ring](https://kokonutui.com/docs/cards/spending-ring.md): A spending breakdown you spin like a dial; flick the ring and it settles with a category under the marker. Install: `npx shadcn@latest add @kokonutui/spending-ring`
 - [Split Nav](https://kokonutui.com/docs/navigation/morphic-navbar.md): Navigation bar that splits around the active link, with drag-to-scrub, flick projection and an optional compact fold. Install: `npx shadcn@latest add @kokonutui/morphic-navbar`
+- [Spoiler Text](https://kokonutui.com/docs/texts/spoiler-text.md): Inline text hidden under drifting specks, like a chat spoiler. A click blows the specks away from the point you touched. Install: `npx shadcn@latest add @kokonutui/spoiler-text`
+- [Stack Panel](https://kokonutui.com/docs/navigation/stack-panel.md): A panel that drills into pages like settings on a phone. The tapped row's label flies up into the title, and a swipe right takes you back. Install: `npx shadcn@latest add @kokonutui/stack-panel`
 - [Status Island](https://kokonutui.com/docs/navigation/status-island.md): A pill that reports background work, reshaping as tasks change and opening into a list of everything in flight. Install: `npx shadcn@latest add @kokonutui/status-island`
 - [Swipe Tabs](https://kokonutui.com/docs/navigation/smooth-tab.md): Tabs with a swipeable panel, a drag-tracked indicator and spring physics. Install: `npx shadcn@latest add @kokonutui/smooth-tab`
 - [Switch Button](https://kokonutui.com/docs/buttons/switch-button.md): Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes. Install: `npx shadcn@latest add @kokonutui/switch-button`
