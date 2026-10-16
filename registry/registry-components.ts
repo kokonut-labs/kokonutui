@@ -832,4 +832,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "undo-button",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/undo-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
