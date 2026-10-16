@@ -1,7 +1,7 @@
 ---
 title: Team Selector
-description: Animated team size selector with stacked overlapping avatars, spring transitions and increment controls. Built with React, Tailwind CSS and Motion.
-keywords: ["seat picker", "members", "counter", "stepper", "pricing", "onboarding"]
+description: Seat picker with a scrubbable number, generated avatars and an optional rolling price line.
+keywords: ["seat picker", "members", "counter", "stepper", "pricing", "onboarding", "scrub"]
 icon: UserPlus
 full: false
 ---
@@ -10,5 +10,5 @@ full: false
 import TeamSelector from "@/components/kokonutui/team-selector";
 
 <Preview link="team-selector" comment={["Motion"]}>
-    <TeamSelector />
+    <TeamSelector pricePerSeat={12} />
 </Preview>
