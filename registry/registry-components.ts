@@ -768,12 +768,12 @@ export const component: Registry = [
     ],
   },
   {
-    name: "path-breadcrumb",
+    name: "stack-panel",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/path-breadcrumb.tsx",
+        path: "components/kokonutui/stack-panel.tsx",
         type: "registry:component",
       },
     ],
