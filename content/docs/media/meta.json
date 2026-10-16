@@ -1,0 +1,9 @@
+{
+  "title": "Media",
+  "pages": [
+    "waveform-player",
+    "image-compare",
+    "clip-trimmer",
+    "synced-transcript"
+  ]
+}

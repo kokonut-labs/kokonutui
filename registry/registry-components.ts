@@ -572,6 +572,50 @@ export const component: Registry = [
     ],
   },
   {
+    name: "waveform-player",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/waveform-player.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "image-compare",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/image-compare.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "clip-trimmer",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/clip-trimmer.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "synced-transcript",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/synced-transcript.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
