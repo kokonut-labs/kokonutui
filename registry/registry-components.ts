@@ -572,6 +572,49 @@ export const component: Registry = [
     ],
   },
   {
+    name: "focal-point-picker",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/focal-point-picker.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "photo-straighten",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/photo-straighten.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "clip-trimmer",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/clip-trimmer.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "synced-transcript",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/synced-transcript.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "avatar-picker",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
