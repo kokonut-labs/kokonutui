@@ -31,13 +31,9 @@
       "name": "command-button",
       "type": "registry:component",
       "title": "Command Button",
-      "description": "Keyboard shortcut button with a Command icon, hover shimmer sweep, and smooth CSS transitions, built with React and Tailwind CSS.",
-      "dependencies": [
-        "lucide-react"
-      ],
-      "registryDependencies": [
-        "button"
-      ],
+      "description": "A button with its shortcut drawn as keycaps that sink as you press the real keys.",
+      "dependencies": [],
+      "registryDependencies": [],
       "files": [
         {
           "path": "components/kokonutui/command-button.tsx",
@@ -139,7 +135,7 @@
       "name": "file-upload",
       "type": "registry:component",
       "title": "File Upload",
-      "description": "Drag and drop file upload with animated progress, file validation and error states. Built with React, Tailwind CSS and Motion animations.",
+      "description": "A multi-file upload queue with per-file progress, retry and cancel.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -406,13 +402,9 @@
       "name": "switch-button",
       "type": "registry:component",
       "title": "Switch Button",
-      "description": "Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes.",
-      "dependencies": [
-        "lucide-react"
-      ],
-      "registryDependencies": [
-        "button"
-      ],
+      "description": "Light and dark theme toggle whose sun folds into a moon while the new theme spreads from the button as a circle.",
+      "dependencies": [],
+      "registryDependencies": [],
       "files": [
         {
           "path": "components/kokonutui/switch-button.tsx",
@@ -498,14 +490,13 @@
       "name": "hold-button",
       "type": "registry:component",
       "title": "Hold Button",
-      "description": "Press-and-hold confirmation button with an animated progress fill, configurable hold duration, and color variants, built with React and Motion.",
+      "description": "Press and hold to confirm, with a fill that drains back on early release and a drawn check on completion.",
       "dependencies": [
         "class-variance-authority",
-        "lucide-react"
+        "lucide-react",
+        "motion"
       ],
-      "registryDependencies": [
-        "button"
-      ],
+      "registryDependencies": [],
       "files": [
         {
           "path": "components/kokonutui/hold-button.tsx",
@@ -950,8 +941,9 @@
       "name": "particle-button",
       "type": "registry:component",
       "title": "Particle Button",
-      "description": "Button that bursts animated particles from its center on click with a quick scale press effect, built with React, Motion, and Tailwind CSS.",
+      "description": "A status button for async actions, with a spinner, a drawn check and a particle burst on success.",
       "dependencies": [
+        "class-variance-authority",
         "lucide-react",
         "motion"
       ],
