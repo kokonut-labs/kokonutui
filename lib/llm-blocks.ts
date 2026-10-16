@@ -12,6 +12,7 @@ import {
   SETUP_URL,
 } from "@/lib/agents";
 import { RELEASES } from "@/lib/changelog";
+import { getProPeek, proPeekUrl } from "@/lib/pro-peeks";
 import { PRO_TEMPLATE_LIST, proTemplateUrl } from "@/lib/pro-templates";
 
 // Markdown for the docs' own MDX blocks, so the `.md` pages agents read carry
@@ -134,6 +135,24 @@ const proTemplates: Renderer = () =>
       `- **${t.name}** (${t.category}, $${t.price}): ${t.blurb} Live preview: ${t.previewLink} · Get it: ${proTemplateUrl(t.slug)}`
   ).join("\n");
 
+const proPeek: Renderer = (args) => {
+  const peek = getProPeek(attr(args, "name") ?? "");
+  if (!peek) {
+    return "";
+  }
+  return [
+    "This component is part of Kokonut UI Pro, so it isn't in the free `@kokonutui` registry. With a Pro key it installs from the Pro registry:",
+    "",
+    fence("bash", `npx shadcn@latest add @kokonutui-pro/${peek.name}`),
+    "What it does:",
+    "",
+    ...peek.features.map((line) => `- ${line}`),
+    "",
+    `Get it with Kokonut UI Pro: ${proPeekUrl(peek, "llms")}`,
+    "",
+  ].join("\n");
+};
+
 export const BLOCK_RENDERERS: Record<string, Renderer> = {
   Command: command,
   Note: note,
@@ -144,4 +163,5 @@ export const BLOCK_RENDERERS: Record<string, Renderer> = {
   Release: release,
   SetupChoice: setupChoice,
   ProTemplates: proTemplates,
+  ProPeek: proPeek,
 };

@@ -1,3 +1,4 @@
+import { isProPeekUrl } from "@/lib/pro-peeks";
 import { source } from "@/lib/source";
 import type { Category, CategoryItem } from "./data";
 
@@ -15,7 +16,12 @@ export function getCategories(): Category[] {
     const items: CategoryItem[] = [];
     for (const child of node.children) {
       // Templates are external links to Pro, not components.
-      if (child.type !== "page" || !child.url.startsWith(DOCS_PREFIX)) {
+      // Pro peeks sit in the free categories but aren't free parts.
+      if (
+        child.type !== "page" ||
+        !child.url.startsWith(DOCS_PREFIX) ||
+        isProPeekUrl(child.url)
+      ) {
         continue;
       }
       const slugs = child.url.slice(DOCS_PREFIX.length).split("/");
