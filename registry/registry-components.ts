@@ -572,23 +572,22 @@ export const component: Registry = [
     ],
   },
   {
-    name: "waveform-player",
+    name: "focal-point-picker",
     type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/waveform-player.tsx",
+        path: "components/kokonutui/focal-point-picker.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "image-compare",
+    name: "photo-straighten",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/image-compare.tsx",
+        path: "components/kokonutui/photo-straighten.tsx",
         type: "registry:component",
       },
     ],

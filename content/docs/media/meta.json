@@ -1,9 +1,9 @@
 {
   "title": "Media",
   "pages": [
-    "waveform-player",
-    "image-compare",
     "clip-trimmer",
-    "synced-transcript"
+    "synced-transcript",
+    "focal-point-picker",
+    "photo-straighten"
   ]
 }
