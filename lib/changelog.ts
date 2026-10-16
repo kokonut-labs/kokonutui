@@ -34,6 +34,37 @@ export const NEW_FOR_DAYS = 30;
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-16",
+    added: [],
+    improved: [
+      {
+        name: "file-upload",
+        pr: 90,
+        note: "A multi-file queue with per-file progress, retry and cancel.",
+      },
+      {
+        name: "switch-button",
+        pr: 90,
+        note: "The new theme spreads from the button as a circle; the sun folds into a moon.",
+      },
+      {
+        name: "particle-button",
+        pr: 90,
+        note: "Now a status button for async actions: spinner, drawn check and a burst, or an error.",
+      },
+      {
+        name: "hold-button",
+        pr: 90,
+        note: "Shorter hold, a fill that drains back on early release, and a solid finish.",
+      },
+      {
+        name: "command-button",
+        pr: 90,
+        note: "Keycaps that sink as you press the real shortcut, which now works page-wide.",
+      },
+    ],
+  },
+  {
     date: "2026-10-15",
     added: [
       { name: "ai-tool-approval", pr: 76 },
