@@ -31,6 +31,7 @@ const CODES: Record<string, string> = {
   buttons: "BT",
   cards: "CD",
   inputs: "IN",
+  media: "MD",
   navigation: "NV",
   texts: "TX",
 };

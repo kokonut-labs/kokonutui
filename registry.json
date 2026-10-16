@@ -780,6 +780,64 @@
       ]
     },
     {
+      "name": "focal-point-picker",
+      "type": "registry:component",
+      "title": "Focal Point Picker",
+      "description": "Set where a photo's subject is and see every crop follow it live. Hover a crop to see what it cuts.",
+      "files": [
+        {
+          "path": "components/kokonutui/focal-point-picker.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "photo-straighten",
+      "type": "registry:component",
+      "title": "Photo Straighten",
+      "description": "Level a crooked photo on a ruler you drag or flick. The crop grows to hide the corners, and a grid shows while you adjust.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/photo-straighten.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "clip-trimmer",
+      "type": "registry:component",
+      "title": "Clip Trimmer",
+      "description": "A video trim timeline with a filmstrip, handles that snap to whole seconds and a playhead that loops the kept range.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/clip-trimmer.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "synced-transcript",
+      "type": "registry:component",
+      "title": "Synced Transcript",
+      "description": "A transcript that follows the spoken word, lets you click any word to jump there, and waits when you scroll away.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/synced-transcript.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",
@@ -1023,6 +1081,64 @@
       "files": [
         {
           "path": "components/kokonutui/lightbox-grid.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "spoiler-text",
+      "type": "registry:component",
+      "title": "Spoiler Text",
+      "description": "Inline text hidden under drifting specks, like a chat spoiler. A click blows the specks away from the point you touched.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/spoiler-text.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "stack-panel",
+      "type": "registry:component",
+      "title": "Stack Panel",
+      "description": "A panel that drills into pages like settings on a phone. The tapped row's label flies up into the title, and a swipe right takes you back.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/stack-panel.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-autocomplete",
+      "type": "registry:component",
+      "title": "AI Autocomplete",
+      "description": "A text box that suggests how your sentence ends in grey after the caret. Tab takes it all, the right arrow takes one word, and typing the same letters keeps it.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-autocomplete.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "undo-button",
+      "type": "registry:component",
+      "title": "Undo Button",
+      "description": "An action button that gives you a few seconds to take it back, with the time left drawn around its own edge.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/undo-button.tsx",
           "type": "registry:component"
         }
       ]
