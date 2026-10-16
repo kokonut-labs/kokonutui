@@ -261,12 +261,14 @@ function BrowseAll({ count, part }: { count: number; part?: Part }) {
       </span>
       <AttractButton
         className={cn(
-          "h-10 min-w-0 shrink-0 rounded-none bg-black px-4 text-[14px] text-white hover:bg-black/85 active:bg-black/75 dark:bg-white dark:text-black dark:active:bg-white/75 dark:hover:bg-white/85",
+          "h-10 min-w-0 shrink-0 rounded-full bg-black px-[18px] font-medium text-[14px] text-white tracking-[-0.01em] shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:bg-[#1c1c1c] active:bg-[#2a2a2a] dark:bg-white dark:text-black dark:shadow-[inset_0_-1px_0_rgba(0,0,0,0.08)] dark:active:bg-[#dcdcdc] dark:hover:bg-[#ececec]",
           FOCUS
         )}
         containerClassName="shrink-0"
         onClick={browse}
-        radius={36}
+        // Small enough that the field fades out inside the cell instead of
+        // being cut at its corner.
+        radius={26}
       >
         Browse all
       </AttractButton>
