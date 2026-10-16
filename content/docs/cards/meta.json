@@ -15,7 +15,6 @@
     "metric-card",
     "uptime-card",
     "spending-ring",
-    "lightbox-grid",
-    "order-tracker"
+    "lightbox-grid"
   ]
 }

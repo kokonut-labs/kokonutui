@@ -767,26 +767,4 @@ export const component: Registry = [
       },
     ],
   },
-  {
-    name: "price-range",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/price-range.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "order-tracker",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/order-tracker.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
 ];
