@@ -3,7 +3,9 @@
 import { ArrowDownIcon, ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type ReactNode, Suspense, useState } from "react";
+import AttractButton from "@/components/kokonutui/attract-button";
 import { cn } from "@/lib/utils";
 import { Avatar, CopyIconSwap, useCopy } from "./client";
 import { ClientPicker, CopyLine } from "./controls";
@@ -40,6 +42,8 @@ import {
 import { VideoCard } from "./video";
 
 const FEATURED = "apple-activity-card";
+/** The hero's call to action is itself a part: Magnet Button. */
+const CTA = "attract-button";
 /** The featured part, asked for the way you'd ask a colleague. */
 const AGENT_PROMPT = "Add @kokonutui/apple-activity-card to my dashboard";
 // The wide background comes after four plates, so it starts a row at both
@@ -78,7 +82,7 @@ export function Catalog({
         className
       )}
     >
-      <Cover featured={featured} />
+      <Cover cta={byName.get(CTA)} featured={featured} />
       <Plates plates={plates} />
       <Index parts={parts} />
       <Ordering />
@@ -90,7 +94,7 @@ export function Catalog({
 
 /* Cover ---------------------------------------------------------------- */
 
-function Cover({ featured }: { featured?: Part }) {
+function Cover({ featured, cta }: { featured?: Part; cta?: Part }) {
   return (
     <section
       aria-label="Kokonut UI"
@@ -122,7 +126,8 @@ function Cover({ featured }: { featured?: Part }) {
       <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
         <div
           className={cn(
-            "flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
+            // Clips the Get started button's field of filings at the rules.
+            "flex flex-col justify-between gap-10 overflow-hidden p-5 sm:p-8 lg:col-span-8 lg:p-10",
             CELL
           )}
         >
@@ -137,17 +142,20 @@ function Cover({ featured }: { featured?: Part }) {
             Components <br />
             that feel right.
           </h1>
-          <p
-            className={cn(
-              "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
-              SOFT
-            )}
-            style={enter(1)}
-          >
-            Open-source React components built with Tailwind CSS, Motion and
-            shadcn/ui. Every component on this page is live: try it, then
-            install it with one command or one prompt.
-          </p>
+          <div className="flex flex-col gap-8">
+            <p
+              className={cn(
+                "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
+                SOFT
+              )}
+              style={enter(1)}
+            >
+              Open-source React components built with Tailwind CSS, Motion and
+              shadcn/ui. Every component on this page is live: try it, then
+              install it with one command or one prompt.
+            </p>
+            <CoverAction part={cta} />
+          </div>
         </div>
         {featured ? <FeaturedPlate part={featured} /> : null}
       </div>
@@ -216,6 +224,49 @@ function Cover({ featured }: { featured?: Part }) {
         </a>
       </div>
     </section>
+  );
+}
+
+/**
+ * Get started, drawn with Magnet Button: the first component people meet is
+ * the one they click. The note beside it names the part, like every plate.
+ */
+function CoverAction({ part }: { part?: Part }) {
+  const router = useRouter();
+  return (
+    <div
+      // The gap keeps the note clear of most of the field's filings.
+      className="home-enter flex items-center gap-7 sm:gap-10"
+      style={enter(2)}
+    >
+      <AttractButton
+        className={cn(
+          "h-11 min-w-40 rounded-none bg-black px-5 text-[14px] text-white hover:bg-black/85 active:bg-black/75 dark:bg-white dark:text-black dark:active:bg-white/75 dark:hover:bg-white/85",
+          FOCUS
+        )}
+        onClick={() => router.push("/docs")}
+        onMouseEnter={() => router.prefetch("/docs")}
+        radius={40}
+      >
+        Get started
+      </AttractButton>
+      {part ? (
+        <Link
+          className={cn(
+            "group flex items-baseline gap-2 whitespace-nowrap rounded-sm text-[11.5px]",
+            MONO,
+            FOCUS
+          )}
+          href={part.url}
+        >
+          <span className={cn("font-medium", LEAF)}>{part.code}</span>
+          <span className="text-black/50 underline-offset-4 group-hover:text-black group-hover:underline dark:text-white/50 dark:group-hover:text-white">
+            {part.title}
+            <span className="hidden sm:inline">, hover it</span>
+          </span>
+        </Link>
+      ) : null}
+    </div>
   );
 }
 
