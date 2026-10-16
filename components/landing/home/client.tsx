@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -50,16 +50,19 @@ const ICON_SWAP =
 export function CopyIconSwap({
   copied,
   className,
+  icon: Icon = CopyIcon,
 }: {
   copied: boolean;
   className?: string;
+  /** The resting icon; the check replaces it once copied. */
+  icon?: LucideIcon;
 }) {
   return (
     <span
       aria-hidden
       className={cn("relative inline-block size-3.5 shrink-0", className)}
     >
-      <CopyIcon
+      <Icon
         className={cn(
           ICON_SWAP,
           copied

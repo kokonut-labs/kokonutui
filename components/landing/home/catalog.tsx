@@ -1,10 +1,16 @@
 "use client";
 
-import { ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
+import {
+  ArrowUpRightIcon,
+  BotIcon,
+  type LucideIcon,
+  RotateCcwIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, Suspense, useState } from "react";
 import AttractButton from "@/components/kokonutui/attract-button";
+import { componentPrompt } from "@/lib/agents";
 import { cn } from "@/lib/utils";
 import { Avatar, CopyIconSwap, useCopy } from "./client";
 import { ClientPicker, CopyLine } from "./controls";
@@ -451,7 +457,6 @@ function PlateHead({ code, note }: { code: string; note: string }) {
 }
 
 function PlateFoot({ part }: { part: Part }) {
-  const { copied, copy } = useCopy();
   const spec = part.dependencies.length
     ? part.dependencies.join(", ")
     : "no extra packages";
@@ -470,25 +475,54 @@ function PlateFoot({ part }: { part: Part }) {
         </Link>
         <span className={cn(META, "truncate")}>{spec}</span>
       </span>
-      <button
-        aria-label={copied ? "Copied" : `Copy install command for ${part.name}`}
-        className={cn(
-          "inline-flex h-7 shrink-0 items-center gap-1.5 border px-2 text-[11.5px] text-black/60 hover:border-black/30 hover:text-black active:bg-black/[0.04] dark:text-white/60 dark:active:bg-white/[0.06] dark:hover:border-white/35 dark:hover:text-white",
-          MONO,
-          LINE,
-          EASE_COLORS,
-          FOCUS
-        )}
-        onClick={() => copy(installCommand(part.name))}
-        title={installCommand(part.name)}
-        type="button"
-      >
-        <CopyIconSwap className="size-3" copied={copied} />
-        <span className="inline-block w-[6ch] text-left">
-          {copied ? "Copied" : "Copy"}
-        </span>
-      </button>
+      <span className="flex shrink-0 gap-1.5">
+        <PlateCopy
+          icon={BotIcon}
+          label="Agent"
+          target={`prompt for your agent to add ${part.name}`}
+          value={componentPrompt(part.name)}
+        />
+        <PlateCopy
+          label="Copy"
+          target={`install command for ${part.name}`}
+          value={installCommand(part.name)}
+        />
+      </span>
     </figcaption>
+  );
+}
+
+function PlateCopy({
+  label,
+  target,
+  value,
+  icon,
+}: {
+  label: string;
+  target: string;
+  value: string;
+  icon?: LucideIcon;
+}) {
+  const { copied, copy } = useCopy();
+  return (
+    <button
+      aria-label={copied ? "Copied" : `Copy the ${target}`}
+      className={cn(
+        "inline-flex h-7 shrink-0 items-center gap-1.5 border px-2 text-[11.5px] text-black/60 hover:border-black/30 hover:text-black active:bg-black/[0.04] dark:text-white/60 dark:active:bg-white/[0.06] dark:hover:border-white/35 dark:hover:text-white",
+        MONO,
+        LINE,
+        EASE_COLORS,
+        FOCUS
+      )}
+      onClick={() => copy(value)}
+      title={value}
+      type="button"
+    >
+      <CopyIconSwap className="size-3" copied={copied} icon={icon} />
+      <span className="inline-block w-[6ch] text-left">
+        {copied ? "Copied" : label}
+      </span>
+    </button>
   );
 }
 
