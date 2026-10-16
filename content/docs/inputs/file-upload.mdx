@@ -1,7 +1,7 @@
 ---
 title: File Upload
-description: Drag and drop file upload with animated progress, file validation and error states. Built with React, Tailwind CSS and Motion animations.
-keywords: ["dropzone", "attachment", "drag-n-drop", "uploader", "file input"]
+description: A multi-file upload queue with per-file progress, retry and cancel.
+keywords: ["dropzone", "attachment", "drag-n-drop", "uploader", "file input", "upload queue", "multiple files"]
 icon: File
 full: false
 ---
@@ -13,5 +13,5 @@ import FileUpload from "@/components/kokonutui/file-upload";
     link="file-upload"
     comment={["Motion"]}
 >
-    <FileUpload uploadDelay={4000} />
+    <FileUpload uploadDelay={2500} simulateFailure />
 </PreviewClient>

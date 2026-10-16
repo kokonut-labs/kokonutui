@@ -20,8 +20,8 @@ export const component: Registry = [
   {
     name: "command-button",
     type: "registry:component",
-    dependencies: ["lucide-react"],
-    registryDependencies: ["button"],
+    dependencies: [],
+    registryDependencies: [],
     files: [
       {
         path: "components/kokonutui/command-button.tsx",
@@ -300,8 +300,8 @@ export const component: Registry = [
   {
     name: "switch-button",
     type: "registry:component",
-    dependencies: ["lucide-react"],
-    registryDependencies: ["button"],
+    dependencies: [],
+    registryDependencies: [],
     files: [
       {
         path: "components/kokonutui/switch-button.tsx",
@@ -368,8 +368,8 @@ export const component: Registry = [
   {
     name: "hold-button",
     type: "registry:component",
-    dependencies: ["class-variance-authority", "lucide-react"],
-    registryDependencies: ["button"],
+    dependencies: ["class-variance-authority", "lucide-react", "motion"],
+    registryDependencies: [],
     files: [
       {
         path: "components/kokonutui/hold-button.tsx",
@@ -660,7 +660,7 @@ export const component: Registry = [
   {
     name: "particle-button",
     type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
+    dependencies: ["class-variance-authority", "lucide-react", "motion"],
     registryDependencies: ["button"],
     files: [
       {
