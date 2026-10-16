@@ -174,9 +174,12 @@ export function LiveFallback() {
 export function Fit({
   children,
   className,
+  maxScale = 1,
 }: {
   children: ReactNode;
   className?: string;
+  /** Above 1 lets a small part grow to fill the box, for still images. */
+  maxScale?: number;
 }) {
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
@@ -208,7 +211,7 @@ export function Fit({
         return;
       }
       const next = Math.min(
-        1,
+        maxScale,
         availableWidth / width,
         availableHeight / height
       );
@@ -219,7 +222,7 @@ export function Fit({
     observer.observe(box);
     observer.observe(content);
     return () => observer.disconnect();
-  }, []);
+  }, [maxScale]);
 
   return (
     <div
@@ -233,7 +236,7 @@ export function Fit({
       <div
         className="flex w-full shrink-0 justify-center"
         ref={inner}
-        style={scale < 1 ? { transform: `scale(${scale})` } : undefined}
+        style={scale === 1 ? undefined : { transform: `scale(${scale})` }}
       >
         {children}
       </div>
