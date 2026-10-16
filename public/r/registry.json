@@ -1128,6 +1128,22 @@
       ]
     },
     {
+      "name": "undo-button",
+      "type": "registry:component",
+      "title": "Undo Button",
+      "description": "An action button that gives you a few seconds to take it back, with the time left drawn around its own edge.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/undo-button.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "use-auto-resize-textarea",
       "type": "registry:hook",
       "title": "Use Auto Resize Textarea",
