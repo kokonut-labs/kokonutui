@@ -12,6 +12,7 @@
     "ai-diff-review",
     "ai-model-selector",
     "ai-autocomplete",
-    "slash-command-menu"
+    "slash-command-menu",
+    "image-generation-card"
   ]
 }

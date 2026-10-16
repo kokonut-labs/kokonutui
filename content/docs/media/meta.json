@@ -4,6 +4,7 @@
     "clip-trimmer",
     "synced-transcript",
     "focal-point-picker",
-    "photo-straighten"
+    "photo-straighten",
+    "audio-player-card"
   ]
 }

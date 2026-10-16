@@ -146,9 +146,9 @@ const proPeek: Renderer = (args) => {
     fence("bash", `npx shadcn@latest add @kokonutui-pro/${peek.name}`),
     "What it does:",
     "",
-    ...peek.live.map((line) => `- ${line}`),
+    ...peek.features.map((line) => `- ${line}`),
     "",
-    `Live demo and access: ${proPeekUrl(peek, "llms")}`,
+    `Get it with Kokonut UI Pro: ${proPeekUrl(peek, "llms")}`,
     "",
   ].join("\n");
 };

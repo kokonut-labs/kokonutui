@@ -8,8 +8,8 @@ export interface ProPeek {
   name: string;
   /** The Pro docs page and heading that hold the live component. */
   proPage: string;
-  /** What the live version does that the still can't show. */
-  live: string[];
+  /** What the component does that the still can't show. */
+  features: string[];
   still: {
     /** CSS pixels; the files are drawn at twice this. */
     width: number;
@@ -25,7 +25,7 @@ export const PRO_PEEKS: ProPeek[] = [
   {
     name: "onboarding-checklist",
     proPage: "/docs/components/card#onboarding-checklist",
-    live: [
+    features: [
       "The ring fills as steps are checked",
       "Done steps collapse, the next one opens",
       "An all-set state once every step is done",
@@ -35,7 +35,7 @@ export const PRO_PEEKS: ProPeek[] = [
   {
     name: "pay-button",
     proPage: "/docs/components/button#pay-button",
-    live: [
+    features: [
       "Digits roll when the seats or the period change",
       "Press shows Processing, then Paid",
       "A declined card says so on the button",
@@ -45,12 +45,82 @@ export const PRO_PEEKS: ProPeek[] = [
   {
     name: "slash-command-menu",
     proPage: "/docs/components/action-search-bar#slash-command-menu",
-    live: [
+    features: [
       "Type / to pick a command",
       "A hint bar fills in each argument as you type",
       "Commands post to the thread, polls included",
     ],
     still: { width: 808, height: 466, pill: 0.813 },
+  },
+  {
+    name: "image-generation-card",
+    proPage: "/docs/components/card#image-generation-card",
+    features: [
+      "Generate resolves the image from coarse pixels to sharp",
+      "A step counter runs while it develops",
+      "Four variations land, and the ratio can change",
+    ],
+    still: { width: 808, height: 624, pill: 0.83 },
+  },
+  {
+    name: "swatch-fan",
+    proPage: "/docs/components/input#swatch-fan",
+    features: [
+      "Drag the deck open like a paint fan",
+      "Pick a hue, then a shade on its blade",
+      "Copy the hex, or move with the arrow keys",
+    ],
+    still: { width: 808, height: 400, pill: 0.764 },
+  },
+  {
+    name: "price-range",
+    proPage: "/docs/components/input#price-range",
+    features: [
+      "Two handles over a histogram of the results",
+      "Bars inside the range fill in as you drag",
+      "The count of results updates with every move",
+    ],
+    still: { width: 808, height: 400, pill: 0.764 },
+  },
+  {
+    name: "audio-player-card",
+    proPage: "/docs/components/card#audio-player-card",
+    features: [
+      "Scrub anywhere on the waveform",
+      "Chapter names show as you pass them",
+      "A speed chip cycles the playback rate",
+    ],
+    still: { width: 808, height: 400, pill: 0.796 },
+  },
+  {
+    name: "rhythm-hero",
+    proPage: "/docs/components/heroes#rhythm-hero",
+    features: [
+      "Hairline rings breathe a 4-7-8 cycle",
+      "A week of sleep-stage bars below the fold",
+      "Pause and resume the breathing",
+    ],
+    still: { width: 1076, height: 979, pill: 0.879 },
+  },
+  {
+    name: "dither-reveal-hero",
+    proPage: "/docs/components/heroes#dither-reveal-hero",
+    features: [
+      "The prompt types itself in",
+      "The scene resolves from coarse dither to full detail",
+      "Seeds and prompt chips start a new picture",
+    ],
+    still: { width: 1076, height: 867, pill: 0.879 },
+  },
+  {
+    name: "kinetic-type-hero",
+    proPage: "/docs/components/heroes#kinetic-type-hero",
+    features: [
+      "The edge-to-edge headline sets itself in",
+      "Letters lean away from the cursor",
+      "Studio details and a reel strip below",
+    ],
+    still: { width: 1076, height: 958, pill: 0.879 },
   },
 ];
 

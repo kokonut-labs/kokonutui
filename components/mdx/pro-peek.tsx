@@ -1,11 +1,9 @@
-import { ArrowUpRight, LockIcon } from "lucide-react";
+import { LockIcon } from "lucide-react";
 import Image from "next/image";
 import {
   CELL,
   EASE_COLORS,
   FOCUS_INSET,
-  GRID,
-  INK,
   LINE,
   META,
   MONO,
@@ -78,7 +76,7 @@ export function ProPeek({ name }: { name: string }) {
 
       <div className="p-2 md:p-4">
         <a
-          aria-label="See it live in Kokonut UI Pro"
+          aria-label="See it in Kokonut UI Pro"
           className={cn(
             "group relative block overflow-clip rounded-xl",
             FOCUS_INSET
@@ -126,9 +124,9 @@ export function ProPeek({ name }: { name: string }) {
       </div>
 
       <div className={cn("border-t", LINE)}>
-        <p className={cn(META, "px-3.5 pt-3")}>Live in Pro</p>
+        <p className={cn(META, "px-3.5 pt-3")}>In Pro</p>
         <ul className="m-0 flex list-none flex-col p-0 px-3.5 pt-1.5 pb-3.5">
-          {peek.live.map((line) => (
+          {peek.features.map((line) => (
             <li
               className={cn(
                 "border-b py-2 text-[13.5px] leading-snug last:border-b-0",
@@ -143,20 +141,7 @@ export function ProPeek({ name }: { name: string }) {
         </ul>
       </div>
 
-      <div className={cn("flex border-t", LINE, GRID)}>
-        <a
-          className={cn(
-            ACTION,
-            INK,
-            "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
-          )}
-          href={href}
-          rel="noopener"
-          target="_blank"
-        >
-          Open live demo
-          <ArrowUpRight aria-hidden className="size-3.5 opacity-60" />
-        </a>
+      <div className={cn("flex border-t", LINE)}>
         <a
           className={cn(ACTION, PRO_RED, "hover:bg-[#FF2D55]/[0.06]")}
           href={PRO_PRICING_URL}
