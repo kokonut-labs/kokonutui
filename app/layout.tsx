@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Dorian Baffier", url: "https://x.com/dorianbaffier" }],
   creator: "Dorian Baffier",
   openGraph: {
-    title: siteConfig.name,
+    title: `${siteConfig.name}: Components that feel right`,
     description: siteConfig.description,
     url: siteConfig.url,
     siteName: siteConfig.name,
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     creator: "@dorianbaffier",
-    title: siteConfig.name,
+    title: `${siteConfig.name}: Components that feel right`,
     description: siteConfig.description,
   },
 };
