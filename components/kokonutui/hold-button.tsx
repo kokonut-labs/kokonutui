@@ -140,7 +140,9 @@ const HOLD_KEYS = new Set([" ", "Enter"]);
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const LABEL_TRANSITION = { duration: 0.2, ease: EASE_OUT };
 /** Time (ms) a full fill takes to drain after an early release. */
-const DRAIN_MS = 420;
+const DRAIN_MS = 300;
+/** The holding label waits this long (ms), so a quick tap doesn't flicker it. */
+const LABEL_DELAY_MS = 150;
 
 function DrawnCheck() {
   return (
@@ -180,6 +182,8 @@ export default function HoldButton({
   ...props
 }: HoldButtonProps) {
   const [phase, setPhase] = useState<Phase>("idle");
+  const [showHoldingLabel, setShowHoldingLabel] = useState(false);
+  const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const phaseRef = useRef<Phase>("idle");
   const progress = useMotionValue(0);
   const animationRef = useRef<AnimationPlaybackControls | null>(null);
@@ -201,6 +205,9 @@ export default function HoldButton({
   useEffect(
     () => () => {
       animationRef.current?.stop();
+      if (labelTimerRef.current) {
+        clearTimeout(labelTimerRef.current);
+      }
       if (resetRef.current) {
         clearTimeout(resetRef.current);
       }
@@ -211,6 +218,18 @@ export default function HoldButton({
   const updatePhase = (next: Phase) => {
     phaseRef.current = next;
     setPhase(next);
+    if (labelTimerRef.current) {
+      clearTimeout(labelTimerRef.current);
+      labelTimerRef.current = null;
+    }
+    if (next === "holding") {
+      labelTimerRef.current = setTimeout(
+        () => setShowHoldingLabel(true),
+        LABEL_DELAY_MS
+      );
+    } else {
+      setShowHoldingLabel(false);
+    }
   };
 
   const complete = () => {
@@ -289,11 +308,13 @@ export default function HoldButton({
   };
 
   let label: ReactNode = children ?? defaults.label;
-  if (phase === "holding") {
+  if (phase === "holding" && showHoldingLabel) {
     label = holdingLabel;
   } else if (phase === "complete") {
     label = completeLabel ?? defaults.completeLabel;
   }
+
+  const labelKey = phase === "holding" && !showHoldingLabel ? "idle" : phase;
 
   return (
     <MotionConfig reducedMotion="user">
@@ -339,10 +360,10 @@ export default function HoldButton({
               className="inline-flex items-center gap-2 whitespace-nowrap"
               exit={{ opacity: 0, y: -10, filter: "blur(2px)" }}
               initial={{ opacity: 0, y: 10, filter: "blur(2px)" }}
-              key={phase}
+              key={labelKey}
               transition={LABEL_TRANSITION}
             >
-              {phase === "complete" ? (
+              {labelKey === "complete" ? (
                 <DrawnCheck />
               ) : (
                 <Icon aria-hidden="true" className="size-4" />

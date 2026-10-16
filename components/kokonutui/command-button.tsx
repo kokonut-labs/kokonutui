@@ -181,6 +181,7 @@ export default function CommandButton({
 }: CommandButtonProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [isMac, setIsMac] = useState(true);
+  const [platformKnown, setPlatformKnown] = useState(false);
   const [held, setHeld] = useState<{ modifiers: Modifier[]; key: boolean }>({
     modifiers: [],
     key: false,
@@ -189,13 +190,14 @@ export default function CommandButton({
   const parsedRef = useRef(parsed);
   parsedRef.current = parsed;
 
-  // The platform is unknown on the server, so the first render shows Mac
-  // labels and switches after mount.
+  // The platform is unknown on the server, so the caps render invisible and
+  // fade in once it is read, instead of swapping ⌘ for Ctrl in view.
   useEffect(() => {
     const platform =
       (navigator as Navigator & { userAgentData?: { platform?: string } })
         .userAgentData?.platform ?? navigator.platform;
     setIsMac(APPLE_PLATFORM.test(platform));
+    setPlatformKnown(true);
   }, []);
 
   useEffect(() => {
@@ -263,7 +265,13 @@ export default function CommandButton({
       {...props}
     >
       {children}
-      <span aria-hidden="true" className="flex items-center gap-1 pb-0.5">
+      <span
+        aria-hidden="true"
+        className={cn(
+          "flex items-center gap-1 pb-0.5 transition-opacity duration-150 ease-out",
+          !platformKnown && "opacity-0"
+        )}
+      >
         {parsed.modifiers.map((modifier) => (
           <Keycap
             key={modifier}

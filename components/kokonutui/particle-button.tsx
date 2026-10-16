@@ -61,8 +61,10 @@ export interface ParticleButtonProps
   onError?: (error: unknown) => void;
   /** Controlled status. Without it the button tracks `onClick` itself. */
   status?: ParticleButtonStatus;
-  /** How long (ms) the success or error state shows before going back to idle. */
+  /** How long (ms) the success state shows before going back to idle. */
   successDuration?: number;
+  /** How long (ms) the error state shows. Longer than success, so it can be read. */
+  errorDuration?: number;
   pendingLabel?: ReactNode;
   successLabel?: ReactNode;
   errorLabel?: ReactNode;
@@ -262,6 +264,7 @@ export default function ParticleButton({
   onError,
   status: controlledStatus,
   successDuration = 1600,
+  errorDuration = 3200,
   pendingLabel = "Saving",
   successLabel = "Saved",
   errorLabel = "Try again",
@@ -356,10 +359,13 @@ export default function ParticleButton({
 
   const settle = (next: "success" | "error") => {
     setInternalStatus(next);
-    resetRef.current = setTimeout(() => {
-      setInternalStatus("idle");
-      resetRef.current = null;
-    }, successDuration);
+    resetRef.current = setTimeout(
+      () => {
+        setInternalStatus("idle");
+        resetRef.current = null;
+      },
+      next === "success" ? successDuration : errorDuration
+    );
   };
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -450,7 +456,7 @@ export default function ParticleButton({
         className={cn(
           buttonVariants({ variant, size }),
           "group/status relative overflow-visible",
-          "transition-[background-color,color,opacity] duration-200 ease-out",
+          "ease transition-[background-color,color,opacity] duration-200",
           status === "error" &&
             "bg-red-600 text-white hover:bg-red-600/90 dark:bg-red-500 dark:text-white dark:hover:bg-red-500/90",
           className
@@ -459,7 +465,7 @@ export default function ParticleButton({
         disabled={disabled}
         onClick={handleClick}
         ref={buttonRef}
-        transition={WIDTH_TRANSITION}
+        transition={shouldReduceMotion ? { duration: 0 } : WIDTH_TRANSITION}
         type="button"
         {...props}
       >

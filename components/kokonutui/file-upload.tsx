@@ -465,8 +465,10 @@ const QueueRow = ({
             aria-valuenow={Math.round(item.progress)}
             className={cn(
               "h-full origin-left transition-[transform,opacity,background-color] duration-200 ease-linear",
+              // A retry starts from zero at once instead of rewinding.
+              item.progress === 0 && "transition-none",
               item.status === "done" &&
-                "bg-emerald-500 opacity-0 delay-500 duration-500 dark:bg-emerald-400",
+                "bg-emerald-500 opacity-0 delay-300 duration-300 ease-out dark:bg-emerald-400",
               failed && "bg-red-500 dark:bg-red-400",
               inFlight && "bg-zinc-900 dark:bg-zinc-100"
             )}

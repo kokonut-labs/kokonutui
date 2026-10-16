@@ -112,9 +112,9 @@ function timing(el: Element, toDark: boolean): KeyframeAnimationOptions {
         easing: EASE_OUT,
       };
     case "bite":
-      return { delay: toDark ? 60 : 0, duration: 460, easing: EASE_IN_OUT };
+      return { delay: toDark ? 60 : 0, duration: 380, easing: EASE_IN_OUT };
     case "disc":
-      return { delay: toDark ? 40 : 0, duration: 460, easing: EASE_OUT };
+      return { delay: toDark ? 40 : 0, duration: 380, easing: EASE_OUT };
     default:
       return { duration: 240, easing: EASE_OUT };
   }
@@ -176,7 +176,7 @@ function revealFrom(button: HTMLElement, apply: () => void) {
           ],
         },
         {
-          duration: 600,
+          duration: 500,
           easing: EASE_REVEAL,
           pseudoElement: "::view-transition-new(root)",
         }
