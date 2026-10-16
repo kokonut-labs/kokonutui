@@ -780,6 +780,64 @@
       ]
     },
     {
+      "name": "focal-point-picker",
+      "type": "registry:component",
+      "title": "Focal Point Picker",
+      "description": "Set where a photo's subject is and see every crop follow it live. Hover a crop to see what it cuts.",
+      "files": [
+        {
+          "path": "components/kokonutui/focal-point-picker.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "photo-straighten",
+      "type": "registry:component",
+      "title": "Photo Straighten",
+      "description": "Level a crooked photo on a ruler you drag or flick. The crop grows to hide the corners, and a grid shows while you adjust.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/photo-straighten.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "clip-trimmer",
+      "type": "registry:component",
+      "title": "Clip Trimmer",
+      "description": "A video trim timeline with a filmstrip, handles that snap to whole seconds and a playhead that loops the kept range.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/clip-trimmer.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "synced-transcript",
+      "type": "registry:component",
+      "title": "Synced Transcript",
+      "description": "A transcript that follows the spoken word, lets you click any word to jump there, and waits when you scroll away.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/synced-transcript.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "avatar-picker",
       "type": "registry:component",
       "title": "Avatar Picker",

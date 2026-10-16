@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 73 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 77 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -30,6 +30,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Background Paths](https://kokonutui.com/docs/backgrounds/background-paths.md): A ribbon of lines in one color that keeps flowing at any size and parts around the cursor. Install: `npx shadcn@latest add @kokonutui/background-paths`
 - [Bell Button](https://kokonutui.com/docs/buttons/bell-button.md): A subscribe button whose bell swings and rings, with a clapper that really strikes. Install: `npx shadcn@latest add @kokonutui/bell-button`
 - [Changelog](https://kokonutui.com/docs/changelog.md): New and updated Kokonut UI components, release by release, with a link to each component and its pull request. Install: `npx shadcn@latest add @kokonutui/changelog`
+- [Clip Trimmer](https://kokonutui.com/docs/media/clip-trimmer.md): A video trim timeline with a filmstrip, handles that snap to whole seconds and a playhead that loops the kept range. Install: `npx shadcn@latest add @kokonutui/clip-trimmer`
 - [Command Button](https://kokonutui.com/docs/buttons/command-button.md): Keyboard shortcut button with a Command icon, hover shimmer sweep, and smooth CSS transitions, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/command-button`
 - [Command Palette](https://kokonutui.com/docs/navigation/action-search-bar.md): ⌘K command palette with nested pages, fuzzy matching and in-row progress for running actions. Install: `npx shadcn@latest add @kokonutui/action-search-bar`
 - [Cradle Text](https://kokonutui.com/docs/texts/cradle-text.md): A headline hung like a Newton's cradle, so a knock on one letter clacks through the word, built with React and pendulum physics. Install: `npx shadcn@latest add @kokonutui/cradle-text`
@@ -41,6 +42,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Extruded Text](https://kokonutui.com/docs/texts/swoosh-text.md): Zinc 3D extruded text lit by your pointer, with letters that press in like keycaps. Install: `npx shadcn@latest add @kokonutui/swoosh-text`
 - [File Upload](https://kokonutui.com/docs/inputs/file-upload.md): Drag and drop file upload with animated progress, file validation and error states. Built with React, Tailwind CSS and Motion animations. Install: `npx shadcn@latest add @kokonutui/file-upload`
 - [Flick Card](https://kokonutui.com/docs/cards/card-flip.md): A two-sided card you spin with a drag or a flick, with thickness, light and a floor shadow that follow the angle. Install: `npx shadcn@latest add @kokonutui/card-flip`
+- [Focal Point Picker](https://kokonutui.com/docs/media/focal-point-picker.md): Set where a photo's subject is and see every crop follow it live. Hover a crop to see what it cuts. Install: `npx shadcn@latest add @kokonutui/focal-point-picker`
 - [Glitch Text](https://kokonutui.com/docs/texts/glitch-text.md): Flat text that cuts into hard-shifted bands with a thin red/cyan split, on idle, hover or text change. Install: `npx shadcn@latest add @kokonutui/glitch-text`
 - [Gradient Button](https://kokonutui.com/docs/buttons/gradient-button.md): Layered gradient button with emerald, purple, and orange variants, a gradient border in light and dark mode, soft inner glow, press feedback, and an optional icon, styled entirely with Tailwind CSS in React. Install: `npx shadcn@latest add @kokonutui/gradient-button`
 - [Halftone Background](https://kokonutui.com/docs/backgrounds/halftone-background.md): Any image, or a lit sphere, printed as a halftone dot screen, with a loupe that looks closer under the cursor, built with React and canvas. Install: `npx shadcn@latest add @kokonutui/halftone-background`
@@ -57,6 +59,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Notification Stack](https://kokonutui.com/docs/cards/notification-stack.md): Stacked notifications that fan out on hover and swipe away, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/notification-stack`
 - [Now Playing](https://kokonutui.com/docs/cards/liquid-glass-card.md): Music card with a spinning disc you can grab and turn to scrub, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/liquid-glass-card`
 - [Particle Button](https://kokonutui.com/docs/buttons/particle-button.md): Button that bursts animated particles from its center on click with a quick scale press effect, built with React, Motion, and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/particle-button`
+- [Photo Straighten](https://kokonutui.com/docs/media/photo-straighten.md): Level a crooked photo on a ruler you drag or flick. The crop grows to hide the corners, and a grid shows while you adjust. Install: `npx shadcn@latest add @kokonutui/photo-straighten`
 - [Plucked Text](https://kokonutui.com/docs/texts/plucked-text.md): A headline sitting on a string you can pluck, strum and let ring, built with React and real string physics. Install: `npx shadcn@latest add @kokonutui/plucked-text`
 - [Pull Cord](https://kokonutui.com/docs/buttons/pull-cord.md): A lamp switch you pull on a swinging cord, built with React and a rope simulation. Install: `npx shadcn@latest add @kokonutui/pull-cord`
 - [Receipt Printer](https://kokonutui.com/docs/cards/receipt-printer.md): A receipt that prints line by line, then tears off and falls when you pull it, built with React. Install: `npx shadcn@latest add @kokonutui/receipt-printer`
@@ -73,6 +76,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Status Island](https://kokonutui.com/docs/navigation/status-island.md): A pill that reports background work, reshaping as tasks change and opening into a list of everything in flight. Install: `npx shadcn@latest add @kokonutui/status-island`
 - [Swipe Tabs](https://kokonutui.com/docs/navigation/smooth-tab.md): Tabs with a swipeable panel, a drag-tracked indicator and spring physics. Install: `npx shadcn@latest add @kokonutui/smooth-tab`
 - [Switch Button](https://kokonutui.com/docs/buttons/switch-button.md): Light and dark theme toggle button with a rotating sun icon and shimmer hover effect, built with React and Tailwind CSS. Works on its own or with a theme provider such as next-themes. Install: `npx shadcn@latest add @kokonutui/switch-button`
+- [Synced Transcript](https://kokonutui.com/docs/media/synced-transcript.md): A transcript that follows the spoken word, lets you click any word to jump there, and waits when you scroll away. Install: `npx shadcn@latest add @kokonutui/synced-transcript`
 - [Team Selector](https://kokonutui.com/docs/inputs/team-selector.md): Animated team size selector with stacked overlapping avatars, spring transitions and increment controls. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/team-selector`
 - [Tear Button](https://kokonutui.com/docs/buttons/tear-button.md): A confirm button you tear off like a ticket stub, hole by hole. Install: `npx shadcn@latest add @kokonutui/tear-button`
 - [Templates](https://kokonutui.com/docs/templates.md): Full websites built with Kokonut UI, available with Kokonut UI Pro. Open a live preview, or get the source when one fits your project. Install: `npx shadcn@latest add @kokonutui/templates`
