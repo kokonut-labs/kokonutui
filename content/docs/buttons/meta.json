@@ -13,6 +13,7 @@
     "pull-cord",
     "tear-button",
     "bell-button",
-    "morph-popover"
+    "morph-popover",
+    "undo-button"
   ]
 }
