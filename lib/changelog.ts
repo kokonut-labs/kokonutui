@@ -35,7 +35,16 @@ export const NEW_FOR_DAYS = 30;
 export const RELEASES: Release[] = [
   {
     date: "2026-10-16",
-    added: [],
+    added: [
+      { name: "spoiler-text", pr: 89 },
+      { name: "stack-panel", pr: 89 },
+      { name: "ai-autocomplete", pr: 89 },
+      { name: "undo-button", pr: 91 },
+      { name: "clip-trimmer", pr: 92 },
+      { name: "synced-transcript", pr: 92 },
+      { name: "focal-point-picker", pr: 92 },
+      { name: "photo-straighten", pr: 92 },
+    ],
     improved: [
       {
         name: "file-upload",

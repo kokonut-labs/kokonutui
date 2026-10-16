@@ -10,6 +10,7 @@
     "ai-context-meter",
     "ai-citations",
     "ai-diff-review",
-    "ai-model-selector"
+    "ai-model-selector",
+    "ai-autocomplete"
   ]
 }
