@@ -1,8 +1,8 @@
 export const siteConfig = {
-  name: "KokonutUI",
+  name: "Kokonut UI",
   url: "https://kokonutui.com",
   description:
-    "Collection of stunning UI components, free and open source, built with Next.js, React, Tailwind CSS, and Motion.",
+    "Open-source React components built with Tailwind CSS, Motion and shadcn/ui. Install any of them with one command or one prompt.",
   links: {
     twitter: "https://twitter.com/dorianbaffier",
     github: "https://github.com/kokonut-labs/kokonutui",

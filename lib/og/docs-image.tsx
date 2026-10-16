@@ -35,7 +35,7 @@ const PALETTE = {
 
 const FONT_DIR = join(process.cwd(), "lib/og/fonts");
 
-async function loadFonts() {
+async function readFonts() {
   const [regular, medium, semibold, mono, monoMedium] = await Promise.all(
     [
       "Geist-Regular.ttf",
@@ -72,12 +72,21 @@ const lines = (broken: string[]) =>
     </div>
   ));
 
+/** Read once per build, not once per page. */
+let fontsOnce: ReturnType<typeof readFonts> | undefined;
+const loadFonts = () => {
+  fontsOnce ??= readFonts();
+  return fontsOnce;
+};
+
 export interface DocsImageInput {
   title: string;
   description?: string;
   url: string;
   /** Set on component pages: the part's code, category and packages. */
   part?: Part;
+  /** A Kokonut UI Pro component shown here as a still. */
+  pro?: boolean;
   /** How many components the library has, for pages that aren't one. */
   count: number;
   theme?: Theme;
@@ -89,6 +98,7 @@ export async function docsImage({
   description,
   url,
   part,
+  pro = false,
   count,
   theme = "light",
 }: DocsImageInput) {
@@ -117,13 +127,13 @@ export async function docsImage({
       ]
     : [
         <span key="cat" style={meta}>
-          {oneLine("Documentation")}
+          {oneLine(pro ? "Kokonut UI Pro" : "Documentation")}
         </span>,
         <span key="code" style={meta}>
           {oneLine("React, Tailwind CSS, Motion")}
         </span>,
         <span key="deps" style={meta}>
-          {oneLine("Free and open source")}
+          {pro ? "kokonutui.pro" : oneLine("Free and open source")}
         </span>,
       ];
 

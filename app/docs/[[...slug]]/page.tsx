@@ -262,7 +262,7 @@ export async function generateMetadata(props: {
       canonical: `${siteConfig.url}${page.url}`,
     },
     openGraph: {
-      title: page.data.title,
+      title: `${page.data.title} | ${siteConfig.name}`,
       description: page.data.description,
       url: page.url,
       siteName: siteConfig.name,
@@ -273,7 +273,7 @@ export async function generateMetadata(props: {
     twitter: {
       card: "summary_large_image",
       creator: "@dorianbaffier",
-      title: page.data.title,
+      title: `${page.data.title} | ${siteConfig.name}`,
       description: page.data.description,
       images: [ogImage],
     },
