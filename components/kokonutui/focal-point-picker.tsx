@@ -121,7 +121,6 @@ export default function FocalPointPicker({
     setGliding(!onPoint);
     setDragging(true);
     setPoint(pointAt(event.clientX, event.clientY));
-    pointRef.current?.focus({ preventScroll: true });
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -154,7 +153,7 @@ export default function FocalPointPicker({
     }));
   };
 
-  const glide = gliding ? `transform 320ms ${EASE}` : "none";
+  const glide = gliding ? `transform 280ms ${EASE}` : "none";
   const shownCrop =
     shown === null ? null : cropWindow(point, imageRatio, crops[shown].ratio);
 
@@ -260,7 +259,7 @@ export default function FocalPointPicker({
                   style={{
                     objectPosition: c.position,
                     transition: gliding
-                      ? `object-position 320ms ${EASE}`
+                      ? `object-position 280ms ${EASE}`
                       : "none",
                   }}
                   unoptimized
