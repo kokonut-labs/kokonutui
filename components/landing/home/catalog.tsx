@@ -1,9 +1,8 @@
 "use client";
 
-import { ArrowDownIcon, ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
+import { ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type ReactNode, Suspense, useState } from "react";
 import AttractButton from "@/components/kokonutui/attract-button";
 import { cn } from "@/lib/utils";
@@ -42,8 +41,8 @@ import {
 import { VideoCard } from "./video";
 
 const FEATURED = "apple-activity-card";
-/** The hero's call to action is itself a part: Magnet Button. */
-const CTA = "attract-button";
+/** The cover's way into the library is itself a part: Magnet Button. */
+const BROWSE = "attract-button";
 /** The featured part, asked for the way you'd ask a colleague. */
 const AGENT_PROMPT = "Add @kokonutui/apple-activity-card to my dashboard";
 // The wide background comes after four plates, so it starts a row at both
@@ -82,7 +81,11 @@ export function Catalog({
         className
       )}
     >
-      <Cover cta={byName.get(CTA)} featured={featured} />
+      <Cover
+        browse={byName.get(BROWSE)}
+        count={parts.length}
+        featured={featured}
+      />
       <Plates plates={plates} />
       <Index parts={parts} />
       <Ordering />
@@ -94,7 +97,15 @@ export function Catalog({
 
 /* Cover ---------------------------------------------------------------- */
 
-function Cover({ featured, cta }: { featured?: Part; cta?: Part }) {
+function Cover({
+  featured,
+  browse,
+  count,
+}: {
+  featured?: Part;
+  browse?: Part;
+  count: number;
+}) {
   return (
     <section
       aria-label="Kokonut UI"
@@ -126,8 +137,7 @@ function Cover({ featured, cta }: { featured?: Part; cta?: Part }) {
       <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
         <div
           className={cn(
-            // Clips the Get started button's field of filings at the rules.
-            "flex flex-col justify-between gap-10 overflow-hidden p-5 sm:p-8 lg:col-span-8 lg:p-10",
+            "flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
             CELL
           )}
         >
@@ -142,20 +152,17 @@ function Cover({ featured, cta }: { featured?: Part; cta?: Part }) {
             Components <br />
             that feel right.
           </h1>
-          <div className="flex flex-col gap-8">
-            <p
-              className={cn(
-                "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
-                SOFT
-              )}
-              style={enter(1)}
-            >
-              Open-source React components built with Tailwind CSS, Motion and
-              shadcn/ui. Every component on this page is live: try it, then
-              install it with one command or one prompt.
-            </p>
-            <CoverAction part={cta} />
-          </div>
+          <p
+            className={cn(
+              "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
+              SOFT
+            )}
+            style={enter(1)}
+          >
+            Open-source React components built with Tailwind CSS, Motion and
+            shadcn/ui. Every component on this page is live: try it, then
+            install it with one command or one prompt.
+          </p>
         </div>
         {featured ? <FeaturedPlate part={featured} /> : null}
       </div>
@@ -172,28 +179,7 @@ function Cover({ featured, cta }: { featured?: Part; cta?: Part }) {
           <PromptLine prompt={AGENT_PROMPT} />
         </div>
         <ConnectEditor />
-        <Link
-          className={cn(
-            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-1",
-            CELL,
-            "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
-            EASE_COLORS,
-            FOCUS_INSET
-          )}
-          href="#all-components"
-          style={enter(2)}
-        >
-          <span className="flex flex-col gap-1">
-            <span className={META}>Library</span>
-            <span className={cn("font-medium text-[17px]", INK)}>
-              Browse all components
-            </span>
-          </span>
-          <ArrowDownIcon
-            aria-hidden
-            className="size-5 text-black/40 transition-colors duration-150 ease-out group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
-          />
-        </Link>
+        <BrowseAll count={count} part={browse} />
         <a
           className={cn(
             "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-2",
@@ -228,44 +214,62 @@ function Cover({ featured, cta }: { featured?: Part; cta?: Part }) {
 }
 
 /**
- * Get started, drawn with Magnet Button: the first component people meet is
- * the one they click. The note beside it names the part, like every plate.
+ * The way into the library, drawn with Magnet Button: the first button people
+ * meet on the page is itself a component, and the note under it names it.
  */
-function CoverAction({ part }: { part?: Part }) {
-  const router = useRouter();
+function BrowseAll({ count, part }: { count: number; part?: Part }) {
+  const browse = () => {
+    const target = document.getElementById("all-components");
+    if (!target) {
+      return;
+    }
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    target.scrollIntoView({ behavior: reduced ? "auto" : "smooth" });
+    history.replaceState(null, "", "#all-components");
+  };
   return (
     <div
-      // The gap keeps the note clear of most of the field's filings.
-      className="home-enter flex items-center gap-7 sm:gap-10"
+      className={cn(
+        // Clips the button's field of filings at the rules.
+        "home-enter flex items-center justify-between gap-4 overflow-hidden p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-1",
+        CELL
+      )}
       style={enter(2)}
     >
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className={META}>Library</span>
+        <span className={cn("font-medium text-[17px]", INK)}>
+          {count} components
+        </span>
+        {part ? (
+          <Link
+            className={cn(
+              "group flex w-fit items-baseline gap-2 whitespace-nowrap rounded-sm text-[11.5px]",
+              MONO,
+              FOCUS
+            )}
+            href={part.url}
+          >
+            <span className={cn("font-medium", LEAF)}>{part.code}</span>
+            <span className="text-black/50 underline-offset-4 group-hover:text-black group-hover:underline dark:text-white/50 dark:group-hover:text-white">
+              {part.title}
+            </span>
+          </Link>
+        ) : null}
+      </span>
       <AttractButton
         className={cn(
-          "h-11 min-w-40 rounded-none bg-black px-5 text-[14px] text-white hover:bg-black/85 active:bg-black/75 dark:bg-white dark:text-black dark:active:bg-white/75 dark:hover:bg-white/85",
+          "h-10 min-w-0 shrink-0 rounded-none bg-black px-4 text-[14px] text-white hover:bg-black/85 active:bg-black/75 dark:bg-white dark:text-black dark:active:bg-white/75 dark:hover:bg-white/85",
           FOCUS
         )}
-        onClick={() => router.push("/docs")}
-        onMouseEnter={() => router.prefetch("/docs")}
-        radius={40}
+        containerClassName="shrink-0"
+        onClick={browse}
+        radius={36}
       >
-        Get started
+        Browse all
       </AttractButton>
-      {part ? (
-        <Link
-          className={cn(
-            "group flex items-baseline gap-2 whitespace-nowrap rounded-sm text-[11.5px]",
-            MONO,
-            FOCUS
-          )}
-          href={part.url}
-        >
-          <span className={cn("font-medium", LEAF)}>{part.code}</span>
-          <span className="text-black/50 underline-offset-4 group-hover:text-black group-hover:underline dark:text-white/50 dark:group-hover:text-white">
-            {part.title}
-            <span className="hidden sm:inline">, hover it</span>
-          </span>
-        </Link>
-      ) : null}
     </div>
   );
 }
