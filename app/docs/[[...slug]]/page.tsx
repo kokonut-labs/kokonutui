@@ -3,7 +3,6 @@ import {
   DocsDescription,
   DocsPage,
   DocsTitle,
-  ViewOptionsPopover,
 } from "fumadocs-ui/layouts/docs/page";
 import defaultMdxComponents, { createRelativeLink } from "fumadocs-ui/mdx";
 import Link from "next/link";
@@ -14,7 +13,6 @@ import { LEAF, META, MONO } from "@/components/landing/home/styles";
 import TocProBanner from "@/components/landing/toc-pro-banner";
 import { Release } from "@/components/mdx/changelog-release";
 import { DocsPre } from "@/components/mdx/code-block";
-import { CopyMarkdownButton } from "@/components/mdx/copy-markdown-button";
 import {
   AgentEndpoints,
   AgentPrompts,
@@ -41,12 +39,6 @@ import { readComponentSource } from "@/lib/get-llm-text";
 import { isProPeekUrl } from "@/lib/pro-peeks";
 import { source } from "@/lib/source";
 import { cn } from "@/lib/utils";
-
-// Page actions drawn like the catalog's small controls: square, hairline, mono.
-const PAGE_ACTION = cn(
-  MONO,
-  "h-7 rounded-none bg-transparent px-2 font-normal text-[11.5px] text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
-);
 
 /**
  * The packages a demo's registry entry installs, shown on its plate, and its
@@ -140,10 +132,6 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
     ],
   });
 
-  // Powers "copy as Markdown" and the open-in-ChatGPT/Claude shortcuts.
-  const markdownUrl = `${page.url}.md`;
-  const githubUrl = `${siteConfig.links.github}/blob/main/content/docs/${page.path}`;
-
   // A component page documents one catalog part, and its code heads the page.
   const part = getParts().find((p) => p.url === page.url);
   // A Pro component shown here as a peek: it heads the page with PRO instead.
@@ -212,14 +200,6 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
       <DocsDescription className="max-w-[62ch] text-black/60 text-lg leading-relaxed dark:text-white/60">
         {page.data.description}
       </DocsDescription>
-      <div className="flex flex-row items-center gap-2">
-        <CopyMarkdownButton className={PAGE_ACTION} markdownUrl={markdownUrl} />
-        <ViewOptionsPopover
-          className={PAGE_ACTION}
-          githubUrl={githubUrl}
-          markdownUrl={markdownUrl}
-        />
-      </div>
       <DocsBody>
         <MDX
           components={{

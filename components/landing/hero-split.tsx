@@ -3,10 +3,10 @@
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import AnthropicDark from "@/components/icons/anthropic-dark";
 import Gemini from "@/components/icons/gemini";
 import OpenAIDark from "@/components/icons/open-ai-dark";
 import SlideTextButton from "@/components/kokonutui/slide-text-button";
+import { Claude } from "@/components/ui/svgs/claude";
 import { CursorDark } from "@/components/ui/svgs/cursor-dark";
 import { GrokDark } from "@/components/ui/svgs/grok-dark";
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard";
@@ -240,7 +240,7 @@ export function HeroSplit() {
           <div className="flex items-center justify-between gap-4">
             <h2 className="font-semibold text-[15px] text-white">For agents</h2>
             <div className="flex items-center gap-3.5">
-              <AnthropicDark className="h-4 w-4" />
+              <Claude className="h-4 w-4 text-white" />
               <OpenAIDark className="h-4 w-4" />
               <Gemini className="h-4 w-4" />
               <GrokDark className="h-4 w-4" />
