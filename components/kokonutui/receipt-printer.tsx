@@ -693,6 +693,13 @@ export default function ReceiptPrinter({
             touchAction: "none",
           }}
         >
+          {/* Perforation along the slot, where the sheet tears off. */}
+          {!torn && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-x-1 top-1 border-zinc-300 border-t-2 border-dotted"
+            />
+          )}
           <Receipt
             currency={currency}
             date={date}

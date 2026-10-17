@@ -134,7 +134,8 @@ export interface WheelPickerProps {
  *
  * The drum is drawn twice. The bottom copy is muted; the top copy is in full
  * color and clipped to the selection band. Text turns dark exactly as it
- * crosses the band's edge, the way the native picker does.
+ * crosses the band's edge, the way the native picker does. Hairline ticks
+ * mark the band's ends.
  */
 export default function WheelPicker({
   columns = DEFAULT_COLUMNS,
@@ -173,6 +174,15 @@ export default function WheelPicker({
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 rounded-lg bg-zinc-100 dark:bg-zinc-800/70"
         style={{ height: ITEM_HEIGHT }}
+      />
+      {/* Hairline ticks either side of the band, like a ruler's pointer. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-0.5 h-px w-1 -translate-y-1/2 bg-zinc-400 dark:bg-zinc-500"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 right-0.5 h-px w-1 -translate-y-1/2 bg-zinc-400 dark:bg-zinc-500"
       />
       {columns.map((column) => (
         <WheelColumnView

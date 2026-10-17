@@ -523,12 +523,21 @@ export default function AI_Voice({
 
         <span
           className={cn(
-            "font-mono text-sm tabular-nums transition-colors duration-300",
+            "relative font-mono text-sm tabular-nums transition-colors duration-300",
             mode === "idle"
               ? "text-black/30 dark:text-white/30"
               : "text-black/70 dark:text-white/70"
           )}
         >
+          {/* A steady red dot, like a recorder's REC lamp. Sits outside the
+              text so the timer stays centred. */}
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute top-1/2 right-full mr-2 size-1.5 -translate-y-1/2 rounded-full bg-red-500 transition-opacity duration-150",
+              recording ? "opacity-100" : "opacity-0"
+            )}
+          />
           {timerValue}
         </span>
 

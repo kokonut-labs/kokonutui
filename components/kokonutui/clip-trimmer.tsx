@@ -254,7 +254,8 @@ export default function ClipTrimmer({
   const kept = range.end - range.start;
   const trimming = active === "start" || active === "end";
   const ticks = Array.from({ length: Math.floor(duration) + 1 }, (_, i) => i);
-  const labelEvery = duration > 20 ? 5 : 3;
+  // A longer, labelled tick every five seconds, like a tape ruler.
+  const labelEvery = 5;
 
   return (
     <div
@@ -349,13 +350,15 @@ export default function ClipTrimmer({
             )}
             style={{ transform: `translateX(${pct(time)}%)` }}
           >
-            <div className="h-full w-[3px] -translate-x-1/2 rounded-full bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.25)]" />
+            <div className="relative h-full w-px -translate-x-1/2 bg-zinc-900 dark:bg-white">
+              <span className="absolute -top-0.5 left-1/2 size-[7px] -translate-x-1/2 rounded-full bg-zinc-900 dark:bg-white" />
+            </div>
           </div>
 
           {/* Kept range: the frame, its two handles and the drag area. */}
           <div
             className={cn(
-              "absolute inset-y-0 border-zinc-900 border-y-[3px] dark:border-zinc-100",
+              "absolute inset-y-0 border-orange-600 border-y-[3px]",
               active === "range" ? "cursor-grabbing" : "cursor-grab"
             )}
             data-part="range"
@@ -372,7 +375,7 @@ export default function ClipTrimmer({
                 aria-valuenow={Math.round(range[part] * 10) / 10}
                 aria-valuetext={`${range[part].toFixed(1)} seconds`}
                 className={cn(
-                  "group absolute -inset-y-[3px] flex w-4 cursor-ew-resize items-center justify-center bg-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:bg-zinc-100 dark:focus-visible:ring-offset-zinc-950",
+                  "group absolute -inset-y-[3px] flex w-4 cursor-ew-resize items-center justify-center bg-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950",
                   part === "start"
                     ? "-left-4 rounded-l-lg"
                     : "-right-4 rounded-r-lg"
@@ -385,8 +388,8 @@ export default function ClipTrimmer({
               >
                 <span
                   className={cn(
-                    "h-5 w-[3px] rounded-full bg-white/60 transition-colors duration-150 ease-out dark:bg-zinc-900/50",
-                    active === part && "bg-white dark:bg-zinc-900"
+                    "h-5 w-[3px] rounded-full bg-white/60 transition-colors duration-150 ease-out",
+                    active === part && "bg-white"
                   )}
                 />
                 {/* The exact cut point, while trimming. */}
@@ -414,9 +417,9 @@ export default function ClipTrimmer({
               <span
                 className={cn(
                   "w-px transition-colors duration-150 ease-out",
-                  s % labelEvery === 0 ? "h-1.5" : "h-1",
+                  s % labelEvery === 0 ? "h-2" : "h-1",
                   snapped === s
-                    ? "bg-zinc-900 dark:bg-zinc-100"
+                    ? "bg-orange-600"
                     : "bg-zinc-300 dark:bg-zinc-700"
                 )}
               />
@@ -425,7 +428,7 @@ export default function ClipTrimmer({
                   className={cn(
                     "mt-0.5 text-[10px] tabular-nums transition-colors duration-150 ease-out",
                     snapped === s
-                      ? "text-zinc-900 dark:text-zinc-100"
+                      ? "text-orange-700 dark:text-orange-400"
                       : "text-zinc-400 dark:text-zinc-500"
                   )}
                 >

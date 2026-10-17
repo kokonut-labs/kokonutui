@@ -375,14 +375,21 @@ export default function DetentDial({
   // (not the snapped value), so a wave travels round the ring as you turn.
   function tickLength(i: number, indicatorAngle: number) {
     const angle = START_ANGLE + (i / tickCount) * SWEEP;
-    const major = i === 0 || i === tickCount || i % 5 === 0;
+    // Min, mid and max read as the scale's anchors, like a ruler's inch marks.
+    const anchor = i === 0 || i === tickCount || i * 2 === tickCount;
+    const major = i % 5 === 0;
+    let base = 6;
+    if (anchor) {
+      base = 14;
+    } else if (major) {
+      base = 10;
+    }
     const distance = (angle - indicatorAngle) / WAVE_WIDTH;
     // Rounded to a tenth of a pixel: finer changes aren't visible, and
     // skipping them leaves most ticks untouched on any given frame.
     return (
-      Math.round(
-        ((major ? 10 : 6) + WAVE_HEIGHT * Math.exp(-distance * distance)) * 10
-      ) / 10
+      Math.round((base + WAVE_HEIGHT * Math.exp(-distance * distance)) * 10) /
+      10
     );
   }
 
@@ -429,6 +436,7 @@ export default function DetentDial({
       >
         {Array.from({ length: tickCount + 1 }, (_, i) => {
           const lit = i <= activeTick;
+          const current = i === activeTick;
           const length = tickLength(i, rotation.get());
           tickLengths.current[i] = length;
           const { a, b } = tickGeometry(i, length);
@@ -436,9 +444,11 @@ export default function DetentDial({
             <line
               className={cn(
                 "transition-[stroke] duration-150",
-                lit
-                  ? "stroke-zinc-900 dark:stroke-zinc-100"
-                  : "stroke-zinc-300 dark:stroke-zinc-700"
+                current && "stroke-orange-600 dark:stroke-orange-400",
+                !current &&
+                  (lit
+                    ? "stroke-zinc-900 dark:stroke-zinc-100"
+                    : "stroke-zinc-300 dark:stroke-zinc-700")
               )}
               // biome-ignore lint/suspicious/noArrayIndexKey: ticks are positional.
               key={i}
@@ -446,7 +456,7 @@ export default function DetentDial({
                 tickRefs.current[i] = node;
               }}
               strokeLinecap="round"
-              strokeWidth={1.5}
+              strokeWidth={current ? 2 : 1.5}
               x1={a.x}
               x2={b.x}
               y1={a.y}
