@@ -2,16 +2,15 @@
 
 import {
   AnimatePresence,
+  MotionConfig,
   motion,
-  useAnimate,
-  usePresence,
   useReducedMotion,
 } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MONO } from "@/components/landing/home/styles";
 import { cn } from "@/lib/utils";
 
-const VISIBLE_MS = 2200;
+const VISIBLE_MS = 2000;
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 interface Copied {
@@ -97,210 +96,77 @@ function useLatestCopy() {
 }
 
 /**
- * One toast for the whole site, mounted in the root layout. A copy made while
- * it is up updates it in place instead of stacking a second one. It never
- * takes the pointer, so nothing under it is blocked.
+ * One toast for the whole site, mounted in the root layout. It shows up
+ * readable on the frame after the click, and a copy made while it is up
+ * swaps the line in place instead of stacking a second one. It never takes
+ * the pointer, so nothing under it is blocked.
  */
 export function CopyToast() {
   const copied = useLatestCopy();
 
   return (
-    <output
-      aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
-    >
-      <AnimatePresence>
-        {copied ? <Pill copied={copied} key="pill" /> : null}
-      </AnimatePresence>
-    </output>
+    // Reduced motion keeps the fades and drops the movement.
+    <MotionConfig reducedMotion="user">
+      <output
+        aria-live="polite"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+      >
+        <AnimatePresence>
+          {copied ? (
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className="flex h-11 min-w-0 max-w-full items-center gap-2.5 rounded-full bg-[#0A0A0A] pr-5 pl-2 text-white dark:bg-white dark:text-black"
+              exit={{ opacity: 0, y: 4, transition: { duration: 0.14 } }}
+              initial={{ opacity: 0, y: 8 }}
+              key="pill"
+              transition={{ duration: 0.18, ease: EASE_OUT }}
+            >
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#2CD242] text-white dark:bg-[#1FA834]">
+                <Check id={copied.id} />
+              </span>
+              <span className="font-medium text-[13px]">Copied</span>
+              {copied.detail ? (
+                <Detail
+                  className="text-white/55 dark:text-black/50"
+                  copied={copied}
+                />
+              ) : null}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </output>
+    </MotionConfig>
   );
 }
 
-const DOT = 44;
-const SPRING = { type: "spring", bounce: 0.18, duration: 0.45 } as const;
-const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
-
-/**
- * The pill is laid out at its widest and clipped down to the width it shows,
- * so the morph runs on clip-path and transform alone: no layout per frame.
- * The visible part is kept centered by sliding the pill half the clipped
- * amount.
- */
-function clipTo(shell: number, visible: number) {
-  const hidden = Math.max(shell - visible, 0);
-  return {
-    clipPath: `inset(0px ${hidden}px 0px 0px round 22px)`,
-    transform: `translateX(${hidden / 2}px)`,
-  };
-}
-
-/**
- * An ink pill that arrives as a dot and opens out to fit its words, then
- * folds back into the dot before it leaves. A new copy re-fits the width.
- */
-function Pill({ copied }: { copied: Copied }) {
-  const reduce = useReducedMotion();
-  const row = useRef<HTMLDivElement>(null);
-  const pill = useRef<HTMLDivElement>(null);
-  const [scope, animate] = useAnimate();
-  const [isPresent, safeToRemove] = usePresence();
-
-  // Start as a dot at the pill's real width (narrower on phones).
-  useLayoutEffect(() => {
-    if (pill.current) {
-      Object.assign(pill.current.style, clipTo(pill.current.offsetWidth, DOT));
-    }
-  }, []);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-fit when the line changes
-  useLayoutEffect(() => {
-    const shell = pill.current;
-    if (!shell) {
-      return;
-    }
-    const open = clipTo(shell.offsetWidth, row.current?.offsetWidth ?? DOT);
-    if (reduce) {
-      animate(shell, open, { duration: 0 });
-      animate("[data-words]", { opacity: 1 }, { duration: 0 });
-      animate(scope.current, { opacity: 1 }, { duration: 0.15 });
-      return;
-    }
-    // On a repeat copy the pill is already up, so only the fit moves.
-    animate(
-      scope.current,
-      { opacity: 1, transform: "translateY(0px)", filter: "blur(0px)" },
-      { duration: 0.24, ease: EASE_OUT }
-    );
-    animate(shell, open, { ...SPRING, delay: 0.05 });
-    animate(
-      "[data-words]",
-      { opacity: 1, filter: "blur(0px)" },
-      { delay: 0.14, duration: 0.2, ease: EASE_OUT }
-    );
-  }, [copied.id]);
-
-  useEffect(() => {
-    if (isPresent) {
-      return;
-    }
-    // A copy made while it leaves brings it back: stop folding and let the
-    // entrance above take over from wherever it got to.
-    let cancelled = false;
-    const leave = async () => {
-      if (reduce) {
-        await animate(scope.current, { opacity: 0 }, { duration: 0.15 });
-      } else {
-        const shell = pill.current;
-        await Promise.all([
-          animate(
-            "[data-words]",
-            { opacity: 0, filter: "blur(4px)" },
-            { duration: 0.1, ease: EASE_OUT }
-          ),
-          shell &&
-            animate(shell, clipTo(shell.offsetWidth, DOT), {
-              delay: 0.04,
-              duration: 0.2,
-              ease: EASE_IN_OUT,
-            }),
-          animate(
-            scope.current,
-            { opacity: 0, transform: "translateY(4px)" },
-            { delay: 0.16, duration: 0.12, ease: EASE_OUT }
-          ),
-        ]);
-      }
-      if (!cancelled) {
-        safeToRemove();
-      }
-    };
-    leave();
-    return () => {
-      cancelled = true;
-    };
-  }, [isPresent, animate, scope, reduce, safeToRemove]);
-
+/** The copied line, cross-faded when a new copy comes in. */
+function Detail({ copied, className }: { copied: Copied; className: string }) {
   return (
-    <div
-      className="max-w-full"
-      ref={scope}
-      style={{
-        opacity: 0,
-        transform: reduce ? undefined : "translateY(14px)",
-        filter: reduce ? undefined : "blur(4px)",
-      }}
-    >
-      <div
-        className="relative h-11 w-[380px] max-w-full overflow-hidden rounded-full bg-[#0A0A0A] text-white dark:bg-white dark:text-black"
-        ref={pill}
-      >
-        <div
-          className="absolute inset-y-0 left-0 flex w-max max-w-full items-center gap-2.5 pr-5 pl-2"
-          ref={row}
+    <span className="grid min-w-0 max-w-[230px]">
+      <AnimatePresence initial={false}>
+        <motion.span
+          animate={{ opacity: 1, y: 0 }}
+          className={cn(
+            MONO,
+            "col-start-1 row-start-1 truncate text-[11.5px] leading-4",
+            className
+          )}
+          exit={{ opacity: 0, y: -3 }}
+          initial={{ opacity: 0, y: 3 }}
+          key={copied.id}
+          transition={{ duration: 0.14, ease: EASE_OUT }}
         >
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#2CD242] text-white dark:bg-[#1FA834]">
-            <Check id={copied.id} reduce={reduce} />
-          </span>
-          <span
-            className="flex min-w-0 items-baseline gap-2 whitespace-nowrap"
-            data-words
-            style={{ opacity: 0, filter: reduce ? undefined : "blur(4px)" }}
-          >
-            <span className="font-medium text-[13px]">Copied</span>
-            {copied.detail ? (
-              <Detail
-                className="inline-block min-w-0 max-w-[230px] text-white/55 dark:text-black/50"
-                copied={copied}
-                reduce={reduce}
-              />
-            ) : null}
-          </span>
-        </div>
-      </div>
-    </div>
+          {copied.detail}
+        </motion.span>
+      </AnimatePresence>
+    </span>
   );
 }
 
-/** The copied line, swapped with a short blur when a new copy comes in. */
-function Detail({
-  copied,
-  className,
-  reduce,
-}: {
-  copied: Copied;
-  className?: string;
-  reduce: boolean | null;
-}) {
-  return (
-    <AnimatePresence initial={false} mode="popLayout">
-      <motion.span
-        animate={{
-          opacity: 1,
-          transform: "translateY(0px)",
-          filter: "blur(0px)",
-        }}
-        className={cn(MONO, "truncate text-[11.5px] leading-4", className)}
-        exit={
-          reduce
-            ? { opacity: 0 }
-            : { opacity: 0, transform: "translateY(-4px)", filter: "blur(2px)" }
-        }
-        initial={
-          reduce
-            ? { opacity: 0 }
-            : { opacity: 0, transform: "translateY(4px)", filter: "blur(2px)" }
-        }
-        key={copied.id}
-        transition={{ duration: 0.18, ease: EASE_OUT }}
-      >
-        {copied.detail}
-      </motion.span>
-    </AnimatePresence>
-  );
-}
+/** The check, drawn on every copy. */
+function Check({ id }: { id: number }) {
+  const reduce = useReducedMotion();
 
-/** The check, drawn stroke by stroke on every copy. */
-function Check({ id, reduce }: { id: number; reduce: boolean | null }) {
   return (
     <svg
       aria-hidden
@@ -318,7 +184,7 @@ function Check({ id, reduce }: { id: number; reduce: boolean | null }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="2"
-        transition={{ duration: 0.34, delay: 0.1, ease: [0.65, 0, 0.35, 1] }}
+        transition={{ duration: 0.22, ease: EASE_OUT }}
       />
     </svg>
   );
