@@ -77,6 +77,48 @@ export const PRO_SHOWCASE: ShowcaseGroup[] = [
     ],
   },
   {
+    id: "sections",
+    title: "Sections",
+    items: [
+      {
+        name: "security-bento",
+        title: "Security Bento",
+        proPage: "/docs/components/features#security-bento",
+        line: "Every cell a working admin screen, and each change lands in the audit log.",
+      },
+      {
+        name: "dashboard-feature",
+        title: "Dashboard Feature",
+        proPage: "/docs/components/features#dashboard-feature",
+        line: "Drag across the chart and the nearest release says what it did to the number.",
+      },
+      {
+        name: "alternating-feature",
+        title: "Alternating Feature",
+        proPage: "/docs/components/features#alternating-feature",
+        line: "An agent run trace and a fine-tuning chart, in rows that swap sides.",
+      },
+      {
+        name: "collection-feature",
+        title: "Collection Feature",
+        proPage: "/docs/components/features#collection-feature",
+        line: "A line sheet of garment sketches that recolor with each colorway.",
+      },
+      {
+        name: "inline-chips-headline",
+        title: "Inline Chips Headline",
+        proPage: "/docs/components/headline#inline-chips-headline",
+        line: "A headline with small pieces of product UI set inside the sentence.",
+      },
+      {
+        name: "minimal-faq",
+        title: "Minimal FAQ",
+        proPage: "/docs/components/faqs#minimal-faq",
+        line: "Hairline questions, one answer open at a time, each with its own link.",
+      },
+    ],
+  },
+  {
     id: "app-ui",
     title: "App UI",
     items: [
