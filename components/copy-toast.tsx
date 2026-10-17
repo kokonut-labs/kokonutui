@@ -11,11 +11,18 @@ import { MONO } from "@/components/landing/home/styles";
 import { cn } from "@/lib/utils";
 
 const VISIBLE_MS = 2000;
+// A copy that takes longer than this shows Copying first, so the click is
+// answered while it waits.
+const PENDING_AFTER_MS = 100;
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 interface Copied {
   id: number;
   detail?: string;
+  /** Still waiting on the clipboard write. */
+  pending?: boolean;
+  /** The write failed; the toast steps aside and the button says so. */
+  failed?: boolean;
 }
 
 const WORDY = /[\p{L}\p{N}]/u;
@@ -23,16 +30,39 @@ const WORDY = /[\p{L}\p{N}]/u;
 const listeners = new Set<(copied: Copied) => void>();
 let lastId = 0;
 
-/**
- * Confirm a copy with the toast at the foot of the page. `detail` names what
- * was copied (a command, a file); only its first line is shown.
- */
-export function announceCopy(detail?: string) {
-  lastId += 1;
-  const copied = { id: lastId, detail: firstLine(detail) };
+function emit(copied: Copied) {
   for (const listener of listeners) {
     listener(copied);
   }
+}
+
+/**
+ * Confirm a copy with the toast at the foot of the page. `detail` names what
+ * was copied (a command, a file); only its first line is shown. Pass the
+ * write as `pending` when it has to wait on the network: a quick one goes
+ * straight to Copied, a slow one shows Copying with a spinner until it lands.
+ */
+export function announceCopy(detail?: string, pending?: Promise<unknown>) {
+  lastId += 1;
+  const copied = { id: lastId, detail: firstLine(detail) };
+  if (!pending) {
+    emit(copied);
+    return;
+  }
+  const slow = window.setTimeout(
+    () => emit({ ...copied, pending: true }),
+    PENDING_AFTER_MS
+  );
+  pending.then(
+    () => {
+      window.clearTimeout(slow);
+      emit(copied);
+    },
+    () => {
+      window.clearTimeout(slow);
+      emit({ ...copied, failed: true });
+    }
+  );
 }
 
 /** The first line that says something, skipping lone braces and brackets. */
@@ -43,13 +73,13 @@ function firstLine(text?: string) {
 
 /**
  * Holds the latest copy for a moment; a new copy restarts the clock. The
- * clock stops while the tab is hidden, so the toast is still there when you
- * come back to it.
+ * clock waits while a copy is pending and stops while the tab is hidden, so
+ * the toast is still there when you come back to it.
  */
 function useLatestCopy() {
   const [copied, setCopied] = useState<Copied | null>(null);
   const timer = useRef<number | null>(null);
-  const showing = useRef(false);
+  const shown = useRef<Copied | null>(null);
 
   useEffect(() => {
     const stop = () => {
@@ -58,23 +88,36 @@ function useLatestCopy() {
         timer.current = null;
       }
     };
+    const hide = () => {
+      stop();
+      shown.current = null;
+      setCopied(null);
+    };
     const start = () => {
       stop();
-      if (document.hidden) {
+      if (document.hidden || shown.current?.pending) {
         return;
       }
-      timer.current = window.setTimeout(() => {
-        showing.current = false;
-        setCopied(null);
-      }, VISIBLE_MS);
+      timer.current = window.setTimeout(hide, VISIBLE_MS);
     };
     const show = (next: Copied) => {
-      showing.current = true;
+      const current = shown.current;
+      if (next.failed) {
+        if (current?.id === next.id) {
+          hide();
+        }
+        return;
+      }
+      // A slow copy that lands after a newer one leaves the newer one up.
+      if (current && next.id < current.id) {
+        return;
+      }
+      shown.current = next;
       setCopied(next);
       start();
     };
     const onVisibility = () => {
-      if (!showing.current) {
+      if (!shown.current) {
         return;
       }
       if (document.hidden) {
@@ -121,10 +164,19 @@ export function CopyToast() {
               key="pill"
               transition={{ duration: 0.18, ease: EASE_OUT }}
             >
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#2CD242] text-white dark:bg-[#1FA834]">
-                <Check id={copied.id} />
+              <span
+                className={cn(
+                  "flex size-7 shrink-0 items-center justify-center rounded-full transition-colors duration-150",
+                  copied.pending
+                    ? "bg-white/15 text-white dark:bg-black/10 dark:text-black"
+                    : "bg-[#2CD242] text-white dark:bg-[#1FA834]"
+                )}
+              >
+                {copied.pending ? <Spinner /> : <Check id={copied.id} />}
               </span>
-              <span className="font-medium text-[13px]">Copied</span>
+              <span className="font-medium text-[13px]">
+                {copied.pending ? "Copying" : "Copied"}
+              </span>
               {copied.detail ? (
                 <Detail
                   className="text-white/55 dark:text-black/50"
@@ -160,6 +212,34 @@ function Detail({ copied, className }: { copied: Copied; className: string }) {
         </motion.span>
       </AnimatePresence>
     </span>
+  );
+}
+
+/** Turns while a slow copy is on its way; holds still for reduced motion. */
+function Spinner() {
+  return (
+    <svg
+      aria-hidden
+      className="size-4 shrink-0 animate-spin motion-reduce:animate-none"
+      fill="none"
+      viewBox="0 0 16 16"
+    >
+      <title>Copying</title>
+      <circle
+        cx="8"
+        cy="8"
+        r="5.5"
+        stroke="currentColor"
+        strokeOpacity="0.3"
+        strokeWidth="2"
+      />
+      <path
+        d="M13.5 8A5.5 5.5 0 0 0 8 2.5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2"
+      />
+    </svg>
   );
 }
 

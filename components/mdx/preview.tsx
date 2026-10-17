@@ -7,6 +7,8 @@ import { InstallBar } from "./install-bar";
 /** What the page knows about the part it documents, from the catalog. */
 export interface PreviewPart {
   dependencies: string[];
+  /** The component's source, so Copy code needs no round trip. */
+  source?: string;
 }
 
 export interface PreviewProps {
@@ -55,7 +57,12 @@ export function Preview({
     <figure
       className={cn("not-prose my-6 w-full border", LINE, CELL, className)}
     >
-      <InstallBar name={name} prePath={PRE_PATH} showSource={!isBlock} />
+      <InstallBar
+        name={name}
+        prePath={PRE_PATH}
+        showSource={!isBlock}
+        source={part?.source}
+      />
       {spec || actions ? (
         <div className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
           <span className={cn(META, "truncate")}>{spec}</span>

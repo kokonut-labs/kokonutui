@@ -38,10 +38,13 @@ export function InstallBar({
   name,
   prePath,
   showSource = true,
+  source,
 }: {
   name: string;
   prePath: string;
   showSource?: boolean;
+  /** The component's source, read with the page so Copy code is instant. */
+  source?: string;
 }) {
   const [manager, setManager] = usePackageManager();
   const [via, setVia] = useInstallVia();
@@ -109,7 +112,7 @@ export function InstallBar({
             Open in v0
             <ArrowUpRightIcon aria-hidden className="size-3" />
           </a>
-          {showSource ? <CopySource name={name} /> : null}
+          {showSource ? <CopySource name={name} source={source} /> : null}
         </div>
       </div>
       <button
@@ -145,8 +148,8 @@ export function InstallBar({
 const sources = new Map<string, Promise<string>>();
 
 /**
- * Reads a component's source on the server once per page view. Hovering or
- * focusing Copy code starts it, so the click usually finds it ready.
+ * Reads a component's source on the server once per page view, for a page
+ * that did not bring it along. Hovering or focusing Copy code starts it.
  */
 function loadSource(name: string) {
   let source = sources.get(name);
@@ -169,8 +172,11 @@ function loadSource(name: string) {
   return source;
 }
 
-/** Copies the component's source file, read on the server. */
-function CopySource({ name }: { name: string }) {
+/**
+ * Copies the component's source file. Docs pages pass it in, so the click
+ * writes it straight away; otherwise it is read on the server.
+ */
+function CopySource({ name, source }: { name: string; source?: string }) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   const timer = useRef<number | null>(null);
 
@@ -192,29 +198,40 @@ function CopySource({ name }: { name: string }) {
   }, []);
 
   const copySource = () => {
-    const source = loadSource(name);
+    if (source !== undefined) {
+      navigator.clipboard.writeText(source).then(
+        () => {
+          settle("copied");
+          announceCopy(`${name}.tsx`);
+        },
+        () => settle("failed")
+      );
+      return;
+    }
 
+    const text = loadSource(name);
     // Safari only allows clipboard writes inside the click, so hand it a
     // pending item rather than waiting for the server first.
     const write =
       typeof ClipboardItem === "undefined"
-        ? source.then((text) => navigator.clipboard.writeText(text))
+        ? text.then((value) => navigator.clipboard.writeText(value))
         : navigator.clipboard.write([
             new ClipboardItem({
-              "text/plain": source.then(
-                (text) => new Blob([text], { type: "text/plain" })
+              "text/plain": text.then(
+                (value) => new Blob([value], { type: "text/plain" })
               ),
             }),
           ]);
 
+    // The toast says Copying if the server is slow to answer.
+    announceCopy(`${name}.tsx`, write);
     write.then(
-      () => {
-        settle("copied");
-        announceCopy(`${name}.tsx`);
-      },
+      () => settle("copied"),
       () => settle("failed")
     );
   };
+
+  const warm = source === undefined ? () => loadSource(name) : undefined;
 
   let label = "Copy code";
   if (state === "copied") {
@@ -234,9 +251,9 @@ function CopySource({ name }: { name: string }) {
         FOCUS_INSET
       )}
       onClick={copySource}
-      onFocus={() => loadSource(name)}
-      onPointerDown={() => loadSource(name)}
-      onPointerEnter={() => loadSource(name)}
+      onFocus={warm}
+      onPointerDown={warm}
+      onPointerEnter={warm}
       type="button"
     >
       <CopyIconSwap className="size-3" copied={state === "copied"} />

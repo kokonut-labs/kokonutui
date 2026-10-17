@@ -10,9 +10,10 @@ const COMPONENTS_DIR = path.join(process.cwd(), "components/kokonutui");
 /**
  * Reads a component's source directly rather than going through the
  * `"use server"` action in `lib/action.ts` — a Server Action call would opt
- * these routes out of static generation.
+ * these routes out of static generation. The docs pages use it too, so Copy
+ * code has the source without a round trip.
  */
-async function readComponentSource(name: string): Promise<string> {
+export async function readComponentSource(name: string): Promise<string> {
   "use cache";
 
   return await fs.readFile(path.join(COMPONENTS_DIR, `${name}.tsx`), "utf-8");
