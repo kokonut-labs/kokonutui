@@ -20,7 +20,6 @@ interface Copied {
 }
 
 const WORDY = /[\p{L}\p{N}]/u;
-const MAC = /Mac|iPhone|iPad/;
 
 const listeners = new Set<(copied: Copied) => void>();
 let lastId = 0;
@@ -68,25 +67,13 @@ function useLatestCopy() {
   return copied;
 }
 
-type Variant = "pill" | "card";
-
 /**
  * One toast for the whole site, mounted in the root layout. A copy made while
  * it is up updates it in place instead of stacking a second one. It never
  * takes the pointer, so nothing under it is blocked.
- *
- * Prototype: `?toast=card` shows the card direction, the default is the pill.
  */
 export function CopyToast() {
   const copied = useLatestCopy();
-  const [variant, setVariant] = useState<Variant>("pill");
-
-  useEffect(() => {
-    const asked = new URLSearchParams(window.location.search).get("toast");
-    if (asked === "card") {
-      setVariant("card");
-    }
-  }, []);
 
   return (
     <output
@@ -94,12 +81,7 @@ export function CopyToast() {
       className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
     >
       <AnimatePresence>
-        {copied && variant === "pill" ? (
-          <Pill copied={copied} key="pill" />
-        ) : null}
-        {copied && variant === "card" ? (
-          <Card copied={copied} key="card" />
-        ) : null}
+        {copied ? <Pill copied={copied} key="pill" /> : null}
       </AnimatePresence>
     </output>
   );
@@ -201,75 +183,6 @@ function Pill({ copied }: { copied: Copied }) {
         </span>
       </div>
     </div>
-  );
-}
-
-/**
- * A rounded card with the check on a tinted tile, the copied line under the
- * title, and the paste shortcut for this platform on the right.
- */
-function Card({ copied }: { copied: Copied }) {
-  const reduce = useReducedMotion();
-  const [paste, setPaste] = useState("Ctrl V");
-
-  useEffect(() => {
-    if (MAC.test(navigator.userAgent)) {
-      setPaste("⌘V");
-    }
-  }, []);
-
-  return (
-    <motion.div
-      animate={
-        reduce ? { opacity: 1 } : { opacity: 1, y: 0, filter: "blur(0px)" }
-      }
-      className="flex w-[360px] max-w-full items-center gap-3 rounded-[18px] bg-white p-2 pr-3 text-black shadow-[0_16px_40px_-18px_rgba(0,0,0,0.35)] ring-1 ring-black/[0.07] dark:bg-[#161616] dark:text-white dark:shadow-[0_16px_40px_-18px_rgba(0,0,0,0.9)] dark:ring-white/[0.09]"
-      exit={
-        reduce
-          ? { opacity: 0, transition: { duration: 0.15 } }
-          : {
-              opacity: 0,
-              y: 8,
-              filter: "blur(3px)",
-              transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
-            }
-      }
-      initial={
-        reduce ? { opacity: 0 } : { opacity: 0, y: 18, filter: "blur(6px)" }
-      }
-      transition={
-        reduce
-          ? { duration: 0.15 }
-          : {
-              default: { duration: 0.24, ease: EASE_OUT },
-              y: { type: "spring", bounce: 0.25, duration: 0.5 },
-            }
-      }
-    >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[#2CD242]/[0.14] text-[#1FA834] dark:bg-[#3BB44B]/[0.16] dark:text-[#3BB44B]">
-        <Check id={copied.id} reduce={reduce} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-medium text-[13.5px] leading-5">
-          Copied to clipboard
-        </p>
-        {copied.detail ? (
-          <Detail
-            className="block text-black/50 dark:text-white/50"
-            copied={copied}
-            reduce={reduce}
-          />
-        ) : null}
-      </div>
-      <kbd
-        className={cn(
-          MONO,
-          "shrink-0 rounded-[7px] bg-black/[0.04] px-1.5 py-0.5 text-[11px] text-black/45 ring-1 ring-black/[0.07] dark:bg-white/[0.06] dark:text-white/50 dark:ring-white/[0.08]"
-        )}
-      >
-        {paste}
-      </kbd>
-    </motion.div>
   );
 }
 
