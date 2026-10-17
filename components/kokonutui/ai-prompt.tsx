@@ -201,7 +201,7 @@ function carryEffort(
 const CLAUDE_ICON = (
   <svg
     aria-hidden="true"
-    fill="currentColor"
+    fill="#D57156"
     height="1em"
     style={{ flex: "none", lineHeight: "1" }}
     viewBox="0 0 256 257"

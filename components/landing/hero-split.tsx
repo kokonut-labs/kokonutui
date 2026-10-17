@@ -240,7 +240,7 @@ export function HeroSplit() {
           <div className="flex items-center justify-between gap-4">
             <h2 className="font-semibold text-[15px] text-white">For agents</h2>
             <div className="flex items-center gap-3.5">
-              <Claude className="h-4 w-4 text-white" />
+              <Claude className="h-4 w-4" />
               <OpenAIDark className="h-4 w-4" />
               <Gemini className="h-4 w-4" />
               <GrokDark className="h-4 w-4" />
