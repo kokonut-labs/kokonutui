@@ -124,7 +124,7 @@ function Monogram({
     <span
       aria-hidden="true"
       className={cn(
-        "flex size-4 shrink-0 items-center justify-center rounded-[4px] bg-gray-200 font-semibold text-[9px] text-gray-600 uppercase dark:bg-gray-700 dark:text-gray-200",
+        "flex size-4 shrink-0 items-center justify-center rounded-[4px] bg-zinc-200 font-semibold text-[9px] text-zinc-600 uppercase dark:bg-zinc-700 dark:text-zinc-200",
         className
       )}
     >
@@ -260,7 +260,7 @@ export default function AICitations({
   return (
     <MotionConfig reducedMotion="user">
       <div className={cn("relative w-full max-w-lg", className)} ref={rootRef}>
-        <p className="text-[15px] text-gray-800 leading-7 dark:text-gray-200">
+        <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
           {parts.map((part, index) => {
             const partSources = (part.cite ?? [])
               .map((id) => byId.get(id))
@@ -294,8 +294,8 @@ export default function AICitations({
                   className={cn(
                     "inline-flex h-5 translate-y-[-1px] items-center gap-1 rounded-full py-0 pr-1.5 pl-0.5 align-middle font-medium text-[11px] outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-sky-500/50",
                     isActive || isLinked
-                      ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/15"
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/15"
                   )}
                   onBlur={() => hide(true)}
                   // Focus already opened it for mouse and keyboard; a tap
@@ -374,18 +374,18 @@ export default function AICitations({
                   >
                     {activeSources.map((source) => (
                       <div className="rounded-lg p-2.5" key={source.id}>
-                        <div className="flex items-center gap-1.5 text-gray-500 text-xs dark:text-gray-400">
+                        <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
                           <Monogram source={source} />
                           <span className="truncate">{hostOf(source.url)}</span>
                           <span className="ml-auto shrink-0 tabular-nums">
                             {order.indexOf(source.id) + 1}
                           </span>
                         </div>
-                        <p className="mt-1.5 font-medium text-gray-900 text-sm leading-snug dark:text-gray-100">
+                        <p className="mt-1.5 font-medium text-sm text-zinc-900 leading-snug dark:text-zinc-100">
                           {source.title}
                         </p>
                         {source.snippet && (
-                          <p className="mt-1 line-clamp-3 text-gray-500 text-xs leading-relaxed dark:text-gray-400">
+                          <p className="mt-1 line-clamp-3 text-xs text-zinc-500 leading-relaxed dark:text-zinc-400">
                             {source.snippet}
                           </p>
                         )}
@@ -403,7 +403,7 @@ export default function AICitations({
             <button
               aria-controls={listId}
               aria-expanded={listOpen}
-              className="group/sources flex items-center gap-2 rounded-full py-1 pr-2.5 pl-1 text-gray-600 text-xs outline-hidden transition-colors duration-150 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-sky-500/50 dark:text-gray-300 dark:hover:bg-white/10"
+              className="group/sources flex items-center gap-2 rounded-full py-1 pr-2.5 pl-1 text-xs text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-sky-500/50 dark:text-zinc-300 dark:hover:bg-white/10"
               onClick={() => setListOpen((open) => !open)}
               type="button"
             >
@@ -420,7 +420,7 @@ export default function AICitations({
               <ChevronDown
                 aria-hidden="true"
                 className={cn(
-                  "size-3.5 text-gray-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                  "size-3.5 text-zinc-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
                   listOpen && "rotate-180"
                 )}
               />
@@ -438,7 +438,7 @@ export default function AICitations({
                   {cited.map((source, index) => (
                     <li className="pt-1 first:pt-2" key={source.id}>
                       <a
-                        className="group/source flex items-center gap-2.5 rounded-lg px-2 py-1.5 outline-hidden transition-colors duration-150 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-sky-500/50 dark:hover:bg-white/5"
+                        className="group/source flex items-center gap-2.5 rounded-lg px-2 py-1.5 outline-hidden transition-colors duration-150 hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-sky-500/50 dark:hover:bg-white/5"
                         href={source.url}
                         onBlur={() => setHoveredSource(null)}
                         onFocus={() => setHoveredSource(source.id)}
@@ -447,19 +447,19 @@ export default function AICitations({
                         rel="noopener noreferrer"
                         target="_blank"
                       >
-                        <span className="w-3 shrink-0 text-right text-gray-400 text-xs tabular-nums">
+                        <span className="w-3 shrink-0 text-right text-xs text-zinc-400 tabular-nums">
                           {index + 1}
                         </span>
                         <Monogram source={source} />
-                        <span className="min-w-0 flex-1 truncate text-gray-800 text-sm dark:text-gray-200">
+                        <span className="min-w-0 flex-1 truncate text-sm text-zinc-800 dark:text-zinc-200">
                           {source.title}
                         </span>
-                        <span className="hidden shrink-0 text-gray-400 text-xs sm:inline dark:text-gray-500">
+                        <span className="hidden shrink-0 text-xs text-zinc-400 sm:inline dark:text-zinc-500">
                           {hostOf(source.url)}
                         </span>
                         <ArrowUpRight
                           aria-hidden="true"
-                          className="size-3.5 shrink-0 text-gray-300 transition-colors duration-150 group-hover/source:text-gray-600 dark:text-gray-600 dark:group-hover/source:text-gray-300"
+                          className="size-3.5 shrink-0 text-zinc-300 transition-colors duration-150 group-hover/source:text-zinc-600 dark:text-zinc-600 dark:group-hover/source:text-zinc-300"
                         />
                       </a>
                     </li>

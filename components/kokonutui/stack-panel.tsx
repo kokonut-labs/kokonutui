@@ -137,7 +137,7 @@ function Title({
 
   return (
     <motion.span
-      className="absolute inset-x-0 top-1/2 mx-auto w-fit max-w-[55%] -translate-y-1/2 truncate font-semibold text-[15px] text-gray-900 dark:text-gray-100"
+      className="absolute inset-x-0 top-1/2 mx-auto w-fit max-w-[55%] -translate-y-1/2 truncate font-semibold text-[15px] text-zinc-900 dark:text-zinc-100"
       exit={{
         opacity: 0,
         x: direction * -40,
@@ -166,11 +166,11 @@ function Page({
         // biome-ignore lint/suspicious/noArrayIndexKey: sections are a fixed, ordered list
         <section key={index}>
           {section.title && (
-            <h3 className="mb-1.5 px-3 font-medium text-gray-500 text-xs dark:text-gray-400">
+            <h3 className="mb-1.5 px-3 font-medium text-xs text-zinc-500 dark:text-zinc-400">
               {section.title}
             </h3>
           )}
-          <ul className="divide-y divide-gray-100 overflow-hidden rounded-xl bg-gray-50 dark:divide-gray-800/70 dark:bg-gray-900">
+          <ul className="divide-y divide-zinc-100 overflow-hidden rounded-xl bg-zinc-50 dark:divide-zinc-800/70 dark:bg-zinc-900">
             {section.rows.map((row) => (
               <li key={row.id}>
                 <RowView onOpen={onOpen} row={row} />
@@ -178,7 +178,7 @@ function Page({
             ))}
           </ul>
           {section.footer && (
-            <p className="mt-1.5 px-3 text-gray-400 text-xs leading-5 dark:text-gray-500">
+            <p className="mt-1.5 px-3 text-xs text-zinc-400 leading-5 dark:text-zinc-500">
               {section.footer}
             </p>
           )}
@@ -204,14 +204,14 @@ function RowView({
           "min-w-0 flex-1 truncate text-left text-[15px]",
           row.tone === "danger"
             ? "text-red-600 dark:text-red-400"
-            : "text-gray-900 dark:text-gray-100"
+            : "text-zinc-900 dark:text-zinc-100"
         )}
         ref={labelRef}
       >
         {row.label}
       </span>
       {row.detail && (
-        <span className="max-w-[45%] shrink-0 truncate text-gray-500 text-sm dark:text-gray-400">
+        <span className="max-w-[45%] shrink-0 truncate text-sm text-zinc-500 dark:text-zinc-400">
           {row.detail}
         </span>
       )}
@@ -221,7 +221,7 @@ function RowView({
         <Check
           aria-hidden="true"
           className={cn(
-            "size-4 shrink-0 text-gray-900 dark:text-gray-100",
+            "size-4 shrink-0 text-zinc-900 dark:text-zinc-100",
             !row.selected && "invisible"
           )}
         />
@@ -229,7 +229,7 @@ function RowView({
       {row.to && (
         <ChevronRight
           aria-hidden="true"
-          className="-mr-1 size-4 shrink-0 text-gray-400 dark:text-gray-500"
+          className="-mr-1 size-4 shrink-0 text-zinc-400 dark:text-zinc-500"
         />
       )}
     </>
@@ -240,7 +240,7 @@ function RowView({
   }
   const className = cn(
     base,
-    "outline-none transition-colors duration-150 hover:bg-gray-100 focus-visible:bg-gray-100 active:bg-gray-100 dark:active:bg-gray-800 dark:focus-visible:bg-gray-800 dark:hover:bg-gray-800/60"
+    "outline-none transition-colors duration-150 hover:bg-zinc-100 focus-visible:bg-zinc-100 active:bg-zinc-100 dark:active:bg-zinc-800 dark:focus-visible:bg-zinc-800 dark:hover:bg-zinc-800/60"
   );
   const onClick = () => {
     if (labelRef.current) {
@@ -385,18 +385,18 @@ export function StackPanel({ pages, root, className }: StackPanelProps) {
       {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions: Escape is a shortcut for the Back button */}
       <div
         className={cn(
-          "relative w-full max-w-sm overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950",
+          "relative w-full max-w-sm overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950",
           className
         )}
         onKeyDown={onKeyDown}
         ref={panelRef}
       >
-        <div className="relative z-10 flex h-12 items-center border-gray-100 border-b bg-white px-2 dark:border-gray-900 dark:bg-gray-950">
+        <div className="relative z-10 flex h-12 items-center border-zinc-100 border-b bg-white px-2 dark:border-zinc-900 dark:bg-zinc-950">
           <AnimatePresence initial={false}>
             {parent && (
               <motion.button
                 animate={{ opacity: 1 }}
-                className="relative z-10 flex max-w-[30%] items-center rounded-lg py-1.5 pr-2 pl-1 text-gray-600 text-sm outline-none transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-2 focus-visible:ring-gray-400 dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-gray-100"
+                className="relative z-10 flex max-w-[30%] items-center rounded-lg py-1.5 pr-2 pl-1 text-sm text-zinc-600 outline-none transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
                 key="back"
@@ -444,7 +444,7 @@ export function StackPanel({ pages, root, className }: StackPanelProps) {
           )}
           {pages[top] && (
             <motion.div
-              className="relative bg-white dark:bg-gray-950"
+              className="relative bg-white dark:bg-zinc-950"
               drag={stack.length > 1 && !busy ? "x" : false}
               dragConstraints={{ left: 0, right: 0 }}
               dragDirectionLock
@@ -473,12 +473,12 @@ function Toggle({ on }: { on: boolean }) {
       aria-hidden="true"
       className={cn(
         "relative h-[22px] w-9 shrink-0 rounded-full transition-colors duration-200",
-        on ? "bg-gray-900 dark:bg-gray-100" : "bg-gray-200 dark:bg-gray-700"
+        on ? "bg-zinc-900 dark:bg-zinc-100" : "bg-zinc-200 dark:bg-zinc-700"
       )}
     >
       <span
         className={cn(
-          "absolute top-0.5 left-0.5 size-[18px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] dark:bg-gray-950",
+          "absolute top-0.5 left-0.5 size-[18px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] dark:bg-zinc-950",
           on && "translate-x-3.5"
         )}
       />

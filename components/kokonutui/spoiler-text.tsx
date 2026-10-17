@@ -428,7 +428,7 @@ export function Spoiler({
       aria-label={label}
       className={cn(
         shape,
-        "cursor-pointer bg-gray-900/[0.06] outline-none transition-colors duration-150 hover:bg-gray-900/10 focus-visible:ring-2 focus-visible:ring-gray-400 dark:bg-white/[0.08] dark:hover:bg-white/12",
+        "cursor-pointer bg-zinc-900/[0.06] outline-none transition-colors duration-150 hover:bg-zinc-900/10 focus-visible:ring-2 focus-visible:ring-zinc-400 dark:bg-white/[0.08] dark:hover:bg-white/12",
         className
       )}
       onClick={onClick}
@@ -507,17 +507,17 @@ export default function SpoilerText({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "w-full max-w-md rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-950",
+        "w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950",
         className
       )}
     >
       <div className="mb-3 flex items-center justify-between">
-        <p className="font-medium text-gray-900 text-sm dark:text-gray-100">
+        <p className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
           # the-finale
         </p>
         <button
           className={cn(
-            "rounded-md px-2 py-1 text-gray-500 text-xs transition-[color,background-color,opacity] duration-150 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-gray-100",
+            "rounded-md px-2 py-1 text-xs text-zinc-500 transition-[color,background-color,opacity] duration-150 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100",
             shown === 0 && "pointer-events-none opacity-0"
           )}
           onClick={() => {
@@ -538,22 +538,22 @@ export default function SpoilerText({ className }: { className?: string }) {
               className={cn(
                 "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full font-medium text-xs",
                 message.own
-                  ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
-                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
               )}
             >
               {message.initial}
             </span>
             <div className="min-w-0">
               <p className="flex items-baseline gap-2">
-                <span className="font-medium text-gray-900 text-sm dark:text-gray-100">
+                <span className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
                   {message.name}
                 </span>
-                <span className="text-gray-400 text-xs tabular-nums dark:text-gray-500">
+                <span className="text-xs text-zinc-400 tabular-nums dark:text-zinc-500">
                   {message.time}
                 </span>
               </p>
-              <p className="text-[15px] text-gray-700 leading-6 dark:text-gray-300">
+              <p className="text-[15px] text-zinc-700 leading-6 dark:text-zinc-300">
                 {message.body}
               </p>
             </div>

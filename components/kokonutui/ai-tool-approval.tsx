@@ -236,8 +236,8 @@ const inputSummary = (input: ToolCall["input"]) =>
 function ToolInput({ input }: { input: ToolCall["input"] }) {
   if (typeof input === "string") {
     return (
-      <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-gray-50 px-3 py-2.5 font-mono text-[13px] text-gray-900 leading-relaxed ring-1 ring-black/5 dark:bg-white/5 dark:text-gray-100 dark:ring-white/10">
-        <span aria-hidden="true" className="select-none text-gray-400">
+      <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-zinc-50 px-3 py-2.5 font-mono text-[13px] text-zinc-900 leading-relaxed ring-1 ring-black/5 dark:bg-white/5 dark:text-zinc-100 dark:ring-white/10">
+        <span aria-hidden="true" className="select-none text-zinc-400">
           ${" "}
         </span>
         {input}
@@ -245,11 +245,11 @@ function ToolInput({ input }: { input: ToolCall["input"] }) {
     );
   }
   return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg bg-gray-50 px-3 py-2.5 text-[13px] ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
+    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg bg-zinc-50 px-3 py-2.5 text-[13px] ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
       {Object.entries(input).map(([key, value]) => (
         <div className="contents" key={key}>
-          <dt className="text-gray-500 dark:text-gray-400">{key}</dt>
-          <dd className="min-w-0 truncate font-mono text-gray-900 dark:text-gray-100">
+          <dt className="text-zinc-500 dark:text-zinc-400">{key}</dt>
+          <dd className="min-w-0 truncate font-mono text-zinc-900 dark:text-zinc-100">
             {String(value)}
           </dd>
         </div>
@@ -351,16 +351,16 @@ function ApprovalCard({
       }}
     >
       <header className="mb-2.5 flex items-center gap-2">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
           <ToolIcon call={call} />
         </span>
         <h3
-          className="font-medium text-gray-900 text-sm dark:text-gray-100"
+          className="font-medium text-sm text-zinc-900 dark:text-zinc-100"
           id={titleId}
         >
           {call.title}
         </h3>
-        <span className="font-mono text-gray-400 text-xs dark:text-gray-500">
+        <span className="font-mono text-xs text-zinc-400 dark:text-zinc-500">
           {call.tool}
         </span>
         {call.destructive && (
@@ -371,23 +371,23 @@ function ApprovalCard({
       </header>
       <ToolInput input={call.input} />
       {call.reason && (
-        <p className="mt-2 text-gray-500 text-xs leading-relaxed dark:text-gray-400">
+        <p className="mt-2 text-xs text-zinc-500 leading-relaxed dark:text-zinc-400">
           {call.reason}
         </p>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {call.destructive ? (
-          <span className="text-gray-400 text-xs dark:text-gray-500">
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">
             Asks every time
           </span>
         ) : (
           <label
-            className="flex cursor-pointer select-none items-center gap-2 text-gray-500 text-xs dark:text-gray-400"
+            className="flex cursor-pointer select-none items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"
             htmlFor={alwaysId}
           >
             <input
               checked={always}
-              className="size-3.5 cursor-pointer accent-gray-900 dark:accent-gray-100"
+              className="size-3.5 cursor-pointer accent-zinc-900 dark:accent-zinc-100"
               id={alwaysId}
               onChange={(event) => setAlways(event.target.checked)}
               type="checkbox"
@@ -397,7 +397,7 @@ function ApprovalCard({
         )}
         <div className="ml-auto flex items-center gap-1.5">
           <button
-            className="h-8 rounded-lg px-3 text-gray-600 text-sm outline-hidden transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-2 focus-visible:ring-gray-400/50 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+            className="h-8 rounded-lg px-3 text-sm text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
             onClick={() => onRespond(false, false)}
             type="button"
           >
@@ -407,7 +407,7 @@ function ApprovalCard({
             <HoldToAllow onConfirm={() => onRespond(true, false)} />
           ) : (
             <button
-              className="h-8 rounded-lg bg-gray-900 px-3 font-medium text-sm text-white outline-hidden transition-colors duration-150 hover:bg-gray-700 focus-visible:ring-2 focus-visible:ring-gray-400/60 focus-visible:ring-offset-1 dark:bg-white dark:text-gray-900 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-gray-200"
+              className="h-8 rounded-lg bg-zinc-900 px-3 font-medium text-sm text-white outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-1 dark:bg-white dark:text-zinc-900 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-zinc-200"
               onClick={() => onRespond(true, always)}
               type="button"
             >
@@ -431,14 +431,14 @@ function StatusIcon({ state }: { state: ToolCallState }) {
         viewBox="0 0 16 16"
       >
         <circle
-          className="stroke-gray-200 dark:stroke-gray-700"
+          className="stroke-zinc-200 dark:stroke-zinc-700"
           cx="8"
           cy="8"
           r="6.25"
           strokeWidth="1.5"
         />
         <path
-          className="stroke-gray-700 dark:stroke-gray-200"
+          className="stroke-zinc-700 dark:stroke-zinc-200"
           d="M8 1.75a6.25 6.25 0 0 1 6.25 6.25"
           strokeLinecap="round"
           strokeWidth="1.5"
@@ -450,7 +450,7 @@ function StatusIcon({ state }: { state: ToolCallState }) {
     return (
       <svg
         aria-hidden="true"
-        className="size-3.5 text-gray-700 dark:text-gray-200"
+        className="size-3.5 text-zinc-700 dark:text-zinc-200"
         fill="none"
         viewBox="0 0 16 16"
       >
@@ -472,7 +472,7 @@ function StatusIcon({ state }: { state: ToolCallState }) {
       aria-hidden="true"
       className={cn(
         "size-3.5",
-        state === "output-error" ? "text-red-500" : "text-gray-400"
+        state === "output-error" ? "text-red-500" : "text-zinc-400"
       )}
       fill="none"
       viewBox="0 0 16 16"
@@ -536,7 +536,7 @@ function TraceLine({ call }: { call: ToolCall }) {
       <button
         aria-controls={hasOutput ? outputId : undefined}
         aria-expanded={hasOutput ? showOutput : undefined}
-        className="group/line flex w-full items-center gap-2.5 rounded-md py-1.5 text-left text-[13px] leading-5 outline-hidden focus-visible:ring-2 focus-visible:ring-gray-400/40 disabled:cursor-default"
+        className="group/line flex w-full items-center gap-2.5 rounded-md py-1.5 text-left text-[13px] leading-5 outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/40 disabled:cursor-default"
         disabled={!hasOutput || isRunning}
         onClick={() => setOpen((value) => !value)}
         type="button"
@@ -548,8 +548,8 @@ function TraceLine({ call }: { call: ToolCall }) {
           className={cn(
             "shrink-0",
             state === "output-denied"
-              ? "text-gray-400 dark:text-gray-500"
-              : "text-gray-600 dark:text-gray-300"
+              ? "text-zinc-400 dark:text-zinc-500"
+              : "text-zinc-600 dark:text-zinc-300"
           )}
         >
           {verbOf(call)}
@@ -558,8 +558,8 @@ function TraceLine({ call }: { call: ToolCall }) {
           className={cn(
             "min-w-0 truncate font-mono text-[12.5px]",
             state === "output-denied"
-              ? "text-gray-400 line-through decoration-gray-300 dark:text-gray-500 dark:decoration-gray-600"
-              : "text-gray-900 dark:text-gray-100"
+              ? "text-zinc-400 line-through decoration-zinc-300 dark:text-zinc-500 dark:decoration-zinc-600"
+              : "text-zinc-900 dark:text-zinc-100"
           )}
         >
           {inputSummary(call.input)}
@@ -568,7 +568,7 @@ function TraceLine({ call }: { call: ToolCall }) {
           <ChevronRight
             aria-hidden="true"
             className={cn(
-              "ml-auto size-3.5 shrink-0 text-gray-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/line:text-gray-600 dark:group-hover/line:text-gray-300",
+              "ml-auto size-3.5 shrink-0 text-zinc-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/line:text-zinc-600 dark:group-hover/line:text-zinc-300",
               open && "rotate-90"
             )}
           />
@@ -584,7 +584,7 @@ function TraceLine({ call }: { call: ToolCall }) {
             initial={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.22, ease: EASE_OUT }}
           >
-            <pre className="mb-1.5 ml-6.5 overflow-x-auto rounded-lg bg-gray-50 px-3 py-2 font-mono text-gray-600 text-xs leading-5 ring-1 ring-black/5 dark:bg-white/5 dark:text-gray-400 dark:ring-white/10">
+            <pre className="mb-1.5 ml-6.5 overflow-x-auto rounded-lg bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-600 leading-5 ring-1 ring-black/5 dark:bg-white/5 dark:text-zinc-400 dark:ring-white/10">
               {call.output?.join("\n")}
             </pre>
           </motion.div>
@@ -645,7 +645,7 @@ export default function AIToolApproval({
                 transition={{ duration: 0.22, ease: EASE_OUT }}
               >
                 {pending.length > 1 && (
-                  <p className="px-2.5 pb-1.5 text-gray-500 text-xs tabular-nums dark:text-gray-400">
+                  <p className="px-2.5 pb-1.5 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
                     1 of {pending.length} waiting
                   </p>
                 )}
@@ -661,7 +661,7 @@ export default function AIToolApproval({
           {demoFinished && (
             <div className="flex justify-end px-2.5 pb-1">
               <button
-                className="rounded-md px-1.5 py-1 text-gray-500 text-xs outline-hidden transition-colors duration-150 hover:text-gray-900 focus-visible:ring-2 focus-visible:ring-gray-400/40 dark:text-gray-400 dark:hover:text-white"
+                className="rounded-md px-1.5 py-1 text-xs text-zinc-500 outline-hidden transition-colors duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/40 dark:text-zinc-400 dark:hover:text-white"
                 onClick={demo.reset}
                 type="button"
               >
