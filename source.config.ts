@@ -22,6 +22,8 @@ const llmsOptions: LLMsOptions = {
     "PreviewClient",
     "PreviewTemplate",
     "ProTemplates",
+    "ProShowcase",
+    "ProShowcaseIntro",
     "ProPeek",
     "Command",
     "Note",

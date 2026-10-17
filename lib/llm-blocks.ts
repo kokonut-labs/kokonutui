@@ -13,6 +13,12 @@ import {
 } from "@/lib/agents";
 import { RELEASES } from "@/lib/changelog";
 import { getProPeek, proPeekUrl } from "@/lib/pro-peeks";
+import {
+  getShowcaseGroup,
+  PRO_SHOWCASE_PRICING_URL,
+  PRO_STATS,
+  showcaseUrl,
+} from "@/lib/pro-showcase";
 import { PRO_TEMPLATE_LIST, proTemplateUrl } from "@/lib/pro-templates";
 
 // Markdown for the docs' own MDX blocks, so the `.md` pages agents read carry
@@ -153,6 +159,27 @@ const proPeek: Renderer = (args) => {
   ].join("\n");
 };
 
+const proShowcaseIntro: Renderer = () =>
+  [
+    PRO_STATS.map((stat) => `${stat.value} ${stat.label}`).join(" · "),
+    "",
+    `Get Kokonut UI Pro: ${PRO_SHOWCASE_PRICING_URL}`,
+    "",
+  ].join("\n");
+
+const proShowcase: Renderer = (args) => {
+  const group = getShowcaseGroup(attr(args, "group") ?? "");
+  if (!group) {
+    return "";
+  }
+  return group.items
+    .map(
+      (item) =>
+        `- **${item.title}** (\`@kokonutui-pro/${item.name}\`): ${item.line} ${showcaseUrl(item, "llms")}`
+    )
+    .join("\n");
+};
+
 export const BLOCK_RENDERERS: Record<string, Renderer> = {
   Command: command,
   Note: note,
@@ -164,4 +191,6 @@ export const BLOCK_RENDERERS: Record<string, Renderer> = {
   SetupChoice: setupChoice,
   ProTemplates: proTemplates,
   ProPeek: proPeek,
+  ProShowcase: proShowcase,
+  ProShowcaseIntro: proShowcaseIntro,
 };

@@ -5,6 +5,7 @@ import HeaderProSmall from "@/components/landing/header-pro-small";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, MONO } from "@/components/landing/home/styles";
 import { isProPeekUrl } from "@/lib/pro-peeks";
+import { PRO_SHOWCASE_PAGE } from "@/lib/pro-showcase";
 import { PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
 import { source } from "@/lib/source";
 import { cn } from "@/lib/utils";
@@ -57,7 +58,9 @@ function withCodes(tree: PageTree.Root): PageTree.Root {
     // anyone clicks; the pages themselves stay on this site.
     if (
       node.type === "page" &&
-      (node.url === PRO_TEMPLATES_PAGE || isProPeekUrl(node.url))
+      (node.url === PRO_TEMPLATES_PAGE ||
+        node.url === PRO_SHOWCASE_PAGE ||
+        isProPeekUrl(node.url))
     ) {
       return {
         ...node,
