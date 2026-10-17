@@ -6,6 +6,7 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { ViewTransitions } from "next-view-transitions";
+import { CopyToast } from "@/components/copy-toast";
 import StaticSearchDialog from "@/components/search-dialog";
 import { META_THEME_COLORS, siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
@@ -124,6 +125,7 @@ export default function RootLayout({
               {children}
             </ThemeProvider>
           </RootProvider>
+          <CopyToast />
           <Analytics />
           <SpeedInsights />
         </body>

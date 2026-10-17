@@ -2,6 +2,7 @@
 
 import { ArrowUpRightIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { announceCopy } from "@/components/copy-toast";
 import { CopyIconSwap, useCopy } from "@/components/landing/home/client";
 import {
   CELL,
@@ -190,7 +191,10 @@ function CopySource({ name }: { name: string }) {
           ]);
 
     write.then(
-      () => settle("copied"),
+      () => {
+        settle("copied");
+        announceCopy(`${name}.tsx`);
+      },
       () => settle("failed")
     );
   };

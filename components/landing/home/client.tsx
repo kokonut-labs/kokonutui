@@ -9,11 +9,15 @@ import {
   useRef,
   useState,
 } from "react";
+import { announceCopy } from "@/components/copy-toast";
 import { cn } from "@/lib/utils";
 
 const COPIED_MS = 1600;
 
-/** Copy to clipboard and report it for a moment; the timer is cleaned up. */
+/**
+ * Copy to clipboard and report it for a moment; the timer is cleaned up. The
+ * site toast confirms it too, naming `detail` (the value itself by default).
+ */
 export function useCopy() {
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | null>(null);
@@ -27,10 +31,11 @@ export function useCopy() {
     []
   );
 
-  const copy = useCallback((value: string) => {
+  const copy = useCallback((value: string, detail: string = value) => {
     navigator.clipboard?.writeText(value).then(
       () => {
         setCopied(true);
+        announceCopy(detail);
         if (timer.current !== null) {
           window.clearTimeout(timer.current);
         }
