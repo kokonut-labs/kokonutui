@@ -3,7 +3,6 @@ import {
   DocsDescription,
   DocsPage,
   DocsTitle,
-  MarkdownCopyButton,
   ViewOptionsPopover,
 } from "fumadocs-ui/layouts/docs/page";
 import defaultMdxComponents, { createRelativeLink } from "fumadocs-ui/mdx";
@@ -15,6 +14,7 @@ import { LEAF, META, MONO } from "@/components/landing/home/styles";
 import TocProBanner from "@/components/landing/toc-pro-banner";
 import { Release } from "@/components/mdx/changelog-release";
 import { DocsPre } from "@/components/mdx/code-block";
+import { CopyMarkdownButton } from "@/components/mdx/copy-markdown-button";
 import {
   AgentEndpoints,
   AgentPrompts,
@@ -202,7 +202,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         {page.data.description}
       </DocsDescription>
       <div className="flex flex-row items-center gap-2">
-        <MarkdownCopyButton className={PAGE_ACTION} markdownUrl={markdownUrl} />
+        <CopyMarkdownButton className={PAGE_ACTION} markdownUrl={markdownUrl} />
         <ViewOptionsPopover
           className={PAGE_ACTION}
           githubUrl={githubUrl}
