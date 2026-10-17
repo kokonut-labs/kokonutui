@@ -8,9 +8,26 @@ import { cn } from "@/lib/utils";
 const COPIED_MS = 1600;
 const cache = new Map<string, Promise<string>>();
 
+/** Fetches the page's Markdown once; a failed fetch is retried next time. */
+function load(url: string) {
+  let text = cache.get(url);
+  if (!text) {
+    text = fetch(url).then((res) => {
+      if (!res.ok) {
+        throw new Error(`Markdown fetch failed: ${res.status}`);
+      }
+      return res.text();
+    });
+    text.catch(() => cache.delete(url));
+    cache.set(url, text);
+  }
+  return text;
+}
+
 /**
  * Copies the page as Markdown, like fumadocs' MarkdownCopyButton, with the
- * site's icon swap and toast. The fetch is cached per page.
+ * site's icon swap and toast. The Markdown is fetched on hover or focus, so
+ * the click itself copies straight away.
  */
 export function CopyMarkdownButton({
   markdownUrl,
@@ -33,11 +50,7 @@ export function CopyMarkdownButton({
   );
 
   const copy = useCallback(() => {
-    let text = cache.get(markdownUrl);
-    if (!text) {
-      text = fetch(markdownUrl).then((res) => res.text());
-      cache.set(markdownUrl, text);
-    }
+    const text = load(markdownUrl);
     setLoading(true);
     // Safari only allows clipboard writes inside the click, so hand it a
     // pending item rather than waiting for the fetch first.
@@ -58,10 +71,8 @@ export function CopyMarkdownButton({
           }
           timer.current = window.setTimeout(() => setCopied(false), COPIED_MS);
         },
-        () => {
-          // A failed fetch should be retried on the next click.
-          cache.delete(markdownUrl);
-        }
+        // A failed copy leaves the button as it was.
+        () => undefined
       )
       .finally(() => setLoading(false));
   }, [markdownUrl]);
@@ -75,6 +86,8 @@ export function CopyMarkdownButton({
       )}
       disabled={loading}
       onClick={copy}
+      onFocus={() => load(markdownUrl)}
+      onPointerEnter={() => load(markdownUrl)}
       type="button"
     >
       <CopyIconSwap className="size-3.5" copied={copied} />
