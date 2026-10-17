@@ -42,10 +42,10 @@ interface AIContextMeterProps {
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const FALLBACK_COLORS = [
-  "bg-gray-300 dark:bg-gray-600",
-  "bg-gray-400 dark:bg-gray-500",
-  "bg-gray-600 dark:bg-gray-400",
-  "bg-gray-900 dark:bg-gray-100",
+  "bg-zinc-300 dark:bg-zinc-600",
+  "bg-zinc-400 dark:bg-zinc-500",
+  "bg-zinc-600 dark:bg-zinc-400",
+  "bg-zinc-900 dark:bg-zinc-100",
 ];
 
 const DEMO_BASE: ContextSegment[] = [
@@ -129,9 +129,9 @@ function useDemoContext(
 }
 
 const DEMO_COLORS: Record<string, string> = {
-  system: "bg-gray-300 dark:bg-gray-600",
-  tools: "bg-gray-400 dark:bg-gray-500",
-  files: "bg-gray-600 dark:bg-gray-400",
+  system: "bg-zinc-300 dark:bg-zinc-600",
+  tools: "bg-zinc-400 dark:bg-zinc-500",
+  files: "bg-zinc-600 dark:bg-zinc-400",
   summary: "bg-sky-300 dark:bg-sky-700",
   messages: "bg-sky-500 dark:bg-sky-400",
 };
@@ -182,7 +182,7 @@ function levelColor(share: number, compactAt: number) {
   if (share >= compactAt - 0.1) {
     return "text-amber-500";
   }
-  return "text-gray-900 dark:text-gray-100";
+  return "text-zinc-900 dark:text-zinc-100";
 }
 
 function Ring({ share }: { share: number }) {
@@ -196,7 +196,7 @@ function Ring({ share }: { share: number }) {
       viewBox="0 0 16 16"
     >
       <circle
-        className="stroke-gray-200 dark:stroke-gray-700"
+        className="stroke-zinc-200 dark:stroke-zinc-700"
         cx="8"
         cy="8"
         r={radius}
@@ -237,10 +237,10 @@ function Breakdown({
   return (
     <div className="w-72 p-3">
       <div className="mb-2.5 flex items-baseline justify-between">
-        <p className="font-medium text-gray-900 text-sm dark:text-gray-100">
+        <p className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
           Context
         </p>
-        <p className="text-gray-500 text-xs tabular-nums dark:text-gray-400">
+        <p className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
           {formatTokens(shownUsed)} of {formatTokens(limit)}
         </p>
       </div>
@@ -248,7 +248,7 @@ function Breakdown({
       {/* One bar for the whole window, a segment per source. The tick marks
           where the conversation compacts. */}
       <div className="relative" onPointerLeave={() => setActive(null)}>
-        <div className="flex h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
+        <div className="flex h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-white/10">
           {segments.map((segment, index) => (
             <span
               className={cn(
@@ -265,11 +265,11 @@ function Breakdown({
         </div>
         <span
           aria-hidden="true"
-          className="absolute -top-1 -bottom-1 w-px bg-gray-400 dark:bg-gray-500"
+          className="absolute -top-1 -bottom-1 w-px bg-zinc-400 dark:bg-zinc-500"
           style={{ left: `${compactAt * 100}%` }}
         />
       </div>
-      <p className="mt-1.5 text-right text-[11px] text-gray-400 dark:text-gray-500">
+      <p className="mt-1.5 text-right text-[11px] text-zinc-400 dark:text-zinc-500">
         Compacts at {Math.round(compactAt * 100)}%
       </p>
 
@@ -279,44 +279,44 @@ function Breakdown({
             <li
               className={cn(
                 "flex items-center gap-2 rounded-md px-1.5 py-1 text-xs transition-colors duration-150",
-                active === segment.id && "bg-gray-100 dark:bg-white/5"
+                active === segment.id && "bg-zinc-100 dark:bg-white/5"
               )}
               key={segment.id}
               onPointerEnter={() => setActive(segment.id)}
               onPointerLeave={() => setActive(null)}
             >
               <span className={cn("size-2 rounded-[3px]", colors[index])} />
-              <span className="text-gray-700 dark:text-gray-300">
+              <span className="text-zinc-700 dark:text-zinc-300">
                 {segment.label}
               </span>
-              <span className="ml-auto text-gray-500 tabular-nums dark:text-gray-400">
+              <span className="ml-auto text-zinc-500 tabular-nums dark:text-zinc-400">
                 {formatTokens(segment.tokens)}
               </span>
-              <span className="w-9 text-right text-gray-400 tabular-nums dark:text-gray-500">
+              <span className="w-9 text-right text-zinc-400 tabular-nums dark:text-zinc-500">
                 {((segment.tokens / limit) * 100).toFixed(1)}%
               </span>
             </li>
           ) : null
         )}
         <li className="flex items-center gap-2 px-1.5 py-1 text-xs">
-          <span className="size-2 rounded-[3px] ring-1 ring-gray-300 ring-inset dark:ring-gray-600" />
-          <span className="text-gray-500 dark:text-gray-400">Free</span>
-          <span className="ml-auto text-gray-500 tabular-nums dark:text-gray-400">
+          <span className="size-2 rounded-[3px] ring-1 ring-zinc-300 ring-inset dark:ring-zinc-600" />
+          <span className="text-zinc-500 dark:text-zinc-400">Free</span>
+          <span className="ml-auto text-zinc-500 tabular-nums dark:text-zinc-400">
             {formatTokens(free)}
           </span>
-          <span className="w-9 text-right text-gray-400 tabular-nums dark:text-gray-500">
+          <span className="w-9 text-right text-zinc-400 tabular-nums dark:text-zinc-500">
             {((free / limit) * 100).toFixed(1)}%
           </span>
         </li>
       </ul>
 
       {onCompact && (
-        <div className="mt-3 flex items-center justify-between border-gray-100 border-t pt-3 dark:border-white/10">
-          <p className="text-gray-500 text-xs dark:text-gray-400">
+        <div className="mt-3 flex items-center justify-between border-zinc-100 border-t pt-3 dark:border-white/10">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Summarize older turns
           </p>
           <button
-            className="h-7 rounded-md bg-gray-900 px-2.5 font-medium text-white text-xs outline-hidden transition-colors duration-150 hover:bg-gray-700 focus-visible:ring-2 focus-visible:ring-gray-400/60 disabled:bg-gray-200 disabled:text-gray-400 dark:bg-white dark:text-gray-900 dark:disabled:bg-white/10 dark:disabled:text-gray-500 dark:hover:bg-gray-200"
+            className="h-7 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/60 disabled:bg-zinc-200 disabled:text-zinc-400 dark:bg-white dark:text-zinc-900 dark:disabled:bg-white/10 dark:disabled:text-zinc-500 dark:hover:bg-zinc-200"
             disabled={used / limit < 0.4}
             onClick={onCompact}
             type="button"
@@ -413,7 +413,7 @@ export default function AIContextMeter({
             )}
           </AnimatePresence>
 
-          <span className="text-gray-600 text-xs dark:text-gray-300">
+          <span className="text-xs text-zinc-600 dark:text-zinc-300">
             {model}
           </span>
           <button
@@ -421,7 +421,7 @@ export default function AIContextMeter({
             aria-expanded={open}
             aria-label={`Context ${Math.round(share * 100)}% full. Show breakdown`}
             className={cn(
-              "flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs outline-hidden transition-colors duration-150 hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-gray-400/50 dark:hover:bg-white/10",
+              "flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs outline-hidden transition-colors duration-150 hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10",
               open && "bg-black/5 dark:bg-white/10",
               levelColor(share, compactAt)
             )}

@@ -141,8 +141,8 @@ function EffortGlyph({ count, level }: { count: number; level: number }) {
           className={cn(
             "w-[3px] rounded-[1px] transition-colors duration-200",
             i <= level
-              ? "bg-gray-700 dark:bg-gray-200"
-              : "bg-gray-300 dark:bg-gray-600"
+              ? "bg-zinc-700 dark:bg-zinc-200"
+              : "bg-zinc-300 dark:bg-zinc-600"
           )}
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed bars, never reordered
           key={i}
@@ -203,7 +203,7 @@ function EffortTrack({
       aria-valuemin={0}
       aria-valuenow={value}
       aria-valuetext={levels[value]?.label}
-      className="h-8 cursor-pointer touch-none select-none rounded-lg bg-gray-100 p-0.5 outline-hidden focus-visible:ring-2 focus-visible:ring-gray-400/50 dark:bg-white/5"
+      className="h-8 cursor-pointer touch-none select-none rounded-lg bg-zinc-100 p-0.5 outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:bg-white/5"
       onKeyDown={onKeyDown}
       onLostPointerCapture={() => setDragging(false)}
       onPointerDown={(event) => {
@@ -243,8 +243,8 @@ function EffortTrack({
             className={cn(
               "relative flex flex-1 items-center justify-center text-xs transition-colors duration-150",
               index === value
-                ? "font-medium text-gray-900 dark:text-white"
-                : "text-gray-500 dark:text-gray-400"
+                ? "font-medium text-zinc-900 dark:text-white"
+                : "text-zinc-500 dark:text-zinc-400"
             )}
             key={level.id}
           >
@@ -353,7 +353,7 @@ export default function AIModelSelector({
                       // biome-ignore lint/a11y/useSemanticElements: a two-line option with a check doesn't fit a native radio input
                       <button
                         aria-checked={selected}
-                        className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left outline-hidden transition-colors duration-150 hover:bg-gray-100 focus-visible:bg-gray-100 dark:focus-visible:bg-white/5 dark:hover:bg-white/5"
+                        className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left outline-hidden transition-colors duration-150 hover:bg-zinc-100 focus-visible:bg-zinc-100 dark:focus-visible:bg-white/5 dark:hover:bg-white/5"
                         key={option.id}
                         onClick={() => pickModel(option)}
                         onKeyDown={(event) => onOptionKey(event, index)}
@@ -365,11 +365,11 @@ export default function AIModelSelector({
                         type="button"
                       >
                         <span className="min-w-0 flex-1">
-                          <span className="block text-gray-900 text-sm dark:text-gray-100">
+                          <span className="block text-sm text-zinc-900 dark:text-zinc-100">
                             {option.name}
                           </span>
                           {option.description && (
-                            <span className="block truncate text-gray-500 text-xs dark:text-gray-400">
+                            <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">
                               {option.description}
                             </span>
                           )}
@@ -378,7 +378,7 @@ export default function AIModelSelector({
                           {selected && (
                             <Check
                               aria-hidden="true"
-                              className="size-4 text-gray-900 dark:text-gray-100"
+                              className="size-4 text-zinc-900 dark:text-zinc-100"
                             />
                           )}
                         </span>
@@ -387,17 +387,17 @@ export default function AIModelSelector({
                   })}
                 </div>
 
-                <div className="mx-1.5 my-1 border-gray-100 border-t dark:border-white/10" />
+                <div className="mx-1.5 my-1 border-zinc-100 border-t dark:border-white/10" />
 
                 <div className="px-1.5 pt-1.5 pb-2">
                   <div className="mb-2 flex items-baseline justify-between">
                     <p
-                      className="font-medium text-gray-900 text-xs dark:text-gray-100"
+                      className="font-medium text-xs text-zinc-900 dark:text-zinc-100"
                       id={effortLabelId}
                     >
                       Effort
                     </p>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                    <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
                       ← → to adjust
                     </p>
                   </div>
@@ -417,7 +417,7 @@ export default function AIModelSelector({
                     <AnimatePresence initial={false} mode="popLayout">
                       <motion.p
                         animate={{ opacity: 1, filter: "blur(0px)" }}
-                        className="absolute inset-x-0 top-0 text-gray-500 text-xs leading-4 dark:text-gray-400"
+                        className="absolute inset-x-0 top-0 text-xs text-zinc-500 leading-4 dark:text-zinc-400"
                         exit={{ opacity: 0, filter: "blur(2px)" }}
                         initial={{ opacity: 0, filter: "blur(2px)" }}
                         key={`${model.id}-${effort?.id}`}
@@ -437,7 +437,7 @@ export default function AIModelSelector({
             aria-expanded={open}
             aria-label={`Model: ${model.name}, ${effort?.label} effort. Change`}
             className={cn(
-              "flex h-8 items-center gap-2 rounded-lg px-2 text-gray-700 text-xs outline-hidden transition-colors duration-150 hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-gray-400/50 dark:text-gray-200 dark:hover:bg-white/10",
+              "flex h-8 items-center gap-2 rounded-lg px-2 text-xs text-zinc-700 outline-hidden transition-colors duration-150 hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-200 dark:hover:bg-white/10",
               open && "bg-black/5 dark:bg-white/10"
             )}
             onClick={() => setOpen((current) => !current)}
@@ -445,14 +445,14 @@ export default function AIModelSelector({
             type="button"
           >
             <span className="font-medium">{model.name}</span>
-            <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+            <span className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
               <EffortGlyph count={model.efforts.length} level={level} />
               {effort?.label}
             </span>
             <ChevronDown
               aria-hidden="true"
               className={cn(
-                "size-3 text-gray-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                "size-3 text-zinc-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
                 open && "rotate-180"
               )}
             />

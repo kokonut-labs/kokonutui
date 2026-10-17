@@ -205,7 +205,7 @@ export function AIAutocomplete({
           <span className="text-transparent">{value || "​"}</span>
           {value.endsWith("\n") && "​"}
           {showGhost && (
-            <span className="text-gray-400 dark:text-gray-500" key={batch}>
+            <span className="text-zinc-400 dark:text-zinc-500" key={batch}>
               {words.map((word, i) => {
                 const last = i === words.length - 1;
                 return (
@@ -218,7 +218,7 @@ export function AIAutocomplete({
                   >
                     {last ? word.trimEnd() : word}
                     {last && (
-                      <kbd className="ml-1.5 inline-flex h-5 translate-y-[-1px] items-center rounded border border-gray-200 px-1 align-middle font-sans text-[10px] text-gray-400 dark:border-gray-800 dark:text-gray-500">
+                      <kbd className="ml-1.5 inline-flex h-5 translate-y-[-1px] items-center rounded border border-zinc-200 px-1 align-middle font-sans text-[10px] text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
                         Tab
                       </kbd>
                     )}
@@ -230,7 +230,7 @@ export function AIAutocomplete({
         </div>
         <textarea
           aria-label={label}
-          className="absolute inset-0 h-full w-full resize-none overflow-hidden bg-transparent px-4 py-3 text-[15px] text-gray-900 leading-6 caret-gray-900 outline-none placeholder:text-gray-400 dark:text-gray-100 dark:caret-gray-100 dark:placeholder:text-gray-500"
+          className="absolute inset-0 h-full w-full resize-none overflow-hidden bg-transparent px-4 py-3 text-[15px] text-zinc-900 leading-6 caret-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-100 dark:caret-zinc-100 dark:placeholder:text-zinc-500"
           onChange={onChange}
           onFocus={onSelect}
           onKeyDown={onKeyDown}
@@ -280,36 +280,36 @@ function AcceptBar({
   return (
     <div
       className={cn(
-        "flex items-center gap-1 px-3 pb-3 text-gray-500 text-xs transition-opacity duration-150 dark:text-gray-400",
+        "flex items-center gap-1 px-3 pb-3 text-xs text-zinc-500 transition-opacity duration-150 dark:text-zinc-400",
         !visible && "pointer-events-none opacity-0"
       )}
     >
       <button
-        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-900 dark:hover:text-gray-100"
+        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
         onClick={onAccept}
         onMouseDown={keep}
         tabIndex={-1}
         type="button"
       >
-        <kbd className="rounded border border-gray-200 px-1 font-sans text-[10px] dark:border-gray-800">
+        <kbd className="rounded border border-zinc-200 px-1 font-sans text-[10px] dark:border-zinc-800">
           Tab
         </kbd>
         Accept
       </button>
       <button
-        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-900 dark:hover:text-gray-100"
+        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
         onClick={onWord}
         onMouseDown={keep}
         tabIndex={-1}
         type="button"
       >
-        <kbd className="rounded border border-gray-200 px-1 font-sans text-[10px] dark:border-gray-800">
+        <kbd className="rounded border border-zinc-200 px-1 font-sans text-[10px] dark:border-zinc-800">
           →
         </kbd>
         Word
       </button>
       <span className="ml-1 hidden sm:inline">
-        <kbd className="rounded border border-gray-200 px-1 font-sans text-[10px] dark:border-gray-800">
+        <kbd className="rounded border border-zinc-200 px-1 font-sans text-[10px] dark:border-zinc-800">
           Esc
         </kbd>{" "}
         Dismiss
@@ -372,18 +372,18 @@ export default function AIAutocompleteDemo({
   return (
     <div
       className={cn(
-        "w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950",
+        "w-full max-w-lg overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950",
         className
       )}
     >
-      <div className="divide-y divide-gray-100 border-gray-200 border-b text-sm dark:divide-gray-900 dark:border-gray-800">
+      <div className="divide-y divide-zinc-100 border-zinc-200 border-b text-sm dark:divide-zinc-900 dark:border-zinc-800">
         <p className="flex gap-3 px-4 py-2.5">
-          <span className="w-14 text-gray-400 dark:text-gray-500">To</span>
-          <span className="text-gray-900 dark:text-gray-100">Maya Chen</span>
+          <span className="w-14 text-zinc-400 dark:text-zinc-500">To</span>
+          <span className="text-zinc-900 dark:text-zinc-100">Maya Chen</span>
         </p>
         <p className="flex gap-3 px-4 py-2.5">
-          <span className="w-14 text-gray-400 dark:text-gray-500">Subject</span>
-          <span className="truncate text-gray-900 dark:text-gray-100">
+          <span className="w-14 text-zinc-400 dark:text-zinc-500">Subject</span>
+          <span className="truncate text-zinc-900 dark:text-zinc-100">
             Re: Launch review
           </span>
         </p>

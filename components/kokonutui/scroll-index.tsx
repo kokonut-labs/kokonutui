@@ -548,7 +548,7 @@ function SampleArticle() {
       <h3 className={h3}>Color</h3>
       <p className={p}>
         Name colors by job, not by hue. A surface, a border and a muted label
-        survive a palette change; a gray-150 never does.
+        survive a palette change; a zinc-150 never does.
       </p>
       <h3 className={h3}>Type</h3>
       <p className={p}>

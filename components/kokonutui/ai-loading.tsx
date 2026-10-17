@@ -167,7 +167,7 @@ function StepIcon({ status }: { status: AgentStepStatus }) {
           transition={{ duration: 0.18, ease: EASE_OUT }}
         >
           {status === "pending" && (
-            <span className="size-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
+            <span className="size-1.5 rounded-full bg-zinc-300 dark:bg-zinc-600" />
           )}
           {status === "running" && (
             <svg
@@ -178,14 +178,14 @@ function StepIcon({ status }: { status: AgentStepStatus }) {
               viewBox="0 0 16 16"
             >
               <circle
-                className="stroke-gray-200 dark:stroke-gray-700"
+                className="stroke-zinc-200 dark:stroke-zinc-700"
                 cx="8"
                 cy="8"
                 r="6.25"
                 strokeWidth="1.5"
               />
               <path
-                className="stroke-gray-700 dark:stroke-gray-200"
+                className="stroke-zinc-700 dark:stroke-zinc-200"
                 d="M8 1.75a6.25 6.25 0 0 1 6.25 6.25"
                 strokeLinecap="round"
                 strokeWidth="1.5"
@@ -195,7 +195,7 @@ function StepIcon({ status }: { status: AgentStepStatus }) {
           {status === "done" && (
             <svg
               aria-hidden="true"
-              className="size-3.5 text-gray-700 dark:text-gray-200"
+              className="size-3.5 text-zinc-700 dark:text-zinc-200"
               fill="none"
               viewBox="0 0 16 16"
             >
@@ -260,13 +260,13 @@ function StepLog({ lines }: { lines: string[] }) {
         {lines.map((line, index) => (
           <motion.div
             animate={{ opacity: 1 }}
-            className="flex items-center gap-2 text-gray-500 dark:text-gray-400"
+            className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400"
             initial={{ opacity: 0 }}
             key={`${index}-${line}`}
             style={{ height: LINE_HEIGHT }}
             transition={{ duration: 0.2, ease: EASE_OUT }}
           >
-            <span className="w-4 select-none text-right text-gray-300 tabular-nums dark:text-gray-600">
+            <span className="w-4 select-none text-right text-zinc-300 tabular-nums dark:text-zinc-600">
               {index + 1}
             </span>
             <span className="truncate">{line}</span>
@@ -386,9 +386,9 @@ function useStepTimes(steps: AgentStep[]) {
 }
 
 const LABEL_COLORS: Record<AgentStepStatus, string> = {
-  pending: "text-gray-400 dark:text-gray-500",
-  running: "text-gray-900 dark:text-gray-100",
-  done: "text-gray-500 dark:text-gray-400",
+  pending: "text-zinc-400 dark:text-zinc-500",
+  running: "text-zinc-900 dark:text-zinc-100",
+  done: "text-zinc-500 dark:text-zinc-400",
   error: "text-red-600 dark:text-red-400",
 };
 
@@ -407,11 +407,11 @@ function StepRow({
       {!isLast && (
         <span
           aria-hidden="true"
-          className="absolute top-[34px] bottom-[-10px] left-[7.5px] w-px overflow-hidden bg-gray-200 dark:bg-gray-800"
+          className="absolute top-[34px] bottom-[-10px] left-[7.5px] w-px overflow-hidden bg-zinc-200 dark:bg-zinc-800"
         >
           <span
             className={cn(
-              "block h-full w-full origin-top bg-gray-400 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] dark:bg-gray-500",
+              "block h-full w-full origin-top bg-zinc-400 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] dark:bg-zinc-500",
               step.status === "done" ? "scale-y-100" : "scale-y-0"
             )}
           />
@@ -440,7 +440,7 @@ function StepRow({
           {time !== undefined && (
             <motion.span
               animate={{ opacity: 1 }}
-              className="ml-auto shrink-0 text-gray-400 text-xs tabular-nums dark:text-gray-500"
+              className="ml-auto shrink-0 text-xs text-zinc-400 tabular-nums dark:text-zinc-500"
               initial={{ opacity: 0 }}
               transition={{ duration: 0.2, ease: EASE_OUT }}
             >
@@ -502,7 +502,7 @@ export default function AILoadingState({
           <button
             aria-controls={listId}
             aria-expanded={isOpen}
-            className="group/header flex w-full items-center gap-2 rounded-md py-1 text-left font-medium text-gray-600 text-sm outline-hidden focus-visible:ring-2 focus-visible:ring-gray-400/40 dark:text-gray-300"
+            className="group/header flex w-full items-center gap-2 rounded-md py-1 text-left font-medium text-sm text-zinc-600 outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/40 dark:text-zinc-300"
             onClick={() => setIsOpen((open) => !open)}
             type="button"
           >
@@ -510,19 +510,19 @@ export default function AILoadingState({
                 is announced as it changes. */}
             <output className="min-w-0 truncate">{title}</output>
             {isActive && (
-              <span className="text-gray-400 tabular-nums dark:text-gray-500">
+              <span className="text-zinc-400 tabular-nums dark:text-zinc-500">
                 {formatDuration(seconds)}
               </span>
             )}
             {isDone && (
-              <span className="text-gray-400 dark:text-gray-500">
+              <span className="text-zinc-400 dark:text-zinc-500">
                 · {steps.length} steps
               </span>
             )}
             <ChevronDown
               aria-hidden="true"
               className={cn(
-                "ml-auto size-4 text-gray-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/header:text-gray-600 dark:group-hover/header:text-gray-300",
+                "ml-auto size-4 text-zinc-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/header:text-zinc-600 dark:group-hover/header:text-zinc-300",
                 isOpen && "rotate-180"
               )}
             />

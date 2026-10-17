@@ -207,7 +207,7 @@ function useDemoStream(
 
 const blockColor = (index: number, green: number, total: number) => {
   if (total === 0) {
-    return "bg-gray-200 dark:bg-gray-700";
+    return "bg-zinc-200 dark:bg-zinc-700";
   }
   return index < green ? "bg-emerald-500" : "bg-red-500";
 };
@@ -235,7 +235,7 @@ function ChangeBar({ added, removed }: { added: number; removed: number }) {
 const LINE_STYLES: Record<DiffLine["type"], string> = {
   add: "bg-emerald-500/10 text-emerald-900 dark:text-emerald-200",
   remove: "bg-red-500/10 text-red-900 dark:text-red-200",
-  context: "text-gray-600 dark:text-gray-400",
+  context: "text-zinc-600 dark:text-zinc-400",
 };
 const LINE_SIGNS: Record<DiffLine["type"], string> = {
   add: "+",
@@ -264,7 +264,7 @@ function Hunk({ hunk }: { hunk: DiffHunk }) {
             key={index}
             transition={{ duration: 0.18, ease: EASE_OUT }}
           >
-            <span className="w-9 shrink-0 select-none pr-2 text-right text-gray-400 tabular-nums dark:text-gray-600">
+            <span className="w-9 shrink-0 select-none pr-2 text-right text-zinc-400 tabular-nums dark:text-zinc-600">
               {lineNumber}
             </span>
             <span className="w-4 shrink-0 select-none text-center opacity-60">
@@ -298,12 +298,12 @@ function FileRow({
   const isOpen = (open || writing) && decision === "pending";
 
   return (
-    <li className="border-gray-100 border-t first:border-t-0 dark:border-white/5">
+    <li className="border-zinc-100 border-t first:border-t-0 dark:border-white/5">
       <div className="group/row flex items-center gap-2 py-1.5 pr-1.5 pl-1">
         <button
           aria-controls={diffId}
           aria-expanded={isOpen}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left outline-hidden focus-visible:ring-2 focus-visible:ring-gray-400/40 disabled:cursor-default"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/40 disabled:cursor-default"
           disabled={decision !== "pending" || writing}
           onClick={() => setOpen((value) => !value)}
           type="button"
@@ -311,7 +311,7 @@ function FileRow({
           <ChevronRight
             aria-hidden="true"
             className={cn(
-              "size-3.5 shrink-0 text-gray-400 transition-[rotate,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+              "size-3.5 shrink-0 text-zinc-400 transition-[rotate,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
               isOpen && "rotate-90",
               decision !== "pending" && "opacity-0"
             )}
@@ -320,13 +320,13 @@ function FileRow({
             className={cn(
               "min-w-0 truncate font-mono text-[13px] transition-colors duration-200",
               decision === "rejected" &&
-                "text-gray-400 line-through decoration-gray-300 dark:text-gray-500 dark:decoration-gray-600"
+                "text-zinc-400 line-through decoration-zinc-300 dark:text-zinc-500 dark:decoration-zinc-600"
             )}
           >
-            <span className="text-gray-400 dark:text-gray-500">{dir}</span>
+            <span className="text-zinc-400 dark:text-zinc-500">{dir}</span>
             <span
               className={cn(
-                decision !== "rejected" && "text-gray-900 dark:text-gray-100"
+                decision !== "rejected" && "text-zinc-900 dark:text-zinc-100"
               )}
             >
               {name}
@@ -362,7 +362,7 @@ function FileRow({
                 <span className="flex items-center gap-0.5">
                   <button
                     aria-label={`Reject ${file.path}`}
-                    className="flex size-7 items-center justify-center rounded-md text-gray-400 outline-hidden transition-colors duration-150 hover:bg-gray-100 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-gray-400/50 dark:hover:bg-white/10 dark:hover:text-red-400"
+                    className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-red-400"
                     onClick={() => onDecide("rejected")}
                     type="button"
                   >
@@ -370,7 +370,7 @@ function FileRow({
                   </button>
                   <button
                     aria-label={`Accept ${file.path}`}
-                    className="flex size-7 items-center justify-center rounded-md text-gray-400 outline-hidden transition-colors duration-150 hover:bg-gray-100 hover:text-emerald-600 focus-visible:ring-2 focus-visible:ring-gray-400/50 dark:hover:bg-white/10 dark:hover:text-emerald-400"
+                    className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-emerald-600 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-emerald-400"
                     onClick={() => onDecide("accepted")}
                     type="button"
                   >
@@ -393,14 +393,14 @@ function FileRow({
                   "text-xs",
                   decision === "accepted"
                     ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-gray-400 dark:text-gray-500"
+                    : "text-zinc-400 dark:text-zinc-500"
                 )}
               >
                 {decision === "accepted" ? "Accepted" : "Reverted"}
               </span>
               <button
                 aria-label={`Undo for ${file.path}`}
-                className="flex size-7 items-center justify-center rounded-md text-gray-400 outline-hidden transition-colors duration-150 hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-gray-400/50 dark:hover:bg-white/10 dark:hover:text-gray-200"
+                className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-zinc-200"
                 onClick={() => onDecide("pending")}
                 type="button"
               >
@@ -421,7 +421,7 @@ function FileRow({
             initial={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.24, ease: EASE_OUT }}
           >
-            <div className="mx-2 mb-2 overflow-x-auto rounded-lg bg-gray-50 ring-1 ring-black/5 dark:bg-white/[0.03] dark:ring-white/10">
+            <div className="mx-2 mb-2 overflow-x-auto rounded-lg bg-zinc-50 ring-1 ring-black/5 dark:bg-white/[0.03] dark:ring-white/10">
               {file.hunks.map((hunk) => (
                 <Hunk hunk={hunk} key={hunk.start} />
               ))}
@@ -484,7 +484,7 @@ export default function AIDiffReview({
       <div className={cn("w-full max-w-lg", className)} ref={rootRef}>
         <div className="rounded-2xl bg-black/5 p-1.5 dark:bg-white/5">
           <div className="flex h-9 items-center gap-2 px-2.5">
-            <output className="font-medium text-gray-900 text-sm dark:text-gray-100">
+            <output className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
               {title}
             </output>
             <span className="font-mono text-[11px] tabular-nums">
@@ -499,7 +499,7 @@ export default function AIDiffReview({
               {!(writing || allDecided) && (
                 <>
                   <button
-                    className="h-7 rounded-md px-2 text-gray-600 text-xs outline-hidden transition-colors duration-150 hover:bg-black/5 hover:text-gray-900 focus-visible:ring-2 focus-visible:ring-gray-400/50 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+                    className="h-7 rounded-md px-2 text-xs text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-black/5 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
                     onClick={() => {
                       for (const file of pending) {
                         decide(file.path, "rejected");
@@ -510,7 +510,7 @@ export default function AIDiffReview({
                     Reject all
                   </button>
                   <button
-                    className="h-7 rounded-md bg-gray-900 px-2.5 font-medium text-white text-xs outline-hidden transition-colors duration-150 hover:bg-gray-700 focus-visible:ring-2 focus-visible:ring-gray-400/60 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+                    className="h-7 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/60 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
                     onClick={() => {
                       for (const file of pending) {
                         decide(file.path, "accepted");
@@ -524,7 +524,7 @@ export default function AIDiffReview({
               )}
               {allDecided && filesProp === undefined && (
                 <button
-                  className="h-7 rounded-md px-2 text-gray-500 text-xs outline-hidden transition-colors duration-150 hover:text-gray-900 focus-visible:ring-2 focus-visible:ring-gray-400/50 dark:text-gray-400 dark:hover:text-white"
+                  className="h-7 rounded-md px-2 text-xs text-zinc-500 outline-hidden transition-colors duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-400 dark:hover:text-white"
                   onClick={demo.replay}
                   type="button"
                 >
@@ -544,7 +544,7 @@ export default function AIDiffReview({
               />
             ))}
             {files.length === 0 && (
-              <li className="px-3 py-3 text-gray-400 text-sm">
+              <li className="px-3 py-3 text-sm text-zinc-400">
                 Waiting for edits…
               </li>
             )}
