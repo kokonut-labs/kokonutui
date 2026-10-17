@@ -34,6 +34,17 @@ export const NEW_FOR_DAYS = 30;
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-17",
+    added: [],
+    improved: [
+      {
+        name: "metric-card",
+        pr: 109,
+        note: "Drag a range, isolate a segment from the breakdown, and pinned events that name themselves.",
+      },
+    ],
+  },
+  {
     date: "2026-10-16",
     added: [
       { name: "spoiler-text", pr: 89 },
