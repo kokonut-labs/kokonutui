@@ -713,7 +713,7 @@
       "name": "metric-card",
       "type": "registry:component",
       "title": "Metric Card",
-      "description": "A KPI card whose number rolls to any day you scrub, with periods that reshape the line instead of swapping it.",
+      "description": "A revenue KPI card. Scrub a day, drag a range, or pick a segment; the number rolls, the line morphs and the breakdown follows.",
       "files": [
         {
           "path": "components/kokonutui/metric-card.tsx",
