@@ -6,7 +6,7 @@ export interface ProTemplate {
   blurb: string;
   category: string;
   name: string;
-  /** Only the three on the homepage have a still; the rest use the video. */
+  /** A still of the home page; templates without one show the video. */
   poster?: string;
   previewLink: string;
   price: number;
@@ -33,8 +33,8 @@ export const PRO_TEMPLATE_LIST: ProTemplate[] = [
     category: "Startups",
     blurb: "Futuristic, with a modern design rich in small details.",
     price: 59,
-    video: "https://cdn.kokonutui.pro/agenta-template.mp4",
-    poster: "/landing/pro-agenta.webp",
+    video: "https://cdn.kokonutui.pro/agenta-demo.mp4",
+    poster: "/landing/pro-agenta-2.webp",
     previewLink: "https://template-agenta.vercel.app/",
   },
   {
@@ -43,8 +43,8 @@ export const PRO_TEMPLATE_LIST: ProTemplate[] = [
     category: "Startups",
     blurb: "Clean and minimal, for startups building AI, agents and SaaS.",
     price: 59,
-    video: "https://cdn.kokonutui.pro/preview-luma-template.mp4",
-    poster: "/landing/pro-lume.webp",
+    video: "https://cdn.kokonutui.pro/lume-demo.mp4",
+    poster: "/landing/pro-lume-2.webp",
     previewLink: "https://template-lume.vercel.app/",
   },
   {
@@ -53,8 +53,8 @@ export const PRO_TEMPLATE_LIST: ProTemplate[] = [
     category: "AI agents",
     blurb: "Clean and modern, for AI agents.",
     price: 59,
-    video: "https://cdn.kokonutui.pro/Sonae%20Template.mp4",
-    poster: "/landing/pro-sonae.webp",
+    video: "https://cdn.kokonutui.pro/sonae-demo.mp4",
+    poster: "/landing/pro-sonae-2.webp",
     previewLink: "https://template-sonae.vercel.app/",
   },
   {
@@ -63,7 +63,8 @@ export const PRO_TEMPLATE_LIST: ProTemplate[] = [
     category: "Commerce",
     blurb: "A modern template for selling physical products.",
     price: 49,
-    video: "https://cdn.kokonutui.pro/Futur%20Template.mp4",
+    video: "https://cdn.kokonutui.pro/futur-demo.mp4",
+    poster: "/landing/pro-futur-2.webp",
     previewLink: "https://futur-template.vercel.app/",
   },
 ];
