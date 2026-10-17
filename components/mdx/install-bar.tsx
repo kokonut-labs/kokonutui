@@ -142,6 +142,33 @@ export function InstallBar({
   );
 }
 
+const sources = new Map<string, Promise<string>>();
+
+/**
+ * Reads a component's source on the server once per page view. Hovering or
+ * focusing Copy code starts it, so the click usually finds it ready.
+ */
+function loadSource(name: string) {
+  let source = sources.get(name);
+  if (!source) {
+    const formData = new FormData();
+    formData.append("folder", name);
+    source = copyComponent(
+      { error: "", content: "", success: false },
+      formData
+    ).then((result) => {
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return result.content;
+    });
+    // A failed read is tried again on the next click.
+    source.catch(() => sources.delete(name));
+    sources.set(name, source);
+  }
+  return source;
+}
+
 /** Copies the component's source file, read on the server. */
 function CopySource({ name }: { name: string }) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
@@ -165,17 +192,7 @@ function CopySource({ name }: { name: string }) {
   }, []);
 
   const copySource = () => {
-    const formData = new FormData();
-    formData.append("folder", name);
-    const source = copyComponent(
-      { error: "", content: "", success: false },
-      formData
-    ).then((result) => {
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-      return result.content;
-    });
+    const source = loadSource(name);
 
     // Safari only allows clipboard writes inside the click, so hand it a
     // pending item rather than waiting for the server first.
@@ -217,6 +234,9 @@ function CopySource({ name }: { name: string }) {
         FOCUS_INSET
       )}
       onClick={copySource}
+      onFocus={() => loadSource(name)}
+      onPointerDown={() => loadSource(name)}
+      onPointerEnter={() => loadSource(name)}
       type="button"
     >
       <CopyIconSwap className="size-3" copied={state === "copied"} />
