@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRightIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { announceCopy } from "@/components/copy-toast";
 import { CopyIconSwap, useCopy } from "@/components/landing/home/client";
@@ -15,24 +15,20 @@ import {
   MONO,
 } from "@/components/landing/home/styles";
 import { useInstallVia, usePackageManager } from "@/components/mdx/docs-prefs";
+import { OpenInMenu } from "@/components/mdx/open-in-menu";
 import { copyComponent } from "@/lib/action";
 import { componentPrompt, PACKAGE_MANAGERS, runWith } from "@/lib/agents";
 import { cn } from "@/lib/utils";
 
 const COPIED_MS = 1600;
 
-// v0 fetches the registry entry, so the link always points at the live site.
-const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : `https://${process.env.NEXT_PUBLIC_SITE_URL}`;
-
 const TAB =
   "inline-flex h-8 items-center gap-1.5 px-3 text-[12px] text-black/55 hover:text-black dark:text-white/55 dark:hover:text-white";
 
 /**
  * The install row above every demo: a prompt for your agent first, or a
- * package manager, then click the line anywhere to copy it. v0 and the raw
- * source sit beside the picker.
+ * package manager, then click the line anywhere to copy it. Open in (Claude,
+ * ChatGPT, Cursor, v0) and the raw source sit beside the picker.
  */
 export function InstallBar({
   name,
@@ -49,6 +45,7 @@ export function InstallBar({
   const [manager, setManager] = usePackageManager();
   const [via, setVia] = useInstallVia();
   const { copied, copy } = useCopy();
+  const pathname = usePathname();
   const agent = via === "agent";
   const command = agent
     ? componentPrompt(name)
@@ -96,22 +93,11 @@ export function InstallBar({
           })}
         </fieldset>
         <div className="flex items-stretch">
-          <a
-            className={cn(
-              TAB,
-              MONO,
-              "border-l",
-              LINE,
-              EASE_COLORS,
-              FOCUS_INSET
-            )}
-            href={`https://v0.dev/chat/api/open?url=${SITE_URL}/r/${name}.json`}
-            rel="noreferrer"
-            target="_blank"
-          >
-            Open in v0
-            <ArrowUpRightIcon aria-hidden className="size-3" />
-          </a>
+          <OpenInMenu
+            className={cn("border-l", LINE)}
+            markdownUrl={`${pathname}.md`}
+            name={name}
+          />
           {showSource ? <CopySource name={name} source={source} /> : null}
         </div>
       </div>
