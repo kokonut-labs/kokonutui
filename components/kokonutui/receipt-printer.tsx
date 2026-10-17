@@ -110,7 +110,7 @@ function Receipt({
   const subtotal = items.reduce((sum, i) => sum + i.quantity * i.price, 0);
   const taxAmount = subtotal * tax;
   return (
-    <div className="px-5 pt-6 pb-8 font-mono text-[11px] text-zinc-800 leading-[15px]">
+    <div className="relative px-5 pt-6 pb-8 font-mono text-[11px] text-zinc-800 leading-[15px]">
       <p className="text-center font-semibold text-xs tracking-[0.2em]">
         {merchant.toUpperCase()}
       </p>
@@ -163,6 +163,10 @@ function Receipt({
         ))}
       </div>
       <p className="mt-3 text-center text-zinc-500">Thank you, come again</p>
+      {/* A rubber stamp, inked on a little crooked. */}
+      <span className="absolute right-2.5 bottom-[60px] rotate-[-8deg] rounded-[3px] border-2 border-red-600 px-1 py-px font-bold text-[11px] text-red-600 tracking-[0.2em] outline outline-1 outline-red-600 outline-offset-[1.5px]">
+        PAID
+      </span>
     </div>
   );
 }
@@ -693,6 +697,13 @@ export default function ReceiptPrinter({
             touchAction: "none",
           }}
         >
+          {/* Perforation along the slot, where the sheet tears off. */}
+          {!torn && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-x-1 top-1 border-zinc-300 border-t-2 border-dotted"
+            />
+          )}
           <Receipt
             currency={currency}
             date={date}

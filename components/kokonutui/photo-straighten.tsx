@@ -270,7 +270,12 @@ export default function PhotoStraighten({
           <Wand2 aria-hidden className="size-3.5" />
           Auto
         </button>
-        <span className="font-medium text-sm tabular-nums">
+        <span
+          className={cn(
+            "font-medium text-sm tabular-nums transition-colors duration-200 ease-out",
+            level && "text-emerald-600 dark:text-emerald-500"
+          )}
+        >
           {formatAngle(value)}
         </span>
         <button
@@ -317,13 +322,23 @@ export default function PhotoStraighten({
                 <span
                   className={cn(
                     "w-px",
-                    major
-                      ? "h-3 bg-zinc-400 dark:bg-zinc-500"
-                      : "h-2 bg-zinc-300 dark:bg-zinc-700"
+                    // Zero is the reference mark, in the level colour.
+                    deg === 0 && "h-3 bg-emerald-500",
+                    deg !== 0 &&
+                      (major
+                        ? "h-3 bg-zinc-400 dark:bg-zinc-500"
+                        : "h-2 bg-zinc-300 dark:bg-zinc-700")
                   )}
                 />
                 {deg % 15 === 0 && (
-                  <span className="mt-1 text-[10px] text-zinc-400 tabular-nums dark:text-zinc-500">
+                  <span
+                    className={cn(
+                      "mt-1 text-[10px] tabular-nums",
+                      deg === 0
+                        ? "text-emerald-600 dark:text-emerald-500"
+                        : "text-zinc-400 dark:text-zinc-500"
+                    )}
+                  >
                     {deg}
                   </span>
                 )}

@@ -997,12 +997,9 @@ function WidgetCell({
           fill="none"
           viewBox="0 0 10 10"
         >
-          <path
-            d="M9 3 3 9M9 6.5 6.5 9"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth={1.5}
-          />
+          <circle cx="8.5" cy="3.5" fill="currentColor" r="1.1" />
+          <circle cx="6" cy="6" fill="currentColor" r="1.1" />
+          <circle cx="3.5" cy="8.5" fill="currentColor" r="1.1" />
         </svg>
       </button>
     </div>
@@ -1705,6 +1702,38 @@ export default function WidgetGrid({
   );
 
   const activeId = liftedId ?? resizingId ?? pointedId;
+  const columnCount = narrow ? NARROW_COLUMNS : COLUMNS;
+
+  // While a cell is held or resized, a dot sits at every gutter crossing
+  // so the slots it can land in read like a cutting mat.
+  const showSlots = liftedId !== null || resizingId !== null;
+  const [slotRows, setSlotRows] = useState(0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the row count is measured, and changes with the layout and column count.
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    if (!(showSlots && grid)) {
+      return;
+    }
+    setSlotRows(
+      Math.max(1, Math.round((grid.offsetHeight + GAP) / (rowHeight + GAP)))
+    );
+  }, [showSlots, layoutKey, narrow, rowHeight]);
+  const slotDots: ReactNode[] = [];
+  if (showSlots && slotRows > 0) {
+    for (let col = 0; col <= columnCount; col++) {
+      for (let row = 0; row <= slotRows; row++) {
+        slotDots.push(
+          <circle
+            cx={`${(col / columnCount) * 100}%`}
+            cy={`${(row / slotRows) * 100}%`}
+            fill="currentColor"
+            key={`${col}:${row}`}
+            r={1.5}
+          />
+        );
+      }
+    }
+  }
 
   return (
     <div
@@ -1719,6 +1748,20 @@ export default function WidgetGrid({
         ref={gridRef}
         style={{ gap: GAP, gridAutoRows: rowHeight }}
       >
+        {slotDots.length > 0 && (
+          <svg
+            aria-hidden="true"
+            className="pointer-events-none absolute overflow-visible text-zinc-400 dark:text-zinc-600"
+            style={{
+              top: -GAP / 2,
+              left: -GAP / 2,
+              width: `calc(100% + ${GAP}px)`,
+              height: `calc(100% + ${GAP}px)`,
+            }}
+          >
+            {slotDots}
+          </svg>
+        )}
         {current.map((entry) => {
           const item = itemsById.get(entry.id);
           if (!item) {

@@ -207,7 +207,14 @@ export default function ScrollIndex({
         active = now;
         tickRefs.current.forEach((tick, i) => {
           if (tick) {
-            tick.dataset.passed = i <= active ? "true" : "false";
+            // The section being read is marked apart from the ones passed.
+            let state = "ahead";
+            if (i === active) {
+              state = "current";
+            } else if (i < active) {
+              state = "passed";
+            }
+            tick.dataset.state = state;
           }
         });
         // Scrolling into a new section names it briefly.
@@ -458,7 +465,7 @@ export default function ScrollIndex({
                 "absolute right-0 h-4 -translate-y-1/2 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-400",
                 section.level <= 2 ? "w-3.5" : "w-2"
               )}
-              data-passed="false"
+              data-state="ahead"
               key={`${index}-${section.text}`}
               onBlur={() => labelRef.current?.style.setProperty("opacity", "0")}
               onClick={(event) => {
@@ -476,7 +483,7 @@ export default function ScrollIndex({
               tabIndex={0}
               type="button"
             >
-              <span className="absolute top-1/2 right-0 h-[1.5px] w-full origin-right -translate-y-1/2 scale-x-[var(--swell,1)] rounded-full bg-zinc-300 in-data-[passed=true]:bg-zinc-900 transition-colors duration-200 ease-out dark:bg-zinc-700 dark:in-data-[passed=true]:bg-zinc-100" />
+              <span className="absolute top-1/2 right-0 h-[1.5px] w-full origin-right -translate-y-1/2 scale-x-[var(--swell,1)] rounded-full bg-zinc-300 in-data-[state=current]:bg-blue-500 in-data-[state=passed]:bg-zinc-900 transition-colors duration-200 ease-out dark:bg-zinc-700 dark:in-data-[state=current]:bg-blue-400 dark:in-data-[state=passed]:bg-zinc-100" />
             </button>
           ))}
           {/* Where the reader is, between ticks too. */}

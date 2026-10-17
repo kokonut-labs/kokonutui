@@ -79,6 +79,30 @@ function cropWindow(point: FocalPoint, imageRatio: number, ratio: number) {
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
+const CORNERS = [
+  "top-0 left-0 border-t border-l",
+  "top-0 right-0 border-t border-r",
+  "bottom-0 left-0 border-b border-l",
+  "right-0 bottom-0 border-r border-b",
+];
+
+/** Thin L-shaped crop marks, like a viewfinder, at the corners of the parent. */
+function CropCorners({ className }: { className?: string }) {
+  return (
+    <span aria-hidden className={cn("pointer-events-none absolute", className)}>
+      {CORNERS.map((corner) => (
+        <span
+          className={cn(
+            "absolute size-2.5 border-white drop-shadow-[0_0_1px_rgb(0_0_0/0.6)]",
+            corner
+          )}
+          key={corner}
+        />
+      ))}
+    </span>
+  );
+}
+
 export default function FocalPointPicker({
   src = PHOTO,
   alt = "Peaks above a sea of clouds",
@@ -188,7 +212,7 @@ export default function FocalPointPicker({
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute rounded-[3px] shadow-[0_0_0_9999px_rgb(0_0_0/0.45)] outline outline-2 outline-white transition-[left,top,width,height,opacity] duration-200",
+            "pointer-events-none absolute shadow-[0_0_0_9999px_rgb(0_0_0/0.45)] outline outline-1 outline-white/60 transition-[left,top,width,height,opacity] duration-200",
             shownCrop ? "opacity-100" : "opacity-0"
           )}
           style={{
@@ -198,7 +222,9 @@ export default function FocalPointPicker({
             height: pct(shownCrop?.h ?? 1),
             transitionTimingFunction: EASE,
           }}
-        />
+        >
+          <CropCorners className="inset-1.5" />
+        </div>
 
         {/* Full-size layer moved by the point, so dragging skips layout. */}
         <div
@@ -211,15 +237,21 @@ export default function FocalPointPicker({
           <button
             aria-label={`Focal point, ${pct(point.x)} from the left, ${pct(point.y)} from the top. Move with the arrow keys.`}
             className={cn(
-              "pointer-events-auto absolute top-0 left-0 size-10 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border-2 border-white bg-black/15 shadow-[0_1px_4px_rgb(0_0_0/0.35)] outline-none transition-[background-color,box-shadow] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40",
-              dragging &&
-                "cursor-grabbing bg-white/20 shadow-[0_4px_14px_rgb(0_0_0/0.35)]"
+              "pointer-events-auto absolute top-0 left-0 size-10 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/40",
+              dragging && "cursor-grabbing"
             )}
             onKeyDown={handleKeyDown}
             ref={pointRef}
             type="button"
           >
-            <span className="absolute top-1/2 left-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
+            {/* Hairline crosshair, open at the centre around the dot. */}
+            <span className="absolute inset-0 drop-shadow-[0_0_1px_rgb(0_0_0/0.7)]">
+              <span className="absolute top-1/2 left-0 h-px w-[15px] -translate-y-1/2 bg-white" />
+              <span className="absolute top-1/2 right-0 h-px w-[15px] -translate-y-1/2 bg-white" />
+              <span className="absolute top-0 left-1/2 h-[15px] w-px -translate-x-1/2 bg-white" />
+              <span className="absolute bottom-0 left-1/2 h-[15px] w-px -translate-x-1/2 bg-white" />
+            </span>
+            <span className="absolute top-1/2 left-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500 ring-1 ring-white" />
           </button>
         </div>
       </div>
@@ -264,6 +296,7 @@ export default function FocalPointPicker({
                   }}
                   unoptimized
                 />
+                <CropCorners className="inset-1" />
               </span>
               <span className="mt-1.5 block truncate text-xs text-zinc-500 dark:text-zinc-400">
                 {crop.label}
