@@ -358,7 +358,7 @@ export default function ClipTrimmer({
           {/* Kept range: the frame, its two handles and the drag area. */}
           <div
             className={cn(
-              "absolute inset-y-0 border-orange-500 border-y-[3px]",
+              "absolute inset-y-0 border-orange-600 border-y-[3px]",
               active === "range" ? "cursor-grabbing" : "cursor-grab"
             )}
             data-part="range"
@@ -375,7 +375,7 @@ export default function ClipTrimmer({
                 aria-valuenow={Math.round(range[part] * 10) / 10}
                 aria-valuetext={`${range[part].toFixed(1)} seconds`}
                 className={cn(
-                  "group absolute -inset-y-[3px] flex w-4 cursor-ew-resize items-center justify-center bg-orange-500 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950",
+                  "group absolute -inset-y-[3px] flex w-4 cursor-ew-resize items-center justify-center bg-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950",
                   part === "start"
                     ? "-left-4 rounded-l-lg"
                     : "-right-4 rounded-r-lg"
@@ -419,7 +419,7 @@ export default function ClipTrimmer({
                   "w-px transition-colors duration-150 ease-out",
                   s % labelEvery === 0 ? "h-2" : "h-1",
                   snapped === s
-                    ? "bg-orange-500"
+                    ? "bg-orange-600"
                     : "bg-zinc-300 dark:bg-zinc-700"
                 )}
               />
@@ -428,7 +428,7 @@ export default function ClipTrimmer({
                   className={cn(
                     "mt-0.5 text-[10px] tabular-nums transition-colors duration-150 ease-out",
                     snapped === s
-                      ? "text-orange-600 dark:text-orange-400"
+                      ? "text-orange-700 dark:text-orange-400"
                       : "text-zinc-400 dark:text-zinc-500"
                   )}
                 >

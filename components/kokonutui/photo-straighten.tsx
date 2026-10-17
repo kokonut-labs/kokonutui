@@ -273,7 +273,7 @@ export default function PhotoStraighten({
         <span
           className={cn(
             "font-medium text-sm tabular-nums transition-colors duration-200 ease-out",
-            level && "text-emerald-600 dark:text-emerald-500"
+            level && "text-emerald-700 dark:text-emerald-400"
           )}
         >
           {formatAngle(value)}
@@ -323,7 +323,7 @@ export default function PhotoStraighten({
                   className={cn(
                     "w-px",
                     // Zero is the reference mark, in the level colour.
-                    deg === 0 && "h-3 bg-emerald-500",
+                    deg === 0 && "h-3 bg-emerald-600 dark:bg-emerald-400",
                     deg !== 0 &&
                       (major
                         ? "h-3 bg-zinc-400 dark:bg-zinc-500"
@@ -335,7 +335,7 @@ export default function PhotoStraighten({
                     className={cn(
                       "mt-1 text-[10px] tabular-nums",
                       deg === 0
-                        ? "text-emerald-600 dark:text-emerald-500"
+                        ? "text-emerald-700 dark:text-emerald-400"
                         : "text-zinc-400 dark:text-zinc-500"
                     )}
                   >

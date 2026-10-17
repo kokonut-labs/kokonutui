@@ -444,7 +444,7 @@ export default function DetentDial({
             <line
               className={cn(
                 "transition-[stroke] duration-150",
-                current && "stroke-orange-500 dark:stroke-orange-400",
+                current && "stroke-orange-600 dark:stroke-orange-400",
                 !current &&
                   (lit
                     ? "stroke-zinc-900 dark:stroke-zinc-100"
