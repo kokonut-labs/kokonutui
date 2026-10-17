@@ -251,7 +251,7 @@ export default function FocalPointPicker({
               <span className="absolute top-0 left-1/2 h-[15px] w-px -translate-x-1/2 bg-white" />
               <span className="absolute bottom-0 left-1/2 h-[15px] w-px -translate-x-1/2 bg-white" />
             </span>
-            <span className="absolute top-1/2 left-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500 ring-1 ring-white" />
+            <span className="absolute top-1/2 left-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500 ring-1 ring-white" />
           </button>
         </div>
       </div>

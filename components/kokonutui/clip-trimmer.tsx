@@ -350,15 +350,15 @@ export default function ClipTrimmer({
             )}
             style={{ transform: `translateX(${pct(time)}%)` }}
           >
-            <div className="relative h-full w-px -translate-x-1/2 bg-red-500">
-              <span className="absolute -top-0.5 left-1/2 size-[7px] -translate-x-1/2 rounded-full bg-red-500" />
+            <div className="relative h-full w-px -translate-x-1/2 bg-zinc-900 dark:bg-white">
+              <span className="absolute -top-0.5 left-1/2 size-[7px] -translate-x-1/2 rounded-full bg-zinc-900 dark:bg-white" />
             </div>
           </div>
 
           {/* Kept range: the frame, its two handles and the drag area. */}
           <div
             className={cn(
-              "absolute inset-y-0 border-blue-500 border-y-[3px]",
+              "absolute inset-y-0 border-orange-500 border-y-[3px]",
               active === "range" ? "cursor-grabbing" : "cursor-grab"
             )}
             data-part="range"
@@ -375,7 +375,7 @@ export default function ClipTrimmer({
                 aria-valuenow={Math.round(range[part] * 10) / 10}
                 aria-valuetext={`${range[part].toFixed(1)} seconds`}
                 className={cn(
-                  "group absolute -inset-y-[3px] flex w-4 cursor-ew-resize items-center justify-center bg-blue-500 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950",
+                  "group absolute -inset-y-[3px] flex w-4 cursor-ew-resize items-center justify-center bg-orange-500 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950",
                   part === "start"
                     ? "-left-4 rounded-l-lg"
                     : "-right-4 rounded-r-lg"
@@ -418,7 +418,9 @@ export default function ClipTrimmer({
                 className={cn(
                   "w-px transition-colors duration-150 ease-out",
                   s % labelEvery === 0 ? "h-2" : "h-1",
-                  snapped === s ? "bg-blue-500" : "bg-zinc-300 dark:bg-zinc-700"
+                  snapped === s
+                    ? "bg-orange-500"
+                    : "bg-zinc-300 dark:bg-zinc-700"
                 )}
               />
               {s % labelEvery === 0 && (
@@ -426,7 +428,7 @@ export default function ClipTrimmer({
                   className={cn(
                     "mt-0.5 text-[10px] tabular-nums transition-colors duration-150 ease-out",
                     snapped === s
-                      ? "text-blue-600 dark:text-blue-400"
+                      ? "text-orange-600 dark:text-orange-400"
                       : "text-zinc-400 dark:text-zinc-500"
                   )}
                 >
