@@ -37,6 +37,7 @@ import {
   formatReleaseDate,
   releaseAnchor,
 } from "@/lib/changelog";
+import { readComponentSource } from "@/lib/get-llm-text";
 import { isProPeekUrl } from "@/lib/pro-peeks";
 import { source } from "@/lib/source";
 import { cn } from "@/lib/utils";
@@ -47,19 +48,29 @@ const PAGE_ACTION = cn(
   "h-7 rounded-none bg-transparent px-2 font-normal text-[11.5px] text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
 );
 
-/** The packages a demo's registry entry installs, shown on its plate. */
-function plateFor(link: string) {
+/**
+ * The packages a demo's registry entry installs, shown on its plate, and its
+ * source for Copy code. The source is public, so it ships with the page
+ * rather than being fetched on click.
+ */
+async function plateFor({ link, isBlock }: PreviewProps) {
   const name = link.split("/").at(-1);
   const part = getParts().find((p) => p.name === name);
-  return part ? { dependencies: part.dependencies } : undefined;
+  if (!(part && name)) {
+    return;
+  }
+  const source = isBlock
+    ? undefined
+    : await readComponentSource(name).catch(() => undefined);
+  return { dependencies: part.dependencies, source };
 }
 
-function DocsPreview(props: PreviewProps) {
-  return <Preview {...props} part={plateFor(props.link)} />;
+async function DocsPreview(props: PreviewProps) {
+  return <Preview {...props} part={await plateFor(props)} />;
 }
 
-function DocsPreviewClient(props: PreviewProps) {
-  return <PreviewClient {...props} part={plateFor(props.link)} />;
+async function DocsPreviewClient(props: PreviewProps) {
+  return <PreviewClient {...props} part={await plateFor(props)} />;
 }
 
 function ogImagePath(slug: string[] = []) {
