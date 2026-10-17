@@ -42,25 +42,54 @@ function firstLine(text?: string) {
   return lines.find((line) => WORDY.test(line)) ?? lines.find(Boolean);
 }
 
-/** Holds the latest copy for a moment; a new copy restarts the clock. */
+/**
+ * Holds the latest copy for a moment; a new copy restarts the clock. The
+ * clock stops while the tab is hidden, so the toast is still there when you
+ * come back to it.
+ */
 function useLatestCopy() {
   const [copied, setCopied] = useState<Copied | null>(null);
   const timer = useRef<number | null>(null);
+  const showing = useRef(false);
 
   useEffect(() => {
-    const show = (next: Copied) => {
-      setCopied(next);
+    const stop = () => {
       if (timer.current !== null) {
         window.clearTimeout(timer.current);
+        timer.current = null;
       }
-      timer.current = window.setTimeout(() => setCopied(null), VISIBLE_MS);
+    };
+    const start = () => {
+      stop();
+      if (document.hidden) {
+        return;
+      }
+      timer.current = window.setTimeout(() => {
+        showing.current = false;
+        setCopied(null);
+      }, VISIBLE_MS);
+    };
+    const show = (next: Copied) => {
+      showing.current = true;
+      setCopied(next);
+      start();
+    };
+    const onVisibility = () => {
+      if (!showing.current) {
+        return;
+      }
+      if (document.hidden) {
+        stop();
+      } else {
+        start();
+      }
     };
     listeners.add(show);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       listeners.delete(show);
-      if (timer.current !== null) {
-        window.clearTimeout(timer.current);
-      }
+      document.removeEventListener("visibilitychange", onVisibility);
+      stop();
     };
   }, []);
 
@@ -88,7 +117,22 @@ export function CopyToast() {
 }
 
 const DOT = 44;
-const SPRING = { type: "spring", bounce: 0.18, duration: 0.5 } as const;
+const SPRING = { type: "spring", bounce: 0.18, duration: 0.45 } as const;
+const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
+
+/**
+ * The pill is laid out at its widest and clipped down to the width it shows,
+ * so the morph runs on clip-path and transform alone: no layout per frame.
+ * The visible part is kept centered by sliding the pill half the clipped
+ * amount.
+ */
+function clipTo(shell: number, visible: number) {
+  const hidden = Math.max(shell - visible, 0);
+  return {
+    clipPath: `inset(0px ${hidden}px 0px 0px round 22px)`,
+    transform: `translateX(${hidden / 2}px)`,
+  };
+}
 
 /**
  * An ink pill that arrives as a dot and opens out to fit its words, then
@@ -97,28 +141,41 @@ const SPRING = { type: "spring", bounce: 0.18, duration: 0.5 } as const;
 function Pill({ copied }: { copied: Copied }) {
   const reduce = useReducedMotion();
   const row = useRef<HTMLDivElement>(null);
+  const pill = useRef<HTMLDivElement>(null);
   const [scope, animate] = useAnimate();
   const [isPresent, safeToRemove] = usePresence();
 
+  // Start as a dot at the pill's real width (narrower on phones).
+  useLayoutEffect(() => {
+    if (pill.current) {
+      Object.assign(pill.current.style, clipTo(pill.current.offsetWidth, DOT));
+    }
+  }, []);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-fit when the line changes
   useLayoutEffect(() => {
-    const width = row.current?.offsetWidth ?? DOT;
-    if (reduce) {
-      animate(scope.current, { width, opacity: 1 }, { duration: 0.15 });
-      animate("[data-words]", { opacity: 1 }, { duration: 0 });
+    const shell = pill.current;
+    if (!shell) {
       return;
     }
-    // On a repeat copy the pill is already up, so only the width moves.
+    const open = clipTo(shell.offsetWidth, row.current?.offsetWidth ?? DOT);
+    if (reduce) {
+      animate(shell, open, { duration: 0 });
+      animate("[data-words]", { opacity: 1 }, { duration: 0 });
+      animate(scope.current, { opacity: 1 }, { duration: 0.15 });
+      return;
+    }
+    // On a repeat copy the pill is already up, so only the fit moves.
     animate(
       scope.current,
       { opacity: 1, transform: "translateY(0px)", filter: "blur(0px)" },
-      { duration: 0.26, ease: EASE_OUT }
+      { duration: 0.24, ease: EASE_OUT }
     );
-    animate(scope.current, { width }, { ...SPRING, delay: 0.06 });
+    animate(shell, open, { ...SPRING, delay: 0.05 });
     animate(
       "[data-words]",
       { opacity: 1, filter: "blur(0px)" },
-      { delay: 0.16, duration: 0.2, ease: EASE_OUT }
+      { delay: 0.14, duration: 0.2, ease: EASE_OUT }
     );
   }, [copied.id]);
 
@@ -126,61 +183,79 @@ function Pill({ copied }: { copied: Copied }) {
     if (isPresent) {
       return;
     }
+    // A copy made while it leaves brings it back: stop folding and let the
+    // entrance above take over from wherever it got to.
+    let cancelled = false;
     const leave = async () => {
-      if (!reduce) {
-        await animate(
-          "[data-words]",
-          { opacity: 0, filter: "blur(4px)" },
-          { duration: 0.1 }
-        );
-        await animate(
-          scope.current,
-          { width: DOT },
-          { duration: 0.22, ease: [0.4, 0, 0.2, 1] }
-        );
+      if (reduce) {
+        await animate(scope.current, { opacity: 0 }, { duration: 0.15 });
+      } else {
+        const shell = pill.current;
+        await Promise.all([
+          animate(
+            "[data-words]",
+            { opacity: 0, filter: "blur(4px)" },
+            { duration: 0.1, ease: EASE_OUT }
+          ),
+          shell &&
+            animate(shell, clipTo(shell.offsetWidth, DOT), {
+              delay: 0.04,
+              duration: 0.2,
+              ease: EASE_IN_OUT,
+            }),
+          animate(
+            scope.current,
+            { opacity: 0, transform: "translateY(4px)" },
+            { delay: 0.16, duration: 0.12, ease: EASE_OUT }
+          ),
+        ]);
       }
-      await animate(
-        scope.current,
-        reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(4px)" },
-        { duration: 0.14 }
-      );
-      safeToRemove();
+      if (!cancelled) {
+        safeToRemove();
+      }
     };
     leave();
+    return () => {
+      cancelled = true;
+    };
   }, [isPresent, animate, scope, reduce, safeToRemove]);
 
   return (
     <div
-      className="relative h-11 max-w-full overflow-hidden rounded-full bg-[#0A0A0A] text-white shadow-[0_10px_30px_-12px_rgba(0,0,0,0.45)] dark:bg-white dark:text-black dark:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.9)]"
+      className="max-w-full"
       ref={scope}
       style={{
-        width: DOT,
         opacity: 0,
         transform: reduce ? undefined : "translateY(14px)",
         filter: reduce ? undefined : "blur(4px)",
       }}
     >
       <div
-        className="absolute inset-y-0 left-0 flex w-max items-center gap-2.5 pr-5 pl-2"
-        ref={row}
+        className="relative h-11 w-[380px] max-w-full overflow-hidden rounded-full bg-[#0A0A0A] text-white dark:bg-white dark:text-black"
+        ref={pill}
       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#2CD242] text-white dark:bg-[#1FA834]">
-          <Check id={copied.id} reduce={reduce} />
-        </span>
-        <span
-          className="flex items-baseline gap-2 whitespace-nowrap"
-          data-words
-          style={{ opacity: 0, filter: reduce ? undefined : "blur(4px)" }}
+        <div
+          className="absolute inset-y-0 left-0 flex w-max max-w-full items-center gap-2.5 pr-5 pl-2"
+          ref={row}
         >
-          <span className="font-medium text-[13px]">Copied</span>
-          {copied.detail ? (
-            <Detail
-              className="inline-block max-w-[230px] text-white/55 dark:text-black/50"
-              copied={copied}
-              reduce={reduce}
-            />
-          ) : null}
-        </span>
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#2CD242] text-white dark:bg-[#1FA834]">
+            <Check id={copied.id} reduce={reduce} />
+          </span>
+          <span
+            className="flex min-w-0 items-baseline gap-2 whitespace-nowrap"
+            data-words
+            style={{ opacity: 0, filter: reduce ? undefined : "blur(4px)" }}
+          >
+            <span className="font-medium text-[13px]">Copied</span>
+            {copied.detail ? (
+              <Detail
+                className="inline-block min-w-0 max-w-[230px] text-white/55 dark:text-black/50"
+                copied={copied}
+                reduce={reduce}
+              />
+            ) : null}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -199,13 +274,21 @@ function Detail({
   return (
     <AnimatePresence initial={false} mode="popLayout">
       <motion.span
-        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        animate={{
+          opacity: 1,
+          transform: "translateY(0px)",
+          filter: "blur(0px)",
+        }}
         className={cn(MONO, "truncate text-[11.5px] leading-4", className)}
         exit={
-          reduce ? { opacity: 0 } : { opacity: 0, y: -4, filter: "blur(2px)" }
+          reduce
+            ? { opacity: 0 }
+            : { opacity: 0, transform: "translateY(-4px)", filter: "blur(2px)" }
         }
         initial={
-          reduce ? { opacity: 0 } : { opacity: 0, y: 4, filter: "blur(2px)" }
+          reduce
+            ? { opacity: 0 }
+            : { opacity: 0, transform: "translateY(4px)", filter: "blur(2px)" }
         }
         key={copied.id}
         transition={{ duration: 0.18, ease: EASE_OUT }}
