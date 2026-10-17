@@ -12,7 +12,7 @@ export const CLIENT_MARKS: Record<
   McpClient,
   { Mark: (props: SVGProps<SVGSVGElement>) => ReactNode; color: string }
 > = {
-  claude: { Mark: ClaudeMark, color: "text-[#D97757]" },
+  claude: { Mark: ClaudeMark, color: "text-[#D57156]" },
   cursor: { Mark: CursorMark, color: "text-black dark:text-white" },
   vscode: { Mark: VSCodeMark, color: "text-[#0078D4] dark:text-[#3EA2FF]" },
   codex: { Mark: OpenAIMark, color: "text-black dark:text-white" },
