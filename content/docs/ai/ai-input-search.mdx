@@ -1,7 +1,7 @@
 ---
 title: AI Input Search
-description: AI search input with Quick and Research modes and a live trace underneath that stacks each source as it is read, times the run and opens into the full source list. Built with React, Tailwind CSS and Motion.
-keywords: ["ai search", "search box", "deep research", "sources", "citations", "perplexity"]
+description: AI composer with a Tools menu of modes (browse, investigate, draft a visual, run code, reason), the picked mode shown as a removable chip, a model picker and a live trace that stacks each source as it is read. Built with React, Tailwind CSS and Motion.
+keywords: ["ai search", "search box", "tools menu", "composer", "deep research", "sources", "citations", "chatgpt", "perplexity"]
 icon: Globe
 ---
 
@@ -14,22 +14,40 @@ import AI_Input_Search from "@/components/kokonutui/ai-input-search";
 
 ## Usage
 
-With no `onSearch` the component plays a pretend search. Wire it to your own search by calling `onSource` as each source comes in and resolving when the answer is ready. Stop, or Esc, aborts `signal`.
+Pick a tool from **Tools** and it sits in the box as a chip; its x, picking it again, or Backspace in an empty box takes it off. A tool with a `limit` shows the runs left and locks at zero. With no `onSearch` the component plays a pretend run. Wire it to your own backend by calling `onSource` as each source comes in and resolving when the answer is ready. Stop, or Esc, aborts `signal`.
 
 ```tsx
 <AI_Input_Search
-  onSearch={async (query, { mode, signal, onSource }) => {
-    for await (const source of mySearch(query, { deep: mode === "research", signal })) {
+  onSearch={async (query, { tool, model, files, signal, onSource }) => {
+    if (!tool?.readsSources) {
+      return ask(query, { tool: tool?.id, model, files, signal });
+    }
+    for await (const source of mySearch(query, { deep: tool.id === "investigate", signal })) {
       onSource({ domain: source.host, title: source.title });
     }
   }}
 />
 ```
 
+Bring your own tools with any Lucide icon:
+
+```tsx
+import { Map } from "lucide-react";
+
+<AI_Input_Search
+  defaultTool={null}
+  tools={[
+    { id: "places", label: "Find places", icon: Map, activity: "Looking up places", readsSources: true },
+  ]}
+/>
+```
+
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `placeholder` | `string` | `"Ask anything"` | Placeholder in Quick mode. |
-| `researchPlaceholder` | `string` | `"Research a topic in depth"` | Placeholder in Research mode. |
-| `defaultMode` | `"quick" \| "research"` | `"quick"` | Mode selected at first. |
-| `onSearch` | `(query, { mode, signal, onSource }) => Promise<void> \| void` | — | Runs the search. Omit it for the demo. |
+| `placeholder` | `string` | `"Ask anything"` | Placeholder with no tool picked. Each tool can set its own. |
+| `tools` | `SearchTool[]` | Browse sources, Investigate, Draft a visual, Run some code, Reason it through | Entries in the Tools menu: `id`, `label`, `icon`, `activity`, and optional `placeholder`, `readsSources`, `limit`. |
+| `defaultTool` | `string \| null` | `"browse"` | Tool picked at first. |
+| `models` | `string[]` | `["Opus 5.5", "Sonnet 5.5", "Haiku 5.5"]` | Entries in the model menu. |
+| `defaultModel` | `string` | `"Sonnet 5.5"` | Model picked at first. |
+| `onSearch` | `(query, { tool, model, files, signal, onSource }) => Promise<void> \| void` | — | Runs the request. Omit it for the demo. |
 | `className` | `string` | — | Extra classes for the wrapper. |

@@ -3,16 +3,37 @@
 /**
  * @author: @kokonutui
  * @description: AI Input Search
- * @version: 3.0.0
- * @date: 2026-10-15
+ * @version: 4.0.0
+ * @date: 2026-10-18
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { ArrowUp, ChevronDown, Search, Telescope } from "lucide-react";
+import {
+  ArrowUp,
+  Braces,
+  Check,
+  ChevronDown,
+  FileText,
+  Globe,
+  ImageIcon,
+  Lightbulb,
+  type LucideIcon,
+  Plus,
+  Settings2,
+  Telescope,
+  X,
+} from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
 import { cn } from "@/lib/utils";
@@ -21,7 +42,20 @@ const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const EASE_OUT_CSS = "ease-[cubic-bezier(0.23,1,0.32,1)]";
 const WWW = /^www\./;
 
-export type SearchMode = "quick" | "research";
+export interface SearchTool {
+  id: string;
+  /** Shown in the menu and on the chip. */
+  label: string;
+  icon: LucideIcon;
+  /** What the trace says while this tool works, e.g. "Searching the web". */
+  activity: string;
+  /** Placeholder while the tool is picked. */
+  placeholder?: string;
+  /** True when the tool reads sources, so the trace stacks them up. */
+  readsSources?: boolean;
+  /** Runs left today. The menu shows the count and locks the tool at zero. */
+  limit?: number;
+}
 
 export interface SearchSource {
   /** e.g. "developer.mozilla.org" */
@@ -31,18 +65,22 @@ export interface SearchSource {
 
 export interface AIInputSearchProps {
   placeholder?: string;
-  /** Placeholder while Research mode is on. */
-  researchPlaceholder?: string;
-  defaultMode?: SearchMode;
+  tools?: SearchTool[];
+  /** Tool picked at first. Pass null to start with none. */
+  defaultTool?: string | null;
+  models?: string[];
+  defaultModel?: string;
   /**
-   * Runs the search. Call `onSource` for each source as it is read, and
+   * Runs the request. Call `onSource` for each source as it is read, and
    * resolve when the answer is ready; `signal` aborts on Stop. Without it,
-   * the component plays a pretend search so the demo feels alive.
+   * the component plays a pretend run so the demo feels alive.
    */
   onSearch?: (
     query: string,
     options: {
-      mode: SearchMode;
+      tool: SearchTool | null;
+      model: string;
+      files: File[];
       signal: AbortSignal;
       onSource: (source: SearchSource) => void;
     }
@@ -50,21 +88,50 @@ export interface AIInputSearchProps {
   className?: string;
 }
 
-type Phase = "idle" | "searching" | "reading" | "writing" | "done" | "stopped";
+type Phase = "idle" | "working" | "done" | "stopped";
 
-const PHASE_LABEL: Record<Phase, string> = {
-  idle: "",
-  searching: "Searching the web",
-  reading: "Reading sources",
-  writing: "Writing the answer",
-  done: "",
-  stopped: "Stopped",
-};
-
-const MODES: { id: SearchMode; label: string; icon: typeof Search }[] = [
-  { id: "quick", label: "Quick", icon: Search },
-  { id: "research", label: "Research", icon: Telescope },
+const DEFAULT_TOOLS: SearchTool[] = [
+  {
+    id: "browse",
+    label: "Browse sources",
+    icon: Globe,
+    activity: "Searching the web",
+    placeholder: "Look something up",
+    readsSources: true,
+  },
+  {
+    id: "investigate",
+    label: "Investigate",
+    icon: Telescope,
+    activity: "Investigating",
+    placeholder: "What should I dig into?",
+    readsSources: true,
+    limit: 3,
+  },
+  {
+    id: "visual",
+    label: "Draft a visual",
+    icon: ImageIcon,
+    activity: "Sketching the visual",
+    placeholder: "Describe what to draw",
+  },
+  {
+    id: "code",
+    label: "Run some code",
+    icon: Braces,
+    activity: "Running the code",
+    placeholder: "What should the code work out?",
+  },
+  {
+    id: "reason",
+    label: "Reason it through",
+    icon: Lightbulb,
+    activity: "Thinking it over",
+    placeholder: "Ask something hard",
+  },
 ];
+
+const DEFAULT_MODELS = ["Opus 5.5", "Sonnet 5.5", "Haiku 5.5"];
 
 const DEMO_SOURCES: SearchSource[] = [
   { domain: "developer.mozilla.org", title: "429 Too Many Requests" },
@@ -84,8 +151,6 @@ const DEMO_SOURCES: SearchSource[] = [
   { domain: "martinfowler.com", title: "Circuit breaker" },
 ];
 
-const DEMO_COUNT: Record<SearchMode, number> = { quick: 5, research: 12 };
-const DEMO_STEP_MS: Record<SearchMode, number> = { quick: 260, research: 200 };
 const STACK_MAX = 5;
 
 const wait = (ms: number, signal: AbortSignal) =>
@@ -97,16 +162,23 @@ const wait = (ms: number, signal: AbortSignal) =>
     });
   });
 
-async function demoSearch(
-  mode: SearchMode,
+async function demoRun(
+  tool: SearchTool | null,
   signal: AbortSignal,
   onSource: (source: SearchSource) => void
 ) {
   await wait(500, signal);
-  for (const source of DEMO_SOURCES.slice(0, DEMO_COUNT[mode])) {
-    await wait(DEMO_STEP_MS[mode], signal);
+  if (!tool?.readsSources) {
+    await wait(1600, signal);
+    return;
+  }
+  // Investigating reads more and faster than a quick browse.
+  const deep = (tool.limit ?? 0) > 0;
+  for (const source of DEMO_SOURCES.slice(0, deep ? 12 : 5)) {
+    await wait(deep ? 200 : 260, signal);
     onSource(source);
   }
+  await wait(700, signal);
 }
 
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
@@ -119,82 +191,12 @@ function Monogram({ domain, ring }: { domain: string; ring?: boolean }) {
       className={cn(
         "flex size-5 shrink-0 items-center justify-center rounded-full bg-white font-medium text-[10px] text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200",
         ring
-          ? "ring-2 ring-zinc-100 dark:ring-zinc-800"
+          ? "outline-1 outline-black/10 ring-2 ring-zinc-50 dark:outline-white/10 dark:ring-zinc-950"
           : "ring-1 ring-black/10 dark:ring-white/10"
       )}
     >
       {domain.replace(WWW, "").charAt(0).toUpperCase()}
     </span>
-  );
-}
-
-function ModeSwitch({
-  mode,
-  onChange,
-}: {
-  mode: SearchMode;
-  onChange: (mode: SearchMode) => void;
-}) {
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const index = MODES.findIndex((m) => m.id === mode);
-
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
-      return;
-    }
-    event.preventDefault();
-    const next = (index + 1) % MODES.length;
-    refs.current[next]?.focus();
-    onChange(MODES[next].id);
-  };
-
-  return (
-    <div
-      aria-label="Search mode"
-      className="relative grid grid-cols-2 rounded-full bg-black/[0.04] p-0.5 dark:bg-white/[0.06]"
-      role="radiogroup"
-    >
-      {/* One thumb that slides, rather than two backgrounds that swap. */}
-      <span
-        aria-hidden="true"
-        className={cn(
-          "absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-black/5 dark:bg-zinc-700 dark:ring-white/10",
-          "transition-[translate] duration-200 motion-reduce:transition-none",
-          EASE_OUT_CSS,
-          index === 1 ? "translate-x-full" : "translate-x-0"
-        )}
-      />
-      {MODES.map(({ id, label, icon: Icon }, i) => {
-        const selected = id === mode;
-        return (
-          // biome-ignore lint/a11y/useSemanticElements: a pill switch with a sliding thumb doesn't fit a native radio input
-          <button
-            aria-checked={selected}
-            className={cn(
-              "relative flex h-7 items-center justify-center gap-1.5 rounded-full px-3 text-xs outline-hidden",
-              "transition-colors duration-150",
-              EASE_OUT_CSS,
-              "focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
-              selected
-                ? "text-black dark:text-white"
-                : "text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
-            )}
-            key={id}
-            onClick={() => onChange(id)}
-            onKeyDown={onKeyDown}
-            ref={(node) => {
-              refs.current[i] = node;
-            }}
-            role="radio"
-            tabIndex={selected ? 0 : -1}
-            type="button"
-          >
-            <Icon aria-hidden="true" className="size-3.5" />
-            {label}
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -268,17 +270,28 @@ function SourceList({ id, sources }: { id: string; sources: SearchSource[] }) {
   );
 }
 
-const traceLabel = (phase: Phase, count: number) => {
-  if (phase !== "done" && phase !== "stopped") {
-    return PHASE_LABEL[phase];
-  }
+const traceLabel = (
+  phase: Phase,
+  tool: SearchTool | null,
+  count: number
+): string => {
   const noun = count === 1 ? "source" : "sources";
-  return `${phase === "stopped" ? "Stopped after" : "Read"} ${count} ${noun}`;
+  if (phase === "working") {
+    if (count > 0) {
+      return "Reading sources";
+    }
+    return tool?.activity ?? "Writing the answer";
+  }
+  if (phase === "stopped") {
+    return count > 0 ? `Stopped after ${count} ${noun}` : "Stopped";
+  }
+  return count > 0 ? `Read ${count} ${noun}` : "Done";
 };
 
-/** Under the box: what the search is doing now, then what it read. */
+/** Under the box: what the run is doing now, then what it read. */
 function Trace({
   phase,
+  tool,
   sources,
   elapsed,
   expanded,
@@ -286,6 +299,7 @@ function Trace({
   listId,
 }: {
   phase: Phase;
+  tool: SearchTool | null;
   sources: SearchSource[];
   elapsed: number;
   expanded: boolean;
@@ -294,15 +308,16 @@ function Trace({
 }) {
   const finished = phase === "done" || phase === "stopped";
   const canOpen = finished && sources.length > 0;
-  const label = traceLabel(phase, sources.length);
+  const label = traceLabel(phase, tool, sources.length);
+  const ToolIcon = tool?.icon;
 
   return (
-    <div>
+    <div className="rounded-2xl bg-zinc-50 ring-1 ring-black/[0.04] dark:bg-white/[0.03] dark:ring-white/[0.06]">
       <button
         aria-controls={listId}
         aria-expanded={expanded}
         className={cn(
-          "flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-xs outline-hidden",
+          "flex h-10 w-full items-center gap-2.5 rounded-2xl px-3 text-left text-xs outline-hidden",
           "transition-colors duration-150",
           EASE_OUT_CSS,
           "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20",
@@ -314,7 +329,13 @@ function Trace({
         onClick={onToggle}
         type="button"
       >
-        <SourceStack sources={sources} />
+        {tool?.readsSources || !ToolIcon ? (
+          <SourceStack sources={sources} />
+        ) : (
+          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white text-black/60 ring-1 ring-black/10 dark:bg-zinc-800 dark:text-white/70 dark:ring-white/10">
+            <ToolIcon aria-hidden="true" className="size-3" />
+          </span>
+        )}
         <span className="relative min-w-0 flex-1">
           <AnimatePresence initial={false} mode="popLayout">
             <motion.span
@@ -331,7 +352,7 @@ function Trace({
               transition={{ duration: 0.15, ease: EASE_OUT }}
             >
               {label}
-              {phase === "reading" && (
+              {phase === "working" && sources.length > 0 && (
                 <span className="text-black/35 tabular-nums dark:text-white/35">
                   {" "}
                   · {sources.length}
@@ -362,6 +383,241 @@ function Trace({
   );
 }
 
+const ghostButton = cn(
+  "flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] text-black/60 outline-hidden dark:text-white/60",
+  "transition-[background-color,color] duration-150",
+  EASE_OUT_CSS,
+  "hover:bg-black/[0.04] hover:text-black dark:hover:bg-white/[0.06] dark:hover:text-white",
+  "data-[state=open]:bg-black/[0.05] data-[state=open]:text-black dark:data-[state=open]:bg-white/[0.08] dark:data-[state=open]:text-white",
+  "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
+);
+
+const menuPanel =
+  "origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border-black/10 p-1.5 shadow-[0_12px_32px_-12px_rgb(0_0_0/0.2)] dark:border-white/10 dark:bg-zinc-900";
+
+const remainingLabel = (left: number) =>
+  left > 0 ? `${left} left` : "None left";
+
+function ToolsMenu({
+  tools,
+  selected,
+  remaining,
+  compact,
+  onSelect,
+  onCloseAutoFocus,
+}: {
+  tools: SearchTool[];
+  selected: string | null;
+  remaining: Record<string, number>;
+  /** Icon only, to leave room for the chip on narrow screens. */
+  compact: boolean;
+  onSelect: (id: string | null) => void;
+  onCloseAutoFocus: (event: Event) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label="Tools"
+          className={cn(
+            ghostButton,
+            "bg-black/[0.03] dark:bg-white/[0.05]",
+            compact && "max-sm:w-9 max-sm:justify-center max-sm:px-0"
+          )}
+          type="button"
+        >
+          <Settings2 aria-hidden="true" className="size-4" />
+          <span className={cn(compact && "hidden sm:inline")}>Tools</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className={cn(menuPanel, "w-64")}
+        onCloseAutoFocus={onCloseAutoFocus}
+        // Below the box by default; Radix flips it up when there is no room,
+        // so it also works with the composer pinned to the bottom of a chat.
+        side="bottom"
+        sideOffset={8}
+      >
+        {tools.map((tool) => {
+          const Icon = tool.icon;
+          const isSelected = tool.id === selected;
+          const left = remaining[tool.id];
+          const spent = left !== undefined && left <= 0;
+          return (
+            <DropdownMenuCheckboxItem
+              checked={isSelected}
+              className={cn(
+                "group/item flex h-10 items-center gap-3 rounded-xl py-0 pr-2.5 pl-2.5 text-[13px] [&>span:first-child]:hidden",
+                isSelected
+                  ? "text-black dark:text-white"
+                  : "text-black/55 dark:text-white/55"
+              )}
+              disabled={spent}
+              key={tool.id}
+              // Picking the active tool again clears it, like the chip's x.
+              onCheckedChange={(checked) => onSelect(checked ? tool.id : null)}
+            >
+              <Icon aria-hidden="true" className="size-4 shrink-0" />
+              <span className="min-w-0 flex-1 truncate">{tool.label}</span>
+              {left !== undefined && !isSelected && (
+                <span className="shrink-0 text-[11px] text-black/40 tabular-nums dark:text-white/40">
+                  {remainingLabel(left)}
+                </span>
+              )}
+              {isSelected && (
+                <Check
+                  aria-hidden="true"
+                  className="size-3.5 shrink-0"
+                  strokeWidth={2.25}
+                />
+              )}
+            </DropdownMenuCheckboxItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ToolChip({
+  tool,
+  onRemove,
+}: {
+  tool: SearchTool;
+  onRemove: () => void;
+}) {
+  const Icon = tool.icon;
+  return (
+    <motion.span
+      animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+      className="flex h-8 min-w-[5.5rem] shrink items-center gap-1.5 rounded-full bg-black/[0.04] pr-1 pl-2.5 text-[13px] text-black dark:bg-white/[0.07] dark:text-white"
+      exit={{ opacity: 0, filter: "blur(2px)", transition: { duration: 0.1 } }}
+      initial={{ opacity: 0, x: -4, filter: "blur(2px)" }}
+      transition={{ duration: 0.18, ease: EASE_OUT }}
+    >
+      <Icon aria-hidden="true" className="size-3.5 shrink-0" />
+      <span className="min-w-0 truncate">{tool.label}</span>
+      <button
+        aria-label={`Remove ${tool.label}`}
+        className={cn(
+          "flex size-6 shrink-0 items-center justify-center rounded-full text-black/40 outline-hidden dark:text-white/40",
+          "transition-[background-color,color] duration-150",
+          EASE_OUT_CSS,
+          "hover:bg-black/[0.06] hover:text-black dark:hover:bg-white/10 dark:hover:text-white",
+          "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
+        )}
+        onClick={onRemove}
+        type="button"
+      >
+        <X aria-hidden="true" className="size-3.5" />
+      </button>
+    </motion.span>
+  );
+}
+
+function ModelMenu({
+  models,
+  selected,
+  onSelect,
+  onCloseAutoFocus,
+}: {
+  models: string[];
+  selected: string;
+  onSelect: (model: string) => void;
+  onCloseAutoFocus: (event: Event) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label={`Model: ${selected}. Change`}
+          className={cn(ghostButton, "group gap-1 pr-2.5")}
+          type="button"
+        >
+          {/* Only the name swaps; the chevron stays put. */}
+          <span className="relative inline-grid">
+            <AnimatePresence initial={false} mode="popLayout">
+              <motion.span
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                className="col-start-1 row-start-1 whitespace-nowrap"
+                exit={{ opacity: 0, filter: "blur(2px)" }}
+                initial={{ opacity: 0, filter: "blur(2px)" }}
+                key={selected}
+                transition={{ duration: 0.15, ease: EASE_OUT }}
+              >
+                {/* Phones get the family name only, to leave room for the chip. */}
+                <span className="sm:hidden">{selected.split(" ")[0]}</span>
+                <span className="hidden sm:inline">{selected}</span>
+              </motion.span>
+            </AnimatePresence>
+          </span>
+          <ChevronDown
+            aria-hidden="true"
+            className={cn(
+              "size-3.5 opacity-60 transition-transform duration-200 group-data-[state=open]:rotate-180",
+              EASE_OUT_CSS
+            )}
+          />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className={cn(menuPanel, "w-44")}
+        onCloseAutoFocus={onCloseAutoFocus}
+        side="bottom"
+        sideOffset={8}
+      >
+        {models.map((model) => (
+          <DropdownMenuItem
+            className={cn(
+              "flex h-9 items-center gap-2 rounded-xl px-2.5 text-[13px]",
+              model === selected
+                ? "text-black dark:text-white"
+                : "text-black/55 dark:text-white/55"
+            )}
+            key={model}
+            onSelect={() => onSelect(model)}
+          >
+            <span className="flex-1">{model}</span>
+            {model === selected && (
+              <Check
+                aria-hidden="true"
+                className="size-3.5"
+                strokeWidth={2.25}
+              />
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
+  return (
+    <motion.li
+      animate={{ opacity: 1, filter: "blur(0px)" }}
+      className="flex h-8 max-w-48 items-center gap-1.5 rounded-lg bg-black/[0.04] pr-1 pl-2 text-black/70 text-xs dark:bg-white/[0.07] dark:text-white/70"
+      exit={{ opacity: 0, filter: "blur(2px)", transition: { duration: 0.1 } }}
+      initial={{ opacity: 0, filter: "blur(2px)" }}
+      layout="position"
+      transition={{ duration: 0.18, ease: EASE_OUT }}
+    >
+      <FileText aria-hidden="true" className="size-3.5 shrink-0" />
+      <span className="truncate">{file.name}</span>
+      <button
+        aria-label={`Remove ${file.name}`}
+        className="flex size-6 shrink-0 items-center justify-center rounded-md text-black/40 outline-hidden transition-colors duration-150 hover:bg-black/[0.06] hover:text-black focus-visible:ring-2 focus-visible:ring-black/15 dark:text-white/40 dark:focus-visible:ring-white/20 dark:hover:bg-white/10 dark:hover:text-white"
+        onClick={onRemove}
+        type="button"
+      >
+        <X aria-hidden="true" className="size-3" />
+      </button>
+    </motion.li>
+  );
+}
+
 function SendStopButton({
   running,
   canSubmit,
@@ -380,9 +636,9 @@ function SendStopButton({
   );
   return (
     <button
-      aria-label={running ? "Stop search" : "Search"}
+      aria-label={running ? "Stop" : "Send"}
       className={cn(
-        "relative size-8 shrink-0 rounded-full",
+        "relative size-9 shrink-0 rounded-full",
         "transition-[background-color,color] duration-150",
         EASE_OUT_CSS,
         "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
@@ -398,7 +654,7 @@ function SendStopButton({
         aria-hidden="true"
         className={cn(face, running ? "opacity-0 blur-[2px]" : "opacity-100")}
       >
-        <ArrowUp className="size-4" strokeWidth={2.25} />
+        <ArrowUp className="size-[18px]" strokeWidth={2.25} />
       </span>
       <span
         aria-hidden="true"
@@ -412,30 +668,41 @@ function SendStopButton({
 
 export default function AI_Input_Search({
   placeholder = "Ask anything",
-  researchPlaceholder = "Research a topic in depth",
-  defaultMode = "quick",
+  tools = DEFAULT_TOOLS,
+  defaultTool = "browse",
+  models = DEFAULT_MODELS,
+  defaultModel = "Sonnet 5.5",
   onSearch,
   className,
 }: AIInputSearchProps) {
   const [value, setValue] = useState("");
-  const [mode, setMode] = useState<SearchMode>(defaultMode);
+  const [toolId, setToolId] = useState<string | null>(defaultTool);
+  const [model, setModel] = useState(defaultModel);
+  const [files, setFiles] = useState<File[]>([]);
+  const [remaining, setRemaining] = useState<Record<string, number>>(() =>
+    Object.fromEntries(
+      tools.flatMap((t) => (t.limit === undefined ? [] : [[t.id, t.limit]]))
+    )
+  );
   const [phase, setPhase] = useState<Phase>("idle");
+  const [runTool, setRunTool] = useState<SearchTool | null>(null);
   const [sources, setSources] = useState<SearchSource[]>([]);
   const [elapsed, setElapsed] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
-    minHeight: 52,
+    minHeight: 56,
     maxHeight: 200,
   });
 
-  const running =
-    phase === "searching" || phase === "reading" || phase === "writing";
+  const tool = tools.find((t) => t.id === toolId) ?? null;
+  const running = phase === "working";
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  // The clock ticks only while a search runs, from zero each time.
+  // The clock ticks only while a run is going, from zero each time.
   useEffect(() => {
     if (!running) {
       return;
@@ -445,6 +712,17 @@ export default function AI_Input_Search({
     return () => clearInterval(timer);
   }, [running]);
 
+  const pickTool = (id: string | null) => {
+    setToolId(id);
+    textareaRef.current?.focus();
+  };
+
+  // Menus hand focus back to the field, not their trigger, so typing carries on.
+  const backToField = (event: Event) => {
+    event.preventDefault();
+    textareaRef.current?.focus();
+  };
+
   const submit = async () => {
     const query = value.trim();
     if (!query || running) {
@@ -452,17 +730,29 @@ export default function AI_Input_Search({
     }
     const controller = new AbortController();
     abortRef.current = controller;
+    const attached = files;
     setValue("");
+    setFiles([]);
     adjustHeight(true);
     setSources([]);
     setElapsed(0);
     setExpanded(false);
-    setPhase("searching");
+    setRunTool(tool);
+    setPhase("working");
+
+    // A metered tool spends a run; at zero it drops off the box.
+    const left = tool ? remaining[tool.id] : undefined;
+    if (tool && left !== undefined) {
+      setRemaining((current) => ({ ...current, [tool.id]: left - 1 }));
+      if (left - 1 <= 0) {
+        setToolId(null);
+      }
+    }
+
     const onSource = (source: SearchSource) => {
       if (controller.signal.aborted) {
         return;
       }
-      setPhase("reading");
       setSources((current) => [
         ...current.filter((s) => s.domain !== source.domain),
         source,
@@ -470,12 +760,14 @@ export default function AI_Input_Search({
     };
     try {
       await (onSearch
-        ? onSearch(query, { mode, signal: controller.signal, onSource })
-        : demoSearch(mode, controller.signal, onSource));
-      if (!onSearch) {
-        setPhase("writing");
-        await wait(700, controller.signal);
-      }
+        ? onSearch(query, {
+            tool,
+            model,
+            files: attached,
+            signal: controller.signal,
+            onSource,
+          })
+        : demoRun(tool, controller.signal, onSource));
       if (!controller.signal.aborted) {
         setPhase("done");
       }
@@ -498,7 +790,7 @@ export default function AI_Input_Search({
   // Mouse convenience: clicking the box around the field focuses it. Clicks
   // on the controls keep their own behaviour.
   const handleContainerClick = (target: EventTarget) => {
-    if (target instanceof Element && target.closest("button")) {
+    if (target instanceof Element && target.closest("button, [role=menu]")) {
       return;
     }
     textareaRef.current?.focus();
@@ -508,66 +800,18 @@ export default function AI_Input_Search({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("w-full py-4", className)}>
-        <div className="mx-auto w-full max-w-xl rounded-[22px] bg-zinc-100 p-1 dark:bg-zinc-800">
-          {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents lint/a11y/noNoninteractiveElementInteractions: pointer-only shortcut; the textarea and buttons inside are keyboard reachable */}
-          <div
-            className={cn(
-              "relative flex w-full cursor-text flex-col rounded-[18px] bg-white text-left ring-1 ring-black/[0.06] dark:bg-zinc-900 dark:ring-white/10",
-              "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_6px_20px_-10px_rgb(0_0_0/0.12)]",
-              "transition-shadow duration-150 has-[textarea:focus-visible]:ring-black/20 dark:has-[textarea:focus-visible]:ring-white/25"
-            )}
-            onClick={(e) => handleContainerClick(e.target)}
-          >
-            <Textarea
-              aria-label="Search"
-              className="min-h-[52px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
-              onChange={(e) => {
-                setValue(e.target.value);
-                adjustHeight();
-              }}
-              onKeyDown={(e) => {
-                if (e.nativeEvent.isComposing) {
-                  return;
-                }
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  submit();
-                } else if (e.key === "Escape" && running) {
-                  e.preventDefault();
-                  stop();
-                }
-              }}
-              placeholder={
-                mode === "research" ? researchPlaceholder : placeholder
-              }
-              ref={textareaRef}
-              value={value}
-            />
-
-            <div className="flex items-center gap-2 px-2.5 pt-1 pb-2.5">
-              <ModeSwitch mode={mode} onChange={setMode} />
-              <div className="flex-1" />
-              <span className="hidden text-[11px] text-black/35 tabular-nums sm:block dark:text-white/35">
-                {mode === "research" ? "~12 sources" : "~5 sources"}
-              </span>
-              <SendStopButton
-                canSubmit={canSubmit}
-                onStop={stop}
-                onSubmit={submit}
-                running={running}
-              />
-            </div>
-          </div>
-
-          <output aria-live="polite" className="sr-only">
-            {phase === "done" && `Done. Read ${sources.length} sources.`}
-            {phase === "stopped" && "Search stopped."}
-            {phase === "searching" && "Searching."}
-          </output>
-
+      <div className={cn("mx-auto w-full max-w-xl py-4", className)}>
+        {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents lint/a11y/noNoninteractiveElementInteractions: pointer-only shortcut; the textarea and buttons inside are keyboard reachable */}
+        <div
+          className={cn(
+            "relative flex w-full cursor-text flex-col rounded-[26px] bg-white text-left ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
+            "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.14)]",
+            "transition-shadow duration-150 has-[textarea:focus-visible]:ring-black/20 dark:has-[textarea:focus-visible]:ring-white/20"
+          )}
+          onClick={(e) => handleContainerClick(e.target)}
+        >
           <AnimatePresence initial={false}>
-            {phase !== "idle" && (
+            {files.length > 0 && (
               <motion.div
                 animate={{ height: "auto", opacity: 1 }}
                 className="overflow-hidden"
@@ -575,20 +819,140 @@ export default function AI_Input_Search({
                 initial={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2, ease: EASE_OUT }}
               >
-                <div className="pt-1">
-                  <Trace
-                    elapsed={elapsed}
-                    expanded={expanded}
-                    listId={listId}
-                    onToggle={() => setExpanded((open) => !open)}
-                    phase={phase}
-                    sources={sources}
-                  />
-                </div>
+                <ul
+                  aria-label="Attached files"
+                  className="flex flex-wrap gap-1.5 px-3 pt-3"
+                >
+                  <AnimatePresence initial={false}>
+                    {files.map((file) => (
+                      <FileChip
+                        file={file}
+                        key={`${file.name}-${file.size}-${file.lastModified}`}
+                        onRemove={() =>
+                          setFiles((current) =>
+                            current.filter((f) => f !== file)
+                          )
+                        }
+                      />
+                    ))}
+                  </AnimatePresence>
+                </ul>
               </motion.div>
             )}
           </AnimatePresence>
+
+          <Textarea
+            aria-label="Message"
+            className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-5 pt-4 pb-1 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
+            onChange={(e) => {
+              setValue(e.target.value);
+              adjustHeight();
+            }}
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) {
+                return;
+              }
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submit();
+              } else if (e.key === "Escape" && running) {
+                e.preventDefault();
+                stop();
+              } else if (e.key === "Backspace" && value === "" && toolId) {
+                // Backspace in an empty box takes the chip off, as in a
+                // tag field.
+                e.preventDefault();
+                setToolId(null);
+              }
+            }}
+            placeholder={tool?.placeholder ?? placeholder}
+            ref={textareaRef}
+            value={value}
+          />
+
+          <div className="flex items-center gap-1 px-2.5 pt-1.5 pb-2.5 sm:gap-1.5">
+            <button
+              aria-label="Attach files"
+              className={cn(ghostButton, "w-9 justify-center px-0")}
+              onClick={() => fileInputRef.current?.click()}
+              type="button"
+            >
+              <Plus aria-hidden="true" className="size-[18px]" />
+            </button>
+            <input
+              className="hidden"
+              multiple
+              onChange={(e) => {
+                const picked = Array.from(e.target.files ?? []);
+                setFiles((current) => [...current, ...picked]);
+                e.target.value = "";
+              }}
+              ref={fileInputRef}
+              tabIndex={-1}
+              type="file"
+            />
+            <ToolsMenu
+              compact={tool !== null}
+              onCloseAutoFocus={backToField}
+              onSelect={pickTool}
+              remaining={remaining}
+              selected={toolId}
+              tools={tools}
+            />
+            <AnimatePresence initial={false} mode="popLayout">
+              {tool && (
+                <ToolChip
+                  key={tool.id}
+                  onRemove={() => pickTool(null)}
+                  tool={tool}
+                />
+              )}
+            </AnimatePresence>
+            <div className="min-w-0 flex-1" />
+            <ModelMenu
+              models={models}
+              onCloseAutoFocus={backToField}
+              onSelect={setModel}
+              selected={model}
+            />
+            <SendStopButton
+              canSubmit={canSubmit}
+              onStop={stop}
+              onSubmit={submit}
+              running={running}
+            />
+          </div>
         </div>
+
+        <output aria-live="polite" className="sr-only">
+          {phase === "done" && "Done."}
+          {phase === "stopped" && "Stopped."}
+          {phase === "working" && (runTool?.activity ?? "Working.")}
+        </output>
+
+        <AnimatePresence initial={false}>
+          {phase !== "idle" && (
+            <motion.div
+              animate={{ height: "auto", opacity: 1 }}
+              className="overflow-hidden"
+              exit={{ height: 0, opacity: 0 }}
+              initial={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
+            >
+              <div className="px-2 pt-2">
+                <Trace
+                  elapsed={elapsed}
+                  expanded={expanded}
+                  listId={listId}
+                  onToggle={() => setExpanded((open) => !open)}
+                  phase={phase}
+                  sources={sources}
+                  tool={runTool}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </MotionConfig>
   );
