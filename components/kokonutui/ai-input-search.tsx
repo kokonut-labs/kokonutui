@@ -20,7 +20,7 @@ import {
   ImageIcon,
   Lightbulb,
   type LucideIcon,
-  Plus,
+  Paperclip,
   Settings2,
   Telescope,
   X,
@@ -205,7 +205,7 @@ function Monogram({ domain, ring }: { domain: string; ring?: boolean }) {
       className={cn(
         "flex size-5 shrink-0 items-center justify-center rounded-full bg-white font-medium text-[10px] text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200",
         ring
-          ? "outline-1 outline-black/10 ring-2 ring-zinc-50 dark:outline-white/10 dark:ring-zinc-950"
+          ? "outline-1 outline-black/10 ring-2 ring-zinc-100 dark:outline-white/10 dark:ring-zinc-900"
           : "ring-1 ring-black/10 dark:ring-white/10"
       )}
     >
@@ -326,12 +326,12 @@ function Trace({
   const ToolIcon = tool?.icon;
 
   return (
-    <div className="rounded-2xl bg-zinc-50 ring-1 ring-black/[0.04] dark:bg-white/[0.03] dark:ring-white/[0.06]">
+    <div className="border-black/[0.07] border-t dark:border-white/[0.07]">
       <button
         aria-controls={listId}
         aria-expanded={expanded}
         className={cn(
-          "flex h-10 w-full items-center gap-2.5 rounded-2xl px-3 text-left text-xs outline-hidden",
+          "flex h-10 w-full items-center gap-2.5 rounded-xl px-2 text-left text-xs outline-hidden",
           "transition-colors duration-150",
           EASE_OUT_CSS,
           "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20",
@@ -414,6 +414,35 @@ const ghostButton = cn(
 const menuPanel =
   "origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border-black/10 p-1.5 shadow-[0_12px_32px_-12px_rgb(0_0_0/0.2)] dark:border-white/10 dark:bg-zinc-900";
 
+/**
+ * Width of what an element holds, so its wrapper can animate to it rather
+ * than snap when a label changes.
+ */
+function useContentWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState<number | "auto">("auto");
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      setWidth(entry.borderBoxSize[0].inlineSize);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, width] as const;
+}
+
+/**
+ * Raised keys that sit on the tray: white with a hairline and a 1px floor,
+ * so they read as pressable without a heavy shadow.
+ */
+const keycap = cn(
+  "bg-white shadow-[0_1px_0_rgb(0_0_0/0.05)] ring-1 ring-black/[0.08] dark:bg-zinc-800 dark:shadow-none dark:ring-white/[0.08]"
+);
+
 /** Runs left as dots, so a metered tool reads at a glance. */
 function RunsLeft({ left, limit }: { left: number; limit: number }) {
   return (
@@ -459,22 +488,7 @@ function ToolPill({
   onSelect: (id: string | null) => void;
   onCloseAutoFocus: (event: Event) => void;
 }) {
-  const innerRef = useRef<HTMLSpanElement>(null);
-  const [width, setWidth] = useState<number | "auto">("auto");
-
-  // The pill animates to the width of what it holds, so a longer tool name
-  // grows it rather than snapping.
-  useLayoutEffect(() => {
-    const node = innerRef.current;
-    if (!node) {
-      return;
-    }
-    const observer = new ResizeObserver(([entry]) => {
-      setWidth(entry.borderBoxSize[0].inlineSize);
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+  const [innerRef, width] = useContentWidth<HTMLSpanElement>();
 
   const Icon = tool?.icon ?? Settings2;
   const label = tool?.label ?? "Tools";
@@ -498,35 +512,40 @@ function ToolPill({
   return (
     <motion.div
       animate={{ width }}
-      className="h-9 min-w-0 shrink-0 overflow-hidden rounded-full transition-[background-color] duration-200"
+      className={cn(
+        "h-9 min-w-0 shrink-0 overflow-hidden rounded-xl transition-shadow duration-200",
+        keycap,
+        // A picked tool trades the grey hairline for one in its own colour.
+        tool?.color && "ring-0 dark:ring-0"
+      )}
       style={
         {
           "--tool": tool?.color ?? "currentColor",
-          backgroundColor: tool?.color ? tint(12) : undefined,
+          boxShadow: tool?.color
+            ? `0 0 0 1px ${tint(38)}, 0 1px 0 ${tint(20)}`
+            : undefined,
         } as React.CSSProperties
       }
       transition={{ duration: 0.25, ease: EASE_OUT }}
     >
       <span
-        className={cn(
-          "flex h-full w-max items-center rounded-full",
-          !tool?.color && "bg-black/[0.04] dark:bg-white/[0.06]"
-        )}
+        className="flex h-full w-max items-center transition-[background-color] duration-200"
         ref={innerRef}
+        style={{ backgroundColor: tool?.color ? tint(10) : undefined }}
       >
         <DropdownMenu modal={false} onOpenChange={onOpenChange} open={open}>
           <DropdownMenuTrigger asChild>
             <button
               aria-label={tool ? `Tool: ${tool.label}. Change` : "Tools"}
               className={cn(
-                "flex h-9 items-center gap-1.5 rounded-full pl-3 text-[13px] outline-hidden",
+                "flex h-9 items-center gap-1.5 rounded-xl pl-3 text-[13px] outline-hidden",
                 tool ? "pr-1.5" : "pr-3.5",
                 "transition-colors duration-150",
                 EASE_OUT_CSS,
                 "focus-visible:ring-2 focus-visible:ring-black/15 focus-visible:ring-inset dark:focus-visible:ring-white/20",
                 tool
                   ? "text-black dark:text-white"
-                  : "text-black/60 hover:text-black data-[state=open]:text-black dark:text-white/60 dark:data-[state=open]:text-white dark:hover:text-white"
+                  : "text-black/70 hover:text-black data-[state=open]:text-black dark:text-white/70 dark:data-[state=open]:text-white dark:hover:text-white"
               )}
               type="button"
             >
@@ -548,7 +567,7 @@ function ToolPill({
                 <AnimatePresence initial={false} mode="popLayout">
                   <motion.span
                     animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                    className="col-start-1 row-start-1 max-w-[4.5rem] truncate whitespace-nowrap sm:max-w-none"
+                    className="col-start-1 row-start-1 max-w-[4rem] truncate whitespace-nowrap sm:max-w-none"
                     exit={{ opacity: 0, filter: "blur(2px)", y: -4 }}
                     initial={{ opacity: 0, filter: "blur(2px)", y: 4 }}
                     key={label}
@@ -655,7 +674,7 @@ function ToolPill({
               animate={{ opacity: 1, filter: "blur(0px)" }}
               aria-label={`Remove ${tool.label}`}
               className={cn(
-                "mr-1 flex size-7 shrink-0 items-center justify-center rounded-full text-black/40 outline-hidden dark:text-white/45",
+                "mr-1 flex size-7 shrink-0 items-center justify-center rounded-lg text-black/40 outline-hidden dark:text-white/45",
                 "transition-[background-color,color] duration-150",
                 EASE_OUT_CSS,
                 "hover:bg-black/[0.06] hover:text-black dark:hover:bg-white/10 dark:hover:text-white",
@@ -696,7 +715,10 @@ function ModelMenu({
       <DropdownMenuTrigger asChild>
         <button
           aria-label={`Model: ${selected}. Change`}
-          className={cn(ghostButton, "group gap-1 px-2 sm:pr-2.5 sm:pl-3")}
+          className={cn(
+            ghostButton,
+            "group gap-0.5 px-1.5 sm:gap-1 sm:pr-2.5 sm:pl-3"
+          )}
           type="button"
         >
           {/* Only the name swaps; the chevron stays put. */}
@@ -782,6 +804,8 @@ function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
   );
 }
 
+const RETURN_KEY = "\u21b5";
+
 function SendStopButton({
   running,
   canSubmit,
@@ -793,40 +817,82 @@ function SendStopButton({
   onSubmit: () => void;
   onStop: () => void;
 }) {
-  // Same button, two faces: send crossfades into stop.
-  const face = cn(
-    "absolute inset-0 flex items-center justify-center transition-[opacity,filter] duration-200",
-    EASE_OUT_CSS
-  );
+  const [innerRef, width] = useContentWidth<HTMLSpanElement>();
+  const live = running || canSubmit;
+  // Idle it is a quiet key; with something to send it grows into a labelled
+  // ink key, and while running the same key says Stop.
+  let face = "idle";
+  if (running) {
+    face = "stop";
+  } else if (canSubmit) {
+    face = "send";
+  }
+
   return (
-    <button
+    <motion.button
+      animate={{ width }}
       aria-label={running ? "Stop" : "Send"}
       className={cn(
-        "relative size-9 shrink-0 rounded-full",
-        "transition-[background-color,color] duration-150",
+        "h-9 shrink-0 overflow-hidden rounded-xl",
+        "transition-[background-color,color,box-shadow] duration-150",
         EASE_OUT_CSS,
-        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
-        running || canSubmit
-          ? "bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/85"
-          : "bg-black/5 text-black/30 dark:bg-white/10 dark:text-white/30"
+        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-100 dark:focus-visible:ring-white/30 dark:focus-visible:ring-offset-zinc-900",
+        live
+          ? "bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_1px_2px_rgb(0_0_0/0.2)] hover:bg-zinc-800 dark:bg-white dark:text-black dark:shadow-none dark:hover:bg-zinc-200"
+          : cn(keycap, "text-black/30 dark:text-white/30")
       )}
-      disabled={!(running || canSubmit)}
+      disabled={!live}
       onClick={running ? onStop : onSubmit}
+      transition={{ duration: 0.22, ease: EASE_OUT }}
       type="button"
     >
       <span
-        aria-hidden="true"
-        className={cn(face, running ? "opacity-0 blur-[2px]" : "opacity-100")}
+        className="flex h-full w-max items-center justify-center"
+        ref={innerRef}
       >
-        <ArrowUp className="size-[18px]" strokeWidth={2.25} />
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.span
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+            className={cn(
+              "flex h-9 items-center gap-1.5 text-[13px]",
+              face === "idle" ? "w-9 justify-center" : "pr-2 pl-3"
+            )}
+            exit={{
+              opacity: 0,
+              filter: "blur(2px)",
+              transition: { duration: 0.08 },
+            }}
+            initial={{ opacity: 0, filter: "blur(2px)" }}
+            key={face}
+            transition={{ duration: 0.16, ease: EASE_OUT }}
+          >
+            {face === "idle" && (
+              <ArrowUp
+                aria-hidden="true"
+                className="size-4"
+                strokeWidth={2.25}
+              />
+            )}
+            {face === "send" && (
+              <>
+                <span>Send</span>
+                <kbd className="flex h-5 min-w-5 items-center justify-center rounded-md bg-white/15 px-1 font-sans text-[11px] dark:bg-black/10">
+                  {RETURN_KEY}
+                </kbd>
+              </>
+            )}
+            {face === "stop" && (
+              <>
+                <span>Stop</span>
+                <span className="flex size-5 items-center justify-center">
+                  <span className="size-2.5 rounded-[2px] bg-current" />
+                </span>
+              </>
+            )}
+          </motion.span>
+        </AnimatePresence>
       </span>
-      <span
-        aria-hidden="true"
-        className={cn(face, running ? "opacity-100" : "opacity-0 blur-[2px]")}
-      >
-        <span className="size-2.5 rounded-[2px] bg-current" />
-      </span>
-    </button>
+    </motion.button>
   );
 }
 
@@ -968,86 +1034,100 @@ export default function AI_Input_Search({
       <div className={cn("mx-auto w-full max-w-xl py-4", className)}>
         {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents lint/a11y/noNoninteractiveElementInteractions: pointer-only shortcut; the textarea and buttons inside are keyboard reachable */}
         <div
-          className={cn(
-            "relative flex w-full cursor-text flex-col rounded-[26px] bg-white text-left ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
-            "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.14)]",
-            "transition-shadow duration-150 has-[textarea:focus-visible]:ring-black/20 dark:has-[textarea:focus-visible]:ring-white/20"
-          )}
+          className="relative w-full cursor-text rounded-[22px] bg-zinc-100 p-1 text-left ring-1 ring-black/[0.04] dark:bg-zinc-900 dark:ring-white/[0.06]"
           onClick={(e) => handleContainerClick(e.target)}
         >
-          <AnimatePresence initial={false}>
-            {files.length > 0 && (
-              <motion.div
-                animate={{ height: "auto", opacity: 1 }}
-                className="overflow-hidden"
-                exit={{ height: 0, opacity: 0 }}
-                initial={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: EASE_OUT }}
-              >
-                <ul
-                  aria-label="Attached files"
-                  className="flex flex-wrap gap-1.5 px-3 pt-3"
-                >
-                  <AnimatePresence initial={false}>
-                    {files.map((file) => (
-                      <FileChip
-                        file={file}
-                        key={`${file.name}-${file.size}-${file.lastModified}`}
-                        onRemove={() =>
-                          setFiles((current) =>
-                            current.filter((f) => f !== file)
-                          )
-                        }
-                      />
-                    ))}
-                  </AnimatePresence>
-                </ul>
-              </motion.div>
+          {/* The writing sheet sits on a tray; the controls live on the tray. */}
+          <div
+            className={cn(
+              "flex flex-col rounded-[18px] bg-white ring-1 ring-black/[0.07] dark:bg-zinc-950 dark:ring-white/[0.08]",
+              "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_2px_8px_-4px_rgb(0_0_0/0.06)]",
+              "transition-[box-shadow] duration-150",
+              EASE_OUT_CSS,
+              "has-[textarea:focus-visible]:ring-black/[0.13] dark:has-[textarea:focus-visible]:ring-white/[0.16]"
             )}
-          </AnimatePresence>
+          >
+            <AnimatePresence initial={false}>
+              {files.length > 0 && (
+                <motion.div
+                  animate={{ height: "auto", opacity: 1 }}
+                  className="overflow-hidden"
+                  exit={{ height: 0, opacity: 0 }}
+                  initial={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: EASE_OUT }}
+                >
+                  <ul
+                    aria-label="Attached files"
+                    className="flex flex-wrap gap-1.5 px-3 pt-3"
+                  >
+                    <AnimatePresence initial={false}>
+                      {files.map((file) => (
+                        <FileChip
+                          file={file}
+                          key={`${file.name}-${file.size}-${file.lastModified}`}
+                          onRemove={() =>
+                            setFiles((current) =>
+                              current.filter((f) => f !== file)
+                            )
+                          }
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </ul>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <Textarea
-            aria-label="Message"
-            className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-5 pt-4 pb-1 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
-            onChange={(e) => {
-              setValue(e.target.value);
-              adjustHeight();
-            }}
-            onKeyDown={(e) => {
-              if (e.nativeEvent.isComposing) {
-                return;
-              }
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                submit();
-              } else if (e.key === "Escape" && running) {
-                e.preventDefault();
-                stop();
-              } else if (e.key === "/" && value === "") {
-                // "/" in an empty box opens the tools, keyboard first.
-                e.preventDefault();
-                setMenuOpen(true);
-              } else if (e.key === "Backspace" && value === "" && toolId) {
-                // Backspace in an empty box takes the chip off, as in a
-                // tag field.
-                e.preventDefault();
-                setToolId(null);
-              }
-            }}
-            placeholder={tool?.placeholder ?? placeholder}
-            ref={textareaRef}
-            style={tool?.color ? { caretColor: tool.color } : undefined}
-            value={value}
-          />
+            <Textarea
+              aria-label="Message"
+              className="min-h-[76px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-3 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
+              onChange={(e) => {
+                setValue(e.target.value);
+                adjustHeight();
+              }}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) {
+                  return;
+                }
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  submit();
+                } else if (e.key === "Escape" && running) {
+                  e.preventDefault();
+                  stop();
+                } else if (e.key === "/" && value === "") {
+                  // "/" in an empty box opens the tools, keyboard first.
+                  e.preventDefault();
+                  setMenuOpen(true);
+                } else if (e.key === "Backspace" && value === "" && toolId) {
+                  // Backspace in an empty box takes the chip off, as in a
+                  // tag field.
+                  e.preventDefault();
+                  setToolId(null);
+                }
+              }}
+              placeholder={tool?.placeholder ?? placeholder}
+              ref={textareaRef}
+              style={tool?.color ? { caretColor: tool.color } : undefined}
+              value={value}
+            />
+          </div>
 
-          <div className="flex items-center gap-1 px-2.5 pt-1.5 pb-2.5 sm:gap-1.5">
+          <div className="flex items-center gap-1 px-0.5 pt-1.5 pb-0.5 sm:gap-1.5 sm:px-1">
             <button
               aria-label="Attach files"
-              className={cn(ghostButton, "w-9 justify-center px-0")}
+              className={cn(
+                "flex size-9 shrink-0 items-center justify-center rounded-xl text-black/60 outline-hidden dark:text-white/60",
+                keycap,
+                "transition-[background-color,color] duration-150",
+                EASE_OUT_CSS,
+                "hover:bg-zinc-50 hover:text-black dark:hover:bg-zinc-700 dark:hover:text-white",
+                "focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/25"
+              )}
               onClick={() => fileInputRef.current?.click()}
               type="button"
             >
-              <Plus aria-hidden="true" className="size-[18px]" />
+              <Paperclip aria-hidden="true" className="size-4" />
             </button>
             <input
               className="hidden"
@@ -1084,6 +1164,29 @@ export default function AI_Input_Search({
               running={running}
             />
           </div>
+          <AnimatePresence initial={false}>
+            {phase !== "idle" && (
+              <motion.div
+                animate={{ height: "auto", opacity: 1 }}
+                className="overflow-hidden"
+                exit={{ height: 0, opacity: 0 }}
+                initial={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: EASE_OUT }}
+              >
+                <div className="px-1 pt-1.5">
+                  <Trace
+                    elapsed={elapsed}
+                    expanded={expanded}
+                    listId={listId}
+                    onToggle={() => setExpanded((open) => !open)}
+                    phase={phase}
+                    sources={sources}
+                    tool={runTool}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <output aria-live="polite" className="sr-only">
@@ -1091,30 +1194,6 @@ export default function AI_Input_Search({
           {phase === "stopped" && "Stopped."}
           {phase === "working" && (runTool?.activity ?? "Working.")}
         </output>
-
-        <AnimatePresence initial={false}>
-          {phase !== "idle" && (
-            <motion.div
-              animate={{ height: "auto", opacity: 1 }}
-              className="overflow-hidden"
-              exit={{ height: 0, opacity: 0 }}
-              initial={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: EASE_OUT }}
-            >
-              <div className="px-2 pt-2">
-                <Trace
-                  elapsed={elapsed}
-                  expanded={expanded}
-                  listId={listId}
-                  onToggle={() => setExpanded((open) => !open)}
-                  phase={phase}
-                  sources={sources}
-                  tool={runTool}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </MotionConfig>
   );
