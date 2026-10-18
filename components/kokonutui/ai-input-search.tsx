@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -53,8 +53,12 @@ export interface SearchTool {
   placeholder?: string;
   /** True when the tool reads sources, so the trace stacks them up. */
   readsSources?: boolean;
-  /** Runs left today. The menu shows the count and locks the tool at zero. */
+  /** Runs left today. The menu shows them as dots and locks the tool at zero. */
   limit?: number;
+  /** One quiet line under the label in the menu. */
+  hint?: string;
+  /** Any CSS color. Tints the icon tile, the pill and the caret. */
+  color?: string;
 }
 
 export interface SearchSource {
@@ -94,7 +98,9 @@ const DEFAULT_TOOLS: SearchTool[] = [
   {
     id: "browse",
     label: "Browse sources",
+    hint: "Answers with links you can check",
     icon: Globe,
+    color: "#0ea5e9",
     activity: "Searching the web",
     placeholder: "Look something up",
     readsSources: true,
@@ -102,7 +108,9 @@ const DEFAULT_TOOLS: SearchTool[] = [
   {
     id: "investigate",
     label: "Investigate",
+    hint: "Reads widely, takes a few minutes",
     icon: Telescope,
+    color: "#8b5cf6",
     activity: "Investigating",
     placeholder: "What should I dig into?",
     readsSources: true,
@@ -111,21 +119,27 @@ const DEFAULT_TOOLS: SearchTool[] = [
   {
     id: "visual",
     label: "Draft a visual",
+    hint: "Diagrams, mockups and covers",
     icon: ImageIcon,
+    color: "#f97316",
     activity: "Sketching the visual",
     placeholder: "Describe what to draw",
   },
   {
     id: "code",
     label: "Run some code",
+    hint: "Works the numbers in a sandbox",
     icon: Braces,
+    color: "#10b981",
     activity: "Running the code",
     placeholder: "What should the code work out?",
   },
   {
     id: "reason",
     label: "Reason it through",
+    hint: "Slower, more careful answers",
     icon: Lightbulb,
+    color: "#f43f5e",
     activity: "Thinking it over",
     placeholder: "Ask something hard",
   },
@@ -332,7 +346,12 @@ function Trace({
         {tool?.readsSources || !ToolIcon ? (
           <SourceStack sources={sources} />
         ) : (
-          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white text-black/60 ring-1 ring-black/10 dark:bg-zinc-800 dark:text-white/70 dark:ring-white/10">
+          <span
+            className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white text-(--tool) ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/10"
+            style={
+              { "--tool": tool?.color ?? "currentColor" } as React.CSSProperties
+            }
+          >
             <ToolIcon aria-hidden="true" className="size-3" />
           </span>
         )}
@@ -395,124 +414,269 @@ const ghostButton = cn(
 const menuPanel =
   "origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border-black/10 p-1.5 shadow-[0_12px_32px_-12px_rgb(0_0_0/0.2)] dark:border-white/10 dark:bg-zinc-900";
 
-const remainingLabel = (left: number) =>
-  left > 0 ? `${left} left` : "None left";
+/** Runs left as dots, so a metered tool reads at a glance. */
+function RunsLeft({ left, limit }: { left: number; limit: number }) {
+  return (
+    <span
+      className="flex shrink-0 items-center gap-0.5"
+      title={left > 0 ? `${left} left today` : "None left today"}
+    >
+      {Array.from({ length: limit }, (_, i) => (
+        <span
+          className={cn(
+            "size-1.5 rounded-full",
+            i < left ? "bg-(--tool)" : "bg-black/10 dark:bg-white/15"
+          )}
+          // biome-ignore lint/suspicious/noArrayIndexKey: dots are positional
+          key={i}
+        />
+      ))}
+    </span>
+  );
+}
 
-function ToolsMenu({
+const tint = (amount: number) =>
+  `color-mix(in oklab, var(--tool) ${amount}%, transparent)`;
+
+/**
+ * Tools trigger and picked tool in one pill: picking a tool morphs the
+ * pill into it (icon, name, tint and an x) instead of adding a second chip.
+ */
+function ToolPill({
   tools,
-  selected,
+  tool,
   remaining,
-  compact,
+  open,
+  onOpenChange,
   onSelect,
   onCloseAutoFocus,
 }: {
   tools: SearchTool[];
-  selected: string | null;
+  tool: SearchTool | null;
   remaining: Record<string, number>;
-  /** Icon only, to leave room for the chip on narrow screens. */
-  compact: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSelect: (id: string | null) => void;
   onCloseAutoFocus: (event: Event) => void;
 }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          aria-label="Tools"
-          className={cn(
-            ghostButton,
-            "bg-black/[0.03] dark:bg-white/[0.05]",
-            compact && "max-sm:w-9 max-sm:justify-center max-sm:px-0"
-          )}
-          type="button"
-        >
-          <Settings2 aria-hidden="true" className="size-4" />
-          <span className={cn(compact && "hidden sm:inline")}>Tools</span>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        className={cn(menuPanel, "w-64")}
-        onCloseAutoFocus={onCloseAutoFocus}
-        // Below the box by default; Radix flips it up when there is no room,
-        // so it also works with the composer pinned to the bottom of a chat.
-        side="bottom"
-        sideOffset={8}
-      >
-        {tools.map((tool) => {
-          const Icon = tool.icon;
-          const isSelected = tool.id === selected;
-          const left = remaining[tool.id];
-          const spent = left !== undefined && left <= 0;
-          return (
-            <DropdownMenuCheckboxItem
-              checked={isSelected}
-              className={cn(
-                "group/item flex h-10 items-center gap-3 rounded-xl py-0 pr-2.5 pl-2.5 text-[13px] [&>span:first-child]:hidden",
-                isSelected
-                  ? "text-black dark:text-white"
-                  : "text-black/55 dark:text-white/55"
-              )}
-              disabled={spent}
-              key={tool.id}
-              // Picking the active tool again clears it, like the chip's x.
-              onCheckedChange={(checked) => onSelect(checked ? tool.id : null)}
-            >
-              <Icon aria-hidden="true" className="size-4 shrink-0" />
-              <span className="min-w-0 flex-1 truncate">{tool.label}</span>
-              {left !== undefined && !isSelected && (
-                <span className="shrink-0 text-[11px] text-black/40 tabular-nums dark:text-white/40">
-                  {remainingLabel(left)}
-                </span>
-              )}
-              {isSelected && (
-                <Check
-                  aria-hidden="true"
-                  className="size-3.5 shrink-0"
-                  strokeWidth={2.25}
-                />
-              )}
-            </DropdownMenuCheckboxItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
+  const innerRef = useRef<HTMLSpanElement>(null);
+  const [width, setWidth] = useState<number | "auto">("auto");
 
-function ToolChip({
-  tool,
-  onRemove,
-}: {
-  tool: SearchTool;
-  onRemove: () => void;
-}) {
-  const Icon = tool.icon;
+  // The pill animates to the width of what it holds, so a longer tool name
+  // grows it rather than snapping.
+  useLayoutEffect(() => {
+    const node = innerRef.current;
+    if (!node) {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      setWidth(entry.borderBoxSize[0].inlineSize);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const Icon = tool?.icon ?? Settings2;
+  const label = tool?.label ?? "Tools";
+
+  // Number keys pick a tool while the menu is open.
+  const onMenuKeyDown = (event: React.KeyboardEvent) => {
+    const index = Number(event.key) - 1;
+    const picked = tools[index];
+    if (!(Number.isInteger(index) && picked)) {
+      return;
+    }
+    const left = remaining[picked.id];
+    if (left !== undefined && left <= 0) {
+      return;
+    }
+    event.preventDefault();
+    onSelect(picked.id === tool?.id ? null : picked.id);
+    onOpenChange(false);
+  };
+
   return (
-    <motion.span
-      animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-      className="flex h-8 min-w-[5.5rem] shrink items-center gap-1.5 rounded-full bg-black/[0.04] pr-1 pl-2.5 text-[13px] text-black dark:bg-white/[0.07] dark:text-white"
-      exit={{ opacity: 0, filter: "blur(2px)", transition: { duration: 0.1 } }}
-      initial={{ opacity: 0, x: -4, filter: "blur(2px)" }}
-      transition={{ duration: 0.18, ease: EASE_OUT }}
+    <motion.div
+      animate={{ width }}
+      className="h-9 min-w-0 shrink-0 overflow-hidden rounded-full transition-[background-color] duration-200"
+      style={
+        {
+          "--tool": tool?.color ?? "currentColor",
+          backgroundColor: tool?.color ? tint(12) : undefined,
+        } as React.CSSProperties
+      }
+      transition={{ duration: 0.25, ease: EASE_OUT }}
     >
-      <Icon aria-hidden="true" className="size-3.5 shrink-0" />
-      <span className="min-w-0 truncate">{tool.label}</span>
-      <button
-        aria-label={`Remove ${tool.label}`}
+      <span
         className={cn(
-          "flex size-6 shrink-0 items-center justify-center rounded-full text-black/40 outline-hidden dark:text-white/40",
-          "transition-[background-color,color] duration-150",
-          EASE_OUT_CSS,
-          "hover:bg-black/[0.06] hover:text-black dark:hover:bg-white/10 dark:hover:text-white",
-          "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
+          "flex h-full w-max items-center rounded-full",
+          !tool?.color && "bg-black/[0.04] dark:bg-white/[0.06]"
         )}
-        onClick={onRemove}
-        type="button"
+        ref={innerRef}
       >
-        <X aria-hidden="true" className="size-3.5" />
-      </button>
-    </motion.span>
+        <DropdownMenu modal={false} onOpenChange={onOpenChange} open={open}>
+          <DropdownMenuTrigger asChild>
+            <button
+              aria-label={tool ? `Tool: ${tool.label}. Change` : "Tools"}
+              className={cn(
+                "flex h-9 items-center gap-1.5 rounded-full pl-3 text-[13px] outline-hidden",
+                tool ? "pr-1.5" : "pr-3.5",
+                "transition-colors duration-150",
+                EASE_OUT_CSS,
+                "focus-visible:ring-2 focus-visible:ring-black/15 focus-visible:ring-inset dark:focus-visible:ring-white/20",
+                tool
+                  ? "text-black dark:text-white"
+                  : "text-black/60 hover:text-black data-[state=open]:text-black dark:text-white/60 dark:data-[state=open]:text-white dark:hover:text-white"
+              )}
+              type="button"
+            >
+              <span className="relative inline-grid size-4 shrink-0 place-items-center">
+                <AnimatePresence initial={false} mode="popLayout">
+                  <motion.span
+                    animate={{ opacity: 1, filter: "blur(0px)", rotate: 0 }}
+                    className="col-start-1 row-start-1 text-(--tool)"
+                    exit={{ opacity: 0, filter: "blur(2px)", rotate: 30 }}
+                    initial={{ opacity: 0, filter: "blur(2px)", rotate: -30 }}
+                    key={tool?.id ?? "tools"}
+                    transition={{ duration: 0.18, ease: EASE_OUT }}
+                  >
+                    <Icon aria-hidden="true" className="size-4" />
+                  </motion.span>
+                </AnimatePresence>
+              </span>
+              <span className="relative inline-grid">
+                <AnimatePresence initial={false} mode="popLayout">
+                  <motion.span
+                    animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                    className="col-start-1 row-start-1 max-w-[4.5rem] truncate whitespace-nowrap sm:max-w-none"
+                    exit={{ opacity: 0, filter: "blur(2px)", y: -4 }}
+                    initial={{ opacity: 0, filter: "blur(2px)", y: 4 }}
+                    key={label}
+                    transition={{ duration: 0.18, ease: EASE_OUT }}
+                  >
+                    {label}
+                  </motion.span>
+                </AnimatePresence>
+              </span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className={cn(menuPanel, "w-72")}
+            onCloseAutoFocus={onCloseAutoFocus}
+            onKeyDown={onMenuKeyDown}
+            // Below the box by default; Radix flips it up when there is no
+            // room, so it also works with the composer at the bottom of a chat.
+            side="bottom"
+            sideOffset={8}
+          >
+            <div className="flex items-center justify-between px-2.5 pt-1.5 pb-2 text-[11px] text-black/40 dark:text-white/40">
+              <span>Tools</span>
+              <span>Press 1–{tools.length}</span>
+            </div>
+            {tools.map((item, i) => {
+              const ItemIcon = item.icon;
+              const isSelected = item.id === tool?.id;
+              const left = remaining[item.id];
+              const spent = left !== undefined && left <= 0;
+              return (
+                <DropdownMenuCheckboxItem
+                  checked={isSelected}
+                  className={cn(
+                    "group/item flex items-center gap-3 rounded-xl py-1.5 pr-2.5 pl-1.5 [&>span:first-child]:hidden",
+                    "focus:bg-black/[0.04] dark:focus:bg-white/[0.06]"
+                  )}
+                  disabled={spent}
+                  key={item.id}
+                  // Picking the active tool again clears it, like the pill's x.
+                  onCheckedChange={(checked) =>
+                    onSelect(checked ? item.id : null)
+                  }
+                  style={
+                    {
+                      "--tool": item.color ?? "currentColor",
+                    } as React.CSSProperties
+                  }
+                >
+                  {/* The tile takes the tool's colour once it is in play. */}
+                  <span
+                    className={cn(
+                      "flex size-8 shrink-0 items-center justify-center rounded-lg transition-[background-color,color] duration-150",
+                      EASE_OUT_CSS,
+                      isSelected
+                        ? "bg-(--tile) text-(--tool)"
+                        : "bg-black/[0.04] text-black/45 group-focus/item:bg-(--tile) group-focus/item:text-(--tool) dark:bg-white/[0.06] dark:text-white/50"
+                    )}
+                    style={{ "--tile": tint(14) } as React.CSSProperties}
+                  >
+                    <ItemIcon aria-hidden="true" className="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "truncate text-[13px]",
+                          isSelected
+                            ? "text-black dark:text-white"
+                            : "text-black/75 dark:text-white/75"
+                        )}
+                      >
+                        {item.label}
+                      </span>
+                      {left !== undefined && item.limit !== undefined && (
+                        <RunsLeft left={left} limit={item.limit} />
+                      )}
+                    </span>
+                    {item.hint && (
+                      <span className="block truncate text-[11px] text-black/40 dark:text-white/40">
+                        {spent ? "None left today" : item.hint}
+                      </span>
+                    )}
+                  </span>
+                  {isSelected ? (
+                    <Check
+                      aria-hidden="true"
+                      className="size-3.5 shrink-0 text-black dark:text-white"
+                      strokeWidth={2.25}
+                    />
+                  ) : (
+                    <kbd className="flex size-5 shrink-0 items-center justify-center rounded-md font-sans text-[11px] text-black/35 ring-1 ring-black/10 dark:text-white/35 dark:ring-white/10">
+                      {i + 1}
+                    </kbd>
+                  )}
+                </DropdownMenuCheckboxItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <AnimatePresence initial={false} mode="popLayout">
+          {tool && (
+            <motion.button
+              animate={{ opacity: 1, filter: "blur(0px)" }}
+              aria-label={`Remove ${tool.label}`}
+              className={cn(
+                "mr-1 flex size-7 shrink-0 items-center justify-center rounded-full text-black/40 outline-hidden dark:text-white/45",
+                "transition-[background-color,color] duration-150",
+                EASE_OUT_CSS,
+                "hover:bg-black/[0.06] hover:text-black dark:hover:bg-white/10 dark:hover:text-white",
+                "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
+              )}
+              exit={{
+                opacity: 0,
+                filter: "blur(2px)",
+                transition: { duration: 0.1 },
+              }}
+              initial={{ opacity: 0, filter: "blur(2px)" }}
+              onClick={() => onSelect(null)}
+              transition={{ duration: 0.18, ease: EASE_OUT }}
+              type="button"
+            >
+              <X aria-hidden="true" className="size-3.5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </span>
+    </motion.div>
   );
 }
 
@@ -532,7 +696,7 @@ function ModelMenu({
       <DropdownMenuTrigger asChild>
         <button
           aria-label={`Model: ${selected}. Change`}
-          className={cn(ghostButton, "group gap-1 pr-2.5")}
+          className={cn(ghostButton, "group gap-1 px-2 sm:pr-2.5 sm:pl-3")}
           type="button"
         >
           {/* Only the name swaps; the chevron stays put. */}
@@ -667,7 +831,7 @@ function SendStopButton({
 }
 
 export default function AI_Input_Search({
-  placeholder = "Ask anything",
+  placeholder = "Ask anything, or type / for tools",
   tools = DEFAULT_TOOLS,
   defaultTool = "browse",
   models = DEFAULT_MODELS,
@@ -677,6 +841,7 @@ export default function AI_Input_Search({
 }: AIInputSearchProps) {
   const [value, setValue] = useState("");
   const [toolId, setToolId] = useState<string | null>(defaultTool);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [model, setModel] = useState(defaultModel);
   const [files, setFiles] = useState<File[]>([]);
   const [remaining, setRemaining] = useState<Record<string, number>>(() =>
@@ -858,6 +1023,10 @@ export default function AI_Input_Search({
               } else if (e.key === "Escape" && running) {
                 e.preventDefault();
                 stop();
+              } else if (e.key === "/" && value === "") {
+                // "/" in an empty box opens the tools, keyboard first.
+                e.preventDefault();
+                setMenuOpen(true);
               } else if (e.key === "Backspace" && value === "" && toolId) {
                 // Backspace in an empty box takes the chip off, as in a
                 // tag field.
@@ -867,6 +1036,7 @@ export default function AI_Input_Search({
             }}
             placeholder={tool?.placeholder ?? placeholder}
             ref={textareaRef}
+            style={tool?.color ? { caretColor: tool.color } : undefined}
             value={value}
           />
 
@@ -891,23 +1061,15 @@ export default function AI_Input_Search({
               tabIndex={-1}
               type="file"
             />
-            <ToolsMenu
-              compact={tool !== null}
+            <ToolPill
               onCloseAutoFocus={backToField}
+              onOpenChange={setMenuOpen}
               onSelect={pickTool}
+              open={menuOpen}
               remaining={remaining}
-              selected={toolId}
+              tool={tool}
               tools={tools}
             />
-            <AnimatePresence initial={false} mode="popLayout">
-              {tool && (
-                <ToolChip
-                  key={tool.id}
-                  onRemove={() => pickTool(null)}
-                  tool={tool}
-                />
-              )}
-            </AnimatePresence>
             <div className="min-w-0 flex-1" />
             <ModelMenu
               models={models}

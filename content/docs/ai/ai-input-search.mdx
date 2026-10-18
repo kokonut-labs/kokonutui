@@ -1,6 +1,6 @@
 ---
 title: AI Input Search
-description: AI composer with a Tools menu of modes (browse, investigate, draft a visual, run code, reason), the picked mode shown as a removable chip, a model picker and a live trace that stacks each source as it is read. Built with React, Tailwind CSS and Motion.
+description: AI composer with a Tools menu of modes (browse, investigate, draft a visual, run code, reason), a Tools pill that morphs into the picked mode with its own colour, a model picker and a live trace that stacks each source as it is read. Built with React, Tailwind CSS and Motion.
 keywords: ["ai search", "search box", "tools menu", "composer", "deep research", "sources", "citations", "chatgpt", "perplexity"]
 icon: Globe
 ---
@@ -14,7 +14,7 @@ import AI_Input_Search from "@/components/kokonutui/ai-input-search";
 
 ## Usage
 
-Pick a tool from **Tools** and it sits in the box as a chip; its x, picking it again, or Backspace in an empty box takes it off. A tool with a `limit` shows the runs left and locks at zero. With no `onSearch` the component plays a pretend run. Wire it to your own backend by calling `onSource` as each source comes in and resolving when the answer is ready. Stop, or Esc, aborts `signal`.
+Pick a tool from **Tools**, or type `/` in an empty box and press its number, and the Tools pill turns into that tool, tinted with its `color`. Its x, picking it again, or Backspace in an empty box takes it off. A tool with a `limit` shows the runs left as dots and locks at zero. With no `onSearch` the component plays a pretend run. Wire it to your own backend by calling `onSource` as each source comes in and resolving when the answer is ready. Stop, or Esc, aborts `signal`.
 
 ```tsx
 <AI_Input_Search
@@ -37,15 +37,15 @@ import { Map } from "lucide-react";
 <AI_Input_Search
   defaultTool={null}
   tools={[
-    { id: "places", label: "Find places", icon: Map, activity: "Looking up places", readsSources: true },
+    { id: "places", label: "Find places", icon: Map, color: "#14b8a6", hint: "Maps, hours and reviews", activity: "Looking up places", readsSources: true },
   ]}
 />
 ```
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `placeholder` | `string` | `"Ask anything"` | Placeholder with no tool picked. Each tool can set its own. |
-| `tools` | `SearchTool[]` | Browse sources, Investigate, Draft a visual, Run some code, Reason it through | Entries in the Tools menu: `id`, `label`, `icon`, `activity`, and optional `placeholder`, `readsSources`, `limit`. |
+| `placeholder` | `string` | `"Ask anything, or type / for tools"` | Placeholder with no tool picked. Each tool can set its own. |
+| `tools` | `SearchTool[]` | Browse sources, Investigate, Draft a visual, Run some code, Reason it through | Entries in the Tools menu: `id`, `label`, `icon`, `activity`, and optional `hint`, `color`, `placeholder`, `readsSources`, `limit`. |
 | `defaultTool` | `string \| null` | `"browse"` | Tool picked at first. |
 | `models` | `string[]` | `["Opus 5.5", "Sonnet 5.5", "Haiku 5.5"]` | Entries in the model menu. |
 | `defaultModel` | `string` | `"Sonnet 5.5"` | Model picked at first. |
