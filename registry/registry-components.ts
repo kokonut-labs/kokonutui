@@ -121,7 +121,7 @@ export const component: Registry = [
     name: "ai-input-search",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
-    registryDependencies: ["textarea"],
+    registryDependencies: ["textarea", "dropdown-menu"],
     files: [
       {
         path: "components/kokonutui/ai-input-search.tsx",

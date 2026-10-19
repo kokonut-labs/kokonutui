@@ -34,6 +34,17 @@ export const NEW_FOR_DAYS = 30;
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-19",
+    added: [],
+    improved: [
+      {
+        name: "ai-input-search",
+        pr: 110,
+        note: "Tools menu with a tool header, model picker, Ask key and source avatars.",
+      },
+    ],
+  },
+  {
     date: "2026-10-17",
     added: [],
     improved: [

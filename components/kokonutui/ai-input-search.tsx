@@ -3,16 +3,44 @@
 /**
  * @author: @kokonutui
  * @description: AI Input Search
- * @version: 3.0.0
- * @date: 2026-10-15
+ * @version: 4.0.0
+ * @date: 2026-10-18
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { ArrowUp, ChevronDown, Search, Telescope } from "lucide-react";
+import {
+  Braces,
+  Check,
+  ChevronDown,
+  CornerDownLeft,
+  FileText,
+  Globe,
+  ImageIcon,
+  Lightbulb,
+  type LucideIcon,
+  Plus,
+  Settings2,
+  Telescope,
+  X,
+} from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useEffect, useId, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
 import { cn } from "@/lib/utils";
@@ -21,28 +49,53 @@ const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const EASE_OUT_CSS = "ease-[cubic-bezier(0.23,1,0.32,1)]";
 const WWW = /^www\./;
 
-export type SearchMode = "quick" | "research";
+export interface SearchTool {
+  id: string;
+  /** Shown in the menu and on the chip. */
+  label: string;
+  icon: LucideIcon;
+  /** What the trace says while this tool works, e.g. "Searching the web". */
+  activity: string;
+  /** Placeholder while the tool is picked. */
+  placeholder?: string;
+  /** True when the tool reads sources, so the trace stacks them up. */
+  readsSources?: boolean;
+  /** Runs left today. The menu shows them as dots and locks the tool at zero. */
+  limit?: number;
+  /** One quiet line under the label in the menu. */
+  hint?: string;
+  /** Any CSS color. Tints the icon tile, the pill and the caret. */
+  color?: string;
+}
 
 export interface SearchSource {
   /** e.g. "developer.mozilla.org" */
   domain: string;
   title: string;
+  /** The site's mark, e.g. a favicon or logo. Wins over the letter avatar. */
+  icon?: ReactNode;
+  /** Brand colour for the letter avatar; without it, one is derived. */
+  color?: string;
 }
 
 export interface AIInputSearchProps {
   placeholder?: string;
-  /** Placeholder while Research mode is on. */
-  researchPlaceholder?: string;
-  defaultMode?: SearchMode;
+  tools?: SearchTool[];
+  /** Tool picked at first. Pass null to start with none. */
+  defaultTool?: string | null;
+  models?: string[];
+  defaultModel?: string;
   /**
-   * Runs the search. Call `onSource` for each source as it is read, and
+   * Runs the request. Call `onSource` for each source as it is read, and
    * resolve when the answer is ready; `signal` aborts on Stop. Without it,
-   * the component plays a pretend search so the demo feels alive.
+   * the component plays a pretend run so the demo feels alive.
    */
   onSearch?: (
     query: string,
     options: {
-      mode: SearchMode;
+      tool: SearchTool | null;
+      model: string;
+      files: File[];
       signal: AbortSignal;
       onSource: (source: SearchSource) => void;
     }
@@ -50,42 +103,116 @@ export interface AIInputSearchProps {
   className?: string;
 }
 
-type Phase = "idle" | "searching" | "reading" | "writing" | "done" | "stopped";
+type Phase = "idle" | "working" | "done" | "stopped";
 
-const PHASE_LABEL: Record<Phase, string> = {
-  idle: "",
-  searching: "Searching the web",
-  reading: "Reading sources",
-  writing: "Writing the answer",
-  done: "",
-  stopped: "Stopped",
-};
-
-const MODES: { id: SearchMode; label: string; icon: typeof Search }[] = [
-  { id: "quick", label: "Quick", icon: Search },
-  { id: "research", label: "Research", icon: Telescope },
+const DEFAULT_TOOLS: SearchTool[] = [
+  {
+    id: "browse",
+    label: "Browse sources",
+    hint: "Answers with links you can check",
+    icon: Globe,
+    color: "#0ea5e9",
+    activity: "Searching the web",
+    placeholder: "Look something up",
+    readsSources: true,
+  },
+  {
+    id: "investigate",
+    label: "Investigate",
+    hint: "Reads widely, takes a few minutes",
+    icon: Telescope,
+    color: "#8b5cf6",
+    activity: "Investigating",
+    placeholder: "What should I dig into?",
+    readsSources: true,
+    limit: 3,
+  },
+  {
+    id: "visual",
+    label: "Draft a visual",
+    hint: "Diagrams, mockups and covers",
+    icon: ImageIcon,
+    color: "#f97316",
+    activity: "Sketching the visual",
+    placeholder: "Describe what to draw",
+  },
+  {
+    id: "code",
+    label: "Run some code",
+    hint: "Works the numbers in a sandbox",
+    icon: Braces,
+    color: "#10b981",
+    activity: "Running the code",
+    placeholder: "What should the code work out?",
+  },
+  {
+    id: "reason",
+    label: "Reason it through",
+    hint: "Slower, more careful answers",
+    icon: Lightbulb,
+    color: "#f43f5e",
+    activity: "Thinking it over",
+    placeholder: "Ask something hard",
+  },
 ];
 
+const DEFAULT_MODELS = ["Opus 5.5", "Sonnet 5.5", "Haiku 5.5"];
+
 const DEMO_SOURCES: SearchSource[] = [
-  { domain: "developer.mozilla.org", title: "429 Too Many Requests" },
-  { domain: "cloudflare.com", title: "What is rate limiting?" },
+  {
+    domain: "developer.mozilla.org",
+    title: "429 Too Many Requests",
+    color: "#18181b",
+  },
+  {
+    domain: "cloudflare.com",
+    title: "What is rate limiting?",
+    color: "#f38020",
+  },
   {
     domain: "github.com",
     title: "upstash/ratelimit: serverless rate limiting",
+    color: "#24292f",
   },
-  { domain: "vercel.com", title: "Rate limiting at the edge" },
-  { domain: "stripe.com", title: "Scaling your API with rate limiters" },
-  { domain: "redis.io", title: "Rate limiting with sorted sets" },
-  { domain: "ietf.org", title: "RateLimit header fields for HTTP" },
-  { domain: "stackoverflow.com", title: "Token bucket vs sliding window" },
-  { domain: "aws.amazon.com", title: "Throttling requests in API Gateway" },
-  { domain: "nginx.org", title: "Module ngx_http_limit_req_module" },
-  { domain: "arxiv.org", title: "Fair queuing for multi-tenant APIs" },
-  { domain: "martinfowler.com", title: "Circuit breaker" },
+  { domain: "vercel.com", title: "Rate limiting at the edge", color: "#000" },
+  {
+    domain: "stripe.com",
+    title: "Scaling your API with rate limiters",
+    color: "#635bff",
+  },
+  {
+    domain: "redis.io",
+    title: "Rate limiting with sorted sets",
+    color: "#dc382d",
+  },
+  {
+    domain: "ietf.org",
+    title: "RateLimit header fields for HTTP",
+    color: "#4b5563",
+  },
+  {
+    domain: "stackoverflow.com",
+    title: "Token bucket vs sliding window",
+    color: "#f48024",
+  },
+  {
+    domain: "aws.amazon.com",
+    title: "Throttling requests in API Gateway",
+    color: "#232f3e",
+  },
+  {
+    domain: "nginx.org",
+    title: "Module ngx_http_limit_req_module",
+    color: "#009639",
+  },
+  {
+    domain: "arxiv.org",
+    title: "Fair queuing for multi-tenant APIs",
+    color: "#b31b1b",
+  },
+  { domain: "martinfowler.com", title: "Circuit breaker", color: "#2d7fb8" },
 ];
 
-const DEMO_COUNT: Record<SearchMode, number> = { quick: 5, research: 12 };
-const DEMO_STEP_MS: Record<SearchMode, number> = { quick: 260, research: 200 };
 const STACK_MAX = 5;
 
 const wait = (ms: number, signal: AbortSignal) =>
@@ -97,104 +224,68 @@ const wait = (ms: number, signal: AbortSignal) =>
     });
   });
 
-async function demoSearch(
-  mode: SearchMode,
+async function demoRun(
+  tool: SearchTool | null,
   signal: AbortSignal,
   onSource: (source: SearchSource) => void
 ) {
   await wait(500, signal);
-  for (const source of DEMO_SOURCES.slice(0, DEMO_COUNT[mode])) {
-    await wait(DEMO_STEP_MS[mode], signal);
+  if (!tool?.readsSources) {
+    await wait(1600, signal);
+    return;
+  }
+  // Investigating reads more and faster than a quick browse.
+  const deep = (tool.limit ?? 0) > 0;
+  for (const source of DEMO_SOURCES.slice(0, deep ? 12 : 5)) {
+    await wait(deep ? 200 : 260, signal);
     onSource(source);
   }
+  await wait(700, signal);
 }
 
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
-/** A neutral letter tile per site, so the trace needs no favicon service. */
-function Monogram({ domain, ring }: { domain: string; ring?: boolean }) {
+/** A steady hue per domain, so an unbranded site still gets its own colour. */
+const hueOf = (domain: string) => {
+  let hash = 0;
+  for (const char of domain) {
+    hash = (hash * 31 + char.charCodeAt(0)) % 360;
+  }
+  return hash;
+};
+
+/**
+ * The site's avatar: its own icon when given, otherwise its first letter on
+ * its brand colour, so the trace needs no favicon service.
+ */
+function SourceAvatar({
+  source,
+  ring,
+  size = "sm",
+}: {
+  source: SearchSource;
+  ring?: boolean;
+  size?: "sm" | "md";
+}) {
+  const name = source.domain.replace(WWW, "");
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "flex size-5 shrink-0 items-center justify-center rounded-full bg-white font-medium text-[10px] text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200",
+        "flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold text-white [&_img]:size-full [&_svg]:size-3",
+        size === "md" ? "size-6 text-[11px]" : "size-5 text-[10px]",
         ring
           ? "ring-2 ring-zinc-100 dark:ring-zinc-800"
-          : "ring-1 ring-black/10 dark:ring-white/10"
+          : "ring-1 ring-black/5 dark:ring-white/15"
       )}
+      style={{
+        backgroundColor: source.icon
+          ? "white"
+          : (source.color ?? `oklch(0.6 0.13 ${hueOf(name)})`),
+      }}
     >
-      {domain.replace(WWW, "").charAt(0).toUpperCase()}
+      {source.icon ?? name.charAt(0).toUpperCase()}
     </span>
-  );
-}
-
-function ModeSwitch({
-  mode,
-  onChange,
-}: {
-  mode: SearchMode;
-  onChange: (mode: SearchMode) => void;
-}) {
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const index = MODES.findIndex((m) => m.id === mode);
-
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
-      return;
-    }
-    event.preventDefault();
-    const next = (index + 1) % MODES.length;
-    refs.current[next]?.focus();
-    onChange(MODES[next].id);
-  };
-
-  return (
-    <div
-      aria-label="Search mode"
-      className="relative grid grid-cols-2 rounded-full bg-black/[0.04] p-0.5 dark:bg-white/[0.06]"
-      role="radiogroup"
-    >
-      {/* One thumb that slides, rather than two backgrounds that swap. */}
-      <span
-        aria-hidden="true"
-        className={cn(
-          "absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-black/5 dark:bg-zinc-700 dark:ring-white/10",
-          "transition-[translate] duration-200 motion-reduce:transition-none",
-          EASE_OUT_CSS,
-          index === 1 ? "translate-x-full" : "translate-x-0"
-        )}
-      />
-      {MODES.map(({ id, label, icon: Icon }, i) => {
-        const selected = id === mode;
-        return (
-          // biome-ignore lint/a11y/useSemanticElements: a pill switch with a sliding thumb doesn't fit a native radio input
-          <button
-            aria-checked={selected}
-            className={cn(
-              "relative flex h-7 items-center justify-center gap-1.5 rounded-full px-3 text-xs outline-hidden",
-              "transition-colors duration-150",
-              EASE_OUT_CSS,
-              "focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
-              selected
-                ? "text-black dark:text-white"
-                : "text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
-            )}
-            key={id}
-            onClick={() => onChange(id)}
-            onKeyDown={onKeyDown}
-            ref={(node) => {
-              refs.current[i] = node;
-            }}
-            role="radio"
-            tabIndex={selected ? 0 : -1}
-            type="button"
-          >
-            <Icon aria-hidden="true" className="size-3.5" />
-            {label}
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -219,7 +310,7 @@ function SourceStack({ sources }: { sources: SearchSource[] }) {
             layout="position"
             transition={{ duration: 0.2, ease: EASE_OUT }}
           >
-            <Monogram domain={source.domain} ring />
+            <SourceAvatar ring source={source} />
           </motion.span>
         ))}
       </AnimatePresence>
@@ -227,6 +318,19 @@ function SourceStack({ sources }: { sources: SearchSource[] }) {
   );
 }
 
+/**
+ * Small white key that sits on the grey frame: the frame's own buttons
+ * (Change, Sources) share it so the bands read as one piece.
+ */
+const frameKey = cn(
+  "flex h-6 shrink-0 items-center gap-1.5 rounded-md bg-white px-2 font-medium text-[11px] text-black shadow-[0_1px_1px_rgb(0_0_0/0.04)] outline-hidden ring-1 ring-black/[0.08]",
+  "transition-[background-color,box-shadow] duration-150",
+  EASE_OUT_CSS,
+  "hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-black/20",
+  "dark:bg-zinc-800 dark:text-white dark:shadow-none dark:ring-white/10 dark:focus-visible:ring-white/30 dark:hover:bg-zinc-700"
+);
+
+/** The sources open as a second card in the frame, under the first. */
 function SourceList({ id, sources }: { id: string; sources: SearchSource[] }) {
   return (
     <motion.div
@@ -235,31 +339,36 @@ function SourceList({ id, sources }: { id: string; sources: SearchSource[] }) {
       exit={{ height: 0, opacity: 0 }}
       id={id}
       initial={{ height: 0, opacity: 0 }}
-      transition={{ duration: 0.22, ease: EASE_OUT }}
+      transition={{ duration: 0.25, ease: EASE_OUT }}
     >
-      <ol className="max-h-56 overflow-y-auto px-1.5 pb-1.5">
+      <ol className="max-h-60 overflow-y-auto rounded-[18px] bg-white py-1 shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10">
         {sources.map((source, i) => (
           <motion.li
-            animate={{ opacity: 1, y: 0 }}
-            className="flex h-8 items-center gap-2.5 rounded-lg px-1.5 text-xs"
-            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            className={cn(
+              "mx-1 flex h-9 items-center gap-2.5 rounded-xl px-2.5 text-xs",
+              "transition-colors duration-150",
+              EASE_OUT_CSS,
+              "hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+            )}
+            initial={{ opacity: 0, y: 4, filter: "blur(2px)" }}
             key={source.domain}
             // A short cascade, capped so a long list doesn't drag.
             transition={{
-              duration: 0.18,
+              duration: 0.2,
               ease: EASE_OUT,
-              delay: Math.min(i, 8) * 0.025,
+              delay: Math.min(i, 8) * 0.03,
             }}
           >
-            <span className="w-4 shrink-0 text-right text-[11px] text-black/30 tabular-nums dark:text-white/30">
-              {i + 1}
-            </span>
-            <Monogram domain={source.domain} />
+            <SourceAvatar size="md" source={source} />
             <span className="min-w-0 flex-1 truncate text-black/80 dark:text-white/80">
               {source.title}
             </span>
             <span className="hidden shrink-0 text-black/40 sm:block dark:text-white/40">
               {source.domain}
+            </span>
+            <span className="w-5 shrink-0 text-right text-[11px] text-black/30 tabular-nums dark:text-white/30">
+              {i + 1}
             </span>
           </motion.li>
         ))}
@@ -268,17 +377,28 @@ function SourceList({ id, sources }: { id: string; sources: SearchSource[] }) {
   );
 }
 
-const traceLabel = (phase: Phase, count: number) => {
-  if (phase !== "done" && phase !== "stopped") {
-    return PHASE_LABEL[phase];
-  }
+const traceLabel = (
+  phase: Phase,
+  tool: SearchTool | null,
+  count: number
+): string => {
   const noun = count === 1 ? "source" : "sources";
-  return `${phase === "stopped" ? "Stopped after" : "Read"} ${count} ${noun}`;
+  if (phase === "working") {
+    if (count > 0) {
+      return "Reading sources";
+    }
+    return tool?.activity ?? "Writing the answer";
+  }
+  if (phase === "stopped") {
+    return count > 0 ? `Stopped after ${count} ${noun}` : "Stopped";
+  }
+  return count > 0 ? `Read ${count} ${noun}` : "Done";
 };
 
-/** Under the box: what the search is doing now, then what it read. */
+/** Under the box: what the run is doing now, then what it read. */
 function Trace({
   phase,
+  tool,
   sources,
   elapsed,
   expanded,
@@ -286,6 +406,7 @@ function Trace({
   listId,
 }: {
   phase: Phase;
+  tool: SearchTool | null;
   sources: SearchSource[];
   elapsed: number;
   expanded: boolean;
@@ -294,44 +415,42 @@ function Trace({
 }) {
   const finished = phase === "done" || phase === "stopped";
   const canOpen = finished && sources.length > 0;
-  const label = traceLabel(phase, sources.length);
+  const label = traceLabel(phase, tool, sources.length);
+  const ToolIcon = tool?.icon;
 
   return (
     <div>
-      <button
-        aria-controls={listId}
-        aria-expanded={expanded}
-        className={cn(
-          "flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-xs outline-hidden",
-          "transition-colors duration-150",
-          EASE_OUT_CSS,
-          "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20",
-          canOpen
-            ? "hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
-            : "cursor-default"
+      {/* A band on the frame, the twin of the header above the card. */}
+      <div className="flex h-9 items-center gap-2.5 pr-1.5 pl-3 text-xs">
+        {tool?.readsSources || !ToolIcon ? (
+          <SourceStack sources={sources} />
+        ) : (
+          <span
+            className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white text-(--tool) ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/10"
+            style={
+              { "--tool": tool?.color ?? "currentColor" } as React.CSSProperties
+            }
+          >
+            <ToolIcon aria-hidden="true" className="size-3" />
+          </span>
         )}
-        disabled={!canOpen}
-        onClick={onToggle}
-        type="button"
-      >
-        <SourceStack sources={sources} />
         <span className="relative min-w-0 flex-1">
           <AnimatePresence initial={false} mode="popLayout">
             <motion.span
-              animate={{ opacity: 1, filter: "blur(0px)" }}
+              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
               className={cn(
                 "block truncate",
                 finished
-                  ? "text-black/70 dark:text-white/70"
-                  : "text-black/50 dark:text-white/50"
+                  ? "text-black/60 dark:text-white/60"
+                  : "text-black/45 dark:text-white/45"
               )}
-              exit={{ opacity: 0, filter: "blur(2px)" }}
-              initial={{ opacity: 0, filter: "blur(2px)" }}
+              exit={{ opacity: 0, filter: "blur(2px)", y: -6 }}
+              initial={{ opacity: 0, filter: "blur(2px)", y: 6 }}
               key={label}
-              transition={{ duration: 0.15, ease: EASE_OUT }}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
             >
               {label}
-              {phase === "reading" && (
+              {phase === "working" && sources.length > 0 && (
                 <span className="text-black/35 tabular-nums dark:text-white/35">
                   {" "}
                   · {sources.length}
@@ -343,21 +462,474 @@ function Trace({
         <span className="shrink-0 text-black/35 tabular-nums dark:text-white/35">
           {seconds(elapsed)}
         </span>
-        {canOpen && (
-          <ChevronDown
-            aria-hidden="true"
-            className={cn(
-              "size-3.5 shrink-0 text-black/40 transition-transform duration-200 dark:text-white/40",
-              EASE_OUT_CSS,
-              expanded && "rotate-180"
-            )}
-          />
-        )}
-      </button>
+        <AnimatePresence initial={false}>
+          {canOpen && (
+            <motion.button
+              animate={{ opacity: 1, filter: "blur(0px)" }}
+              aria-controls={listId}
+              aria-expanded={expanded}
+              className={frameKey}
+              initial={{ opacity: 0, filter: "blur(2px)" }}
+              onClick={onToggle}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
+              type="button"
+            >
+              {expanded ? "Hide" : "Sources"}
+              <ChevronDown
+                aria-hidden="true"
+                className={cn(
+                  "size-3 opacity-50 transition-transform duration-200",
+                  EASE_OUT_CSS,
+                  expanded && "rotate-180"
+                )}
+              />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
 
       <AnimatePresence initial={false}>
         {expanded && <SourceList id={listId} sources={sources} />}
       </AnimatePresence>
+    </div>
+  );
+}
+
+const ghostButton = cn(
+  "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-black/70 text-xs outline-hidden dark:text-white/70",
+  "transition-[background-color,color] duration-150",
+  EASE_OUT_CSS,
+  "hover:bg-black/[0.04] hover:text-black dark:hover:bg-white/[0.06] dark:hover:text-white",
+  "data-[state=open]:bg-black/[0.05] data-[state=open]:text-black dark:data-[state=open]:bg-white/[0.08] dark:data-[state=open]:text-white",
+  "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
+);
+
+const menuPanel =
+  "origin-(--radix-dropdown-menu-content-transform-origin) rounded-xl border-black/10 p-1 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] dark:border-white/10 dark:bg-zinc-900";
+
+/**
+ * Width of what an element holds, so its wrapper can animate to it rather
+ * than snap when a label changes.
+ */
+function useContentWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState<number | "auto">("auto");
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      setWidth(entry.borderBoxSize[0].inlineSize);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, width] as const;
+}
+
+/** Runs left as dots, so a metered tool reads at a glance. */
+function RunsLeft({ left, limit }: { left: number; limit: number }) {
+  return (
+    <span
+      className="flex shrink-0 items-center gap-0.5"
+      title={left > 0 ? `${left} left today` : "None left today"}
+    >
+      {Array.from({ length: limit }, (_, i) => (
+        <span
+          className={cn(
+            "size-1.5 rounded-full",
+            i < left ? "bg-(--tool)" : "bg-black/10 dark:bg-white/15"
+          )}
+          // biome-ignore lint/suspicious/noArrayIndexKey: dots are positional
+          key={i}
+        />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Tools trigger and picked tool in one pill: picking a tool morphs the
+ * pill into it (icon, name, tint and an x) instead of adding a second chip.
+ */
+function ToolPill({
+  tools,
+  tool,
+  remaining,
+  open,
+  onOpenChange,
+  onSelect,
+  onCloseAutoFocus,
+}: {
+  tools: SearchTool[];
+  tool: SearchTool | null;
+  remaining: Record<string, number>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSelect: (id: string | null) => void;
+  onCloseAutoFocus: (event: Event) => void;
+}) {
+  const [innerRef, width] = useContentWidth<HTMLSpanElement>();
+
+  const Icon = tool?.icon ?? Settings2;
+  const label = tool?.label ?? "Tools";
+
+  // Number keys pick a tool while the menu is open.
+  const onMenuKeyDown = (event: React.KeyboardEvent) => {
+    const index = Number(event.key) - 1;
+    const picked = tools[index];
+    if (!(Number.isInteger(index) && picked)) {
+      return;
+    }
+    const left = remaining[picked.id];
+    if (left !== undefined && left <= 0) {
+      return;
+    }
+    event.preventDefault();
+    onSelect(picked.id === tool?.id ? null : picked.id);
+    onOpenChange(false);
+  };
+
+  return (
+    <motion.div
+      animate={{ width }}
+      className="h-8 min-w-0 shrink-0 overflow-hidden rounded-full"
+      style={{ "--tool": tool?.color ?? "currentColor" } as React.CSSProperties}
+      transition={{ duration: 0.25, ease: EASE_OUT }}
+    >
+      <span className="flex h-full w-max items-center" ref={innerRef}>
+        <DropdownMenu modal={false} onOpenChange={onOpenChange} open={open}>
+          <DropdownMenuTrigger asChild>
+            <button
+              aria-label={tool ? `Tool: ${tool.label}. Change` : "Tools"}
+              className={cn(
+                // A plain ghost control, like the model picker: no outline,
+                // just the tool's coloured icon and its name.
+                "group flex h-8 items-center gap-1.5 rounded-full pr-2 pl-2.5 text-xs outline-hidden",
+                "transition-[background-color,color] duration-150",
+                EASE_OUT_CSS,
+                "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20",
+                "hover:bg-black/5 hover:text-black data-[state=open]:bg-black/5 data-[state=open]:text-black dark:data-[state=open]:bg-white/10 dark:data-[state=open]:text-white dark:hover:bg-white/10 dark:hover:text-white",
+                tool
+                  ? "font-medium text-black/80 dark:text-white/85"
+                  : "text-black/70 dark:text-white/70"
+              )}
+              type="button"
+            >
+              <span className="relative inline-grid size-4 shrink-0 place-items-center">
+                <AnimatePresence initial={false} mode="popLayout">
+                  <motion.span
+                    animate={{ opacity: 1, filter: "blur(0px)", rotate: 0 }}
+                    className="col-start-1 row-start-1 text-(--tool)"
+                    exit={{ opacity: 0, filter: "blur(2px)", rotate: 30 }}
+                    initial={{ opacity: 0, filter: "blur(2px)", rotate: -30 }}
+                    key={tool?.id ?? "tools"}
+                    transition={{ duration: 0.18, ease: EASE_OUT }}
+                  >
+                    <Icon aria-hidden="true" className="size-4" />
+                  </motion.span>
+                </AnimatePresence>
+              </span>
+              <span className="relative inline-grid">
+                <AnimatePresence initial={false} mode="popLayout">
+                  <motion.span
+                    animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                    className="col-start-1 row-start-1 max-w-[4rem] truncate whitespace-nowrap sm:max-w-none"
+                    exit={{ opacity: 0, filter: "blur(2px)", y: -4 }}
+                    initial={{ opacity: 0, filter: "blur(2px)", y: 4 }}
+                    key={label}
+                    transition={{ duration: 0.18, ease: EASE_OUT }}
+                  >
+                    {label}
+                  </motion.span>
+                </AnimatePresence>
+              </span>
+              <ChevronDown
+                aria-hidden="true"
+                className={cn(
+                  "size-3 shrink-0 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180",
+                  EASE_OUT_CSS
+                )}
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className={cn(menuPanel, "w-72")}
+            onCloseAutoFocus={onCloseAutoFocus}
+            onKeyDown={onMenuKeyDown}
+            // Below the box by default; Radix flips it up when there is no
+            // room, so it also works with the composer at the bottom of a chat.
+            side="bottom"
+            sideOffset={8}
+          >
+            <div className="flex items-center justify-between px-2 pt-1.5 pb-1 text-[11px] text-black/40 dark:text-white/40">
+              <span>Tools</span>
+              <span>Press 1–{tools.length}</span>
+            </div>
+            {tools.map((item, i) => {
+              const ItemIcon = item.icon;
+              const isSelected = item.id === tool?.id;
+              const left = remaining[item.id];
+              const spent = left !== undefined && left <= 0;
+              return (
+                <DropdownMenuCheckboxItem
+                  checked={isSelected}
+                  className={cn(
+                    "group/item flex items-center gap-2.5 rounded-lg px-2 py-1.5 [&>span:first-child]:hidden",
+                    "focus:bg-black/[0.04] dark:focus:bg-white/[0.06]"
+                  )}
+                  disabled={spent}
+                  key={item.id}
+                  // Picking the active tool again clears it, like the pill's x.
+                  onCheckedChange={(checked) =>
+                    onSelect(checked ? item.id : null)
+                  }
+                  style={
+                    {
+                      "--tool": item.color ?? "currentColor",
+                    } as React.CSSProperties
+                  }
+                >
+                  <span className="flex size-4 shrink-0 items-center justify-center text-(--tool)">
+                    <ItemIcon aria-hidden="true" className="size-3.5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "truncate text-xs",
+                          isSelected
+                            ? "text-black dark:text-white"
+                            : "text-black/75 dark:text-white/75"
+                        )}
+                      >
+                        {item.label}
+                      </span>
+                      {left !== undefined && item.limit !== undefined && (
+                        <RunsLeft left={left} limit={item.limit} />
+                      )}
+                    </span>
+                    {item.hint && (
+                      <span className="block truncate text-[11px] text-black/40 dark:text-white/40">
+                        {spent ? "None left today" : item.hint}
+                      </span>
+                    )}
+                  </span>
+                  {isSelected ? (
+                    <Check
+                      aria-hidden="true"
+                      className="size-3.5 shrink-0 text-black dark:text-white"
+                      strokeWidth={2.25}
+                    />
+                  ) : (
+                    <kbd className="w-3.5 shrink-0 text-center font-sans text-[11px] text-black/30 tabular-nums dark:text-white/30">
+                      {i + 1}
+                    </kbd>
+                  )}
+                </DropdownMenuCheckboxItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <AnimatePresence initial={false} mode="popLayout">
+          {tool && (
+            <motion.button
+              animate={{ opacity: 1, filter: "blur(0px)" }}
+              aria-label={`Remove ${tool.label}`}
+              className={cn(
+                "flex size-6 shrink-0 items-center justify-center rounded-full text-black/40 outline-hidden dark:text-white/45",
+                "transition-[background-color,color] duration-150",
+                EASE_OUT_CSS,
+                "hover:bg-black/[0.06] hover:text-black dark:hover:bg-white/10 dark:hover:text-white",
+                "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
+              )}
+              exit={{
+                opacity: 0,
+                filter: "blur(2px)",
+                transition: { duration: 0.1 },
+              }}
+              initial={{ opacity: 0, filter: "blur(2px)" }}
+              onClick={() => onSelect(null)}
+              transition={{ duration: 0.18, ease: EASE_OUT }}
+              type="button"
+            >
+              <X aria-hidden="true" className="size-3.5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </span>
+    </motion.div>
+  );
+}
+
+function ModelMenu({
+  models,
+  selected,
+  onSelect,
+  onCloseAutoFocus,
+}: {
+  models: string[];
+  selected: string;
+  onSelect: (model: string) => void;
+  onCloseAutoFocus: (event: Event) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label={`Model: ${selected}. Change`}
+          className={cn(ghostButton, "group gap-1 pr-2")}
+          type="button"
+        >
+          {/* Only the name swaps; the chevron stays put. */}
+          <span className="relative inline-grid">
+            <AnimatePresence initial={false} mode="popLayout">
+              <motion.span
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                className="col-start-1 row-start-1 whitespace-nowrap"
+                exit={{ opacity: 0, filter: "blur(2px)" }}
+                initial={{ opacity: 0, filter: "blur(2px)" }}
+                key={selected}
+                transition={{ duration: 0.15, ease: EASE_OUT }}
+              >
+                {/* Phones get the family name only, to leave room for the chip. */}
+                <span className="sm:hidden">{selected.split(" ")[0]}</span>
+                <span className="hidden sm:inline">{selected}</span>
+              </motion.span>
+            </AnimatePresence>
+          </span>
+          <ChevronDown
+            aria-hidden="true"
+            className={cn(
+              "size-3.5 opacity-60 transition-transform duration-200 group-data-[state=open]:rotate-180",
+              EASE_OUT_CSS
+            )}
+          />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className={cn(menuPanel, "w-44")}
+        onCloseAutoFocus={onCloseAutoFocus}
+        side="bottom"
+        sideOffset={8}
+      >
+        {models.map((model) => (
+          <DropdownMenuItem
+            className={cn(
+              "flex h-8 items-center gap-2 rounded-lg px-2 text-xs",
+              model === selected
+                ? "text-black dark:text-white"
+                : "text-black/55 dark:text-white/55"
+            )}
+            key={model}
+            onSelect={() => onSelect(model)}
+          >
+            <span className="flex-1">{model}</span>
+            {model === selected && (
+              <Check
+                aria-hidden="true"
+                className="size-3.5"
+                strokeWidth={2.25}
+              />
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
+  return (
+    <motion.li
+      animate={{ opacity: 1, filter: "blur(0px)" }}
+      className="flex h-8 max-w-48 items-center gap-1.5 rounded-lg bg-black/[0.04] pr-1 pl-2 text-black/70 text-xs dark:bg-white/[0.07] dark:text-white/70"
+      exit={{ opacity: 0, filter: "blur(2px)", transition: { duration: 0.1 } }}
+      initial={{ opacity: 0, filter: "blur(2px)" }}
+      layout="position"
+      transition={{ duration: 0.18, ease: EASE_OUT }}
+    >
+      <FileText aria-hidden="true" className="size-3.5 shrink-0" />
+      <span className="truncate">{file.name}</span>
+      <button
+        aria-label={`Remove ${file.name}`}
+        className="flex size-6 shrink-0 items-center justify-center rounded-md text-black/40 outline-hidden transition-colors duration-150 hover:bg-black/[0.06] hover:text-black focus-visible:ring-2 focus-visible:ring-black/15 dark:text-white/40 dark:focus-visible:ring-white/20 dark:hover:bg-white/10 dark:hover:text-white"
+        onClick={onRemove}
+        type="button"
+      >
+        <X aria-hidden="true" className="size-3" />
+      </button>
+    </motion.li>
+  );
+}
+
+/**
+ * The band on the frame above the card, as in AI Input Selector: says what
+ * the picked tool will do, and swaps with a short blur when the tool does.
+ */
+function ToolHeader({
+  tool,
+  left,
+  onOpenTools,
+}: {
+  tool: SearchTool | null;
+  left: number | undefined;
+  onOpenTools: () => void;
+}) {
+  const Icon = tool?.icon ?? Settings2;
+  const text = tool
+    ? (tool.hint ?? tool.label)
+    : "No tool picked, the model answers on its own";
+  const swap = {
+    animate: { opacity: 1, filter: "blur(0px)", y: 0 },
+    exit: { opacity: 0, filter: "blur(2px)", y: -6 },
+    initial: { opacity: 0, filter: "blur(2px)", y: 6 },
+    transition: { duration: 0.2, ease: EASE_OUT },
+  };
+  return (
+    <div
+      className="flex h-9 items-center gap-2 overflow-hidden pr-1.5 pl-3 text-xs"
+      style={{ "--tool": tool?.color ?? "currentColor" } as React.CSSProperties}
+    >
+      <span className="relative min-w-0 flex-1">
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.span
+            {...swap}
+            className="flex min-w-0 items-center gap-2"
+            key={tool?.id ?? "none"}
+          >
+            <Icon
+              aria-hidden="true"
+              className={cn(
+                "size-3.5 shrink-0",
+                tool ? "text-(--tool)" : "text-black/40 dark:text-white/40"
+              )}
+            />
+            <span className="truncate text-black/60 dark:text-white/60">
+              {text}
+            </span>
+            {left !== undefined && tool?.limit !== undefined && (
+              <span className="flex shrink-0 items-center gap-1.5 text-black/40 tabular-nums dark:text-white/40">
+                <RunsLeft left={left} limit={tool.limit} />
+                {left} left
+              </span>
+            )}
+          </motion.span>
+        </AnimatePresence>
+      </span>
+      <button
+        className={cn(frameKey, "pr-1")}
+        onClick={onOpenTools}
+        type="button"
+      >
+        {tool ? "Change" : "Pick a tool"}
+        <kbd className="flex size-4 items-center justify-center rounded-[4px] bg-black/[0.05] font-normal font-sans text-[10px] text-black/50 dark:bg-white/10 dark:text-white/50">
+          /
+        </kbd>
+      </button>
     </div>
   );
 }
@@ -373,69 +945,105 @@ function SendStopButton({
   onSubmit: () => void;
   onStop: () => void;
 }) {
-  // Same button, two faces: send crossfades into stop.
-  const face = cn(
-    "absolute inset-0 flex items-center justify-center transition-[opacity,filter] duration-200",
-    EASE_OUT_CSS
-  );
+  const [innerRef, width] = useContentWidth<HTMLSpanElement>();
+  const live = running || canSubmit;
+  // A worded key rather than an arrow: "Ask" with the return glyph, which
+  // turns into "Stop" while a run is going. Only the face swaps; the key
+  // eases to the new width. Phones get the glyph alone.
+  const face = running ? "stop" : "ask";
   return (
-    <button
-      aria-label={running ? "Stop search" : "Search"}
+    <motion.button
+      animate={{ width }}
+      aria-label={running ? "Stop" : "Ask"}
       className={cn(
-        "relative size-8 shrink-0 rounded-full",
-        "transition-[background-color,color] duration-150",
+        "h-8 shrink-0 overflow-hidden rounded-[10px]",
+        "transition-[background-color,color,box-shadow] duration-150",
         EASE_OUT_CSS,
         "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
-        running || canSubmit
-          ? "bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/85"
-          : "bg-black/5 text-black/30 dark:bg-white/10 dark:text-white/30"
+        live
+          ? "bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.12)] hover:bg-zinc-800 dark:bg-white dark:text-black dark:shadow-none dark:hover:bg-zinc-200"
+          : "bg-black/5 text-black/35 dark:bg-white/10 dark:text-white/35"
       )}
-      disabled={!(running || canSubmit)}
+      disabled={!live}
       onClick={running ? onStop : onSubmit}
+      transition={{ duration: 0.2, ease: EASE_OUT }}
       type="button"
     >
-      <span
-        aria-hidden="true"
-        className={cn(face, running ? "opacity-0 blur-[2px]" : "opacity-100")}
-      >
-        <ArrowUp className="size-4" strokeWidth={2.25} />
+      <span className="flex h-full w-max items-center" ref={innerRef}>
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.span
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+            className="flex h-8 items-center gap-1.5 px-2 font-medium text-xs sm:pr-2 sm:pl-3"
+            exit={{
+              opacity: 0,
+              filter: "blur(2px)",
+              transition: { duration: 0.08 },
+            }}
+            initial={{ opacity: 0, filter: "blur(2px)" }}
+            key={face}
+            transition={{ duration: 0.16, ease: EASE_OUT }}
+          >
+            {face === "stop" ? (
+              <>
+                <span className="max-sm:hidden">Stop</span>
+                <span className="flex size-4 items-center justify-center">
+                  <span className="size-2 rounded-[2px] bg-current" />
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="max-sm:hidden">Ask</span>
+                <CornerDownLeft
+                  aria-hidden="true"
+                  className="size-4 sm:size-3.5 sm:opacity-60"
+                />
+              </>
+            )}
+          </motion.span>
+        </AnimatePresence>
       </span>
-      <span
-        aria-hidden="true"
-        className={cn(face, running ? "opacity-100" : "opacity-0 blur-[2px]")}
-      >
-        <span className="size-2.5 rounded-[2px] bg-current" />
-      </span>
-    </button>
+    </motion.button>
   );
 }
 
 export default function AI_Input_Search({
-  placeholder = "Ask anything",
-  researchPlaceholder = "Research a topic in depth",
-  defaultMode = "quick",
+  placeholder = "Ask anything, or type / for tools",
+  tools = DEFAULT_TOOLS,
+  defaultTool = "browse",
+  models = DEFAULT_MODELS,
+  defaultModel = "Sonnet 5.5",
   onSearch,
   className,
 }: AIInputSearchProps) {
   const [value, setValue] = useState("");
-  const [mode, setMode] = useState<SearchMode>(defaultMode);
+  const [toolId, setToolId] = useState<string | null>(defaultTool);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [model, setModel] = useState(defaultModel);
+  const [files, setFiles] = useState<File[]>([]);
+  const [remaining, setRemaining] = useState<Record<string, number>>(() =>
+    Object.fromEntries(
+      tools.flatMap((t) => (t.limit === undefined ? [] : [[t.id, t.limit]]))
+    )
+  );
   const [phase, setPhase] = useState<Phase>("idle");
+  const [runTool, setRunTool] = useState<SearchTool | null>(null);
   const [sources, setSources] = useState<SearchSource[]>([]);
   const [elapsed, setElapsed] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
-    minHeight: 52,
+    minHeight: 56,
     maxHeight: 200,
   });
 
-  const running =
-    phase === "searching" || phase === "reading" || phase === "writing";
+  const tool = tools.find((t) => t.id === toolId) ?? null;
+  const running = phase === "working";
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  // The clock ticks only while a search runs, from zero each time.
+  // The clock ticks only while a run is going, from zero each time.
   useEffect(() => {
     if (!running) {
       return;
@@ -445,6 +1053,17 @@ export default function AI_Input_Search({
     return () => clearInterval(timer);
   }, [running]);
 
+  const pickTool = (id: string | null) => {
+    setToolId(id);
+    textareaRef.current?.focus();
+  };
+
+  // Menus hand focus back to the field, not their trigger, so typing carries on.
+  const backToField = (event: Event) => {
+    event.preventDefault();
+    textareaRef.current?.focus();
+  };
+
   const submit = async () => {
     const query = value.trim();
     if (!query || running) {
@@ -452,17 +1071,29 @@ export default function AI_Input_Search({
     }
     const controller = new AbortController();
     abortRef.current = controller;
+    const attached = files;
     setValue("");
+    setFiles([]);
     adjustHeight(true);
     setSources([]);
     setElapsed(0);
     setExpanded(false);
-    setPhase("searching");
+    setRunTool(tool);
+    setPhase("working");
+
+    // A metered tool spends a run; at zero it drops off the box.
+    const left = tool ? remaining[tool.id] : undefined;
+    if (tool && left !== undefined) {
+      setRemaining((current) => ({ ...current, [tool.id]: left - 1 }));
+      if (left - 1 <= 0) {
+        setToolId(null);
+      }
+    }
+
     const onSource = (source: SearchSource) => {
       if (controller.signal.aborted) {
         return;
       }
-      setPhase("reading");
       setSources((current) => [
         ...current.filter((s) => s.domain !== source.domain),
         source,
@@ -470,12 +1101,14 @@ export default function AI_Input_Search({
     };
     try {
       await (onSearch
-        ? onSearch(query, { mode, signal: controller.signal, onSource })
-        : demoSearch(mode, controller.signal, onSource));
-      if (!onSearch) {
-        setPhase("writing");
-        await wait(700, controller.signal);
-      }
+        ? onSearch(query, {
+            tool,
+            model,
+            files: attached,
+            signal: controller.signal,
+            onSource,
+          })
+        : demoRun(tool, controller.signal, onSource));
       if (!controller.signal.aborted) {
         setPhase("done");
       }
@@ -498,7 +1131,7 @@ export default function AI_Input_Search({
   // Mouse convenience: clicking the box around the field focuses it. Clicks
   // on the controls keep their own behaviour.
   const handleContainerClick = (target: EventTarget) => {
-    if (target instanceof Element && target.closest("button")) {
+    if (target instanceof Element && target.closest("button, [role=menu]")) {
       return;
     }
     textareaRef.current?.focus();
@@ -508,20 +1141,59 @@ export default function AI_Input_Search({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("w-full py-4", className)}>
-        <div className="mx-auto w-full max-w-xl rounded-[22px] bg-zinc-100 p-1 dark:bg-zinc-800">
-          {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents lint/a11y/noNoninteractiveElementInteractions: pointer-only shortcut; the textarea and buttons inside are keyboard reachable */}
+      <div className={cn("mx-auto w-full max-w-lg py-4", className)}>
+        {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents lint/a11y/noNoninteractiveElementInteractions: pointer-only shortcut; the textarea and buttons inside are keyboard reachable */}
+        <div
+          className="relative w-full cursor-text rounded-[22px] bg-black/[0.04] p-1 text-left dark:bg-white/[0.04]"
+          onClick={(e) => handleContainerClick(e.target)}
+        >
+          <ToolHeader
+            left={tool ? remaining[tool.id] : undefined}
+            onOpenTools={() => setMenuOpen(true)}
+            tool={tool}
+          />
+          {/* Card on a soft frame, as in AI Prompt; the trace opens in the frame. */}
           <div
             className={cn(
-              "relative flex w-full cursor-text flex-col rounded-[18px] bg-white text-left ring-1 ring-black/[0.06] dark:bg-zinc-900 dark:ring-white/10",
+              "flex flex-col rounded-[18px] bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
               "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_6px_20px_-10px_rgb(0_0_0/0.12)]",
               "transition-shadow duration-150 has-[textarea:focus-visible]:ring-black/20 dark:has-[textarea:focus-visible]:ring-white/25"
             )}
-            onClick={(e) => handleContainerClick(e.target)}
           >
+            <AnimatePresence initial={false}>
+              {files.length > 0 && (
+                <motion.div
+                  animate={{ height: "auto", opacity: 1 }}
+                  className="overflow-hidden"
+                  exit={{ height: 0, opacity: 0 }}
+                  initial={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: EASE_OUT }}
+                >
+                  <ul
+                    aria-label="Attached files"
+                    className="flex flex-wrap gap-1.5 px-3 pt-3"
+                  >
+                    <AnimatePresence initial={false}>
+                      {files.map((file) => (
+                        <FileChip
+                          file={file}
+                          key={`${file.name}-${file.size}-${file.lastModified}`}
+                          onRemove={() =>
+                            setFiles((current) =>
+                              current.filter((f) => f !== file)
+                            )
+                          }
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </ul>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <Textarea
-              aria-label="Search"
-              className="min-h-[52px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
+              aria-label="Message"
+              className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
               onChange={(e) => {
                 setValue(e.target.value);
                 adjustHeight();
@@ -536,21 +1208,66 @@ export default function AI_Input_Search({
                 } else if (e.key === "Escape" && running) {
                   e.preventDefault();
                   stop();
+                } else if (e.key === "/" && value === "") {
+                  // "/" in an empty box opens the tools, keyboard first.
+                  e.preventDefault();
+                  setMenuOpen(true);
+                } else if (e.key === "Backspace" && value === "" && toolId) {
+                  // Backspace in an empty box takes the chip off, as in a
+                  // tag field.
+                  e.preventDefault();
+                  setToolId(null);
                 }
               }}
-              placeholder={
-                mode === "research" ? researchPlaceholder : placeholder
-              }
+              placeholder={tool?.placeholder ?? placeholder}
               ref={textareaRef}
+              style={tool?.color ? { caretColor: tool.color } : undefined}
               value={value}
             />
 
-            <div className="flex items-center gap-2 px-2.5 pt-1 pb-2.5">
-              <ModeSwitch mode={mode} onChange={setMode} />
-              <div className="flex-1" />
-              <span className="hidden text-[11px] text-black/35 tabular-nums sm:block dark:text-white/35">
-                {mode === "research" ? "~12 sources" : "~5 sources"}
-              </span>
+            <div className="flex items-center gap-1 px-2.5 pt-1 pb-2.5">
+              <button
+                aria-label="Attach files"
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-full text-black/60 outline-hidden ring-1 ring-black/10 dark:text-white/60 dark:ring-white/15",
+                  "transition-[background-color,color] duration-150",
+                  EASE_OUT_CSS,
+                  "hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white",
+                  "focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/25"
+                )}
+                onClick={() => fileInputRef.current?.click()}
+                type="button"
+              >
+                <Plus aria-hidden="true" className="size-4" />
+              </button>
+              <input
+                className="hidden"
+                multiple
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files ?? []);
+                  setFiles((current) => [...current, ...picked]);
+                  e.target.value = "";
+                }}
+                ref={fileInputRef}
+                tabIndex={-1}
+                type="file"
+              />
+              <ToolPill
+                onCloseAutoFocus={backToField}
+                onOpenChange={setMenuOpen}
+                onSelect={pickTool}
+                open={menuOpen}
+                remaining={remaining}
+                tool={tool}
+                tools={tools}
+              />
+              <div className="min-w-0 flex-1" />
+              <ModelMenu
+                models={models}
+                onCloseAutoFocus={backToField}
+                onSelect={setModel}
+                selected={model}
+              />
               <SendStopButton
                 canSubmit={canSubmit}
                 onStop={stop}
@@ -559,13 +1276,6 @@ export default function AI_Input_Search({
               />
             </div>
           </div>
-
-          <output aria-live="polite" className="sr-only">
-            {phase === "done" && `Done. Read ${sources.length} sources.`}
-            {phase === "stopped" && "Search stopped."}
-            {phase === "searching" && "Searching."}
-          </output>
-
           <AnimatePresence initial={false}>
             {phase !== "idle" && (
               <motion.div
@@ -575,7 +1285,7 @@ export default function AI_Input_Search({
                 initial={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2, ease: EASE_OUT }}
               >
-                <div className="pt-1">
+                <div>
                   <Trace
                     elapsed={elapsed}
                     expanded={expanded}
@@ -583,12 +1293,19 @@ export default function AI_Input_Search({
                     onToggle={() => setExpanded((open) => !open)}
                     phase={phase}
                     sources={sources}
+                    tool={runTool}
                   />
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+
+        <output aria-live="polite" className="sr-only">
+          {phase === "done" && "Done."}
+          {phase === "stopped" && "Stopped."}
+          {phase === "working" && (runTool?.activity ?? "Working.")}
+        </output>
       </div>
     </MotionConfig>
   );
