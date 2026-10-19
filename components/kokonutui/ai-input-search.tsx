@@ -456,9 +456,6 @@ function RunsLeft({ left, limit }: { left: number; limit: number }) {
   );
 }
 
-const tint = (amount: number) =>
-  `color-mix(in oklab, var(--tool) ${amount}%, transparent)`;
-
 /**
  * Tools trigger and picked tool in one pill: picking a tool morphs the
  * pill into it (icon, name, tint and an x) instead of adding a second chip.
@@ -504,38 +501,26 @@ function ToolPill({
   return (
     <motion.div
       animate={{ width }}
-      className={cn(
-        "h-8 min-w-0 shrink-0 overflow-hidden rounded-full transition-shadow duration-200",
-        // Same hairline as the attach button; a picked tool swaps it for
-        // one in its own colour.
-        !tool?.color && "ring-1 ring-black/10 dark:ring-white/15"
-      )}
-      style={
-        {
-          "--tool": tool?.color ?? "currentColor",
-          boxShadow: tool?.color ? `inset 0 0 0 1px ${tint(35)}` : undefined,
-        } as React.CSSProperties
-      }
+      className="h-8 min-w-0 shrink-0 overflow-hidden rounded-full"
+      style={{ "--tool": tool?.color ?? "currentColor" } as React.CSSProperties}
       transition={{ duration: 0.25, ease: EASE_OUT }}
     >
-      <span
-        className="flex h-full w-max items-center transition-[background-color] duration-200"
-        ref={innerRef}
-        style={{ backgroundColor: tool?.color ? tint(10) : undefined }}
-      >
+      <span className="flex h-full w-max items-center" ref={innerRef}>
         <DropdownMenu modal={false} onOpenChange={onOpenChange} open={open}>
           <DropdownMenuTrigger asChild>
             <button
               aria-label={tool ? `Tool: ${tool.label}. Change` : "Tools"}
               className={cn(
-                "flex h-8 items-center gap-1.5 rounded-full pl-2.5 text-xs outline-hidden",
-                tool ? "pr-1" : "pr-3",
-                "transition-colors duration-150",
+                // A plain ghost control, like the model picker: no outline,
+                // just the tool's coloured icon and its name.
+                "group flex h-8 items-center gap-1.5 rounded-full pr-2 pl-2.5 text-xs outline-hidden",
+                "transition-[background-color,color] duration-150",
                 EASE_OUT_CSS,
-                "focus-visible:ring-2 focus-visible:ring-black/15 focus-visible:ring-inset dark:focus-visible:ring-white/20",
+                "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20",
+                "hover:bg-black/5 hover:text-black data-[state=open]:bg-black/5 data-[state=open]:text-black dark:data-[state=open]:bg-white/10 dark:data-[state=open]:text-white dark:hover:bg-white/10 dark:hover:text-white",
                 tool
-                  ? "text-black dark:text-white"
-                  : "text-black/70 hover:bg-black/5 hover:text-black data-[state=open]:bg-black/5 data-[state=open]:text-black dark:text-white/70 dark:data-[state=open]:bg-white/10 dark:data-[state=open]:text-white dark:hover:bg-white/10 dark:hover:text-white"
+                  ? "font-medium text-black/80 dark:text-white/85"
+                  : "text-black/70 dark:text-white/70"
               )}
               type="button"
             >
@@ -567,6 +552,13 @@ function ToolPill({
                   </motion.span>
                 </AnimatePresence>
               </span>
+              <ChevronDown
+                aria-hidden="true"
+                className={cn(
+                  "size-3 shrink-0 opacity-50 transition-transform duration-200 group-data-[state=open]:rotate-180",
+                  EASE_OUT_CSS
+                )}
+              />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -592,7 +584,7 @@ function ToolPill({
                 <DropdownMenuCheckboxItem
                   checked={isSelected}
                   className={cn(
-                    "group/item flex items-center gap-2.5 rounded-lg py-1.5 pr-2 pl-1.5 [&>span:first-child]:hidden",
+                    "group/item flex items-center gap-2.5 rounded-lg px-2 py-1.5 [&>span:first-child]:hidden",
                     "focus:bg-black/[0.04] dark:focus:bg-white/[0.06]"
                   )}
                   disabled={spent}
@@ -607,17 +599,7 @@ function ToolPill({
                     } as React.CSSProperties
                   }
                 >
-                  {/* The tile takes the tool's colour once it is in play. */}
-                  <span
-                    className={cn(
-                      "flex size-7 shrink-0 items-center justify-center rounded-md transition-[background-color,color] duration-150",
-                      EASE_OUT_CSS,
-                      isSelected
-                        ? "bg-(--tile) text-(--tool)"
-                        : "bg-black/[0.04] text-black/45 group-focus/item:bg-(--tile) group-focus/item:text-(--tool) dark:bg-white/[0.06] dark:text-white/50"
-                    )}
-                    style={{ "--tile": tint(14) } as React.CSSProperties}
-                  >
+                  <span className="flex size-4 shrink-0 items-center justify-center text-(--tool)">
                     <ItemIcon aria-hidden="true" className="size-3.5" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -649,7 +631,7 @@ function ToolPill({
                       strokeWidth={2.25}
                     />
                   ) : (
-                    <kbd className="flex size-5 shrink-0 items-center justify-center rounded-md font-sans text-[11px] text-black/35 ring-1 ring-black/10 dark:text-white/35 dark:ring-white/10">
+                    <kbd className="w-3.5 shrink-0 text-center font-sans text-[11px] text-black/30 tabular-nums dark:text-white/30">
                       {i + 1}
                     </kbd>
                   )}
@@ -664,7 +646,7 @@ function ToolPill({
               animate={{ opacity: 1, filter: "blur(0px)" }}
               aria-label={`Remove ${tool.label}`}
               className={cn(
-                "mr-1 flex size-6 shrink-0 items-center justify-center rounded-full text-black/40 outline-hidden dark:text-white/45",
+                "flex size-6 shrink-0 items-center justify-center rounded-full text-black/40 outline-hidden dark:text-white/45",
                 "transition-[background-color,color] duration-150",
                 EASE_OUT_CSS,
                 "hover:bg-black/[0.06] hover:text-black dark:hover:bg-white/10 dark:hover:text-white",
