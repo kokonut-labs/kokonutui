@@ -773,6 +773,79 @@ function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
   );
 }
 
+/**
+ * The band on the frame above the card, as in AI Input Selector: says what
+ * the picked tool will do, and swaps with a short blur when the tool does.
+ */
+function ToolHeader({
+  tool,
+  left,
+  onOpenTools,
+}: {
+  tool: SearchTool | null;
+  left: number | undefined;
+  onOpenTools: () => void;
+}) {
+  const Icon = tool?.icon ?? Settings2;
+  const text = tool
+    ? (tool.hint ?? tool.label)
+    : "No tool picked, the model answers on its own";
+  const swap = {
+    animate: { opacity: 1, filter: "blur(0px)", y: 0 },
+    exit: { opacity: 0, filter: "blur(2px)", y: -6 },
+    initial: { opacity: 0, filter: "blur(2px)", y: 6 },
+    transition: { duration: 0.2, ease: EASE_OUT },
+  };
+  return (
+    <div
+      className="flex h-9 items-center gap-2 overflow-hidden pr-1.5 pl-3 text-xs"
+      style={{ "--tool": tool?.color ?? "currentColor" } as React.CSSProperties}
+    >
+      <span className="relative min-w-0 flex-1">
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.span
+            {...swap}
+            className="flex min-w-0 items-center gap-2"
+            key={tool?.id ?? "none"}
+          >
+            <Icon
+              aria-hidden="true"
+              className={cn(
+                "size-3.5 shrink-0",
+                tool ? "text-(--tool)" : "text-black/40 dark:text-white/40"
+              )}
+            />
+            <span className="truncate text-black/60 dark:text-white/60">
+              {text}
+            </span>
+            {left !== undefined && tool?.limit !== undefined && (
+              <span className="flex shrink-0 items-center gap-1.5 text-black/40 tabular-nums dark:text-white/40">
+                <RunsLeft left={left} limit={tool.limit} />
+                {left} left
+              </span>
+            )}
+          </motion.span>
+        </AnimatePresence>
+      </span>
+      <button
+        className={cn(
+          "flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 font-medium text-black dark:text-white",
+          "transition-[background-color,color] duration-150",
+          EASE_OUT_CSS,
+          "hover:bg-black/5 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-black/30 dark:focus-visible:ring-white/30 dark:hover:bg-white/10"
+        )}
+        onClick={onOpenTools}
+        type="button"
+      >
+        {tool ? "Change" : "Pick a tool"}
+        <kbd className="font-normal font-sans text-black/35 dark:text-white/35">
+          /
+        </kbd>
+      </button>
+    </div>
+  );
+}
+
 function SendStopButton({
   running,
   canSubmit,
@@ -963,6 +1036,11 @@ export default function AI_Input_Search({
           className="relative w-full cursor-text rounded-[22px] bg-black/[0.04] p-1 text-left dark:bg-white/[0.04]"
           onClick={(e) => handleContainerClick(e.target)}
         >
+          <ToolHeader
+            left={tool ? remaining[tool.id] : undefined}
+            onOpenTools={() => setMenuOpen(true)}
+            tool={tool}
+          />
           {/* Card on a soft frame, as in AI Prompt; the trace opens in the frame. */}
           <div
             className={cn(
