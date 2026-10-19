@@ -184,6 +184,14 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
               New, {formatReleaseDate(part.added)}
             </Link>
           ) : null}
+          {part.updated ? (
+            <Link
+              className="underline-offset-4 hover:text-black hover:underline dark:hover:text-white"
+              href={`${CHANGELOG_URL}#${releaseAnchor(part.updated)}`}
+            >
+              Updated, {formatReleaseDate(part.updated)}
+            </Link>
+          ) : null}
         </p>
       ) : null}
       {proCategory ? (

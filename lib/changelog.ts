@@ -54,6 +54,12 @@ export const RELEASES: Release[] = [
         note: "Drag a range, isolate a segment from the breakdown, and pinned events that name themselves.",
       },
     ],
+    library: [
+      {
+        note: "Color and instrument details across 9 components, and zinc grays instead of blue-tinted ones in 10 more.",
+        prs: [100, 101],
+      },
+    ],
   },
   {
     date: "2026-10-16",
@@ -68,6 +74,16 @@ export const RELEASES: Release[] = [
       { name: "photo-straighten", pr: 92 },
     ],
     improved: [
+      {
+        name: "ai-prompt",
+        pr: 85,
+        note: "Reworked composer whose model menu defaults to the current Claude models.",
+      },
+      {
+        name: "currency-transfer",
+        pr: 85,
+        note: "Redesigned, with a motion pass on the transfer.",
+      },
       {
         name: "file-upload",
         pr: 90,
@@ -113,6 +129,12 @@ export const RELEASES: Release[] = [
   {
     date: "2026-10-15",
     added: [
+      { name: "cradle-text", pr: 69 },
+      { name: "scroll-index", pr: 70 },
+      { name: "halftone-background", pr: 71 },
+      { name: "metric-card", pr: 72 },
+      { name: "uptime-card", pr: 73 },
+      { name: "spending-ring", pr: 74 },
       { name: "ai-tool-approval", pr: 76 },
       { name: "ai-context-meter", pr: 77 },
       { name: "ai-citations", pr: 78 },
@@ -122,7 +144,13 @@ export const RELEASES: Release[] = [
       { name: "morph-popover", pr: 84 },
       { name: "lightbox-grid", pr: 84 },
     ],
-    improved: [],
+    improved: [
+      {
+        name: "apple-activity-card",
+        pr: 82,
+        note: "Vivid ring colors in light mode.",
+      },
+    ],
   },
   {
     date: "2026-10-14",
@@ -342,4 +370,27 @@ const time = (date: string) => new Date(`${date}T00:00:00Z`).getTime();
 export function isRecent(date: string) {
   const latest = RELEASES[0]?.date ?? date;
   return time(latest) - time(date) < NEW_FOR_DAYS * DAY_MS;
+}
+
+/**
+ * The latest recent release that reworked each component, by registry name.
+ * Library notes don't count, and New wins: a component still new isn't listed.
+ */
+export function getUpdatedDates(): Map<string, string> {
+  const added = getAddedDates();
+  const updated = new Map<string, string>();
+  // Newest release first, so the first date seen for a name is its latest.
+  for (const release of RELEASES) {
+    if (!isRecent(release.date)) {
+      continue;
+    }
+    for (const entry of release.improved) {
+      const shipped = added.get(entry.name);
+      const isNew = shipped ? isRecent(shipped) : false;
+      if (!(isNew || updated.has(entry.name))) {
+        updated.set(entry.name, release.date);
+      }
+    }
+  }
+  return updated;
 }
