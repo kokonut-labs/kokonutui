@@ -20,7 +20,7 @@ import {
   ImageIcon,
   Lightbulb,
   type LucideIcon,
-  Paperclip,
+  Plus,
   Settings2,
   Telescope,
   X,
@@ -205,7 +205,7 @@ function Monogram({ domain, ring }: { domain: string; ring?: boolean }) {
       className={cn(
         "flex size-5 shrink-0 items-center justify-center rounded-full bg-white font-medium text-[10px] text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200",
         ring
-          ? "outline-1 outline-black/10 ring-2 ring-zinc-100 dark:outline-white/10 dark:ring-zinc-900"
+          ? "outline-1 outline-black/10 ring-2 ring-zinc-100 dark:outline-white/10 dark:ring-zinc-800"
           : "ring-1 ring-black/10 dark:ring-white/10"
       )}
     >
@@ -326,12 +326,12 @@ function Trace({
   const ToolIcon = tool?.icon;
 
   return (
-    <div className="border-black/[0.07] border-t dark:border-white/[0.07]">
+    <div>
       <button
         aria-controls={listId}
         aria-expanded={expanded}
         className={cn(
-          "flex h-10 w-full items-center gap-2.5 rounded-xl px-2 text-left text-xs outline-hidden",
+          "flex h-10 w-full items-center gap-2.5 rounded-[18px] px-3 text-left text-xs outline-hidden",
           "transition-colors duration-150",
           EASE_OUT_CSS,
           "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20",
@@ -403,7 +403,7 @@ function Trace({
 }
 
 const ghostButton = cn(
-  "flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] text-black/60 outline-hidden dark:text-white/60",
+  "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-black/70 text-xs outline-hidden dark:text-white/70",
   "transition-[background-color,color] duration-150",
   EASE_OUT_CSS,
   "hover:bg-black/[0.04] hover:text-black dark:hover:bg-white/[0.06] dark:hover:text-white",
@@ -412,7 +412,7 @@ const ghostButton = cn(
 );
 
 const menuPanel =
-  "origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border-black/10 p-1.5 shadow-[0_12px_32px_-12px_rgb(0_0_0/0.2)] dark:border-white/10 dark:bg-zinc-900";
+  "origin-(--radix-dropdown-menu-content-transform-origin) rounded-xl border-black/10 p-1 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] dark:border-white/10 dark:bg-zinc-900";
 
 /**
  * Width of what an element holds, so its wrapper can animate to it rather
@@ -434,14 +434,6 @@ function useContentWidth<T extends HTMLElement>() {
   }, []);
   return [ref, width] as const;
 }
-
-/**
- * Raised keys that sit on the tray: white with a hairline and a 1px floor,
- * so they read as pressable without a heavy shadow.
- */
-const keycap = cn(
-  "bg-white shadow-[0_1px_0_rgb(0_0_0/0.05)] ring-1 ring-black/[0.08] dark:bg-zinc-800 dark:shadow-none dark:ring-white/[0.08]"
-);
 
 /** Runs left as dots, so a metered tool reads at a glance. */
 function RunsLeft({ left, limit }: { left: number; limit: number }) {
@@ -513,17 +505,15 @@ function ToolPill({
     <motion.div
       animate={{ width }}
       className={cn(
-        "h-9 min-w-0 shrink-0 overflow-hidden rounded-xl transition-shadow duration-200",
-        keycap,
-        // A picked tool trades the grey hairline for one in its own colour.
-        tool?.color && "ring-0 dark:ring-0"
+        "h-8 min-w-0 shrink-0 overflow-hidden rounded-full transition-shadow duration-200",
+        // Same hairline as the attach button; a picked tool swaps it for
+        // one in its own colour.
+        !tool?.color && "ring-1 ring-black/10 dark:ring-white/15"
       )}
       style={
         {
           "--tool": tool?.color ?? "currentColor",
-          boxShadow: tool?.color
-            ? `0 0 0 1px ${tint(38)}, 0 1px 0 ${tint(20)}`
-            : undefined,
+          boxShadow: tool?.color ? `inset 0 0 0 1px ${tint(35)}` : undefined,
         } as React.CSSProperties
       }
       transition={{ duration: 0.25, ease: EASE_OUT }}
@@ -538,14 +528,14 @@ function ToolPill({
             <button
               aria-label={tool ? `Tool: ${tool.label}. Change` : "Tools"}
               className={cn(
-                "flex h-9 items-center gap-1.5 rounded-xl pl-3 text-[13px] outline-hidden",
-                tool ? "pr-1.5" : "pr-3.5",
+                "flex h-8 items-center gap-1.5 rounded-full pl-2.5 text-xs outline-hidden",
+                tool ? "pr-1" : "pr-3",
                 "transition-colors duration-150",
                 EASE_OUT_CSS,
                 "focus-visible:ring-2 focus-visible:ring-black/15 focus-visible:ring-inset dark:focus-visible:ring-white/20",
                 tool
                   ? "text-black dark:text-white"
-                  : "text-black/70 hover:text-black data-[state=open]:text-black dark:text-white/70 dark:data-[state=open]:text-white dark:hover:text-white"
+                  : "text-black/70 hover:bg-black/5 hover:text-black data-[state=open]:bg-black/5 data-[state=open]:text-black dark:text-white/70 dark:data-[state=open]:bg-white/10 dark:data-[state=open]:text-white dark:hover:bg-white/10 dark:hover:text-white"
               )}
               type="button"
             >
@@ -589,7 +579,7 @@ function ToolPill({
             side="bottom"
             sideOffset={8}
           >
-            <div className="flex items-center justify-between px-2.5 pt-1.5 pb-2 text-[11px] text-black/40 dark:text-white/40">
+            <div className="flex items-center justify-between px-2 pt-1.5 pb-1 text-[11px] text-black/40 dark:text-white/40">
               <span>Tools</span>
               <span>Press 1–{tools.length}</span>
             </div>
@@ -602,7 +592,7 @@ function ToolPill({
                 <DropdownMenuCheckboxItem
                   checked={isSelected}
                   className={cn(
-                    "group/item flex items-center gap-3 rounded-xl py-1.5 pr-2.5 pl-1.5 [&>span:first-child]:hidden",
+                    "group/item flex items-center gap-2.5 rounded-lg py-1.5 pr-2 pl-1.5 [&>span:first-child]:hidden",
                     "focus:bg-black/[0.04] dark:focus:bg-white/[0.06]"
                   )}
                   disabled={spent}
@@ -620,7 +610,7 @@ function ToolPill({
                   {/* The tile takes the tool's colour once it is in play. */}
                   <span
                     className={cn(
-                      "flex size-8 shrink-0 items-center justify-center rounded-lg transition-[background-color,color] duration-150",
+                      "flex size-7 shrink-0 items-center justify-center rounded-md transition-[background-color,color] duration-150",
                       EASE_OUT_CSS,
                       isSelected
                         ? "bg-(--tile) text-(--tool)"
@@ -628,13 +618,13 @@ function ToolPill({
                     )}
                     style={{ "--tile": tint(14) } as React.CSSProperties}
                   >
-                    <ItemIcon aria-hidden="true" className="size-4" />
+                    <ItemIcon aria-hidden="true" className="size-3.5" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
                       <span
                         className={cn(
-                          "truncate text-[13px]",
+                          "truncate text-xs",
                           isSelected
                             ? "text-black dark:text-white"
                             : "text-black/75 dark:text-white/75"
@@ -674,7 +664,7 @@ function ToolPill({
               animate={{ opacity: 1, filter: "blur(0px)" }}
               aria-label={`Remove ${tool.label}`}
               className={cn(
-                "mr-1 flex size-7 shrink-0 items-center justify-center rounded-lg text-black/40 outline-hidden dark:text-white/45",
+                "mr-1 flex size-6 shrink-0 items-center justify-center rounded-full text-black/40 outline-hidden dark:text-white/45",
                 "transition-[background-color,color] duration-150",
                 EASE_OUT_CSS,
                 "hover:bg-black/[0.06] hover:text-black dark:hover:bg-white/10 dark:hover:text-white",
@@ -715,10 +705,7 @@ function ModelMenu({
       <DropdownMenuTrigger asChild>
         <button
           aria-label={`Model: ${selected}. Change`}
-          className={cn(
-            ghostButton,
-            "group gap-0.5 px-1.5 sm:gap-1 sm:pr-2.5 sm:pl-3"
-          )}
+          className={cn(ghostButton, "group gap-1 pr-2")}
           type="button"
         >
           {/* Only the name swaps; the chevron stays put. */}
@@ -757,7 +744,7 @@ function ModelMenu({
         {models.map((model) => (
           <DropdownMenuItem
             className={cn(
-              "flex h-9 items-center gap-2 rounded-xl px-2.5 text-[13px]",
+              "flex h-8 items-center gap-2 rounded-lg px-2 text-xs",
               model === selected
                 ? "text-black dark:text-white"
                 : "text-black/55 dark:text-white/55"
@@ -804,8 +791,6 @@ function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
   );
 }
 
-const RETURN_KEY = "\u21b5";
-
 function SendStopButton({
   running,
   canSubmit,
@@ -817,82 +802,41 @@ function SendStopButton({
   onSubmit: () => void;
   onStop: () => void;
 }) {
-  const [innerRef, width] = useContentWidth<HTMLSpanElement>();
-  const live = running || canSubmit;
-  // Idle it is a quiet key; with something to send it grows into a labelled
-  // ink key, and while running the same key says Stop.
-  let face = "idle";
-  if (running) {
-    face = "stop";
-  } else if (canSubmit) {
-    face = "send";
-  }
-
+  // Same button, two faces: send crossfades into stop.
+  const face = cn(
+    "absolute inset-0 flex items-center justify-center transition-[opacity,filter] duration-200",
+    EASE_OUT_CSS
+  );
   return (
-    <motion.button
-      animate={{ width }}
+    <button
       aria-label={running ? "Stop" : "Send"}
       className={cn(
-        "h-9 shrink-0 overflow-hidden rounded-xl",
-        "transition-[background-color,color,box-shadow] duration-150",
+        "relative size-8 shrink-0 rounded-full",
+        "transition-[background-color,color] duration-150",
         EASE_OUT_CSS,
-        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-100 dark:focus-visible:ring-white/30 dark:focus-visible:ring-offset-zinc-900",
-        live
-          ? "bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_1px_2px_rgb(0_0_0/0.2)] hover:bg-zinc-800 dark:bg-white dark:text-black dark:shadow-none dark:hover:bg-zinc-200"
-          : cn(keycap, "text-black/30 dark:text-white/30")
+        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
+        // Fills in once there is something to send; Stop keeps the fill.
+        running || canSubmit
+          ? "bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/85"
+          : "bg-black/5 text-black/30 dark:bg-white/10 dark:text-white/30"
       )}
-      disabled={!live}
+      disabled={!(running || canSubmit)}
       onClick={running ? onStop : onSubmit}
-      transition={{ duration: 0.22, ease: EASE_OUT }}
       type="button"
     >
       <span
-        className="flex h-full w-max items-center justify-center"
-        ref={innerRef}
+        aria-hidden="true"
+        className={cn(face, running ? "opacity-0 blur-[2px]" : "opacity-100")}
       >
-        <AnimatePresence initial={false} mode="popLayout">
-          <motion.span
-            animate={{ opacity: 1, filter: "blur(0px)" }}
-            className={cn(
-              "flex h-9 items-center gap-1.5 text-[13px]",
-              face === "idle" ? "w-9 justify-center" : "pr-2 pl-3"
-            )}
-            exit={{
-              opacity: 0,
-              filter: "blur(2px)",
-              transition: { duration: 0.08 },
-            }}
-            initial={{ opacity: 0, filter: "blur(2px)" }}
-            key={face}
-            transition={{ duration: 0.16, ease: EASE_OUT }}
-          >
-            {face === "idle" && (
-              <ArrowUp
-                aria-hidden="true"
-                className="size-4"
-                strokeWidth={2.25}
-              />
-            )}
-            {face === "send" && (
-              <>
-                <span>Send</span>
-                <kbd className="flex h-5 min-w-5 items-center justify-center rounded-md bg-white/15 px-1 font-sans text-[11px] dark:bg-black/10">
-                  {RETURN_KEY}
-                </kbd>
-              </>
-            )}
-            {face === "stop" && (
-              <>
-                <span>Stop</span>
-                <span className="flex size-5 items-center justify-center">
-                  <span className="size-2.5 rounded-[2px] bg-current" />
-                </span>
-              </>
-            )}
-          </motion.span>
-        </AnimatePresence>
+        <ArrowUp className="size-4" strokeWidth={2.25} />
       </span>
-    </motion.button>
+      <span
+        aria-hidden="true"
+        className={cn(face, running ? "opacity-100" : "opacity-0 blur-[2px]")}
+      >
+        <span className="size-2.5 rounded-[2px] bg-current" />
+      </span>
+    </button>
   );
 }
 
@@ -1031,20 +975,18 @@ export default function AI_Input_Search({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("mx-auto w-full max-w-xl py-4", className)}>
+      <div className={cn("mx-auto w-full max-w-lg py-4", className)}>
         {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents lint/a11y/noNoninteractiveElementInteractions: pointer-only shortcut; the textarea and buttons inside are keyboard reachable */}
         <div
-          className="relative w-full cursor-text rounded-[22px] bg-zinc-100 p-1 text-left ring-1 ring-black/[0.04] dark:bg-zinc-900 dark:ring-white/[0.06]"
+          className="relative w-full cursor-text rounded-[22px] bg-black/[0.04] p-1 text-left dark:bg-white/[0.04]"
           onClick={(e) => handleContainerClick(e.target)}
         >
-          {/* The writing sheet sits on a tray; the controls live on the tray. */}
+          {/* Card on a soft frame, as in AI Prompt; the trace opens in the frame. */}
           <div
             className={cn(
-              "flex flex-col rounded-[18px] bg-white ring-1 ring-black/[0.07] dark:bg-zinc-950 dark:ring-white/[0.08]",
-              "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_2px_8px_-4px_rgb(0_0_0/0.06)]",
-              "transition-[box-shadow] duration-150",
-              EASE_OUT_CSS,
-              "has-[textarea:focus-visible]:ring-black/[0.13] dark:has-[textarea:focus-visible]:ring-white/[0.16]"
+              "flex flex-col rounded-[18px] bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
+              "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_6px_20px_-10px_rgb(0_0_0/0.12)]",
+              "transition-shadow duration-150 has-[textarea:focus-visible]:ring-black/20 dark:has-[textarea:focus-visible]:ring-white/25"
             )}
           >
             <AnimatePresence initial={false}>
@@ -1080,7 +1022,7 @@ export default function AI_Input_Search({
 
             <Textarea
               aria-label="Message"
-              className="min-h-[76px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-3 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
+              className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
               onChange={(e) => {
                 setValue(e.target.value);
                 adjustHeight();
@@ -1111,58 +1053,57 @@ export default function AI_Input_Search({
               style={tool?.color ? { caretColor: tool.color } : undefined}
               value={value}
             />
-          </div>
 
-          <div className="flex items-center gap-1 px-0.5 pt-1.5 pb-0.5 sm:gap-1.5 sm:px-1">
-            <button
-              aria-label="Attach files"
-              className={cn(
-                "flex size-9 shrink-0 items-center justify-center rounded-xl text-black/60 outline-hidden dark:text-white/60",
-                keycap,
-                "transition-[background-color,color] duration-150",
-                EASE_OUT_CSS,
-                "hover:bg-zinc-50 hover:text-black dark:hover:bg-zinc-700 dark:hover:text-white",
-                "focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/25"
-              )}
-              onClick={() => fileInputRef.current?.click()}
-              type="button"
-            >
-              <Paperclip aria-hidden="true" className="size-4" />
-            </button>
-            <input
-              className="hidden"
-              multiple
-              onChange={(e) => {
-                const picked = Array.from(e.target.files ?? []);
-                setFiles((current) => [...current, ...picked]);
-                e.target.value = "";
-              }}
-              ref={fileInputRef}
-              tabIndex={-1}
-              type="file"
-            />
-            <ToolPill
-              onCloseAutoFocus={backToField}
-              onOpenChange={setMenuOpen}
-              onSelect={pickTool}
-              open={menuOpen}
-              remaining={remaining}
-              tool={tool}
-              tools={tools}
-            />
-            <div className="min-w-0 flex-1" />
-            <ModelMenu
-              models={models}
-              onCloseAutoFocus={backToField}
-              onSelect={setModel}
-              selected={model}
-            />
-            <SendStopButton
-              canSubmit={canSubmit}
-              onStop={stop}
-              onSubmit={submit}
-              running={running}
-            />
+            <div className="flex items-center gap-1 px-2.5 pt-1 pb-2.5">
+              <button
+                aria-label="Attach files"
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-full text-black/60 outline-hidden ring-1 ring-black/10 dark:text-white/60 dark:ring-white/15",
+                  "transition-[background-color,color] duration-150",
+                  EASE_OUT_CSS,
+                  "hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white",
+                  "focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/25"
+                )}
+                onClick={() => fileInputRef.current?.click()}
+                type="button"
+              >
+                <Plus aria-hidden="true" className="size-4" />
+              </button>
+              <input
+                className="hidden"
+                multiple
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files ?? []);
+                  setFiles((current) => [...current, ...picked]);
+                  e.target.value = "";
+                }}
+                ref={fileInputRef}
+                tabIndex={-1}
+                type="file"
+              />
+              <ToolPill
+                onCloseAutoFocus={backToField}
+                onOpenChange={setMenuOpen}
+                onSelect={pickTool}
+                open={menuOpen}
+                remaining={remaining}
+                tool={tool}
+                tools={tools}
+              />
+              <div className="min-w-0 flex-1" />
+              <ModelMenu
+                models={models}
+                onCloseAutoFocus={backToField}
+                onSelect={setModel}
+                selected={model}
+              />
+              <SendStopButton
+                canSubmit={canSubmit}
+                onStop={stop}
+                onSubmit={submit}
+                running={running}
+              />
+            </div>
           </div>
           <AnimatePresence initial={false}>
             {phase !== "idle" && (
@@ -1173,7 +1114,7 @@ export default function AI_Input_Search({
                 initial={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2, ease: EASE_OUT }}
               >
-                <div className="px-1 pt-1.5">
+                <div className="pt-1">
                   <Trace
                     elapsed={elapsed}
                     expanded={expanded}
