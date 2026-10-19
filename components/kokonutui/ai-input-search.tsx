@@ -243,6 +243,19 @@ function SourceStack({ sources }: { sources: SearchSource[] }) {
   );
 }
 
+/**
+ * Small white key that sits on the grey frame: the frame's own buttons
+ * (Change, Sources) share it so the bands read as one piece.
+ */
+const frameKey = cn(
+  "flex h-6 shrink-0 items-center gap-1.5 rounded-md bg-white px-2 font-medium text-[11px] text-black shadow-[0_1px_1px_rgb(0_0_0/0.04)] outline-hidden ring-1 ring-black/[0.08]",
+  "transition-[background-color,box-shadow] duration-150",
+  EASE_OUT_CSS,
+  "hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-black/20",
+  "dark:bg-zinc-800 dark:text-white dark:shadow-none dark:ring-white/10 dark:focus-visible:ring-white/30 dark:hover:bg-zinc-700"
+);
+
+/** The sources open as a second card in the frame, under the first. */
 function SourceList({ id, sources }: { id: string; sources: SearchSource[] }) {
   return (
     <motion.div
@@ -251,31 +264,36 @@ function SourceList({ id, sources }: { id: string; sources: SearchSource[] }) {
       exit={{ height: 0, opacity: 0 }}
       id={id}
       initial={{ height: 0, opacity: 0 }}
-      transition={{ duration: 0.22, ease: EASE_OUT }}
+      transition={{ duration: 0.25, ease: EASE_OUT }}
     >
-      <ol className="max-h-56 overflow-y-auto px-1.5 pb-1.5">
+      <ol className="max-h-60 overflow-y-auto rounded-[18px] bg-white py-1 shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10">
         {sources.map((source, i) => (
           <motion.li
-            animate={{ opacity: 1, y: 0 }}
-            className="flex h-8 items-center gap-2.5 rounded-lg px-1.5 text-xs"
-            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            className={cn(
+              "mx-1 flex h-9 items-center gap-2.5 rounded-xl px-2.5 text-xs",
+              "transition-colors duration-150",
+              EASE_OUT_CSS,
+              "hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+            )}
+            initial={{ opacity: 0, y: 4, filter: "blur(2px)" }}
             key={source.domain}
             // A short cascade, capped so a long list doesn't drag.
             transition={{
-              duration: 0.18,
+              duration: 0.2,
               ease: EASE_OUT,
-              delay: Math.min(i, 8) * 0.025,
+              delay: Math.min(i, 8) * 0.03,
             }}
           >
-            <span className="w-4 shrink-0 text-right text-[11px] text-black/30 tabular-nums dark:text-white/30">
-              {i + 1}
-            </span>
             <Monogram domain={source.domain} />
             <span className="min-w-0 flex-1 truncate text-black/80 dark:text-white/80">
               {source.title}
             </span>
             <span className="hidden shrink-0 text-black/40 sm:block dark:text-white/40">
               {source.domain}
+            </span>
+            <span className="w-5 shrink-0 text-right text-[11px] text-black/30 tabular-nums dark:text-white/30">
+              {i + 1}
             </span>
           </motion.li>
         ))}
@@ -327,22 +345,8 @@ function Trace({
 
   return (
     <div>
-      <button
-        aria-controls={listId}
-        aria-expanded={expanded}
-        className={cn(
-          "flex h-10 w-full items-center gap-2.5 rounded-[18px] px-3 text-left text-xs outline-hidden",
-          "transition-colors duration-150",
-          EASE_OUT_CSS,
-          "focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20",
-          canOpen
-            ? "hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
-            : "cursor-default"
-        )}
-        disabled={!canOpen}
-        onClick={onToggle}
-        type="button"
-      >
+      {/* A band on the frame, the twin of the header above the card. */}
+      <div className="flex h-9 items-center gap-2.5 pr-1.5 pl-3 text-xs">
         {tool?.readsSources || !ToolIcon ? (
           <SourceStack sources={sources} />
         ) : (
@@ -358,17 +362,17 @@ function Trace({
         <span className="relative min-w-0 flex-1">
           <AnimatePresence initial={false} mode="popLayout">
             <motion.span
-              animate={{ opacity: 1, filter: "blur(0px)" }}
+              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
               className={cn(
                 "block truncate",
                 finished
-                  ? "text-black/70 dark:text-white/70"
-                  : "text-black/50 dark:text-white/50"
+                  ? "text-black/60 dark:text-white/60"
+                  : "text-black/45 dark:text-white/45"
               )}
-              exit={{ opacity: 0, filter: "blur(2px)" }}
-              initial={{ opacity: 0, filter: "blur(2px)" }}
+              exit={{ opacity: 0, filter: "blur(2px)", y: -6 }}
+              initial={{ opacity: 0, filter: "blur(2px)", y: 6 }}
               key={label}
-              transition={{ duration: 0.15, ease: EASE_OUT }}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
             >
               {label}
               {phase === "working" && sources.length > 0 && (
@@ -383,17 +387,31 @@ function Trace({
         <span className="shrink-0 text-black/35 tabular-nums dark:text-white/35">
           {seconds(elapsed)}
         </span>
-        {canOpen && (
-          <ChevronDown
-            aria-hidden="true"
-            className={cn(
-              "size-3.5 shrink-0 text-black/40 transition-transform duration-200 dark:text-white/40",
-              EASE_OUT_CSS,
-              expanded && "rotate-180"
-            )}
-          />
-        )}
-      </button>
+        <AnimatePresence initial={false}>
+          {canOpen && (
+            <motion.button
+              animate={{ opacity: 1, filter: "blur(0px)" }}
+              aria-controls={listId}
+              aria-expanded={expanded}
+              className={frameKey}
+              initial={{ opacity: 0, filter: "blur(2px)" }}
+              onClick={onToggle}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
+              type="button"
+            >
+              {expanded ? "Hide" : "Sources"}
+              <ChevronDown
+                aria-hidden="true"
+                className={cn(
+                  "size-3 opacity-50 transition-transform duration-200",
+                  EASE_OUT_CSS,
+                  expanded && "rotate-180"
+                )}
+              />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
 
       <AnimatePresence initial={false}>
         {expanded && <SourceList id={listId} sources={sources} />}
@@ -828,17 +846,12 @@ function ToolHeader({
         </AnimatePresence>
       </span>
       <button
-        className={cn(
-          "flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 font-medium text-black dark:text-white",
-          "transition-[background-color,color] duration-150",
-          EASE_OUT_CSS,
-          "hover:bg-black/5 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-black/30 dark:focus-visible:ring-white/30 dark:hover:bg-white/10"
-        )}
+        className={cn(frameKey, "pr-1")}
         onClick={onOpenTools}
         type="button"
       >
         {tool ? "Change" : "Pick a tool"}
-        <kbd className="font-normal font-sans text-black/35 dark:text-white/35">
+        <kbd className="flex size-4 items-center justify-center rounded-[4px] bg-black/[0.05] font-normal font-sans text-[10px] text-black/50 dark:bg-white/10 dark:text-white/50">
           /
         </kbd>
       </button>
@@ -1174,7 +1187,7 @@ export default function AI_Input_Search({
                 initial={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2, ease: EASE_OUT }}
               >
-                <div className="pt-1">
+                <div>
                   <Trace
                     elapsed={elapsed}
                     expanded={expanded}
