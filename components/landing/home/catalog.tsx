@@ -618,7 +618,7 @@ function Index({ parts }: { parts: Part[] }) {
                       {p.code}
                     </span>
                     <span className="truncate">{p.title}</span>
-                    {p.isNew ? (
+                    {p.isNew || p.updated ? (
                       <span
                         className={cn(
                           MONO,
@@ -626,7 +626,7 @@ function Index({ parts }: { parts: Part[] }) {
                           LEAF
                         )}
                       >
-                        New
+                        {p.isNew ? "New" : "Updated"}
                       </span>
                     ) : null}
                   </Link>

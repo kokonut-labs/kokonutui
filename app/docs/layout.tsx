@@ -19,38 +19,66 @@ export const metadata: Metadata = {
   },
 };
 
+/** A sidebar row's name with a small mono tag on the right. */
+function tagged(name: PageTree.Node["name"], tag: string, color = LEAF) {
+  return (
+    <span
+      className="flex w-full items-baseline justify-between gap-2"
+      key="name"
+    >
+      {name}
+      <span className={cn(MONO, "text-[10.5px]", color)}>{tag}</span>
+    </span>
+  );
+}
+
+/** A folder's tag: how many of its pages are new, else how many updated. */
+function folderTag(
+  children: PageTree.Node[],
+  tags: Map<string, "New" | "Updated">
+) {
+  let added = 0;
+  let updated = 0;
+  for (const child of children) {
+    const tag = child.type === "page" ? tags.get(child.url) : undefined;
+    if (tag === "New") {
+      added += 1;
+    } else if (tag === "Updated") {
+      updated += 1;
+    }
+  }
+  if (added > 0) {
+    return `${added} new`;
+  }
+  return updated > 0 ? `${updated} updated` : undefined;
+}
+
 /**
  * The sidebar reads like the homepage's index: each component is listed by
- * its catalog code instead of an icon, and recent additions say "New".
+ * its catalog code instead of an icon, recent additions say "New" and
+ * recent reworks say "Updated".
  */
 function withCodes(tree: PageTree.Root): PageTree.Root {
   const parts = getParts();
   const codes = new Map(parts.map((part) => [part.url, part.code]));
-  const fresh = new Set(parts.filter((p) => p.isNew).map((p) => p.url));
+  const tags = new Map<string, "New" | "Updated">();
+  for (const part of parts) {
+    if (part.isNew) {
+      tags.set(part.url, "New");
+    } else if (part.updated) {
+      tags.set(part.url, "Updated");
+    }
+  }
 
   const visit = (node: PageTree.Node): PageTree.Node => {
     if (node.type === "folder") {
-      // Folders start open, and still carry the count of new parts inside.
-      const count = node.children.filter(
-        (child) => child.type === "page" && fresh.has(child.url)
-      ).length;
+      // Folders start open, and still carry the count of new or updated
+      // parts inside.
+      const tag = folderTag(node.children, tags);
       return {
         ...node,
         defaultOpen: true,
-        name:
-          count > 0 ? (
-            <span
-              className="flex w-full items-baseline justify-between gap-2"
-              key="name"
-            >
-              {node.name}
-              <span className={cn(MONO, "text-[10.5px]", LEAF)}>
-                {count} new
-              </span>
-            </span>
-          ) : (
-            node.name
-          ),
+        name: tag ? tagged(node.name, tag) : node.name,
         children: node.children.map(visit),
       };
     }
@@ -62,39 +90,16 @@ function withCodes(tree: PageTree.Root): PageTree.Root {
         node.url === PRO_SHOWCASE_PAGE ||
         isProPeekUrl(node.url))
     ) {
-      return {
-        ...node,
-        name: (
-          <span
-            className="flex w-full items-baseline justify-between gap-2"
-            key="name"
-          >
-            {node.name}
-            <span className={cn(MONO, "text-[#FF2D55] text-[10.5px]")}>
-              PRO
-            </span>
-          </span>
-        ),
-      };
+      return { ...node, name: tagged(node.name, "PRO", "text-[#FF2D55]") };
     }
     const code = node.type === "page" ? codes.get(node.url) : undefined;
-    const isNew = node.type === "page" && fresh.has(node.url);
-    if (!code) {
+    if (!code || node.type !== "page") {
       return node;
     }
+    const tag = tags.get(node.url);
     return {
       ...node,
-      name: isNew ? (
-        <span
-          className="flex w-full items-baseline justify-between gap-2"
-          key="name"
-        >
-          {node.name}
-          <span className={cn(MONO, "text-[10.5px]", LEAF)}>New</span>
-        </span>
-      ) : (
-        node.name
-      ),
+      name: tag ? tagged(node.name, tag) : node.name,
       icon: (
         <span
           className={cn(

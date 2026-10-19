@@ -1,4 +1,4 @@
-import { getAddedDates, isRecent } from "@/lib/changelog";
+import { getAddedDates, getUpdatedDates, isRecent } from "@/lib/changelog";
 import { component as registry } from "@/registry/registry-components";
 import { getCategories } from "./get-categories";
 
@@ -22,6 +22,8 @@ export interface Part {
   added?: string;
   /** Added in a recent release, so lists mark it as new. */
   isNew: boolean;
+  /** The recent release that reworked it (YYYY-MM-DD), when it isn't new. */
+  updated?: string;
 }
 
 // Two letters per docs category, for the catalog's part codes.
@@ -41,6 +43,7 @@ export function getParts(): Part[] {
   const categories = getCategories();
   const entries = new Map(registry.map((entry) => [entry.name, entry]));
   const addedDates = getAddedDates();
+  const updatedDates = getUpdatedDates();
 
   const parts: Part[] = categories.flatMap((category) =>
     category.items.map((item, i) => {
@@ -64,6 +67,7 @@ export function getParts(): Part[] {
           ) ?? [],
         added,
         isNew: added ? isRecent(added) : false,
+        updated: updatedDates.get(item.name),
       };
     })
   );
