@@ -167,13 +167,14 @@
       "name": "ai-input-search",
       "type": "registry:component",
       "title": "AI Input Search",
-      "description": "AI search input with Quick and Research modes and a live trace underneath that stacks each source as it is read, times the run and opens into the full source list. Built with React, Tailwind CSS and Motion.",
+      "description": "AI composer with a Tools menu of modes (browse, investigate, draft a visual, run code, reason), a tool header with a Change key, a model picker, an Ask key and a live trace that stacks each source's avatar as it is read. Built with React, Tailwind CSS and Motion.",
       "dependencies": [
         "lucide-react",
         "motion"
       ],
       "registryDependencies": [
-        "textarea"
+        "textarea",
+        "dropdown-menu"
       ],
       "files": [
         {
