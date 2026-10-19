@@ -11,10 +11,10 @@
  */
 
 import {
-  ArrowUp,
   Braces,
   Check,
   ChevronDown,
+  CornerDownLeft,
   FileText,
   Globe,
   ImageIcon,
@@ -26,7 +26,14 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -65,6 +72,10 @@ export interface SearchSource {
   /** e.g. "developer.mozilla.org" */
   domain: string;
   title: string;
+  /** The site's mark, e.g. a favicon or logo. Wins over the letter avatar. */
+  icon?: ReactNode;
+  /** Brand colour for the letter avatar; without it, one is derived. */
+  color?: string;
 }
 
 export interface AIInputSearchProps {
@@ -148,21 +159,58 @@ const DEFAULT_TOOLS: SearchTool[] = [
 const DEFAULT_MODELS = ["Opus 5.5", "Sonnet 5.5", "Haiku 5.5"];
 
 const DEMO_SOURCES: SearchSource[] = [
-  { domain: "developer.mozilla.org", title: "429 Too Many Requests" },
-  { domain: "cloudflare.com", title: "What is rate limiting?" },
+  {
+    domain: "developer.mozilla.org",
+    title: "429 Too Many Requests",
+    color: "#18181b",
+  },
+  {
+    domain: "cloudflare.com",
+    title: "What is rate limiting?",
+    color: "#f38020",
+  },
   {
     domain: "github.com",
     title: "upstash/ratelimit: serverless rate limiting",
+    color: "#24292f",
   },
-  { domain: "vercel.com", title: "Rate limiting at the edge" },
-  { domain: "stripe.com", title: "Scaling your API with rate limiters" },
-  { domain: "redis.io", title: "Rate limiting with sorted sets" },
-  { domain: "ietf.org", title: "RateLimit header fields for HTTP" },
-  { domain: "stackoverflow.com", title: "Token bucket vs sliding window" },
-  { domain: "aws.amazon.com", title: "Throttling requests in API Gateway" },
-  { domain: "nginx.org", title: "Module ngx_http_limit_req_module" },
-  { domain: "arxiv.org", title: "Fair queuing for multi-tenant APIs" },
-  { domain: "martinfowler.com", title: "Circuit breaker" },
+  { domain: "vercel.com", title: "Rate limiting at the edge", color: "#000" },
+  {
+    domain: "stripe.com",
+    title: "Scaling your API with rate limiters",
+    color: "#635bff",
+  },
+  {
+    domain: "redis.io",
+    title: "Rate limiting with sorted sets",
+    color: "#dc382d",
+  },
+  {
+    domain: "ietf.org",
+    title: "RateLimit header fields for HTTP",
+    color: "#4b5563",
+  },
+  {
+    domain: "stackoverflow.com",
+    title: "Token bucket vs sliding window",
+    color: "#f48024",
+  },
+  {
+    domain: "aws.amazon.com",
+    title: "Throttling requests in API Gateway",
+    color: "#232f3e",
+  },
+  {
+    domain: "nginx.org",
+    title: "Module ngx_http_limit_req_module",
+    color: "#009639",
+  },
+  {
+    domain: "arxiv.org",
+    title: "Fair queuing for multi-tenant APIs",
+    color: "#b31b1b",
+  },
+  { domain: "martinfowler.com", title: "Circuit breaker", color: "#2d7fb8" },
 ];
 
 const STACK_MAX = 5;
@@ -197,19 +245,46 @@ async function demoRun(
 
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
-/** A neutral letter tile per site, so the trace needs no favicon service. */
-function Monogram({ domain, ring }: { domain: string; ring?: boolean }) {
+/** A steady hue per domain, so an unbranded site still gets its own colour. */
+const hueOf = (domain: string) => {
+  let hash = 0;
+  for (const char of domain) {
+    hash = (hash * 31 + char.charCodeAt(0)) % 360;
+  }
+  return hash;
+};
+
+/**
+ * The site's avatar: its own icon when given, otherwise its first letter on
+ * its brand colour, so the trace needs no favicon service.
+ */
+function SourceAvatar({
+  source,
+  ring,
+  size = "sm",
+}: {
+  source: SearchSource;
+  ring?: boolean;
+  size?: "sm" | "md";
+}) {
+  const name = source.domain.replace(WWW, "");
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "flex size-5 shrink-0 items-center justify-center rounded-full bg-white font-medium text-[10px] text-zinc-600 dark:bg-zinc-700 dark:text-zinc-200",
+        "flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold text-white [&_img]:size-full [&_svg]:size-3",
+        size === "md" ? "size-6 text-[11px]" : "size-5 text-[10px]",
         ring
-          ? "outline-1 outline-black/10 ring-2 ring-zinc-100 dark:outline-white/10 dark:ring-zinc-800"
-          : "ring-1 ring-black/10 dark:ring-white/10"
+          ? "ring-2 ring-zinc-100 dark:ring-zinc-800"
+          : "ring-1 ring-black/5 dark:ring-white/15"
       )}
+      style={{
+        backgroundColor: source.icon
+          ? "white"
+          : (source.color ?? `oklch(0.6 0.13 ${hueOf(name)})`),
+      }}
     >
-      {domain.replace(WWW, "").charAt(0).toUpperCase()}
+      {source.icon ?? name.charAt(0).toUpperCase()}
     </span>
   );
 }
@@ -235,7 +310,7 @@ function SourceStack({ sources }: { sources: SearchSource[] }) {
             layout="position"
             transition={{ duration: 0.2, ease: EASE_OUT }}
           >
-            <Monogram domain={source.domain} ring />
+            <SourceAvatar ring source={source} />
           </motion.span>
         ))}
       </AnimatePresence>
@@ -285,7 +360,7 @@ function SourceList({ id, sources }: { id: string; sources: SearchSource[] }) {
               delay: Math.min(i, 8) * 0.03,
             }}
           >
-            <Monogram domain={source.domain} />
+            <SourceAvatar size="md" source={source} />
             <span className="min-w-0 flex-1 truncate text-black/80 dark:text-white/80">
               {source.title}
             </span>
@@ -870,41 +945,64 @@ function SendStopButton({
   onSubmit: () => void;
   onStop: () => void;
 }) {
-  // Same button, two faces: send crossfades into stop.
-  const face = cn(
-    "absolute inset-0 flex items-center justify-center transition-[opacity,filter] duration-200",
-    EASE_OUT_CSS
-  );
+  const [innerRef, width] = useContentWidth<HTMLSpanElement>();
+  const live = running || canSubmit;
+  // A worded key rather than an arrow: "Ask" with the return glyph, which
+  // turns into "Stop" while a run is going. Only the face swaps; the key
+  // eases to the new width. Phones get the glyph alone.
+  const face = running ? "stop" : "ask";
   return (
-    <button
-      aria-label={running ? "Stop" : "Send"}
+    <motion.button
+      animate={{ width }}
+      aria-label={running ? "Stop" : "Ask"}
       className={cn(
-        "relative size-8 shrink-0 rounded-full",
-        "transition-[background-color,color] duration-150",
+        "h-8 shrink-0 overflow-hidden rounded-[10px]",
+        "transition-[background-color,color,box-shadow] duration-150",
         EASE_OUT_CSS,
         "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
-        // Fills in once there is something to send; Stop keeps the fill.
-        running || canSubmit
-          ? "bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/85"
-          : "bg-black/5 text-black/30 dark:bg-white/10 dark:text-white/30"
+        live
+          ? "bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.12)] hover:bg-zinc-800 dark:bg-white dark:text-black dark:shadow-none dark:hover:bg-zinc-200"
+          : "bg-black/5 text-black/35 dark:bg-white/10 dark:text-white/35"
       )}
-      disabled={!(running || canSubmit)}
+      disabled={!live}
       onClick={running ? onStop : onSubmit}
+      transition={{ duration: 0.2, ease: EASE_OUT }}
       type="button"
     >
-      <span
-        aria-hidden="true"
-        className={cn(face, running ? "opacity-0 blur-[2px]" : "opacity-100")}
-      >
-        <ArrowUp className="size-4" strokeWidth={2.25} />
+      <span className="flex h-full w-max items-center" ref={innerRef}>
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.span
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+            className="flex h-8 items-center gap-1.5 px-2 font-medium text-xs sm:pr-2 sm:pl-3"
+            exit={{
+              opacity: 0,
+              filter: "blur(2px)",
+              transition: { duration: 0.08 },
+            }}
+            initial={{ opacity: 0, filter: "blur(2px)" }}
+            key={face}
+            transition={{ duration: 0.16, ease: EASE_OUT }}
+          >
+            {face === "stop" ? (
+              <>
+                <span className="max-sm:hidden">Stop</span>
+                <span className="flex size-4 items-center justify-center">
+                  <span className="size-2 rounded-[2px] bg-current" />
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="max-sm:hidden">Ask</span>
+                <CornerDownLeft
+                  aria-hidden="true"
+                  className="size-4 sm:size-3.5 sm:opacity-60"
+                />
+              </>
+            )}
+          </motion.span>
+        </AnimatePresence>
       </span>
-      <span
-        aria-hidden="true"
-        className={cn(face, running ? "opacity-100" : "opacity-0 blur-[2px]")}
-      >
-        <span className="size-2.5 rounded-[2px] bg-current" />
-      </span>
-    </button>
+    </motion.button>
   );
 }
 
