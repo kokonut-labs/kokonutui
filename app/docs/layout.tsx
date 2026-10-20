@@ -23,11 +23,15 @@ export const metadata: Metadata = {
 function tagged(name: PageTree.Node["name"], tag: string, color = LEAF) {
   return (
     <span
-      className="flex w-full items-baseline justify-between gap-2"
+      className="flex w-full min-w-0 items-baseline justify-between gap-2"
       key="name"
     >
-      {name}
-      <span className={cn(MONO, "text-[10.5px]", color)}>{tag}</span>
+      <span className="min-w-0 truncate">{name}</span>
+      <span
+        className={cn(MONO, "shrink-0 whitespace-nowrap text-[10.5px]", color)}
+      >
+        {tag}
+      </span>
     </span>
   );
 }
