@@ -909,34 +909,12 @@ export const component: Registry = [
     ],
   },
   {
-    name: "allocation-bar",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/allocation-bar.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "seat-map",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
         path: "components/kokonutui/seat-map.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "radius-picker",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/radius-picker.tsx",
         type: "registry:component",
       },
     ],
