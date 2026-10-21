@@ -41,6 +41,7 @@ export const RELEASES: Release[] = [
       { name: "invite-envelope", pr: 113 },
       { name: "bookshelf", pr: 113 },
       { name: "pull-to-refresh", pr: 113 },
+      { name: "ai-token-alternatives", pr: 113 },
     ],
     improved: [],
   },

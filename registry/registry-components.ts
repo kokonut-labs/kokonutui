@@ -886,4 +886,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "ai-token-alternatives",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-token-alternatives.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
