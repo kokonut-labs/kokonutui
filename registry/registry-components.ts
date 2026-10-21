@@ -897,4 +897,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "ai-branches",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-branches.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];

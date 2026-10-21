@@ -12,6 +12,7 @@
     "ai-diff-review",
     "ai-model-selector",
     "ai-token-alternatives",
+    "ai-branches",
     "ai-autocomplete",
     "slash-command-menu",
     "image-generation-card"
