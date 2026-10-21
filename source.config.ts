@@ -6,6 +6,7 @@ import {
 } from "fumadocs-mdx/config";
 import lastModified from "fumadocs-mdx/plugins/last-modified";
 import { z } from "zod";
+import { remarkLazyDemos } from "./lib/mdx/remark-lazy-demos";
 
 /**
  * Docs pages are almost entirely JSX — the install command, source code and
@@ -59,4 +60,8 @@ export default defineConfig({
   // Real per-page git timestamps, so the sitemap reports accurate
   // <lastmod> values instead of the build time for every page.
   plugins: [lastModified()],
+  mdxOptions: {
+    // Demos load where they render instead of shipping with every page.
+    remarkPlugins: (plugins) => [remarkLazyDemos, ...plugins],
+  },
 });

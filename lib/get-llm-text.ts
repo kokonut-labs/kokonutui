@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { renderPlaceholder } from "fumadocs-core/mdx-plugins/remark-llms.runtime";
+import { cacheLife } from "next/cache";
 import { siteConfig } from "@/config/site";
 import { BLOCK_RENDERERS } from "@/lib/llm-blocks";
 import type { source } from "@/lib/source";
@@ -15,6 +16,9 @@ const COMPONENTS_DIR = path.join(process.cwd(), "components/kokonutui");
  */
 export async function readComponentSource(name: string): Promise<string> {
   "use cache";
+  // Source files only change with a deploy, which clears this cache anyway.
+  // The default profile would re-render every docs page every 15 minutes.
+  cacheLife("max");
 
   return await fs.readFile(path.join(COMPONENTS_DIR, `${name}.tsx`), "utf-8");
 }

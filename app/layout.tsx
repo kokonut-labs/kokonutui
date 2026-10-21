@@ -5,9 +5,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import { ViewTransitions } from "next-view-transitions";
 import { CopyToast } from "@/components/copy-toast";
-import StaticSearchDialog from "@/components/search-dialog";
+import LazySearchDialog from "@/components/search-dialog-lazy";
 import { META_THEME_COLORS, siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
@@ -100,36 +99,34 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ViewTransitions>
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={cn(
-            geist.variable,
-            geistMono.variable,
-            geist.className,
-            "antialiased"
-          )}
-        >
-          <script
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: static schema.org JSON-LD built from siteConfig
-            dangerouslySetInnerHTML={{ __html: structuredData }}
-            type="application/ld+json"
-          />
-          <RootProvider search={{ SearchDialog: StaticSearchDialog }}>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              disableTransitionOnChange
-              enableSystem
-            >
-              {children}
-            </ThemeProvider>
-          </RootProvider>
-          <CopyToast />
-          <Analytics />
-          <SpeedInsights />
-        </body>
-      </html>
-    </ViewTransitions>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={cn(
+          geist.variable,
+          geistMono.variable,
+          geist.className,
+          "antialiased"
+        )}
+      >
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: static schema.org JSON-LD built from siteConfig
+          dangerouslySetInnerHTML={{ __html: structuredData }}
+          type="application/ld+json"
+        />
+        <RootProvider search={{ SearchDialog: LazySearchDialog }}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            disableTransitionOnChange
+            enableSystem
+          >
+            {children}
+          </ThemeProvider>
+        </RootProvider>
+        <CopyToast />
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
   );
 }
