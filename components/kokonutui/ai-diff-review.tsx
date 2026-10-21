@@ -3,16 +3,21 @@
 /**
  * @author: @kokonutui
  * @description: AI Diff Review
- * @version: 1.0.0
- * @date: 2026-10-15
+ * @version: 1.1.0
+ * @date: 2026-10-21
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
 import { Check, ChevronRight, Undo2, X } from "lucide-react";
-import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useEffect, useId, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  MotionConfig,
+  motion,
+  useReducedMotion,
+} from "motion/react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export interface DiffLine {
@@ -48,6 +53,13 @@ interface AIDiffReviewProps {
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const DEMO_LINE_MS = 90;
+/** Pause before the demo starts writing, so a replay clears first. */
+const DEMO_START_MS = 320;
+/** Heights retarget on every streamed line, so they follow a spring. */
+const HEIGHT_SPRING = { type: "spring", duration: 0.32, bounce: 0 } as const;
+const ROW_HEIGHT = 40;
+const SWAP_IN = { duration: 0.18, ease: EASE_OUT } as const;
+const SWAP_OUT = { duration: 0.12, ease: EASE_OUT } as const;
 
 const DEMO_FILES: FileChange[] = [
   {
@@ -187,12 +199,12 @@ function useDemoStream(
     if (!(writing && visible)) {
       return;
     }
-    const id = setInterval(
+    const id = setTimeout(
       () => setShown((value) => Math.min(TOTAL_DEMO_LINES, value + 1)),
-      DEMO_LINE_MS
+      shown === 0 ? DEMO_START_MS : DEMO_LINE_MS
     );
-    return () => clearInterval(id);
-  }, [writing, visible]);
+    return () => clearTimeout(id);
+  }, [writing, visible, shown]);
 
   return {
     files: takeLines(DEMO_FILES, shown),
@@ -254,15 +266,15 @@ function Hunk({ hunk }: { hunk: DiffHunk }) {
         }
         return (
           <motion.div
-            animate={{ opacity: 1 }}
+            animate={{ opacity: 1, y: 0 }}
             className={cn(
               "flex font-mono text-xs leading-5",
               LINE_STYLES[line.type]
             )}
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 0, y: 3 }}
             // biome-ignore lint/suspicious/noArrayIndexKey: lines of a hunk only ever append
             key={index}
-            transition={{ duration: 0.18, ease: EASE_OUT }}
+            transition={{ duration: 0.2, ease: EASE_OUT }}
           >
             <span className="w-9 shrink-0 select-none pr-2 text-right text-zinc-400 tabular-nums dark:text-zinc-600">
               {lineNumber}
@@ -278,34 +290,98 @@ function Hunk({ hunk }: { hunk: DiffHunk }) {
   );
 }
 
+/**
+ * Animates to the measured height of its content, so a diff that grows a
+ * line at a time glides open instead of stepping, and an expand that starts
+ * mid-stream never snaps at the end. Content stays mounted while closed.
+ */
+function Collapse({
+  open,
+  id,
+  reduce,
+  children,
+}: {
+  open: boolean;
+  id: string;
+  reduce: boolean;
+  children: ReactNode;
+}) {
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    const element = innerRef.current;
+    if (!element) {
+      return;
+    }
+    const observer = new ResizeObserver(() => setHeight(element.offsetHeight));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <motion.div
+      animate={{ height: open ? height : 0, opacity: open ? 1 : 0 }}
+      className="overflow-hidden"
+      id={id}
+      inert={!open}
+      initial={false}
+      transition={
+        reduce
+          ? { duration: 0 }
+          : {
+              height: HEIGHT_SPRING,
+              opacity: open ? SWAP_IN : SWAP_OUT,
+            }
+      }
+    >
+      <div ref={innerRef}>{children}</div>
+    </motion.div>
+  );
+}
+
 function FileRow({
   file,
   decision,
+  open,
   writing,
+  onToggle,
   onDecide,
 }: {
   file: FileChange;
   decision: FileDecision;
+  open: boolean;
   writing: boolean;
+  onToggle: () => void;
   onDecide: (decision: FileDecision) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const reduce = useReducedMotion() ?? false;
   const diffId = useId();
   const { added, removed } = countLines(file.hunks);
   const slash = file.path.lastIndexOf("/");
   const dir = file.path.slice(0, slash + 1);
   const name = file.path.slice(slash + 1);
-  const isOpen = (open || writing) && decision === "pending";
+  const isOpen = open && decision === "pending";
 
   return (
-    <li className="border-zinc-100 border-t first:border-t-0 dark:border-white/5">
-      <div className="group/row flex items-center gap-2 py-1.5 pr-1.5 pl-1">
+    <motion.li
+      className="overflow-hidden border-zinc-100 border-t first:border-t-0 dark:border-white/5"
+      exit={{ height: 0, opacity: 0 }}
+      transition={reduce ? { duration: 0 } : SWAP_IN}
+    >
+      <motion.div
+        animate={{ height: ROW_HEIGHT, opacity: 1 }}
+        className="group/row relative flex items-center gap-2 pr-1.5 pl-1"
+        initial={{ height: 0, opacity: 0 }}
+        style={{ height: ROW_HEIGHT }}
+        transition={reduce ? { duration: 0 } : SWAP_IN}
+      >
         <button
           aria-controls={diffId}
           aria-expanded={isOpen}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/40 disabled:cursor-default"
+          className="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 text-left outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/40 disabled:cursor-default"
           disabled={decision !== "pending" || writing}
-          onClick={() => setOpen((value) => !value)}
+          onClick={onToggle}
           type="button"
         >
           <ChevronRight
@@ -332,8 +408,13 @@ function FileRow({
               {name}
             </span>
           </span>
-          {file.created && decision !== "rejected" && (
-            <span className="shrink-0 rounded bg-emerald-500/10 px-1 text-[10px] text-emerald-700 leading-4 dark:text-emerald-300">
+          {file.created && (
+            <span
+              className={cn(
+                "shrink-0 rounded bg-emerald-500/10 px-1 text-[10px] text-emerald-700 leading-4 transition-opacity duration-200 dark:text-emerald-300",
+                decision === "rejected" && "opacity-0"
+              )}
+            >
               new
             </span>
           )}
@@ -342,12 +423,11 @@ function FileRow({
         <AnimatePresence initial={false} mode="popLayout">
           {decision === "pending" ? (
             <motion.div
-              animate={{ opacity: 1 }}
+              animate={{ opacity: 1, filter: "blur(0px)", transition: SWAP_IN }}
               className="flex items-center gap-2"
-              exit={{ opacity: 0 }}
-              initial={{ opacity: 0 }}
+              exit={{ opacity: 0, filter: "blur(2px)", transition: SWAP_OUT }}
+              initial={{ opacity: 0, filter: "blur(2px)" }}
               key="counts"
-              transition={{ duration: 0.15 }}
             >
               <span className="font-mono text-[11px] tabular-nums">
                 <span className="text-emerald-600 dark:text-emerald-400">
@@ -358,35 +438,39 @@ function FileRow({
                 </span>
               </span>
               <ChangeBar added={added} removed={removed} />
-              {!writing && (
-                <span className="flex items-center gap-0.5">
-                  <button
-                    aria-label={`Reject ${file.path}`}
-                    className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-red-400"
-                    onClick={() => onDecide("rejected")}
-                    type="button"
-                  >
-                    <X aria-hidden="true" className="size-3.5" />
-                  </button>
-                  <button
-                    aria-label={`Accept ${file.path}`}
-                    className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-emerald-600 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-emerald-400"
-                    onClick={() => onDecide("accepted")}
-                    type="button"
-                  >
-                    <Check aria-hidden="true" className="size-3.5" />
-                  </button>
-                </span>
-              )}
+              {/* Kept in the layout while writing so the counts never jump. */}
+              <span
+                className={cn(
+                  "flex items-center gap-0.5 transition-opacity duration-200",
+                  writing && "opacity-0"
+                )}
+                inert={writing}
+              >
+                <button
+                  aria-label={`Reject ${file.path}`}
+                  className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-red-400"
+                  onClick={() => onDecide("rejected")}
+                  type="button"
+                >
+                  <X aria-hidden="true" className="size-3.5" />
+                </button>
+                <button
+                  aria-label={`Accept ${file.path}`}
+                  className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-emerald-600 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-emerald-400"
+                  onClick={() => onDecide("accepted")}
+                  type="button"
+                >
+                  <Check aria-hidden="true" className="size-3.5" />
+                </button>
+              </span>
             </motion.div>
           ) : (
             <motion.div
-              animate={{ opacity: 1, filter: "blur(0px)" }}
+              animate={{ opacity: 1, filter: "blur(0px)", transition: SWAP_IN }}
               className="flex items-center gap-1.5"
-              exit={{ opacity: 0, filter: "blur(2px)" }}
+              exit={{ opacity: 0, filter: "blur(2px)", transition: SWAP_OUT }}
               initial={{ opacity: 0, filter: "blur(2px)" }}
               key="decided"
-              transition={{ duration: 0.18, ease: EASE_OUT }}
             >
               <span
                 className={cn(
@@ -409,27 +493,18 @@ function FileRow({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
 
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            animate={{ height: "auto", opacity: 1 }}
-            className="overflow-hidden"
-            exit={{ height: 0, opacity: 0 }}
-            id={diffId}
-            initial={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.24, ease: EASE_OUT }}
-          >
-            <div className="mx-2 mb-2 overflow-x-auto rounded-lg bg-zinc-50 ring-1 ring-black/5 dark:bg-white/[0.03] dark:ring-white/10">
-              {file.hunks.map((hunk) => (
-                <Hunk hunk={hunk} key={hunk.start} />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </li>
+      <Collapse id={diffId} open={isOpen} reduce={reduce}>
+        <div className="px-2 pb-2">
+          <div className="overflow-x-auto rounded-lg bg-zinc-50 ring-1 ring-black/5 ring-inset dark:bg-white/[0.03] dark:ring-white/10">
+            {file.hunks.map((hunk) => (
+              <Hunk hunk={hunk} key={hunk.start} />
+            ))}
+          </div>
+        </div>
+      </Collapse>
+    </motion.li>
   );
 }
 
@@ -443,11 +518,13 @@ export default function AIDiffReview({
   const files = filesProp ?? demo.files;
   const writing = filesProp === undefined && demo.writing;
   const [decisions, setDecisions] = useState<Record<string, FileDecision>>({});
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
 
   // A replayed demo starts with a clean slate.
   useEffect(() => {
     if (demo.run > 0) {
       setDecisions({});
+      setOpened({});
     }
   }, [demo.run]);
 
@@ -469,8 +546,20 @@ export default function AIDiffReview({
     (file) => decisionOf(file.path) === "accepted"
   ).length;
   const allDecided = !writing && files.length > 0 && pending.length === 0;
-  // While streaming, only the file being written is open.
+  // While streaming, only the file being written is open. When the demo
+  // finishes, the last file stays open rather than folding the card shut.
   const writingPath = writing ? files.at(-1)?.path : undefined;
+  const restingPath = filesProp === undefined ? files.at(-1)?.path : undefined;
+  const isOpen = (path: string) =>
+    writingPath === undefined
+      ? (opened[path] ?? path === restingPath)
+      : path === writingPath;
+  let actions: "review" | "replay" | null = null;
+  if (allDecided && filesProp === undefined) {
+    actions = "replay";
+  } else if (!(writing || allDecided)) {
+    actions = "review";
+  }
 
   let title = `${files.length} ${files.length === 1 ? "file" : "files"} changed`;
   if (writing) {
@@ -484,70 +573,137 @@ export default function AIDiffReview({
       <div className={cn("w-full max-w-lg", className)} ref={rootRef}>
         <div className="rounded-2xl bg-black/5 p-1.5 dark:bg-white/5">
           <div className="flex h-9 items-center gap-2 px-2.5">
-            <output className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
-              {title}
+            <output className="relative font-medium text-sm text-zinc-900 dark:text-zinc-100">
+              <AnimatePresence initial={false} mode="popLayout">
+                <motion.span
+                  animate={{
+                    opacity: 1,
+                    filter: "blur(0px)",
+                    transition: SWAP_IN,
+                  }}
+                  className="inline-block whitespace-nowrap"
+                  exit={{
+                    opacity: 0,
+                    filter: "blur(2px)",
+                    transition: SWAP_OUT,
+                  }}
+                  initial={{ opacity: 0, filter: "blur(2px)" }}
+                  key={title}
+                >
+                  {title}
+                </motion.span>
+              </AnimatePresence>
             </output>
-            <span className="font-mono text-[11px] tabular-nums">
+            <motion.span
+              className="font-mono text-[11px] tabular-nums"
+              layout="position"
+              transition={SWAP_IN}
+            >
               <span className="text-emerald-600 dark:text-emerald-400">
                 +{totals.added}
               </span>{" "}
               <span className="text-red-600 dark:text-red-400">
                 −{totals.removed}
               </span>
-            </span>
-            <div className="ml-auto flex items-center gap-1">
-              {!(writing || allDecided) && (
-                <>
-                  <button
-                    className="h-7 rounded-md px-2 text-xs text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-black/5 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
-                    onClick={() => {
-                      for (const file of pending) {
-                        decide(file.path, "rejected");
-                      }
+            </motion.span>
+            <div className="relative ml-auto flex items-center">
+              <AnimatePresence initial={false} mode="popLayout">
+                {actions === "review" && (
+                  <motion.div
+                    animate={{
+                      opacity: 1,
+                      filter: "blur(0px)",
+                      transition: SWAP_IN,
                     }}
+                    className="flex items-center gap-1"
+                    exit={{
+                      opacity: 0,
+                      filter: "blur(2px)",
+                      transition: SWAP_OUT,
+                    }}
+                    initial={{ opacity: 0, filter: "blur(2px)" }}
+                    key="review"
+                  >
+                    <button
+                      className="h-7 rounded-md px-2 text-xs text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-black/5 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
+                      onClick={() => {
+                        for (const file of pending) {
+                          decide(file.path, "rejected");
+                        }
+                      }}
+                      type="button"
+                    >
+                      Reject all
+                    </button>
+                    <button
+                      className="h-7 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/60 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                      onClick={() => {
+                        for (const file of pending) {
+                          decide(file.path, "accepted");
+                        }
+                      }}
+                      type="button"
+                    >
+                      Accept all
+                    </button>
+                  </motion.div>
+                )}
+                {actions === "replay" && (
+                  <motion.button
+                    animate={{
+                      opacity: 1,
+                      filter: "blur(0px)",
+                      transition: SWAP_IN,
+                    }}
+                    className="h-7 rounded-md px-2 text-xs text-zinc-500 outline-hidden transition-colors duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-400 dark:hover:text-white"
+                    exit={{
+                      opacity: 0,
+                      filter: "blur(2px)",
+                      transition: SWAP_OUT,
+                    }}
+                    initial={{ opacity: 0, filter: "blur(2px)" }}
+                    key="replay"
+                    onClick={demo.replay}
                     type="button"
                   >
-                    Reject all
-                  </button>
-                  <button
-                    className="h-7 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/60 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-                    onClick={() => {
-                      for (const file of pending) {
-                        decide(file.path, "accepted");
-                      }
-                    }}
-                    type="button"
-                  >
-                    Accept all
-                  </button>
-                </>
-              )}
-              {allDecided && filesProp === undefined && (
-                <button
-                  className="h-7 rounded-md px-2 text-xs text-zinc-500 outline-hidden transition-colors duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-400 dark:hover:text-white"
-                  onClick={demo.replay}
-                  type="button"
-                >
-                  Replay
-                </button>
-              )}
+                    Replay
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
           </div>
           <ul className="rounded-xl bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10">
-            {files.map((file) => (
-              <FileRow
-                decision={decisionOf(file.path)}
-                file={file}
-                key={file.path}
-                onDecide={(decision) => decide(file.path, decision)}
-                writing={file.path === writingPath}
-              />
-            ))}
-            {files.length === 0 && (
-              <li className="px-3 py-3 text-sm text-zinc-400">
-                Waiting for edits…
-              </li>
-            )}
+            <AnimatePresence initial={false}>
+              {files.map((file) => (
+                <FileRow
+                  decision={decisionOf(file.path)}
+                  file={file}
+                  key={`${demo.run}:${file.path}`}
+                  onDecide={(decision) => decide(file.path, decision)}
+                  onToggle={() =>
+                    setOpened((current) => ({
+                      ...current,
+                      [file.path]: !isOpen(file.path),
+                    }))
+                  }
+                  open={isOpen(file.path)}
+                  writing={file.path === writingPath}
+                />
+              ))}
+              {files.length === 0 && (
+                <motion.li
+                  animate={{ height: 44, opacity: 1 }}
+                  className="flex items-center overflow-hidden px-3 text-sm text-zinc-400"
+                  exit={{ height: 0, opacity: 0 }}
+                  initial={{ height: 0, opacity: 0 }}
+                  key="waiting"
+                  style={{ height: 44 }}
+                  transition={SWAP_IN}
+                >
+                  Waiting for edits…
+                </motion.li>
+              )}
+            </AnimatePresence>
           </ul>
         </div>
       </div>
