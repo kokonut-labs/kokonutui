@@ -897,4 +897,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "spaces-sidebar",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/spaces-sidebar.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
