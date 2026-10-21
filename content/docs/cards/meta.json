@@ -17,6 +17,11 @@
     "uptime-card",
     "spending-ring",
     "lightbox-grid",
+    "leaderboard",
+    "cohort-table",
+    "funnel-chart",
+    "event-timeline",
+    "lasso-scatter",
     "onboarding-checklist"
   ]
 }

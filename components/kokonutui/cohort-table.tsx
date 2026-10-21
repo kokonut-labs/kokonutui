@@ -444,7 +444,7 @@ export default function CohortTable({
         className
       )}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
           <p className="font-medium text-sm">{title}</p>
           <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
