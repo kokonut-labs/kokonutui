@@ -919,4 +919,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "color-sampler",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/color-sampler.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
