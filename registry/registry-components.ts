@@ -886,4 +886,59 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "slide-to-confirm",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/slide-to-confirm.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "amount-pad",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/amount-pad.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "allocation-bar",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/allocation-bar.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "seat-map",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/seat-map.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "radius-picker",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/radius-picker.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];

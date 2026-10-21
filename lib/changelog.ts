@@ -41,6 +41,11 @@ export const RELEASES: Release[] = [
       { name: "ai-token-alternatives", pr: 115 },
       { name: "ai-branches", pr: 115 },
       { name: "ai-agent-lanes", pr: 115 },
+      { name: "seat-map", pr: 0 },
+      { name: "allocation-bar", pr: 0 },
+      { name: "amount-pad", pr: 0 },
+      { name: "radius-picker", pr: 0 },
+      { name: "slide-to-confirm", pr: 0 },
     ],
     improved: [
       {
