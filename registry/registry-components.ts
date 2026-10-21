@@ -898,39 +898,6 @@ export const component: Registry = [
     ],
   },
   {
-    name: "spaces-sidebar",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/spaces-sidebar.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "story-viewer",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/story-viewer.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "color-sampler",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/color-sampler.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "ink-background",
     type: "registry:component",
     dependencies: [],
