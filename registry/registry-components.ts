@@ -886,4 +886,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "marker-text",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/marker-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
