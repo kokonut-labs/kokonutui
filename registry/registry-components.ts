@@ -831,4 +831,59 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "timezone-planner",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/timezone-planner.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "tab-strip",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/tab-strip.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-questions",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-questions.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "comment-pins",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/comment-pins.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "message-thread",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/message-thread.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
