@@ -36,11 +36,11 @@ export const RELEASES: Release[] = [
   {
     date: "2026-10-21",
     added: [
-      { name: "timezone-planner", pr: 113 },
-      { name: "page-flip", pr: 113 },
-      { name: "ai-token-alternatives", pr: 113 },
-      { name: "ai-branches", pr: 113 },
-      { name: "ai-agent-lanes", pr: 113 },
+      { name: "timezone-planner", pr: 115 },
+      { name: "page-flip", pr: 115 },
+      { name: "ai-token-alternatives", pr: 115 },
+      { name: "ai-branches", pr: 115 },
+      { name: "ai-agent-lanes", pr: 115 },
     ],
     improved: [
       {
