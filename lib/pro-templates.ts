@@ -25,6 +25,7 @@ export const PRO_TEMPLATE_LIST: ProTemplate[] = [
       "A portfolio for product designers and design engineers, with case studies and a lab of interactions.",
     price: 59,
     video: "https://cdn.kokonutui.pro/marlow-template.mp4",
+    poster: "/landing/pro-marlow-2.webp",
     previewLink: "https://marlow-template.vercel.app/",
   },
   {
