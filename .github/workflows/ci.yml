@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Vercel builds skip the typecheck (next.config.mjs), so this is where
+  # type errors get caught.
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      # Loading next.config starts fumadocs' own .source regeneration without
+      # awaiting it, so typegen can exit mid-write and leave server.ts empty.
+      # Run typegen first, then regenerate .source with the CLI, which awaits.
+      - name: Generate route types
+        run: bunx next typegen
+
+      - name: Generate MDX sources
+        run: bunx fumadocs-mdx
+
+      - run: bunx tsc --noEmit

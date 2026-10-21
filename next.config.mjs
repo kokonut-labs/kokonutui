@@ -385,15 +385,26 @@ const nextConfig = {
     ];
   },
   images: {
+    // Only the hosts the site draws images from. A wildcard let anyone run
+    // any image on the web through /_next/image on this project's bill.
     remotePatterns: [
-      {
-        hostname: "*",
-      },
+      { protocol: "https", hostname: "pbs.twimg.com" },
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "i.ytimg.com" },
+      { protocol: "https", hostname: "vercel.com" },
+      { protocol: "https", hostname: "kokonutui.pro" },
+      { protocol: "https", hostname: "cdn.kokonutui.pro" },
     ],
     minimumCacheTTL: 2_678_400,
     qualities: [75, 90],
   },
   reactStrictMode: true,
+  // The CI Typecheck job runs tsc on every PR and push to main, so Vercel
+  // builds skip their own pass (about a third of the build). Local builds
+  // still check.
+  typescript: {
+    ignoreBuildErrors: Boolean(process.env.VERCEL),
+  },
   cacheComponents: true,
   serverExternalPackages: ["twoslash", "typescript"],
   experimental: {
