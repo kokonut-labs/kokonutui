@@ -40,6 +40,7 @@ export const RELEASES: Release[] = [
       { name: "page-flip", pr: 113 },
       { name: "invite-envelope", pr: 113 },
       { name: "bookshelf", pr: 113 },
+      { name: "pull-to-refresh", pr: 113 },
     ],
     improved: [],
   },

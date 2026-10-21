@@ -875,4 +875,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "pull-to-refresh",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/pull-to-refresh.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
