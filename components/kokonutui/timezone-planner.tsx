@@ -2,7 +2,7 @@
 
 /**
  * @author: @dorianbaffier
- * @description: Time Zone Planner
+ * @description: Timezone Planner
  * @version: 1.0.0
  * @date: 2026-10-21
  * @license: MIT
@@ -24,6 +24,7 @@ import {
   type PointerEvent,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -37,13 +38,28 @@ const MAX_DURATION = 480;
 // Local hours that count as asleep, whatever the working day is.
 const NIGHT_FROM = 22;
 const NIGHT_TO = 7;
-const HANDLE_PX = 8;
-const AXIS_HOURS = [0, 3, 6, 9, 12, 15, 18, 21];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const DIGIT = /\d/;
 const OFFSET = /GMT([+-])(\d{1,2})(?::?(\d{2}))?/;
-const GLIDE = { type: "spring", duration: 0.45, bounce: 0.12 } as const;
+const NON_WORD = /[^a-zA-Z0-9]/g;
+const GLIDE = { type: "spring", duration: 0.5, bounce: 0.15 } as const;
+const TAU = Math.PI * 2;
+
+// Dial geometry, in viewBox units.
+const SIZE = 340;
+const C = SIZE / 2;
+const R_OUT = 134;
+const R_IN = 60;
+const RING_GAP = 4;
+const WEDGE_IN = R_IN - 7;
+const WEDGE_OUT = R_OUT + 6;
+const LABEL_R = 160;
+const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
+/** How far past a wedge edge (in viewBox units) still grabs that edge. */
+const EDGE_REACH = 13;
+/** Flick projection: how far the wedge coasts on release, in seconds of its speed. */
+const COAST = 0.14;
 
 export interface PlannerPerson {
   id: string;
@@ -65,7 +81,7 @@ export interface PlannerSlot {
 }
 
 export interface TimezonePlannerProps {
-  /** The first person is "you": the axis runs on their clock. */
+  /** The first person is "you": the dial runs on their clock. */
   people?: PlannerPerson[];
   /** The day to plan. Defaults to today. */
   date?: Date;
@@ -136,11 +152,20 @@ interface Segment {
   kind: "work" | "night" | "off";
 }
 
+type Grab =
+  | { mode: "move"; offset: number }
+  | { mode: "start"; end: number }
+  | { mode: "end" };
+
 const clamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v));
 const snap = (v: number) => Math.round(v / STEP) * STEP;
 const mod = (v: number, m: number) => ((v % m) + m) % m;
 const pad = (n: number) => String(n).padStart(2, "0");
+/** The shortest way round the dial from `from` to `to`, in minutes. */
+const turn = (from: number, to: number) =>
+  mod(to - from + DAY / 2, DAY) - DAY / 2;
+const round = (n: number) => Math.round(n * 100) / 100;
 
 function clock(minutes: number) {
   const m = mod(Math.round(minutes), DAY);
@@ -230,7 +255,7 @@ function kindAt(local: number, start: number, end: number): Segment["kind"] {
   return "off";
 }
 
-/** The bar for one person, cut wherever their day changes kind. */
+/** One person's ring, cut wherever their day changes kind. */
 function segmentsFor(person: PlannerPerson, shift: number): Segment[] {
   const start = person.workStart ?? 9;
   const end = person.workEnd ?? 18;
@@ -293,7 +318,7 @@ function bestStart(
 ) {
   let best = 0;
   let bestScore = Number.NEGATIVE_INFINITY;
-  for (let s = 0; s <= DAY - duration; s += STEP) {
+  for (let s = 0; s < DAY; s += STEP) {
     let score = 0;
     people.forEach((person, i) => {
       const shift = shifts[i] ?? 0;
@@ -310,16 +335,42 @@ function bestStart(
   return best;
 }
 
+/** A point on the dial: minutes run clockwise from midnight at the top. */
+function polar(r: number, minutes: number) {
+  const a = (minutes / DAY) * TAU;
+  return [round(C + r * Math.sin(a)), round(C - r * Math.cos(a))] as const;
+}
+
+/** An annular slice between two radii and two times. */
+function slice(r0: number, r1: number, from: number, to: number) {
+  const span = to - from;
+  if (span >= DAY) {
+    return `M ${C} ${C - r1} A ${r1} ${r1} 0 1 1 ${C} ${C + r1} A ${r1} ${r1} 0 1 1 ${C} ${C - r1} M ${C} ${C - r0} A ${r0} ${r0} 0 1 0 ${C} ${C + r0} A ${r0} ${r0} 0 1 0 ${C} ${C - r0} Z`;
+  }
+  const large = span > DAY / 2 ? 1 : 0;
+  const [ax, ay] = polar(r1, from);
+  const [bx, by] = polar(r1, to);
+  const [cx, cy] = polar(r0, to);
+  const [dx, dy] = polar(r0, from);
+  return `M ${ax} ${ay} A ${r1} ${r1} 0 ${large} 1 ${bx} ${by} L ${cx} ${cy} A ${r0} ${r0} 0 ${large} 0 ${dx} ${dy} Z`;
+}
+
+function ringBounds(index: number, count: number) {
+  const width = (R_OUT - R_IN - RING_GAP * (count - 1)) / count;
+  const outer = R_OUT - index * (width + RING_GAP);
+  return { outer, inner: outer - width };
+}
+
 const KIND_BASE: Record<Segment["kind"], string> = {
-  work: "bg-emerald-500/15 dark:bg-emerald-400/15",
-  off: "bg-zinc-100 dark:bg-white/[0.04]",
-  night: "bg-zinc-200/70 dark:bg-white/[0.09]",
+  work: "fill-emerald-500/20 dark:fill-emerald-400/20",
+  off: "fill-zinc-100 dark:fill-white/[0.05]",
+  night: "fill-zinc-200 dark:fill-white/[0.1]",
 };
 
 const KIND_LIT: Record<Segment["kind"], string> = {
-  work: "bg-emerald-500 dark:bg-emerald-400",
-  off: "bg-zinc-300 dark:bg-zinc-600",
-  night: "bg-zinc-400 dark:bg-zinc-500",
+  work: "fill-emerald-500 dark:fill-emerald-400",
+  off: "fill-zinc-300 dark:fill-zinc-600",
+  night: "fill-zinc-400 dark:fill-zinc-500",
 };
 
 /** Each digit rolls on its own wheel; separators sit still. */
@@ -362,62 +413,58 @@ function Rolling({ value }: { value: string }) {
   );
 }
 
-function Track({
+function Ring({
   segments,
+  index,
+  count,
   shift,
-  weekday,
-  clip,
+  lit,
 }: {
   segments: Segment[];
+  index: number;
+  count: number;
   shift: number;
-  weekday: number;
-  clip: MotionValue<string>;
+  lit: boolean;
 }) {
-  // Where their clock passes midnight, so you can see the day change.
+  const { outer, inner } = ringBounds(index, count);
+  // Where their clock passes midnight, so the day change shows on the ring.
   const midnight = mod(-shift, DAY);
-  const crossing = midnight > 0 && midnight < DAY;
-  const nextDay = WEEKDAYS[mod(weekday + (shift > 0 ? 1 : 0), 7)];
-  const bars = (lit: boolean) =>
-    segments.map((segment) => (
-      <span
-        className={cn(
-          "absolute inset-y-0",
-          lit ? KIND_LIT[segment.kind] : KIND_BASE[segment.kind]
-        )}
-        key={segment.from}
-        style={{
-          left: `${(segment.from / DAY) * 100}%`,
-          width: `${((segment.to - segment.from) / DAY) * 100}%`,
-        }}
-      />
-    ));
-
+  const [x0, y0] = polar(inner, midnight);
+  const [x1, y1] = polar(outer, midnight);
   return (
-    <div aria-hidden="true" className="relative h-6 overflow-hidden rounded-md">
-      {bars(false)}
-      <motion.div className="absolute inset-0" style={{ clipPath: clip }}>
-        {bars(true)}
-      </motion.div>
-      {crossing && (
-        <span
-          className="pointer-events-none absolute inset-y-0 border-zinc-400/80 border-l dark:border-zinc-500"
-          style={{ left: `${(midnight / DAY) * 100}%` }}
-        >
-          {midnight < DAY - 90 && (
-            <span className="absolute top-1/2 left-1 -translate-y-1/2 font-medium text-[10px] text-zinc-500 leading-none dark:text-zinc-400">
-              {nextDay}
-            </span>
-          )}
-        </span>
+    <>
+      {segments.map((segment) => (
+        <path
+          className={lit ? KIND_LIT[segment.kind] : KIND_BASE[segment.kind]}
+          d={slice(inner, outer, segment.from, segment.to)}
+          key={segment.from}
+        />
+      ))}
+      {!lit && shift !== 0 && (
+        <line
+          className="stroke-zinc-500 dark:stroke-zinc-400"
+          strokeWidth={1.25}
+          x1={x0}
+          x2={x1}
+          y1={y0}
+          y2={y1}
+        />
       )}
-    </div>
+    </>
   );
 }
 
-type Grab =
-  | { mode: "move"; offset: number }
-  | { mode: "start"; end: number }
-  | { mode: "end" };
+function Knob({ x, y }: { x: MotionValue<number>; y: MotionValue<number> }) {
+  return (
+    <motion.circle
+      className="fill-white stroke-zinc-900 dark:fill-zinc-900 dark:stroke-white"
+      cx={x}
+      cy={y}
+      r={4.5}
+      strokeWidth={1.5}
+    />
+  );
+}
 
 export default function TimezonePlanner({
   people = DEFAULT_PEOPLE,
@@ -428,18 +475,23 @@ export default function TimezonePlanner({
   className,
 }: TimezonePlannerProps) {
   const reduceMotion = useReducedMotion();
+  const clipId = `tz${useId().replace(NON_WORD, "")}`;
   const [day, setDay] = useState<Day | null>(null);
   const [slot, setSlot] = useState({
     start: defaultStart,
     duration: defaultDuration,
   });
   const [hover, setHover] = useState<number | null>(null);
+  const [focus, setFocus] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [keyed, setKeyed] = useState(false);
 
+  // The start runs on unbounded: a wedge dragged past midnight keeps going.
   const start = useMotionValue(defaultStart);
   const duration = useMotionValue(defaultDuration);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const grabRef = useRef<Grab | null>(null);
+  const lastRef = useRef(0);
   const glideRef = useRef<ReturnType<typeof animate> | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -469,20 +521,22 @@ export default function TimezonePlanner({
     [day, people]
   );
 
-  const bandWidth = useTransform(duration, (d) => `${(d / DAY) * 100}%`);
-  // A percentage translate is of the band's own width.
-  const bandTransform = useTransform(
-    [start, duration],
-    ([s, d]: number[]) => `translateX(${(s / d) * 100}%)`
+  const wedge = useTransform([start, duration], ([s, d]: number[]) =>
+    slice(WEDGE_IN, WEDGE_OUT, s, s + d)
   );
-  const clip = useTransform(
+  const startX = useTransform(start, (s) => polar(WEDGE_OUT, s)[0]);
+  const startY = useTransform(start, (s) => polar(WEDGE_OUT, s)[1]);
+  const endX = useTransform(
     [start, duration],
-    ([s, d]: number[]) =>
-      `inset(0 ${100 - ((s + d) / DAY) * 100}% 0 ${(s / DAY) * 100}%)`
+    ([s, d]: number[]) => polar(WEDGE_OUT, s + d)[0]
+  );
+  const endY = useTransform(
+    [start, duration],
+    ([s, d]: number[]) => polar(WEDGE_OUT, s + d)[1]
   );
 
   const sync = useCallback(() => {
-    setSlot({ start: snap(start.get()), duration: duration.get() });
+    setSlot({ start: mod(snap(start.get()), DAY), duration: duration.get() });
   }, [start, duration]);
   useMotionValueEvent(start, "change", sync);
   useMotionValueEvent(duration, "change", sync);
@@ -492,12 +546,14 @@ export default function TimezonePlanner({
       if (!day) {
         return;
       }
+      const from = mod(s, DAY);
       onChangeRef.current?.({
-        start: new Date(day.midnight + s * 60_000),
-        end: new Date(day.midnight + (s + d) * 60_000),
+        start: new Date(day.midnight + from * 60_000),
+        end: new Date(day.midnight + (from + d) * 60_000),
         available: people
           .filter(
-            (person, i) => statusFor(person, day.shifts[i], s, d) === "working"
+            (person, i) =>
+              statusFor(person, day.shifts[i], from, d) === "working"
           )
           .map((person) => person.id),
       });
@@ -505,147 +561,179 @@ export default function TimezonePlanner({
     [day, people]
   );
 
+  /** Springs the wedge to a time, the short way round, carrying any fling. */
   const glideTo = useCallback(
-    (target: number) => {
+    (target: number, velocity = 0) => {
       glideRef.current?.stop();
-      const d = duration.get();
-      const to = clamp(snap(target), 0, DAY - d);
+      const from = start.get();
+      const to = from + turn(from, snap(target));
       glideRef.current = animate(
         start,
         to,
-        reduceMotion ? { duration: 0 } : GLIDE
+        reduceMotion ? { duration: 0 } : { ...GLIDE, velocity }
       );
-      commit(to, d);
+      commit(to, duration.get());
     },
     [start, duration, reduceMotion, commit]
   );
 
-  const minuteAt = (clientX: number) => {
-    const rect = overlayRef.current?.getBoundingClientRect();
+  /** Pointer position as minutes on the dial and distance from its middle. */
+  const pointAt = (clientX: number, clientY: number) => {
+    const rect = svgRef.current?.getBoundingClientRect();
     if (!rect) {
-      return 0;
+      return { minutes: 0, r: 0 };
     }
-    return clamp(((clientX - rect.left) / rect.width) * DAY, 0, DAY);
+    const scale = SIZE / rect.width;
+    const dx = (clientX - rect.left) * scale - C;
+    const dy = (clientY - rect.top) * scale - C;
+    const angle = Math.atan2(dx, -dy);
+    return { minutes: mod((angle / TAU) * DAY, DAY), r: Math.hypot(dx, dy) };
   };
 
-  const grabFor = (clientX: number): Grab | null => {
-    const rect = overlayRef.current?.getBoundingClientRect();
-    if (!rect) {
-      return null;
-    }
+  const grabFor = (minutes: number, r: number): Grab | null => {
     const s = start.get();
     const d = duration.get();
-    const left = rect.left + (s / DAY) * rect.width;
-    const right = rect.left + ((s + d) / DAY) * rect.width;
-    // The handles reach outside the band, and only a little way in, so a
-    // short meeting still has a middle to grab.
-    const inside = Math.min(HANDLE_PX / 2, (right - left) / 4);
-    if (clientX >= left - HANDLE_PX && clientX <= left + inside) {
+    // The edges reach a little outside the wedge and only a little way in,
+    // so a short meeting still has a middle to grab.
+    const reach = (EDGE_REACH / Math.max(r, R_IN)) * (DAY / TAU);
+    const inside = Math.min(reach / 2, d / 4);
+    const fromStart = turn(s, minutes);
+    const fromEnd = turn(s + d, minutes);
+    if (fromStart >= -reach && fromStart <= inside) {
       return { mode: "start", end: s + d };
     }
-    if (clientX >= right - inside && clientX <= right + HANDLE_PX) {
+    if (fromEnd >= -inside && fromEnd <= reach) {
       return { mode: "end" };
     }
-    if (clientX > left && clientX < right) {
-      return { mode: "move", offset: minuteAt(clientX) - s };
+    const into = mod(minutes - s, DAY);
+    return into < d ? { mode: "move", offset: into } : null;
+  };
+
+  const ringAt = (r: number) => {
+    for (let i = 0; i < people.length; i++) {
+      const { outer, inner } = ringBounds(i, people.length);
+      if (r <= outer + RING_GAP / 2 && r >= inner - RING_GAP / 2) {
+        return i;
+      }
     }
     return null;
   };
 
-  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+  const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
     if (!day || grabRef.current || event.button !== 0) {
       return;
     }
+    const { minutes, r } = pointAt(event.clientX, event.clientY);
+    // The middle holds the readout, and past the labels is outside the dial.
+    if (r < WEDGE_IN - 4 || r > LABEL_R + 8) {
+      return;
+    }
     event.currentTarget.setPointerCapture(event.pointerId);
-    const grab = grabFor(event.clientX);
+    lastRef.current = minutes;
+    const grab = grabFor(minutes, r);
     if (grab) {
       glideRef.current?.stop();
       grabRef.current = grab;
     } else {
-      // A press on the empty track brings the meeting there, then keeps
+      // A press anywhere else brings the meeting there, then keeps
       // following the pointer if it drags on.
       const d = duration.get();
-      glideTo(minuteAt(event.clientX) - d / 2);
+      glideTo(minutes - d / 2);
       grabRef.current = { mode: "move", offset: d / 2 };
     }
     setDragging(true);
     setHover(null);
   };
 
-  const dragTo = (m: number, grab: Grab) => {
-    const s = start.get();
-    const d = duration.get();
+  const dragTo = (minutes: number, grab: Grab) => {
+    // Unwrap the pointer so crossing midnight keeps the same direction.
+    const pointer = lastRef.current + turn(lastRef.current, minutes);
+    lastRef.current = pointer;
     if (grab.mode === "move") {
-      start.set(clamp(m - grab.offset, 0, DAY - d));
-    } else if (grab.mode === "end") {
-      duration.set(
-        clamp(snap(m - s), MIN_DURATION, Math.min(MAX_DURATION, DAY - s))
-      );
-    } else {
-      const next = clamp(
-        snap(m),
-        Math.max(0, grab.end - MAX_DURATION),
-        grab.end - MIN_DURATION
-      );
-      start.set(next);
-      duration.set(grab.end - next);
+      start.set(pointer - grab.offset);
+      return;
     }
+    if (grab.mode === "end") {
+      const span = mod(pointer - start.get(), DAY);
+      // Dragged back past the start, the meeting stays at its shortest.
+      const d = span > (MAX_DURATION + DAY) / 2 ? MIN_DURATION : span;
+      duration.set(clamp(snap(d), MIN_DURATION, MAX_DURATION));
+      return;
+    }
+    const span = mod(grab.end - pointer, DAY);
+    const d = clamp(
+      snap(span > (MAX_DURATION + DAY) / 2 ? MIN_DURATION : span),
+      MIN_DURATION,
+      MAX_DURATION
+    );
+    start.set(grab.end - d);
+    duration.set(d);
   };
 
-  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+  const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
+    const { minutes, r } = pointAt(event.clientX, event.clientY);
     const grab = grabRef.current;
     if (grab) {
       glideRef.current?.stop();
-      dragTo(minuteAt(event.clientX), grab);
+      dragTo(minutes, grab);
       return;
     }
-    if (event.pointerType === "mouse") {
-      setHover(minuteAt(event.clientX));
+    if (event.pointerType !== "mouse") {
+      return;
     }
+    const onDial = r >= WEDGE_IN - 4 && r <= WEDGE_OUT + 4;
+    setHover(onDial ? minutes : null);
+    setFocus(onDial ? ringAt(r) : null);
   };
 
   const onPointerUp = () => {
-    if (!grabRef.current) {
+    const grab = grabRef.current;
+    if (!grab) {
       return;
     }
     grabRef.current = null;
     setDragging(false);
-    // The band follows the pointer freely, then settles on the quarter hour.
-    glideTo(start.get());
+    if (grab.mode !== "move") {
+      commit(start.get(), duration.get());
+      return;
+    }
+    // A fling coasts on a little, then settles on the quarter hour.
+    const velocity = start.getVelocity();
+    const coast = clamp(velocity * COAST, -120, 120);
+    glideTo(start.get() + coast, velocity);
+  };
+
+  const resize = (by: number) => {
+    const d = clamp(duration.get() + by, MIN_DURATION, MAX_DURATION);
+    duration.set(d);
+    commit(snap(start.get()), d);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const d = duration.get();
     const s = snap(start.get());
+    const d = duration.get();
     const step = event.shiftKey ? 60 : STEP;
     const moves: Record<string, number> = {
       ArrowLeft: s - step,
       ArrowDown: s - step,
       ArrowRight: s + step,
       ArrowUp: s + step,
-      Home: 0,
-      End: DAY - d,
+      PageDown: s - 60,
+      PageUp: s + 60,
     };
+    if (event.key === "-" || event.key === "+" || event.key === "=") {
+      event.preventDefault();
+      resize(event.key === "-" ? -STEP : STEP);
+      return;
+    }
     if (!(event.key in moves)) {
       return;
     }
     event.preventDefault();
     // Keys move instantly: they repeat too often to animate.
     glideRef.current?.stop();
-    const to = clamp(moves[event.key], 0, DAY - d);
-    start.set(to);
-    commit(to, d);
-  };
-
-  const resize = (by: number) => {
-    const s = snap(start.get());
-    const d = clamp(
-      duration.get() + by,
-      MIN_DURATION,
-      Math.min(MAX_DURATION, DAY - s)
-    );
-    duration.set(d);
-    commit(s, d);
+    start.set(moves[event.key]);
+    commit(moves[event.key], d);
   };
 
   const statuses = day
@@ -654,6 +742,7 @@ export default function TimezonePlanner({
       )
     : [];
   const available = statuses.filter((s) => s === "working").length;
+  const everyone = day !== null && available === people.length;
   const best = day ? bestStart(people, day.shifts, slot.duration) : null;
   const atBest = best === slot.start;
   const end = slot.start + slot.duration;
@@ -701,125 +790,120 @@ export default function TimezonePlanner({
         </button>
       </header>
 
-      <div
-        className="mt-4 grid @md:grid-cols-[10.5rem_minmax(0,1fr)] grid-cols-[7.5rem_minmax(0,1fr)] @md:gap-x-4 gap-x-3"
-        style={{ gridTemplateRows: `20px repeat(${people.length}, 48px)` }}
-      >
-        {/* Axis, on your clock */}
-        <div
-          aria-hidden="true"
-          className="relative col-start-2 row-start-1 text-[10px] text-zinc-400 tabular-nums dark:text-zinc-500"
-        >
-          {AXIS_HOURS.map((hour) => (
-            <span
-              className={cn(
-                "absolute top-0 -translate-x-1/2 first:translate-x-0",
-                hour % 6 !== 0 && "@md:inline hidden"
-              )}
-              key={hour}
-              style={{ left: `${(hour / 24) * 100}%` }}
-            >
-              {pad(hour)}
-            </span>
-          ))}
-          {hover !== null && !dragging && (
-            <span
-              className="absolute -top-0.5 z-10 -translate-x-1/2 rounded bg-zinc-900 px-1 py-0.5 font-medium text-white leading-none dark:bg-white dark:text-zinc-900"
-              style={{ left: `${(hover / DAY) * 100}%` }}
-            >
-              {clock(snap(hover))}
-            </span>
-          )}
-        </div>
-
-        {people.map((person, i) => (
-          <PersonLabel
-            index={i}
-            key={person.id}
-            person={person}
-            range={day ? localRange(i) : ""}
-            shiftLabel={day?.shiftLabels[i] ?? ""}
-            status={statuses[i]}
-          />
-        ))}
-
-        {people.map((person, i) => (
-          <div
-            className="col-start-2 flex items-center"
-            key={person.id}
-            style={{ gridRowStart: i + 2 }}
+      <div className="mt-4 grid @lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)] grid-cols-1 items-center @lg:gap-6 gap-4">
+        <div className="relative mx-auto aspect-square w-full max-w-[19rem]">
+          <svg
+            aria-hidden="true"
+            className={cn(
+              "size-full touch-none overflow-visible",
+              dragging ? "cursor-grabbing" : "cursor-grab"
+            )}
+            onPointerCancel={onPointerUp}
+            onPointerDown={onPointerDown}
+            onPointerLeave={() => {
+              setHover(null);
+              setFocus(null);
+            }}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            ref={svgRef}
+            viewBox={`0 0 ${SIZE} ${SIZE}`}
           >
-            <div
-              className={cn(
-                "w-full transition-opacity duration-200 ease-out",
-                day ? "opacity-100" : "opacity-0"
-              )}
-            >
-              {day && (
-                <Track
-                  clip={clip}
-                  segments={segments[i] ?? []}
-                  shift={day.shifts[i]}
-                  weekday={day.weekday}
-                />
-              )}
-            </div>
-          </div>
-        ))}
+            <defs>
+              <clipPath id={clipId}>
+                <motion.path d={wedge} />
+              </clipPath>
+            </defs>
 
-        {/* The meeting, laid over every track */}
-        <div
-          className="relative col-start-2 touch-none"
-          onPointerCancel={onPointerUp}
-          onPointerDown={onPointerDown}
-          onPointerLeave={() => setHover(null)}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          ref={overlayRef}
-          style={{ gridRow: `2 / span ${people.length}` }}
-        >
-          {day?.now !== null && day?.now !== undefined && (
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute -top-1 bottom-1 w-px bg-orange-500/70"
-              style={{ left: `${(day.now / DAY) * 100}%` }}
-            >
-              <span className="absolute -top-0.5 -left-[2.5px] size-1.5 rounded-full bg-orange-500" />
-            </span>
-          )}
-          {hover !== null && !dragging && (
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-y-1.5 w-px bg-zinc-900/25 dark:bg-white/30"
-              style={{ left: `${(hover / DAY) * 100}%` }}
-            />
-          )}
-          <motion.div
+            <HourMarks />
+            {day && (
+              <Rings
+                clipId={clipId}
+                day={day}
+                focus={focus}
+                people={people}
+                segments={segments}
+              />
+            )}
+
+            {day?.now !== null && day?.now !== undefined && (
+              <NowHand minutes={day.now} />
+            )}
+            {hover !== null && !dragging && <HoverHand minutes={hover} />}
+
+            <g className={cn(!day && "opacity-0")}>
+              <motion.path
+                className={cn(
+                  "fill-zinc-900/[0.03] transition-[stroke] duration-200 dark:fill-white/[0.04]",
+                  everyone
+                    ? "stroke-emerald-600 dark:stroke-emerald-400"
+                    : "stroke-zinc-900 dark:stroke-white"
+                )}
+                d={wedge}
+                strokeLinejoin="round"
+                strokeWidth={keyed ? 2.75 : 1.5}
+              />
+              <Knob x={startX} y={startY} />
+              <Knob x={endX} y={endY} />
+            </g>
+          </svg>
+
+          {/* The readout, in the hole of the dial, is also the keyboard handle */}
+          <div
             aria-label="Meeting time"
-            aria-valuemax={DAY - slot.duration}
+            aria-valuemax={DAY - STEP}
             aria-valuemin={0}
             aria-valuenow={slot.start}
             aria-valuetext={`${clock(slot.start)} to ${clock(end)} ${you?.city ?? ""} time, ${available} of ${people.length} in working hours`}
-            className={cn(
-              "group/band absolute inset-y-1.5 left-0 rounded-lg border-[1.5px] border-zinc-900 outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white dark:focus-visible:ring-offset-zinc-900",
-              dragging ? "cursor-grabbing" : "cursor-grab",
-              !day && "opacity-0"
-            )}
+            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center outline-hidden"
+            onBlur={() => setKeyed(false)}
+            onFocus={(event) =>
+              setKeyed(event.currentTarget.matches(":focus-visible"))
+            }
             onKeyDown={onKeyDown}
             role="slider"
-            style={{ width: bandWidth, transform: bandTransform }}
             tabIndex={0}
           >
-            <Handle side="left" />
-            <Handle side="right" />
-          </motion.div>
+            <span className="font-semibold text-[22px] text-zinc-900 leading-none tracking-tight dark:text-zinc-50">
+              <Rolling value={clock(slot.start)} />
+            </span>
+            <span className="mt-1 text-[11px] text-zinc-500 leading-none dark:text-zinc-400">
+              to <Rolling value={clock(end)} />
+            </span>
+            <span aria-hidden="true" className="mt-2 flex gap-1">
+              {people.map((person, i) => (
+                <span
+                  className={cn(
+                    "size-1.5 rounded-full transition-colors duration-200",
+                    statuses[i] === "working"
+                      ? "bg-emerald-500 dark:bg-emerald-400"
+                      : "bg-zinc-200 dark:bg-zinc-700"
+                  )}
+                  key={person.id}
+                />
+              ))}
+            </span>
+          </div>
         </div>
+
+        <ul className="flex flex-col">
+          {people.map((person, i) => (
+            <PersonRow
+              count={people.length}
+              dimmed={focus !== null && focus !== i}
+              index={i}
+              key={person.id}
+              onHover={setFocus}
+              person={person}
+              range={day ? localRange(i) : ""}
+              shiftLabel={day?.shiftLabels[i] ?? ""}
+              status={statuses[i]}
+            />
+          ))}
+        </ul>
       </div>
 
       <footer className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-black/5 border-t pt-3 text-xs dark:border-white/10">
-        <span className="font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
-          <Rolling value={`${clock(slot.start)}–${clock(end)}`} />
-        </span>
         <span className="text-zinc-500 dark:text-zinc-400">
           {you?.city ?? "Your"} time
         </span>
@@ -835,7 +919,7 @@ export default function TimezonePlanner({
             {lengthLabel}
           </span>
           <StepButton
-            disabled={slot.duration >= MAX_DURATION || end >= DAY}
+            disabled={slot.duration >= MAX_DURATION}
             label="Longer"
             onClick={() => resize(STEP)}
           >
@@ -846,7 +930,7 @@ export default function TimezonePlanner({
           aria-live="polite"
           className={cn(
             "ml-auto transition-colors duration-150",
-            available === people.length
+            everyone
               ? "text-emerald-600 dark:text-emerald-400"
               : "text-zinc-500 dark:text-zinc-400"
           )}
@@ -861,64 +945,217 @@ export default function TimezonePlanner({
   );
 }
 
-function PersonLabel({
-  person,
-  index,
-  status,
-  range,
-  shiftLabel: shift,
-}: {
-  person: PlannerPerson;
-  index: number;
-  status?: Status;
-  range: string;
-  shiftLabel: string;
-}) {
+/** Hour ticks round the rim, with a label every three hours in place of its tick. */
+function HourMarks() {
   return (
-    <div
-      className="col-start-1 flex min-w-0 flex-col justify-center"
-      style={{ gridRowStart: index + 2 }}
-      title={person.name}
-    >
-      <span className="flex min-w-0 items-baseline gap-1.5">
-        <span className="truncate font-medium text-[13px] text-zinc-900 leading-5 dark:text-zinc-100">
-          {person.city}
-        </span>
-        <span className="shrink-0 text-[11px] text-zinc-400 tabular-nums dark:text-zinc-500">
-          {index === 0 ? "You" : shift}
-        </span>
-      </span>
-      <span
-        className={cn(
-          "flex min-w-0 items-baseline gap-1.5 text-[11px] text-zinc-500 leading-4 transition-colors duration-150 dark:text-zinc-400",
-          status && STATUS_TEXT[status]
-        )}
-      >
-        {range ? <Rolling value={range} /> : "\u00a0"}
-        {status && (
-          <span className="@md:inline hidden truncate">
-            · {STATUS_LABEL[status]}
-          </span>
-        )}
-      </span>
-      <span className="sr-only">
-        {person.name}, {range} {status ? STATUS_LABEL[status] : ""}
-      </span>
-    </div>
+    <g>
+      {HOURS.map((hour) => {
+        if (hour % 3 === 0) {
+          const [x, y] = polar(LABEL_R - 6, hour * 60);
+          return (
+            <text
+              className="fill-zinc-400 font-medium text-[9.5px] tabular-nums dark:fill-zinc-500"
+              dominantBaseline="central"
+              key={hour}
+              textAnchor="middle"
+              x={x}
+              y={y}
+            >
+              {pad(hour)}
+            </text>
+          );
+        }
+        const [x0, y0] = polar(R_OUT + 11, hour * 60);
+        const [x1, y1] = polar(R_OUT + 15, hour * 60);
+        return (
+          <line
+            className="stroke-zinc-300 dark:stroke-zinc-700"
+            key={hour}
+            strokeWidth={1}
+            x1={x0}
+            x2={x1}
+            y1={y0}
+            y2={y1}
+          />
+        );
+      })}
+    </g>
   );
 }
 
-function Handle({ side }: { side: "left" | "right" }) {
+function Rings({
+  day,
+  segments,
+  people,
+  focus,
+  clipId,
+}: {
+  day: Day;
+  segments: Segment[][];
+  people: PlannerPerson[];
+  focus: number | null;
+  clipId: string;
+}) {
   return (
-    <span
-      aria-hidden="true"
+    <g
       className={cn(
-        "absolute inset-y-0 flex w-3 cursor-ew-resize items-center justify-center",
-        side === "left" ? "-left-1.5" : "-right-1.5"
+        "transition-opacity duration-300 ease-out",
+        "opacity-100 starting:opacity-0"
       )}
     >
-      <span className="h-4 w-[3px] rounded-full bg-zinc-900 opacity-0 transition-opacity duration-150 group-hover/band:opacity-100 group-focus-visible/band:opacity-100 dark:bg-white" />
-    </span>
+      {day &&
+        segments.map((ring, i) => (
+          <g
+            className={cn(
+              "transition-opacity duration-150 ease-out",
+              focus !== null && focus !== i && "opacity-35"
+            )}
+            key={people[i]?.id ?? i}
+          >
+            <Ring
+              count={people.length}
+              index={i}
+              lit={false}
+              segments={ring}
+              shift={day.shifts[i]}
+            />
+            <g clipPath={`url(#${clipId})`}>
+              <Ring
+                count={people.length}
+                index={i}
+                lit
+                segments={ring}
+                shift={day.shifts[i]}
+              />
+            </g>
+          </g>
+        ))}
+    </g>
+  );
+}
+
+function NowHand({ minutes }: { minutes: number }) {
+  const [x0, y0] = polar(WEDGE_IN - 2, minutes);
+  const [x1, y1] = polar(R_OUT + 14, minutes);
+  return (
+    <g className="pointer-events-none">
+      <line
+        className="stroke-orange-500"
+        strokeLinecap="round"
+        strokeWidth={1.5}
+        x1={x0}
+        x2={x1}
+        y1={y0}
+        y2={y1}
+      />
+      <circle className="fill-orange-500" cx={x1} cy={y1} r={2.5} />
+    </g>
+  );
+}
+
+function HoverHand({ minutes }: { minutes: number }) {
+  const [x0, y0] = polar(WEDGE_IN, minutes);
+  const [x1, y1] = polar(WEDGE_OUT, minutes);
+  return (
+    <line
+      className="pointer-events-none stroke-zinc-900/30 dark:stroke-white/35"
+      strokeWidth={1}
+      x1={x0}
+      x2={x1}
+      y1={y0}
+      y2={y1}
+    />
+  );
+}
+
+/** Which ring is theirs: the same circles as the dial, theirs drawn in. */
+function RingGlyph({ index, count }: { index: number; count: number }) {
+  return (
+    <svg aria-hidden="true" className="size-4 shrink-0" viewBox="0 0 16 16">
+      {Array.from({ length: count }, (_, i) => {
+        const r = 7 - (i * 4.5) / Math.max(1, count - 1);
+        return (
+          <circle
+            className={
+              i === index
+                ? "stroke-zinc-900 dark:stroke-zinc-100"
+                : "stroke-zinc-200 dark:stroke-zinc-700"
+            }
+            cx={8}
+            cy={8}
+            fill="none"
+            key={r}
+            r={r}
+            strokeWidth={i === index ? 1.5 : 1}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+function PersonRow({
+  person,
+  index,
+  count,
+  status,
+  range,
+  shiftLabel: shift,
+  dimmed,
+  onHover,
+}: {
+  person: PlannerPerson;
+  index: number;
+  count: number;
+  status?: Status;
+  range: string;
+  shiftLabel: string;
+  dimmed: boolean;
+  onHover: (index: number | null) => void;
+}) {
+  return (
+    <li
+      className={cn(
+        "flex items-center gap-3 border-black/5 border-b py-2 transition-opacity duration-150 ease-out last:border-b-0 dark:border-white/10",
+        dimmed && "opacity-45"
+      )}
+      onPointerEnter={(event) =>
+        event.pointerType === "mouse" && onHover(index)
+      }
+      onPointerLeave={() => onHover(null)}
+      title={person.name}
+    >
+      <RingGlyph count={count} index={index} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="flex min-w-0 items-baseline gap-1.5">
+          <span className="truncate font-medium text-[13px] text-zinc-900 leading-5 dark:text-zinc-100">
+            {person.city}
+          </span>
+          <span className="shrink-0 text-[11px] text-zinc-400 tabular-nums dark:text-zinc-500">
+            {index === 0 ? "You" : shift}
+          </span>
+        </span>
+        <span className="truncate text-[11px] text-zinc-500 leading-4 dark:text-zinc-400">
+          {person.name === "You" ? "Your clock" : person.name}
+        </span>
+      </div>
+      <div className="flex shrink-0 flex-col items-end">
+        <span className="text-[12px] text-zinc-700 leading-5 dark:text-zinc-200">
+          {range ? <Rolling value={range} /> : " "}
+        </span>
+        <span
+          className={cn(
+            "text-[11px] leading-4 transition-colors duration-150",
+            status ? STATUS_TEXT[status] : "text-zinc-400"
+          )}
+        >
+          {status ? STATUS_LABEL[status] : " "}
+        </span>
+      </div>
+      <span className="sr-only">
+        {person.name}, {range} {status ? STATUS_LABEL[status] : ""}
+      </span>
+    </li>
   );
 }
 
