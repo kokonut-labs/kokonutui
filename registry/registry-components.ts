@@ -864,4 +864,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "bookshelf",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/bookshelf.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
