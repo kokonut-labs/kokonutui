@@ -853,4 +853,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "invite-envelope",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/invite-envelope.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];

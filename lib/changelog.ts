@@ -38,6 +38,7 @@ export const RELEASES: Release[] = [
     added: [
       { name: "timezone-planner", pr: 113 },
       { name: "page-flip", pr: 113 },
+      { name: "invite-envelope", pr: 113 },
     ],
     improved: [],
   },
