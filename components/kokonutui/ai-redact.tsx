@@ -14,6 +14,7 @@ import {
   ArrowUp,
   CreditCard,
   KeyRound,
+  Lock,
   type LucideIcon,
   Mail,
   Phone,
@@ -221,6 +222,7 @@ export default function AIRedact({
   const [shown, setShown] = useState(0);
   const [restored, setRestored] = useState(true);
   const [modelView, setModelView] = useState(false);
+  const [pointed, setPointed] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
 
@@ -373,7 +375,12 @@ export default function AIRedact({
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-x-3 top-2.5 whitespace-pre-wrap break-words text-[13px] text-transparent leading-6"
               >
-                <Highlights kept={kept} matches={matches} text={text} />
+                <Highlights
+                  kept={kept}
+                  matches={matches}
+                  pointed={pointed}
+                  text={text}
+                />
                 {"​"}
               </div>
               <textarea
@@ -389,24 +396,26 @@ export default function AIRedact({
             </div>
             <div className="flex items-end gap-2 p-2">
               <div className="flex min-h-7 min-w-0 flex-1 flex-wrap items-center gap-1">
-                {tokens.length === 0 ? (
+                {tokens.length === 0 && (
                   <span className="px-1 text-[11px] text-zinc-400 dark:text-zinc-500">
                     Nothing to mask
                   </span>
-                ) : (
-                  tokens.map((t) => (
+                )}
+                <AnimatePresence initial={false} mode="popLayout">
+                  {tokens.map((t) => (
                     <TokenChip
                       kept={kept.has(t.token)}
                       key={t.token}
                       match={t}
+                      onPoint={(on) => setPointed(on ? t.token : null)}
                       onToggle={() => toggle(t.token)}
                     />
-                  ))
-                )}
+                  ))}
+                </AnimatePresence>
               </div>
               <button
                 aria-label="Send"
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
                 disabled={!text.trim() || streaming}
                 onClick={send}
                 type="button"
@@ -433,10 +442,13 @@ function Highlights({
   text,
   matches,
   kept,
+  pointed,
 }: {
   text: string;
   matches: Match[];
   kept: Set<string>;
+  /** The token whose chip is hovered or focused, lit up in the text. */
+  pointed: string | null;
 }) {
   const out: (string | Match)[] = [];
   let at = 0;
@@ -451,10 +463,14 @@ function Highlights({
     ) : (
       <mark
         className={cn(
-          "rounded-[3px] text-transparent transition-colors duration-200 [box-decoration-break:clone]",
+          "rounded-[3px] text-transparent transition-[background-color,box-shadow] duration-150 [box-decoration-break:clone]",
           kept.has(part.token)
             ? "bg-transparent underline decoration-zinc-400 decoration-dotted underline-offset-4"
-            : "bg-orange-500/[0.16] dark:bg-orange-400/20"
+            : "bg-orange-500/[0.16] dark:bg-orange-400/20",
+          pointed === part.token &&
+            (kept.has(part.token)
+              ? "bg-zinc-900/[0.07] dark:bg-white/10"
+              : "bg-orange-500/30 shadow-[0_0_0_1px_rgb(249_115_22/0.45)] dark:bg-orange-400/35")
         )}
         key={part.start}
       >
@@ -468,35 +484,66 @@ function TokenChip({
   match,
   kept,
   onToggle,
+  onPoint,
 }: {
   match: Match;
   kept: boolean;
   onToggle: () => void;
+  /** Lights up this token's spans in the composer. */
+  onPoint: (on: boolean) => void;
 }) {
   const Icon = ICON[match.kind];
   const locked = match.kind === "secret";
+  let label = `${match.value} is sent as ${match.token}. Send it as is`;
+  if (locked) {
+    label = `${match.token}. Keys and secrets are always masked`;
+  } else if (kept) {
+    label = `${match.value} is sent as is. Mask it again`;
+  }
   return (
-    <button
-      aria-label={
-        kept
-          ? `${match.value} is sent as is. Mask it again`
-          : `${match.value} is sent as ${match.token}. Send it as is`
-      }
+    <motion.button
+      animate={{ opacity: 1, filter: "blur(0px)" }}
+      aria-disabled={locked || undefined}
+      aria-label={label}
       aria-pressed={!kept}
       className={cn(
-        "flex h-6 items-center gap-1 rounded-md px-1.5 font-mono text-[10.5px] ring-1 transition-colors duration-150 disabled:cursor-not-allowed",
-        kept
-          ? "text-zinc-400 ring-black/[0.06] hover:text-zinc-600 dark:text-zinc-500 dark:ring-white/[0.08] dark:hover:text-zinc-300"
-          : "bg-white text-zinc-700 ring-black/[0.08] hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-white/10 dark:hover:bg-zinc-800"
+        "flex h-6 items-center gap-1 rounded-md px-1.5 font-mono text-[10.5px] ring-1 transition-colors duration-150",
+        kept &&
+          "text-zinc-400 ring-black/[0.06] hover:text-zinc-600 active:bg-zinc-900/[0.05] dark:text-zinc-500 dark:ring-white/[0.08] dark:active:bg-white/[0.06] dark:hover:text-zinc-300",
+        !kept &&
+          "bg-white text-zinc-700 ring-black/[0.08] dark:bg-zinc-900 dark:text-zinc-200 dark:ring-white/10",
+        !(kept || locked) &&
+          "hover:bg-zinc-100 active:bg-zinc-200/80 dark:active:bg-zinc-700 dark:hover:bg-zinc-800",
+        locked && "cursor-default"
       )}
-      disabled={locked}
-      onClick={onToggle}
+      exit={{
+        opacity: 0,
+        filter: "blur(2px)",
+        transition: { duration: 0.1 },
+      }}
+      initial={{ opacity: 0, filter: "blur(2px)" }}
+      onBlur={() => onPoint(false)}
+      onClick={locked ? undefined : onToggle}
+      onFocus={() => onPoint(true)}
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") {
+          onPoint(true);
+        }
+      }}
+      onPointerLeave={() => onPoint(false)}
       title={locked ? "Keys and secrets are always masked" : match.value}
+      transition={{ duration: 0.15, ease: EASE_OUT }}
       type="button"
     >
       <Icon aria-hidden="true" className="size-3" />
       <span className={cn(kept && "line-through")}>{match.token}</span>
-    </button>
+      {locked && (
+        <Lock
+          aria-hidden="true"
+          className="-mr-0.5 size-2.5 text-zinc-400 dark:text-zinc-500"
+        />
+      )}
+    </motion.button>
   );
 }
 
@@ -511,6 +558,7 @@ function Segments({
   hideSecrets?: boolean;
 }) {
   let offset = 0;
+  let order = 0;
   return segments.map((segment) => {
     const key = `${offset}`;
     offset +=
@@ -518,6 +566,9 @@ function Segments({
     if (typeof segment === "string") {
       return <span key={key}>{segment}</span>;
     }
+    // Swaps ripple through the message one placeholder at a time.
+    const delay = Math.min(order, 6) * 0.06;
+    order += 1;
     return (
       <span className="inline-block" key={key}>
         <AnimatePresence initial={false} mode="wait">
@@ -525,7 +576,11 @@ function Segments({
             <motion.span
               animate={{ opacity: 1, filter: "blur(0px)" }}
               className="inline-flex translate-y-[-1px] items-center rounded-[5px] bg-zinc-900/[0.07] px-1 align-middle font-mono text-[11px] text-zinc-600 leading-5 dark:bg-white/10 dark:text-zinc-300"
-              exit={{ opacity: 0, filter: "blur(2px)" }}
+              exit={{
+                opacity: 0,
+                filter: "blur(2px)",
+                transition: { duration: 0.12, delay, ease: EASE_OUT },
+              }}
               initial={{ opacity: 0, filter: "blur(2px)" }}
               key="token"
               transition={{ duration: 0.16, ease: EASE_OUT }}
@@ -536,7 +591,11 @@ function Segments({
             <motion.span
               animate={{ opacity: 1, filter: "blur(0px)" }}
               className="underline decoration-zinc-400/70 decoration-dotted underline-offset-4 dark:decoration-zinc-500"
-              exit={{ opacity: 0, filter: "blur(2px)" }}
+              exit={{
+                opacity: 0,
+                filter: "blur(2px)",
+                transition: { duration: 0.12, delay, ease: EASE_OUT },
+              }}
               initial={{ opacity: 0, filter: "blur(2px)" }}
               key="value"
               title={`Sent as ${segment.token}`}

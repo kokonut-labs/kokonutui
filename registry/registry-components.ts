@@ -898,17 +898,6 @@ export const component: Registry = [
     ],
   },
   {
-    name: "ai-extract",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/ai-extract.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "ai-message-queue",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],

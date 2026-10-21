@@ -15,7 +15,6 @@
     "ai-branches",
     "ai-agent-lanes",
     "ai-inline-edit",
-    "ai-extract",
     "ai-message-queue",
     "ai-redact",
     "ai-memory",

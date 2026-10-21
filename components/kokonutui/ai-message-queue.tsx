@@ -80,6 +80,7 @@ interface AgentEntry {
 type Entry = UserEntry | AgentEntry;
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const APPLE = /Mac|iPhone|iPad/;
 
 const DEMO: Record<string, AgentResponse> = {
   "Move session handling onto the new token store": {
@@ -133,6 +134,16 @@ const uid = (prefix: string) => {
   return `${prefix}-${counter}`;
 };
 
+const useModKey = () => {
+  const [mod, setMod] = useState("⌘");
+  useEffect(() => {
+    if (!APPLE.test(navigator.userAgent)) {
+      setMod("Ctrl");
+    }
+  }, []);
+  return mod;
+};
+
 const startRun = (text: string, respond: (t: string) => AgentResponse) => {
   const { steps, reply } = respond(text);
   const user: UserEntry = { id: uid("u"), role: "user", text };
@@ -175,6 +186,8 @@ export default function AIMessageQueue({
   );
   const [paused, setPaused] = useState(false);
   const [draft, setDraft] = useState("");
+  const [announcement, setAnnouncement] = useState("");
+  const mod = useModKey();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -294,6 +307,12 @@ export default function AIMessageQueue({
   };
 
   const queueing = running && draft.trim().length > 0;
+  let action: "stop" | "queue" | "send" = "send";
+  if (queueing) {
+    action = "queue";
+  } else if (running) {
+    action = "stop";
+  }
 
   return (
     <MotionConfig reducedMotion="user">
@@ -320,29 +339,31 @@ export default function AIMessageQueue({
         </header>
 
         <div
-          className="h-72 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 [scrollbar-width:thin]"
+          className="h-72 overflow-y-auto overscroll-contain px-4 py-4 [scrollbar-width:thin]"
           ref={scrollRef}
         >
-          <AnimatePresence initial={false}>
-            {entries.map((entry) => (
-              <motion.div
-                animate={{ opacity: 1, y: 0 }}
-                initial={{ opacity: 0, y: 10 }}
-                key={entry.id}
-                transition={{ duration: 0.3, ease: EASE_OUT }}
-              >
-                {entry.role === "user" ? (
-                  <div className="flex justify-end">
-                    <p className="max-w-[85%] rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[13px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
-                      {entry.text}
-                    </p>
-                  </div>
-                ) : (
-                  <AgentBlock entry={entry} />
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          <div className="flex min-h-full flex-col justify-end gap-4">
+            <AnimatePresence initial={false}>
+              {entries.map((entry) => (
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  key={entry.id}
+                  transition={{ duration: 0.3, ease: EASE_OUT }}
+                >
+                  {entry.role === "user" ? (
+                    <div className="flex justify-end">
+                      <p className="max-w-[85%] rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[13px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+                        {entry.text}
+                      </p>
+                    </div>
+                  ) : (
+                    <AgentBlock entry={entry} />
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
 
         <div className="p-2 pt-0">
@@ -354,6 +375,9 @@ export default function AIMessageQueue({
                   q.map((m) => (m.id === id ? { ...m, text } : m))
                 )
               }
+              onMoved={(text, position) =>
+                setAnnouncement(`Moved "${text}" to position ${position}`)
+              }
               onRemove={(id) => setQueue((q) => q.filter((m) => m.id !== id))}
               onReorder={setQueue}
               onResume={() => setPaused(false)}
@@ -362,8 +386,16 @@ export default function AIMessageQueue({
                 sendNow(m.text);
               }}
               paused={paused && !running}
+              progress={
+                running && last.steps.length > 0
+                  ? (last.step + 1) / last.steps.length
+                  : 0
+              }
               queue={queue}
             />
+            <span aria-live="polite" className="sr-only">
+              {announcement}
+            </span>
             <div className="flex items-end gap-2 p-2">
               <textarea
                 aria-label="Message the agent"
@@ -379,37 +411,15 @@ export default function AIMessageQueue({
                 rows={1}
                 value={draft}
               />
-              {running && !queueing && (
-                <button
-                  aria-label="Stop the agent"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-200 text-zinc-700 transition-colors duration-150 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600"
-                  onClick={() => {
-                    stopCurrent();
-                    setPaused(queue.length > 0);
-                  }}
-                  type="button"
-                >
-                  <Square className="size-3 fill-current" />
-                </button>
-              )}
-              {(!running || queueing) && (
-                <button
-                  aria-label={queueing ? "Add to queue" : "Send"}
-                  className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-zinc-900 px-2.5 font-medium text-[12px] text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-                  disabled={!draft.trim()}
-                  onClick={() => submit(false)}
-                  type="button"
-                >
-                  {queueing ? (
-                    <>
-                      <ListPlus aria-hidden="true" className="size-3.5" />
-                      Queue
-                    </>
-                  ) : (
-                    <ArrowUp aria-hidden="true" className="size-3.5" />
-                  )}
-                </button>
-              )}
+              <ComposerAction
+                draft={draft}
+                mode={action}
+                onSend={() => submit(false)}
+                onStop={() => {
+                  stopCurrent();
+                  setPaused(queue.length > 0);
+                }}
+              />
             </div>
           </div>
           <p className="flex h-7 items-center gap-1 px-2 text-[11px] text-zinc-400 dark:text-zinc-500">
@@ -418,7 +428,7 @@ export default function AIMessageQueue({
                 <CornerDownLeft aria-hidden="true" className="size-3" />
                 to queue
                 <span className="mx-1">·</span>
-                <kbd className="font-sans">⌘</kbd>
+                <kbd className="font-sans">{mod}</kbd>
                 <CornerDownLeft aria-hidden="true" className="size-3" />
                 to send now
               </>
@@ -444,10 +454,10 @@ function AgentBlock({ entry }: { entry: AgentEntry }) {
             <span className="relative h-5 min-w-0 flex-1 overflow-hidden">
               <AnimatePresence initial={false} mode="popLayout">
                 <motion.span
-                  animate={{ y: 0, opacity: 1 }}
+                  animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
                   className="absolute inset-0 truncate leading-5"
-                  exit={{ y: -12, opacity: 0 }}
-                  initial={{ y: 12, opacity: 0 }}
+                  exit={{ y: -10, opacity: 0, filter: "blur(2px)" }}
+                  initial={{ y: 10, opacity: 0, filter: "blur(2px)" }}
                   key={entry.step}
                   transition={{ duration: 0.25, ease: EASE_OUT }}
                 >
@@ -490,9 +500,64 @@ function AgentBlock({ entry }: { entry: AgentEntry }) {
   );
 }
 
+function ComposerAction({
+  mode,
+  draft,
+  onSend,
+  onStop,
+}: {
+  mode: "stop" | "queue" | "send";
+  draft: string;
+  onSend: () => void;
+  onStop: () => void;
+}) {
+  const swap = {
+    initial: { opacity: 0, filter: "blur(2px)" },
+    animate: { opacity: 1, filter: "blur(0px)" },
+    exit: { opacity: 0, filter: "blur(2px)" },
+    transition: { duration: 0.14, ease: EASE_OUT },
+  };
+  // The wrapper fades, so the button's own disabled opacity still shows.
+  return (
+    <AnimatePresence initial={false} mode="popLayout">
+      <motion.span className="flex shrink-0" key={mode} {...swap}>
+        {mode === "stop" ? (
+          <button
+            aria-label="Stop the agent"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-200 text-zinc-700 transition-colors duration-150 hover:bg-zinc-300 active:bg-zinc-400/70 dark:bg-zinc-700 dark:text-zinc-200 dark:active:bg-zinc-500 dark:hover:bg-zinc-600"
+            onClick={onStop}
+            type="button"
+          >
+            <Square className="size-3 fill-current" />
+          </button>
+        ) : (
+          <button
+            aria-label={mode === "queue" ? "Add to queue" : "Send"}
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-zinc-900 px-2.5 font-medium text-[12px] text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
+            disabled={!draft.trim()}
+            onClick={onSend}
+            type="button"
+          >
+            {mode === "queue" ? (
+              <>
+                <ListPlus aria-hidden="true" className="size-3.5" />
+                Queue
+              </>
+            ) : (
+              <ArrowUp aria-hidden="true" className="size-3.5" />
+            )}
+          </button>
+        )}
+      </motion.span>
+    </AnimatePresence>
+  );
+}
+
 function QueueList({
   queue,
   paused,
+  progress,
+  onMoved,
   onReorder,
   onEdit,
   onRemove,
@@ -502,6 +567,9 @@ function QueueList({
 }: {
   queue: QueuedMessage[];
   paused: boolean;
+  /** How far the current run is, 0 to 1. The next row in line shows it. */
+  progress: number;
+  onMoved: (text: string, position: number) => void;
   onReorder: (queue: QueuedMessage[]) => void;
   onEdit: (id: string, text: string) => void;
   onRemove: (id: string) => void;
@@ -518,6 +586,7 @@ function QueueList({
     const [item] = next.splice(index, 1);
     next.splice(to, 0, item);
     onReorder(next);
+    onMoved(item.text, to + 1);
   };
 
   return (
@@ -566,10 +635,12 @@ function QueueList({
                     index={index}
                     key={message.id}
                     message={message}
+                    next={index === 0}
                     onEdit={(text) => onEdit(message.id, text)}
                     onMove={(by) => move(index, by)}
                     onRemove={() => onRemove(message.id)}
                     onSendNow={() => onSendNow(message)}
+                    progress={paused ? 0 : progress}
                   />
                 ))}
               </AnimatePresence>
@@ -584,6 +655,8 @@ function QueueList({
 function QueueRow({
   message,
   index,
+  next,
+  progress,
   onEdit,
   onMove,
   onRemove,
@@ -591,6 +664,8 @@ function QueueRow({
 }: {
   message: QueuedMessage;
   index: number;
+  next: boolean;
+  progress: number;
   onEdit: (text: string) => void;
   onMove: (by: number) => void;
   onRemove: () => void;
@@ -619,15 +694,15 @@ function QueueRow({
   };
 
   const icon =
-    "flex size-6 shrink-0 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-100 hover:bg-zinc-900/[0.06] hover:text-zinc-800 focus-visible:bg-zinc-900/[0.06] focus-visible:text-zinc-800 dark:text-zinc-500 dark:focus-visible:bg-white/10 dark:focus-visible:text-zinc-100 dark:hover:bg-white/10 dark:hover:text-zinc-100";
+    "flex size-6 shrink-0 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-100 hover:bg-zinc-900/[0.06] hover:text-zinc-800 focus-visible:bg-zinc-900/[0.06] active:bg-zinc-900/[0.1] dark:active:bg-white/15 focus-visible:text-zinc-800 dark:text-zinc-500 dark:focus-visible:bg-white/10 dark:focus-visible:text-zinc-100 dark:hover:bg-white/10 dark:hover:text-zinc-100";
 
   return (
     <Reorder.Item
       animate={{ opacity: 1, y: 0 }}
-      className="group/row relative flex h-8 items-center gap-1 rounded-lg bg-white pr-1 pl-0.5 ring-1 ring-black/[0.05] dark:bg-zinc-900 dark:ring-white/[0.06]"
+      className="group/row relative flex h-8 items-center gap-1 overflow-hidden rounded-lg bg-white pr-1 pl-0.5 ring-1 ring-black/[0.05] dark:bg-zinc-900 dark:ring-white/[0.06]"
       dragControls={controls}
       dragListener={false}
-      exit={{ opacity: 0, y: -8, transition: { duration: 0.18 } }}
+      exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }}
       initial={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.22, ease: EASE_OUT }}
       value={message}
@@ -650,6 +725,15 @@ function QueueRow({
       >
         <GripVertical className="size-3.5" />
       </button>
+      {next && (
+        <motion.span
+          animate={{ scaleX: progress, opacity: progress > 0 ? 1 : 0 }}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-px origin-left bg-zinc-900/25 dark:bg-white/30"
+          initial={false}
+          transition={{ duration: 0.4, ease: EASE_OUT }}
+        />
+      )}
       <span className="w-3.5 shrink-0 text-center text-[11px] text-zinc-400 tabular-nums dark:text-zinc-500">
         {index + 1}
       </span>

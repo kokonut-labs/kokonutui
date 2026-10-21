@@ -25,6 +25,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import {
+  type ReactNode,
   type RefObject,
   useCallback,
   useEffect,
@@ -60,7 +61,13 @@ interface Op {
   key: string;
 }
 
-type Phase = "idle" | "prompt" | "streaming" | "review" | "settling";
+type Phase =
+  | "idle"
+  | "prompt"
+  | "streaming"
+  | "review"
+  | "settling"
+  | "discarding";
 type Action = "shorter" | "clearer" | "friendlier" | "grammar";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -69,6 +76,7 @@ const PAD = 16;
 const WORD = /\S+\s*/g;
 const TRAILING = /\s+$/;
 const SPACE = /\s/;
+const APPLE = /Mac|iPhone|iPad/;
 const SENTENCE = /[^.!?]+[.!?]+\s*/g;
 const SHORT_HINT = /short|concise|trim|tight|brief/;
 const FRIENDLY_HINT = /friend|warm|casual|kind|human/;
@@ -414,6 +422,17 @@ const readSelection = (
   return to - from < 2 ? null : { p, start: from, end: to };
 };
 
+/** ⌘ on Apple devices, Ctrl elsewhere. Starts as ⌘ so the server render matches. */
+const useModKey = () => {
+  const [mod, setMod] = useState("⌘");
+  useEffect(() => {
+    if (!APPLE.test(navigator.userAgent)) {
+      setMod("Ctrl ");
+    }
+  }, []);
+  return mod;
+};
+
 const stepDelay = (op: Op) => {
   if (op.kind === "add") {
     return 34 + Math.min(42, op.word.length * 6);
@@ -459,8 +478,8 @@ export default function AIInlineEdit({
     () => (current ? diff(selected, current) : []),
     [selected, current]
   );
-  const editing =
-    phase === "streaming" || phase === "review" || phase === "settling";
+  const editing = phase !== "idle" && phase !== "prompt";
+  const mod = useModKey();
   const unchanged = phase === "review" && current === selected;
 
   // Place the bar under the selection, clamped to the card.
@@ -632,6 +651,12 @@ export default function AIInlineEdit({
     );
   };
 
+  /** Added words fade and struck ones come back before the text resets. */
+  const discard = () => {
+    setPhase("discarding");
+    setTimeout(clear, reduceMotion ? 0 : 160);
+  };
+
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -639,7 +664,9 @@ export default function AIInlineEdit({
         setVersions((v) => v.slice(0, -1));
         setVersion((v) => Math.max(0, v - 1));
         setPhase(versions.length > 1 ? "review" : "prompt");
-      } else if (phase === "review" || phase === "prompt") {
+      } else if (phase === "review") {
+        discard();
+      } else if (phase === "prompt") {
         clear();
       }
     } else if (
@@ -753,7 +780,7 @@ export default function AIInlineEdit({
         >
           {doc.map((text, p) => (
             <p
-              className="mb-3 text-[15px] text-zinc-700 leading-7 last:mb-0 dark:text-zinc-300"
+              className="mb-3 cursor-text text-[15px] text-zinc-700 leading-7 selection:bg-sky-500/[0.16] last:mb-0 dark:text-zinc-300 dark:selection:bg-sky-400/20"
               data-para={p}
               // biome-ignore lint/suspicious/noArrayIndexKey: paragraphs never reorder
               key={p}
@@ -765,64 +792,79 @@ export default function AIInlineEdit({
           <AnimatePresence>
             {span && (
               <motion.div
-                animate={{ opacity: 1, x: bar.x, y: bar.y }}
+                animate={{ opacity: 1, scale: 1, x: bar.x, y: bar.y }}
                 aria-label="Edit with AI"
-                className="absolute top-0 left-0 z-20 rounded-xl bg-white shadow-[0_12px_32px_-12px_rgb(0_0_0/0.25)] ring-1 ring-black/[0.08] dark:bg-zinc-800 dark:shadow-[0_12px_32px_-12px_rgb(0_0_0/0.7)] dark:ring-white/10"
-                exit={{ opacity: 0, transition: { duration: 0.12 } }}
-                initial={{ opacity: 0, x: bar.x, y: bar.y - 4 }}
+                className="absolute top-0 left-0 z-20 origin-top-left overflow-hidden rounded-xl bg-white shadow-[0_12px_32px_-12px_rgb(0_0_0/0.25)] ring-1 ring-black/[0.08] dark:bg-zinc-800 dark:shadow-[0_12px_32px_-12px_rgb(0_0_0/0.7)] dark:ring-white/10"
+                exit={{
+                  opacity: 0,
+                  scale: 0.98,
+                  transition: { duration: 0.12, ease: EASE_OUT },
+                }}
+                initial={{ opacity: 0, scale: 0.97, x: bar.x, y: bar.y - 4 }}
                 key="bar"
                 ref={barRef}
                 role="group"
                 style={{ width: bar.width }}
                 transition={{ duration: 0.2, ease: EASE_OUT }}
               >
-                {phase === "prompt" && (
-                  <PromptBar
-                    inputRef={inputRef}
-                    instruction={instruction}
-                    onInstruction={setInstruction}
-                    onRun={(text) => run(text, 0)}
-                  />
-                )}
-                {phase === "streaming" && (
-                  <div className="flex h-11 items-center gap-2 pr-1.5 pl-3">
-                    <Dots />
-                    <p className="min-w-0 flex-1 truncate text-[13px] text-zinc-600 dark:text-zinc-300">
-                      Rewriting
-                      <span className="text-zinc-400 dark:text-zinc-500">
-                        {" "}
-                        · {label}
-                      </span>
-                    </p>
-                    <button
-                      className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] text-zinc-600 transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-white"
-                      onClick={() => {
-                        setHead(ops.length);
-                        setPhase("review");
-                      }}
-                      type="button"
-                    >
-                      <Square
-                        aria-hidden="true"
-                        className="size-2.5 fill-current"
-                      />
-                      Skip
-                    </button>
-                  </div>
-                )}
-                {(phase === "review" || phase === "settling") && (
-                  <ReviewBar
-                    acceptRef={acceptRef}
-                    count={versions.length}
-                    label={unchanged ? "Already reads well" : label}
-                    onAccept={accept}
-                    onAgain={() => run(label, attempt + 1)}
-                    onDiscard={clear}
-                    onVersion={setVersion}
-                    unchanged={unchanged}
-                    version={version}
-                  />
-                )}
+                <BarBody
+                  phase={
+                    phase === "settling" || phase === "discarding"
+                      ? "review"
+                      : phase
+                  }
+                >
+                  {phase === "prompt" && (
+                    <PromptBar
+                      inputRef={inputRef}
+                      instruction={instruction}
+                      onInstruction={setInstruction}
+                      onRun={(text) => run(text, 0)}
+                    />
+                  )}
+                  {phase === "streaming" && (
+                    <div className="flex h-11 items-center gap-2 pr-1.5 pl-3">
+                      <Dots />
+                      <p className="min-w-0 flex-1 truncate text-[13px] text-zinc-600 dark:text-zinc-300">
+                        Rewriting
+                        <span className="text-zinc-400 dark:text-zinc-500">
+                          {" "}
+                          · {label}
+                        </span>
+                      </p>
+                      <button
+                        className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] text-zinc-600 transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-white"
+                        onClick={() => {
+                          setHead(ops.length);
+                          setPhase("review");
+                        }}
+                        type="button"
+                      >
+                        <Square
+                          aria-hidden="true"
+                          className="size-2.5 fill-current"
+                        />
+                        Skip
+                      </button>
+                    </div>
+                  )}
+                  {(phase === "review" ||
+                    phase === "settling" ||
+                    phase === "discarding") && (
+                    <ReviewBar
+                      acceptRef={acceptRef}
+                      count={versions.length}
+                      label={unchanged ? "Already reads well" : label}
+                      mod={mod}
+                      onAccept={accept}
+                      onAgain={() => run(label, attempt + 1)}
+                      onDiscard={discard}
+                      onVersion={setVersion}
+                      unchanged={unchanged}
+                      version={version}
+                    />
+                  )}
+                </BarBody>
               </motion.div>
             )}
           </AnimatePresence>
@@ -873,7 +915,7 @@ function PromptBar({
         />
         <button
           aria-label="Rewrite"
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
           disabled={!instruction.trim()}
           type="submit"
         >
@@ -906,8 +948,10 @@ function ReviewBar({
   onAgain,
   onDiscard,
   onAccept,
+  mod,
 }: {
   label: string;
+  mod: string;
   count: number;
   version: number;
   unchanged: boolean;
@@ -921,8 +965,8 @@ function ReviewBar({
     "flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] text-zinc-600 outline-hidden transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-900/15 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-300 dark:focus-visible:ring-white/20 dark:hover:bg-white/[0.07] dark:hover:text-white";
   return (
     <div className="flex h-11 items-center gap-1 pr-1.5 pl-2">
-      {count > 1 ? (
-        <div className="flex items-center text-[12px] text-zinc-500 tabular-nums dark:text-zinc-400">
+      {count > 1 && (
+        <div className="flex shrink-0 items-center text-[12px] text-zinc-500 tabular-nums dark:text-zinc-400">
           <button
             aria-label="Previous version"
             className={cn(ghost, "px-1")}
@@ -943,11 +987,15 @@ function ReviewBar({
             <ChevronRight className="size-3.5" />
           </button>
         </div>
-      ) : (
-        <p className="min-w-0 truncate pl-1 text-[12px] text-zinc-500 dark:text-zinc-400">
-          {label}
-        </p>
       )}
+      <p
+        className={cn(
+          "min-w-0 truncate text-[12px] text-zinc-500 dark:text-zinc-400",
+          count > 1 ? "pl-0.5" : "pl-1"
+        )}
+      >
+        {label}
+      </p>
       <div className="ml-auto flex shrink-0 items-center gap-0.5">
         <button
           aria-label="Try again"
@@ -962,14 +1010,14 @@ function ReviewBar({
           Discard
         </button>
         <button
-          className="flex h-7 items-center gap-1.5 rounded-lg bg-zinc-900 px-2.5 font-medium text-[12px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-900/30 focus-visible:ring-offset-1 dark:bg-white dark:text-zinc-900 dark:focus-visible:ring-white/40 dark:focus-visible:ring-offset-zinc-800 dark:hover:bg-zinc-200"
+          className="flex h-7 items-center gap-1.5 rounded-lg bg-zinc-900 px-2.5 font-medium text-[12px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-900/30 focus-visible:ring-offset-1 active:bg-zinc-600 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-white/40 dark:focus-visible:ring-offset-zinc-800 dark:hover:bg-zinc-200"
           disabled={unchanged}
           onClick={onAccept}
           ref={acceptRef}
           type="button"
         >
           Accept
-          <kbd className="font-sans text-[11px] opacity-60">⌘↵</kbd>
+          <kbd className="font-sans text-[11px] opacity-60">{mod}↵</kbd>
         </button>
       </div>
     </div>
@@ -987,6 +1035,7 @@ function DiffRun({
 }) {
   const streaming = phase === "streaming";
   const settling = phase === "settling";
+  const discarding = phase === "discarding";
   const done = run.filter((r) => !streaming || r.index < head);
   const pending = run.filter((r) => streaming && r.index >= head);
   const caret =
@@ -1012,7 +1061,14 @@ function DiffRun({
         )}
       >
         {done.length > 0 && (
-          <del className="text-zinc-400 decoration-red-500/60 dark:text-zinc-500 dark:decoration-red-400/60">
+          <del
+            className={cn(
+              "transition-[color,text-decoration-color] duration-150",
+              discarding
+                ? "text-inherit no-underline decoration-transparent"
+                : "text-zinc-400 decoration-red-500/60 dark:text-zinc-500 dark:decoration-red-400/60"
+            )}
+          >
             {join(done)}
           </del>
         )}
@@ -1030,7 +1086,8 @@ function DiffRun({
     <span>
       <ins
         className={cn(
-          "rounded-[3px] no-underline transition-colors duration-300 [box-decoration-break:clone]",
+          "rounded-[3px] no-underline transition-[background-color,color,opacity] duration-300 [box-decoration-break:clone]",
+          discarding && "opacity-0 duration-150",
           settling
             ? "bg-transparent"
             : "bg-emerald-500/[0.14] text-emerald-950 dark:bg-emerald-400/[0.16] dark:text-emerald-100"
@@ -1051,6 +1108,44 @@ function DiffRun({
       {caret}
       {gap}
     </span>
+  );
+}
+
+/** Grows and shrinks with its content, and crossfades between phases. */
+function BarBody({ phase, children }: { phase: Phase; children: ReactNode }) {
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | "auto">("auto");
+
+  useLayoutEffect(() => {
+    const el = innerRef.current;
+    if (!el) {
+      return;
+    }
+    const observer = new ResizeObserver(() => setHeight(el.offsetHeight));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <motion.div
+      animate={{ height }}
+      initial={false}
+      transition={{ duration: 0.2, ease: EASE_OUT }}
+    >
+      <div ref={innerRef}>
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.div
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, filter: "blur(2px)" }}
+            initial={{ opacity: 0, filter: "blur(2px)" }}
+            key={phase}
+            transition={{ duration: 0.15, ease: EASE_OUT }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </motion.div>
   );
 }
 

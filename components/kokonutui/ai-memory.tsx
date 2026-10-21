@@ -162,6 +162,9 @@ export default function AIMemory({
   const [enabled, setEnabled] = useState(true);
   const [flash, setFlash] = useState<string | null>(null);
   const [undo, setUndo] = useState<{ row: Row; index: number } | null>(null);
+  const [incoming, setIncoming] = useState<{ row: Row; after: string } | null>(
+    null
+  );
   const threadRef = useRef<HTMLDivElement>(null);
 
   const last = messages.at(-1);
@@ -189,18 +192,16 @@ export default function AIMemory({
     const { text, group, replaces } = change.memory;
     const id = uid("mem");
     const old = rows.find((r) => r.id === replaces && r.state === "live");
-    setRows((list) => {
-      const next: Row = { id, text, group, saved: "Today", state: "new" };
-      if (!old) {
-        return [...list, next];
-      }
-      const at = list.findIndex((r) => r.id === old.id);
-      const copy = list.map((r) =>
-        r.id === old.id ? { ...r, state: "replaced" as const } : r
+    const next: Row = { id, text, group, saved: "Today", state: "new" };
+    if (old) {
+      // Strike the old fact first; the new one slides in under it.
+      setRows((list) =>
+        list.map((r) => (r.id === old.id ? { ...r, state: "replaced" } : r))
       );
-      copy.splice(at + 1, 0, next);
-      return copy;
-    });
+      setIncoming({ row: next, after: old.id });
+    } else {
+      setRows((list) => [...list, next]);
+    }
     setMessages((list) =>
       list.map((m) =>
         m.id === last.id
@@ -209,6 +210,26 @@ export default function AIMemory({
       )
     );
   }, [last, pending, shown, words, reduceMotion, enabled, rows]);
+
+  // The replacement lands once the strike has had a beat to read.
+  useEffect(() => {
+    if (!incoming) {
+      return;
+    }
+    const id = setTimeout(
+      () => {
+        setRows((list) => {
+          const copy = [...list];
+          const at = copy.findIndex((r) => r.id === incoming.after);
+          copy.splice(at < 0 ? copy.length : at + 1, 0, incoming.row);
+          return copy;
+        });
+        setIncoming(null);
+      },
+      reduceMotion ? 0 : 320
+    );
+    return () => clearTimeout(id);
+  }, [incoming, reduceMotion]);
 
   const hasReplaced = rows.some((r) => r.state === "replaced");
   const hasNew = rows.some((r) => r.state === "new");
@@ -220,7 +241,7 @@ export default function AIMemory({
     }
     const id = setTimeout(
       () => setRows((list) => list.filter((r) => r.state !== "replaced")),
-      reduceMotion ? 0 : 1400
+      reduceMotion ? 0 : 1600
     );
     return () => clearTimeout(id);
   }, [hasReplaced, reduceMotion]);
@@ -267,7 +288,7 @@ export default function AIMemory({
 
   const send = (raw: string) => {
     const text = raw.trim();
-    if (!text || streaming || pending) {
+    if (!text || streaming || pending || incoming) {
       return;
     }
     const change = enabled
@@ -390,16 +411,21 @@ export default function AIMemory({
               <AnimatePresence initial={false} mode="popLayout">
                 {left.length > 0 && (
                   <motion.div
-                    className="flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]"
+                    className={cn(
+                      "flex flex-wrap gap-1.5 px-1 transition-opacity duration-150",
+                      (streaming || pending || incoming) && "opacity-40"
+                    )}
                     exit={{ opacity: 0 }}
                     key="chips"
                   >
                     <AnimatePresence initial={false} mode="popLayout">
-                      {left.map((s) => (
+                      {left.slice(0, 3).map((s) => (
                         <motion.button
                           animate={{ opacity: 1 }}
-                          className="h-7 shrink-0 rounded-full px-3 text-[12px] text-zinc-600 ring-1 ring-black/[0.08] transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/[0.07] dark:hover:text-white"
-                          disabled={streaming || Boolean(pending)}
+                          className="h-7 max-w-full truncate rounded-full px-3 text-[12px] text-zinc-600 ring-1 ring-black/[0.08] transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 active:bg-zinc-200/80 dark:text-zinc-300 dark:ring-white/10 dark:active:bg-white/[0.12] dark:hover:bg-white/[0.07] dark:hover:text-white"
+                          disabled={
+                            streaming || Boolean(pending) || Boolean(incoming)
+                          }
                           exit={{ opacity: 0, transition: { duration: 0.12 } }}
                           initial={{ opacity: 0 }}
                           key={s}
@@ -431,7 +457,7 @@ export default function AIMemory({
                 />
                 <button
                   aria-label="Send"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
                   disabled={!draft.trim() || streaming}
                   type="submit"
                 >
@@ -443,10 +469,7 @@ export default function AIMemory({
 
           <section
             aria-label="Memory"
-            className={cn(
-              "flex min-w-0 flex-col bg-zinc-50/60 dark:bg-zinc-950/30",
-              !enabled && "[&_li]:opacity-50"
-            )}
+            className="flex min-w-0 flex-col bg-zinc-50/60 dark:bg-zinc-950/30"
           >
             <header className="flex h-11 items-center gap-2 border-black/[0.06] border-b px-4 dark:border-white/[0.08]">
               <h3 className="font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
@@ -457,7 +480,12 @@ export default function AIMemory({
               </span>
               <Switch on={enabled} onToggle={() => setEnabled((e) => !e)} />
             </header>
-            <div className="flex-1 space-y-4 px-2 py-3">
+            <div
+              className={cn(
+                "flex-1 space-y-4 px-2 py-3 transition-opacity duration-200",
+                !enabled && "opacity-50"
+              )}
+            >
               {groups.map((group) => (
                 <div key={group}>
                   <p className="px-2 pb-1 text-[11px] text-zinc-400 dark:text-zinc-500">
@@ -503,7 +531,7 @@ export default function AIMemory({
                       Forgot “{undo.row.text}”
                     </span>
                     <button
-                      className="h-6 shrink-0 rounded-md px-2 font-medium transition-colors duration-100 hover:bg-white/15 dark:hover:bg-black/10"
+                      className="h-6 shrink-0 rounded-md px-2 font-medium transition-colors duration-100 hover:bg-white/15 active:bg-white/25 dark:active:bg-black/15 dark:hover:bg-black/10"
                       onClick={restoreRow}
                       type="button"
                     >
@@ -534,7 +562,15 @@ function MemoryRow({
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(row.text);
   const inputRef = useRef<HTMLInputElement>(null);
+  const rowRef = useRef<HTMLLIElement>(null);
   const replaced = row.state === "replaced";
+
+  // Tapping "Saved to memory" in the chat brings the fact into view.
+  useEffect(() => {
+    if (flash) {
+      rowRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [flash]);
 
   useEffect(() => {
     if (editing) {
@@ -554,14 +590,15 @@ function MemoryRow({
   };
 
   const icon =
-    "flex size-6 shrink-0 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-100 hover:bg-zinc-900/[0.06] hover:text-zinc-800 focus-visible:bg-zinc-900/[0.06] focus-visible:text-zinc-800 dark:text-zinc-500 dark:focus-visible:bg-white/10 dark:focus-visible:text-zinc-100 dark:hover:bg-white/10 dark:hover:text-zinc-100";
+    "flex size-6 shrink-0 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-100 hover:bg-zinc-900/[0.06] hover:text-zinc-800 focus-visible:bg-zinc-900/[0.06] focus-visible:text-zinc-800 active:bg-zinc-900/[0.1] dark:text-zinc-500 dark:active:bg-white/15 dark:focus-visible:bg-white/10 dark:focus-visible:text-zinc-100 dark:hover:bg-white/10 dark:hover:text-zinc-100";
 
   return (
     <motion.li
       animate={{ opacity: 1, height: "auto" }}
       className="overflow-hidden"
-      exit={{ opacity: 0, height: 0 }}
+      exit={{ opacity: 0, height: 0, transition: { duration: 0.2 } }}
       initial={{ opacity: 0, height: 0 }}
+      ref={rowRef}
       transition={{ duration: 0.28, ease: EASE_OUT }}
     >
       <div
@@ -595,7 +632,7 @@ function MemoryRow({
           <p className="min-w-0 flex-1 text-[12.5px] leading-snug">
             <span
               className={cn(
-                "bg-no-repeat transition-[background-size,color] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                "bg-no-repeat transition-[background-size,color] duration-[400ms] ease-[cubic-bezier(0.23,1,0.32,1)]",
                 "bg-[length:0%_1px] bg-[linear-gradient(currentColor,currentColor)] bg-[position:0_55%]",
                 replaced
                   ? "bg-[length:100%_1px] text-zinc-400 dark:text-zinc-500"
