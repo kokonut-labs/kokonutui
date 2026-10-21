@@ -42,7 +42,13 @@ export const RELEASES: Release[] = [
       { name: "ai-branches", pr: 113 },
       { name: "ai-agent-lanes", pr: 113 },
     ],
-    improved: [],
+    improved: [
+      {
+        name: "ai-diff-review",
+        pr: 113,
+        note: "Smoother streaming: diffs glide open line by line, rows slide in, and the last file stays open, with no layout jumps.",
+      },
+    ],
   },
   {
     date: "2026-10-19",
