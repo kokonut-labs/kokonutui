@@ -13,6 +13,7 @@
     "ai-model-selector",
     "ai-token-alternatives",
     "ai-branches",
+    "ai-agent-lanes",
     "ai-autocomplete",
     "slash-command-menu",
     "image-generation-card"

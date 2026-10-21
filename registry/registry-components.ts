@@ -908,4 +908,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "ai-agent-lanes",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-agent-lanes.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];

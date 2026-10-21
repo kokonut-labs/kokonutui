@@ -43,6 +43,7 @@ export const RELEASES: Release[] = [
       { name: "pull-to-refresh", pr: 113 },
       { name: "ai-token-alternatives", pr: 113 },
       { name: "ai-branches", pr: 113 },
+      { name: "ai-agent-lanes", pr: 113 },
     ],
     improved: [],
   },
