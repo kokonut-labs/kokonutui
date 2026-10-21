@@ -34,6 +34,17 @@ export const NEW_FOR_DAYS = 30;
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-21",
+    added: [],
+    improved: [
+      {
+        name: "ai-diff-review",
+        pr: 113,
+        note: "Smoother streaming: diffs glide open line by line, rows slide in, and the last file stays open, with no layout jumps.",
+      },
+    ],
+  },
+  {
     date: "2026-10-19",
     added: [],
     improved: [
