@@ -831,4 +831,59 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "timezone-planner",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/timezone-planner.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "page-flip",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/page-flip.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-token-alternatives",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-token-alternatives.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-branches",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-branches.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-agent-lanes",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-agent-lanes.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
