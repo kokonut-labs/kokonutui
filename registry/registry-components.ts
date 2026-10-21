@@ -886,4 +886,54 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "leaderboard",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/leaderboard.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "cohort-table",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/cohort-table.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "funnel-chart",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/funnel-chart.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "event-timeline",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/event-timeline.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "lasso-scatter",
+    type: "registry:component",
+    files: [
+      {
+        path: "components/kokonutui/lasso-scatter.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];

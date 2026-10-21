@@ -41,6 +41,11 @@ export const RELEASES: Release[] = [
       { name: "ai-token-alternatives", pr: 115 },
       { name: "ai-branches", pr: 115 },
       { name: "ai-agent-lanes", pr: 115 },
+      { name: "leaderboard", pr: 117 },
+      { name: "cohort-table", pr: 117 },
+      { name: "funnel-chart", pr: 117 },
+      { name: "event-timeline", pr: 117 },
+      { name: "lasso-scatter", pr: 117 },
     ],
     improved: [
       {
