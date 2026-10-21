@@ -27,7 +27,7 @@ const MERGE_PX = 18;
 // The narrowest window you can zoom to.
 const MIN_SPAN = 2 * HOUR;
 const ZOOM_MS = 380;
-const TICK_PX = 64;
+const TICK_PX = 48;
 const TICK_STEPS = [
   HOUR,
   2 * HOUR,
@@ -36,6 +36,7 @@ const TICK_STEPS = [
   12 * HOUR,
   DAY,
   2 * DAY,
+  3 * DAY,
   7 * DAY,
 ];
 const DRAG_PX = 4;

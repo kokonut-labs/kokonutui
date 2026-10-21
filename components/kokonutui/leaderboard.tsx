@@ -385,9 +385,9 @@ export default function Leaderboard({
         className
       )}
     >
-      <div className="flex items-start justify-between gap-4 p-5 pb-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 p-5 pb-4">
         <div className="min-w-0">
-          <p className="truncate font-medium text-sm">{title}</p>
+          <p className="font-medium text-sm">{title}</p>
           <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
             {subtitle}
           </p>
@@ -470,7 +470,7 @@ export default function Leaderboard({
               <span
                 aria-hidden
                 className={cn(
-                  "relative flex size-8 shrink-0 items-center justify-center rounded-full font-medium text-[11px]",
+                  "relative hidden size-8 shrink-0 items-center justify-center rounded-full font-medium text-[11px] sm:flex",
                   isYou
                     ? "bg-violet-600 text-white dark:bg-violet-500"
                     : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
