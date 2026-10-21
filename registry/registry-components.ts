@@ -908,4 +908,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "reflow-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/reflow-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
