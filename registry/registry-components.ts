@@ -854,39 +854,6 @@ export const component: Registry = [
     ],
   },
   {
-    name: "invite-envelope",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/invite-envelope.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "bookshelf",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/bookshelf.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "pull-to-refresh",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/pull-to-refresh.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
     name: "ai-token-alternatives",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],

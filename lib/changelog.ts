@@ -38,9 +38,6 @@ export const RELEASES: Release[] = [
     added: [
       { name: "timezone-planner", pr: 113 },
       { name: "page-flip", pr: 113 },
-      { name: "invite-envelope", pr: 113 },
-      { name: "bookshelf", pr: 113 },
-      { name: "pull-to-refresh", pr: 113 },
       { name: "ai-token-alternatives", pr: 113 },
       { name: "ai-branches", pr: 113 },
       { name: "ai-agent-lanes", pr: 113 },
