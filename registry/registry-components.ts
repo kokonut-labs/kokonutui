@@ -886,4 +886,26 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "rating-face",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/rating-face.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "save-button",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/save-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
