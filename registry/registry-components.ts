@@ -930,4 +930,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "ink-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/ink-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];

@@ -41,6 +41,11 @@ export const RELEASES: Release[] = [
       { name: "ai-token-alternatives", pr: 115 },
       { name: "ai-branches", pr: 115 },
       { name: "ai-agent-lanes", pr: 115 },
+      { name: "marker-text", pr: 117 },
+      { name: "spaces-sidebar", pr: 117 },
+      { name: "story-viewer", pr: 117 },
+      { name: "color-sampler", pr: 117 },
+      { name: "ink-background", pr: 117 },
     ],
     improved: [
       {
