@@ -908,4 +908,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "story-viewer",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/story-viewer.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
