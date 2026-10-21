@@ -930,4 +930,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "tone-curve",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/tone-curve.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
