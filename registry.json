@@ -1115,6 +1115,84 @@
       ]
     },
     {
+      "name": "timezone-planner",
+      "type": "registry:component",
+      "title": "Time Zone Planner",
+      "description": "Find a meeting time across time zones. Turn the meeting round a 24-hour dial where each ring is someone's day.",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/timezone-planner.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "page-flip",
+      "type": "registry:component",
+      "title": "Page Flip",
+      "description": "A book you turn by the corner. Drag a page over the spine or tap to turn it.",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/page-flip.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-token-alternatives",
+      "type": "registry:component",
+      "title": "AI Token Alternatives",
+      "description": "An answer where every unsure word shows what else the model weighed. Pick another word and the reply writes itself again from there.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-token-alternatives.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-branches",
+      "type": "registry:component",
+      "title": "AI Conversation Branches",
+      "description": "A chat where editing a message starts a new branch. A small tree beside it shows every version, and you can jump between them.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-branches.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-agent-lanes",
+      "type": "registry:component",
+      "title": "AI Agent Lanes",
+      "description": "A lead agent hands work to sub-agents that run side by side. Each gets a lane of tool calls, and you can scrub through the whole run.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-agent-lanes.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "use-auto-resize-textarea",
       "type": "registry:hook",
       "title": "Use Auto Resize Textarea",

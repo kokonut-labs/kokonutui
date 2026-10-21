@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 88 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 93 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -14,8 +14,10 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 
 - [Account Menu](https://kokonutui.com/docs/navigation/profile-dropdown.md): An account card that morphs into its own menu, with account switching, status, theme and hold-to-sign-out. Install: `npx shadcn@latest add @kokonutui/profile-dropdown`
 - [Activity Terrain](https://kokonutui.com/docs/cards/activity-terrain.md): A contribution heatmap that tilts up into a 3D terrain you can turn, built with React and canvas. Install: `npx shadcn@latest add @kokonutui/activity-terrain`
+- [AI Agent Lanes](https://kokonutui.com/docs/ai/ai-agent-lanes.md): A lead agent hands work to sub-agents that run side by side. Each gets a lane of tool calls, and you can scrub through the whole run. Install: `npx shadcn@latest add @kokonutui/ai-agent-lanes`
 - [AI Autocomplete](https://kokonutui.com/docs/ai/ai-autocomplete.md): A text box that suggests how your sentence ends in grey after the caret. Tab takes it all, the right arrow takes one word, and typing the same letters keeps it. Install: `npx shadcn@latest add @kokonutui/ai-autocomplete`
 - [AI Context Meter](https://kokonutui.com/docs/ai/ai-context-meter.md): How full the context window is, as a ring in the prompt footer that opens a breakdown by source and compacts when it fills. Install: `npx shadcn@latest add @kokonutui/ai-context-meter`
+- [AI Conversation Branches](https://kokonutui.com/docs/ai/ai-branches.md): A chat where editing a message starts a new branch. A small tree beside it shows every version, and you can jump between them. Install: `npx shadcn@latest add @kokonutui/ai-branches`
 - [AI Diff Review](https://kokonutui.com/docs/ai/ai-diff-review.md): A coding agent's edits streaming in file by file, then reviewed per file with accept, reject and undo. Install: `npx shadcn@latest add @kokonutui/ai-diff-review`
 - [AI Inline Citations](https://kokonutui.com/docs/ai/ai-citations.md): An answer with source chips beside each claim. One preview glides between chips and lights up the sentence it backs. Install: `npx shadcn@latest add @kokonutui/ai-citations`
 - [AI Input Search](https://kokonutui.com/docs/ai/ai-input-search.md): AI composer with a Tools menu of modes (browse, investigate, draft a visual, run code, reason), a tool header with a Change key, a model picker, an Ask key and a live trace that stacks each source's avatar as it is read. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/ai-input-search`
@@ -23,6 +25,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [AI Model Selector](https://kokonutui.com/docs/ai/ai-model-selector.md): Pick a model and how hard it thinks. Effort is a detent track that reshapes for each model and keeps your level when you switch. Install: `npx shadcn@latest add @kokonutui/ai-model-selector`
 - [AI State Loading](https://kokonutui.com/docs/ai/ai-loading.md): Agent progress as a list of steps with a live log, elapsed time and a summary when done. Install: `npx shadcn@latest add @kokonutui/ai-loading`
 - [AI Text Loading](https://kokonutui.com/docs/ai/ai-text-loading.md): AI thinking text with a soft wave through the letters and words that swap letter by letter. Install: `npx shadcn@latest add @kokonutui/ai-text-loading`
+- [AI Token Alternatives](https://kokonutui.com/docs/ai/ai-token-alternatives.md): An answer where every unsure word shows what else the model weighed. Pick another word and the reply writes itself again from there. Install: `npx shadcn@latest add @kokonutui/ai-token-alternatives`
 - [AI Tool Approval](https://kokonutui.com/docs/ai/ai-tool-approval.md): Approve or deny an agent's tool calls. Destructive calls need a press and hold, and decided calls fold into a trace with their output. Install: `npx shadcn@latest add @kokonutui/ai-tool-approval`
 - [AI Voice](https://kokonutui.com/docs/ai/ai-voice.md): Voice input with a scrolling waveform, then a take you can play back, discard or send. Install: `npx shadcn@latest add @kokonutui/ai-voice`
 - [Apple Activity Card](https://kokonutui.com/docs/cards/apple-activity-card.md): Activity rings that draw with a count-up, lap past 100% with a shadowed end cap and dim to focus, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/apple-activity-card`
@@ -63,6 +66,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Notification Stack](https://kokonutui.com/docs/cards/notification-stack.md): Stacked notifications that fan out on hover and swipe away, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/notification-stack`
 - [Now Playing](https://kokonutui.com/docs/cards/liquid-glass-card.md): Music card with a spinning disc you can grab and turn to scrub, built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/liquid-glass-card`
 - [Onboarding Checklist](https://kokonutui.com/docs/cards/onboarding-checklist.md): A get-started checklist with a progress ring, steps that collapse as you check them and an all-set state at the end. Part of Kokonut UI Pro. Install: `npx shadcn@latest add @kokonutui/onboarding-checklist`
+- [Page Flip](https://kokonutui.com/docs/cards/page-flip.md): A book you turn by the corner. Drag a page over the spine or tap to turn it. Install: `npx shadcn@latest add @kokonutui/page-flip`
 - [Particle Button](https://kokonutui.com/docs/buttons/particle-button.md): A status button for async actions, with a spinner, a drawn check and a particle burst on success. Install: `npx shadcn@latest add @kokonutui/particle-button`
 - [Pay Button](https://kokonutui.com/docs/buttons/pay-button.md): The last button of a checkout, carrying the amount and the card it charges. Part of Kokonut UI Pro. Install: `npx shadcn@latest add @kokonutui/pay-button`
 - [Photo Straighten](https://kokonutui.com/docs/media/photo-straighten.md): Level a crooked photo on a ruler you drag or flick. The crop grows to hide the corners, and a grid shows while you adjust. Install: `npx shadcn@latest add @kokonutui/photo-straighten`
@@ -91,6 +95,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Tear Button](https://kokonutui.com/docs/buttons/tear-button.md): A confirm button you tear off like a ticket stub, hole by hole. Install: `npx shadcn@latest add @kokonutui/tear-button`
 - [Templates](https://kokonutui.com/docs/templates.md): Full websites built with Kokonut UI, available with Kokonut UI Pro. Open a live preview, or get the source when one fits your project. Install: `npx shadcn@latest add @kokonutui/templates`
 - [Throw Deck](https://kokonutui.com/docs/cards/card-stack.md): A pile of image cards you drag, flick off the top and send under the deck, with arrow keys and a details view. Install: `npx shadcn@latest add @kokonutui/card-stack`
+- [Time Zone Planner](https://kokonutui.com/docs/inputs/timezone-planner.md): Find a meeting time across time zones. Turn the meeting round a 24-hour dial where each ring is someone's day. Install: `npx shadcn@latest add @kokonutui/timezone-planner`
 - [Tool Dock](https://kokonutui.com/docs/navigation/toolbar.md): An editor tool dock with a sliding selection plate, shortcut tooltips and flyouts that you can throw to any edge. Install: `npx shadcn@latest add @kokonutui/toolbar`
 - [Topo Background](https://kokonutui.com/docs/backgrounds/topo-background.md): A living contour map that drifts, rises under the cursor and ripples on click, built with React and Canvas. Install: `npx shadcn@latest add @kokonutui/topo-background`
 - [Typing Text](https://kokonutui.com/docs/texts/type-writer.md): Typewriter text that makes the odd typo and corrects it, erases by selecting, and blinks its caret only when idle, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/type-writer`
