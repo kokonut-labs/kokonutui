@@ -919,4 +919,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "fold-menu",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/fold-menu.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
