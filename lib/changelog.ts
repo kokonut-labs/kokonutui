@@ -37,10 +37,7 @@ export const RELEASES: Release[] = [
     date: "2026-10-21",
     added: [
       { name: "timezone-planner", pr: 113 },
-      { name: "tab-strip", pr: 113 },
-      { name: "ai-questions", pr: 113 },
-      { name: "comment-pins", pr: 113 },
-      { name: "message-thread", pr: 113 },
+      { name: "page-flip", pr: 113 },
     ],
     improved: [],
   },
