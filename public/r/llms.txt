@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 97 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 102 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -37,6 +37,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Avatar Picker](https://kokonutui.com/docs/inputs/avatar-picker.md): Generated avatars from a name, morphing as you type, on a 3D coin you can flick, tap or shuffle. Install: `npx shadcn@latest add @kokonutui/avatar-picker`
 - [Background Paths](https://kokonutui.com/docs/backgrounds/background-paths.md): A ribbon of lines in one color that keeps flowing at any size and parts around the cursor. Install: `npx shadcn@latest add @kokonutui/background-paths`
 - [Bell Button](https://kokonutui.com/docs/buttons/bell-button.md): A subscribe button whose bell swings and rings, with a clapper that really strikes. Install: `npx shadcn@latest add @kokonutui/bell-button`
+- [Caustics Background](https://kokonutui.com/docs/backgrounds/caustics-background.md): A hero on the floor of a pool. Light ripples across it, clicks drop rings that bend the light, and the headline floats on the surface with its shadow wobbling below. Install: `npx shadcn@latest add @kokonutui/caustics-background`
 - [Changelog](https://kokonutui.com/docs/changelog.md): New and updated Kokonut UI components, release by release, with a link to each component and its pull request. Install: `npx shadcn@latest add @kokonutui/changelog`
 - [Clip Trimmer](https://kokonutui.com/docs/media/clip-trimmer.md): A video trim timeline with a filmstrip, handles that snap to whole seconds and a playhead that loops the kept range. Install: `npx shadcn@latest add @kokonutui/clip-trimmer`
 - [Command Button](https://kokonutui.com/docs/buttons/command-button.md): A button with its shortcut drawn as keycaps that sink as you press the real keys. Install: `npx shadcn@latest add @kokonutui/command-button`
@@ -57,12 +58,14 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Halftone Background](https://kokonutui.com/docs/backgrounds/halftone-background.md): Any image, or a lit sphere, printed as a halftone dot screen, with a loupe that looks closer under the cursor, built with React and canvas. Install: `npx shadcn@latest add @kokonutui/halftone-background`
 - [Hold Button](https://kokonutui.com/docs/buttons/hold-button.md): Press and hold to confirm, with a fill that drains back on early release and a drawn check on completion. Install: `npx shadcn@latest add @kokonutui/hold-button`
 - [Image Generation Card](https://kokonutui.com/docs/ai/image-generation-card.md): An AI image panel where Generate resolves the picture from coarse pixel blocks to sharp with a step counter, then four variations land. Part of Kokonut UI Pro. Install: `npx shadcn@latest add @kokonutui/image-generation-card`
+- [Ink Background](https://kokonutui.com/docs/backgrounds/ink-background.md): A hero written in ink on water. Stir it and the letters bleed, drop ink with a click, and the headline gathers itself again, built with React, WebGL and a fluid simulation. Install: `npx shadcn@latest add @kokonutui/ink-background`
 - [Kinetic Type Hero](https://kokonutui.com/docs/texts/kinetic-type-hero.md): A studio hero where an edge-to-edge headline sets itself in and leans away from the cursor. Part of Kokonut UI Pro. Install: `npx shadcn@latest add @kokonutui/kinetic-type-hero`
 - [Lightbox Grid](https://kokonutui.com/docs/cards/lightbox-grid.md): A photo grid whose thumbnails grow into a full view and fly back to their slot when you drag them down. Install: `npx shadcn@latest add @kokonutui/lightbox-grid`
 - [Liquid Gauge](https://kokonutui.com/docs/cards/liquid-gauge.md): A usage meter filled with liquid that sloshes, ripples and bubbles, built with React and a wave simulation. Install: `npx shadcn@latest add @kokonutui/liquid-gauge`
 - [Liquid Slider](https://kokonutui.com/docs/inputs/liquid-slider.md): A vertical slider you fill like a glass, with a sloshing surface and rising bubbles. Install: `npx shadcn@latest add @kokonutui/liquid-slider`
 - [Loader](https://kokonutui.com/docs/inputs/loader.md): Animated loading indicator with rotating gradient rings, size variants and customizable title text. Built with React and Tailwind CSS. Install: `npx shadcn@latest add @kokonutui/loader`
 - [Magnet Button](https://kokonutui.com/docs/buttons/attract-button.md): A call-to-action button wrapped in a field of iron filings that align to its magnetic field and lean toward your cursor. Install: `npx shadcn@latest add @kokonutui/attract-button`
+- [Marker Text](https://kokonutui.com/docs/texts/marker-text.md): Hand-drawn highlights, underlines, circles, boxes and strikes that draw themselves in reading order when the text comes into view. Install: `npx shadcn@latest add @kokonutui/marker-text`
 - [Marking Menu](https://kokonutui.com/docs/navigation/marking-menu.md): A radial menu you hold to open or flick to pick blind, built with React and Motion. Install: `npx shadcn@latest add @kokonutui/marking-menu`
 - [Metric Card](https://kokonutui.com/docs/cards/metric-card.md): A revenue KPI card. Scrub a day, drag a range, or pick a segment; the number rolls, the line morphs and the breakdown follows. Install: `npx shadcn@latest add @kokonutui/metric-card`
 - [Momentum Rail](https://kokonutui.com/docs/cards/carousel-cards.md): A card rail you flick with momentum, snapping on a spring, with scroll-driven cover-flow depth and parallax. Install: `npx shadcn@latest add @kokonutui/carousel-cards`
@@ -78,9 +81,11 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [Price Range](https://kokonutui.com/docs/inputs/price-range.md): A two-handle price filter drawn over a histogram of the results, with a live count. Part of Kokonut UI Pro. Install: `npx shadcn@latest add @kokonutui/price-range`
 - [Pro components](https://kokonutui.com/docs/pro.md): A look at Kokonut UI Pro, the larger paid collection. Heroes, page sections, app UI, cards, inputs, forms, pricing and full pages, shown as stills. Install: `npx shadcn@latest add @kokonutui/pro`
 - [Pull Cord](https://kokonutui.com/docs/buttons/pull-cord.md): A lamp switch you pull on a swinging cord, built with React and a rope simulation. Install: `npx shadcn@latest add @kokonutui/pull-cord`
+- [Rain Glass Background](https://kokonutui.com/docs/backgrounds/rain-glass-background.md): A hero seen through a rainy window. Drops gather, run and swallow each other, each one a tiny lens showing the view, and dragging wipes the fog off the glass for a while. Install: `npx shadcn@latest add @kokonutui/rain-glass-background`
 - [Receipt Printer](https://kokonutui.com/docs/cards/receipt-printer.md): A receipt that prints line by line, then tears off and falls when you pull it, built with React. Install: `npx shadcn@latest add @kokonutui/receipt-printer`
 - [Rhythm Hero](https://kokonutui.com/docs/backgrounds/rhythm-hero.md): A health and sleep app hero with hairline rings breathing a 4-7-8 cycle, a week of sleep-stage bars and calm stats. Part of Kokonut UI Pro. Install: `npx shadcn@latest add @kokonutui/rhythm-hero`
 - [Scroll Index](https://kokonutui.com/docs/navigation/scroll-index.md): A section rail for long pages, with a tick per heading that you can hover, click or drag to scrub, built with React. Install: `npx shadcn@latest add @kokonutui/scroll-index`
+- [Shadow Text](https://kokonutui.com/docs/texts/shadow-text.md): A headline that works as a sundial. Each letter casts a long, soft shadow set by the reader's clock, and bringing the pointer close turns it into a lamp. Install: `npx shadcn@latest add @kokonutui/shadow-text`
 - [Shape Hero](https://kokonutui.com/docs/backgrounds/shape-hero.md): A landing hero where shapes drop in, pile up under the headline and can be grabbed and thrown. Install: `npx shadcn@latest add @kokonutui/shape-hero`
 - [Signature Pad](https://kokonutui.com/docs/inputs/signature-pad.md): A signature field with a sprung pen tip, speed-weighted ink and SVG output. Install: `npx shadcn@latest add @kokonutui/signature-pad`
 - [Slash Command Menu](https://kokonutui.com/docs/ai/slash-command-menu.md): A chat composer with slash commands, a hint bar that spells out each argument and a menu that offers values for it. Part of Kokonut UI Pro. Install: `npx shadcn@latest add @kokonutui/slash-command-menu`

@@ -931,6 +931,61 @@ export const component: Registry = [
     ],
   },
   {
+    name: "marker-text",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/marker-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ink-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/ink-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "caustics-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/caustics-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "rain-glass-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/rain-glass-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "shadow-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/shadow-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "seat-map",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
@@ -970,6 +1025,17 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/save-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "cart-button",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/cart-button.tsx",
         type: "registry:component",
       },
     ],

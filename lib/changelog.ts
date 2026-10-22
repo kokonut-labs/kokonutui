@@ -49,6 +49,12 @@ export const RELEASES: Release[] = [
       { name: "amount-pad", pr: 117 },
       { name: "slide-to-confirm", pr: 117 },
       { name: "save-button", pr: 117 },
+      { name: "cart-button", pr: 117 },
+      { name: "marker-text", pr: 119 },
+      { name: "ink-background", pr: 119 },
+      { name: "caustics-background", pr: 119 },
+      { name: "rain-glass-background", pr: 119 },
+      { name: "shadow-text", pr: 119 },
     ],
     improved: [
       {
