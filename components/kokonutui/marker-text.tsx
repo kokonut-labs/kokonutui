@@ -673,6 +673,7 @@ export default function MarkerTextDemo({ className }: { className?: string }) {
           "mt-8 inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-medium text-[13px] text-zinc-500 transition-[color,opacity] duration-200 hover:text-zinc-900 dark:hover:text-zinc-100",
           done ? "opacity-100" : "pointer-events-none opacity-0"
         )}
+        disabled={!done}
         onClick={replay}
         type="button"
       >

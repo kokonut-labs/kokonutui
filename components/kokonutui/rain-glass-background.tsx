@@ -579,17 +579,23 @@ export default function RainGlassBackground({
 
     const resizeObserver = new ResizeObserver(() => build());
     resizeObserver.observe(root);
+    // A tab coming back must not wake a background that's scrolled away.
+    let onScreen = true;
     const intersection = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting && document.visibilityState === "visible";
+      onScreen = entry.isIntersecting;
+      visible = onScreen && document.visibilityState === "visible";
       start();
     });
     intersection.observe(root);
     const onVisibility = () => {
-      visible = document.visibilityState === "visible";
+      visible = onScreen && document.visibilityState === "visible";
       start();
     };
     document.addEventListener("visibilitychange", onVisibility);
     const colorTimer = window.setInterval(() => {
+      if (!visible) {
+        return;
+      }
       if (readFog() && reduceMotion) {
         render();
       }

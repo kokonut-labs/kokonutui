@@ -992,8 +992,9 @@ const DynamicText = ({
       lang={current.lang}
       ref={rootRef}
     >
-      {/* Rapid cycling would flood a screen reader, so cycle stays quiet. */}
-      <span aria-live={mode === "cycle" ? "off" : "polite"} className="sr-only">
+      {/* Only announce text the app sets; words rotating on their own would
+          talk over the reader every couple of seconds. */}
+      <span aria-live={controlled ? "polite" : "off"} className="sr-only">
         {current.text}
       </span>
       {mode === "decode" ? (

@@ -538,19 +538,26 @@ export default function DrapeBackground({
     });
     resizeObserver.observe(canvas);
 
+    // A tab coming back must not wake a background that's scrolled away.
+    let onScreen = true;
     const intersection = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting && document.visibilityState === "visible";
+      onScreen = entry.isIntersecting;
+      visible = onScreen && document.visibilityState === "visible";
       start();
     });
     intersection.observe(root);
     const onVisibility = () => {
-      visible = document.visibilityState === "visible";
+      visible = onScreen && document.visibilityState === "visible";
       start();
     };
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Follow light and dark mode without asking the app for a theme.
+    // Follow light and dark mode without asking the app for a theme. Only
+    // checked while the background is on screen.
     const colorTimer = window.setInterval(() => {
+      if (!visible) {
+        return;
+      }
       if (readColors() && !raf) {
         draw();
       }

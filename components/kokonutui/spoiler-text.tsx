@@ -414,8 +414,14 @@ export function Spoiler({
     "relative rounded-[3px] [-webkit-box-decoration-break:clone] [box-decoration-break:clone]";
 
   if (revealed) {
+    // Keeps tabIndex -1 so focus stays put when the spoiler was opened with
+    // the keyboard, instead of falling back to the page.
     return (
-      <span className={cn(shape, className)} ref={rootRef}>
+      <span
+        className={cn(shape, "outline-none", className)}
+        ref={rootRef}
+        tabIndex={-1}
+      >
         {text}
         {specksLayer}
       </span>

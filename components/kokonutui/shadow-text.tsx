@@ -87,6 +87,7 @@ export function ShadowText({
   const rootRef = useRef<HTMLElement>(null);
   const words = children.split(" ");
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: children renders the letter spans the effect reads
   useEffect(() => {
     const root = rootRef.current;
     if (!root) {
@@ -236,7 +237,7 @@ export function ShadowText({
       window.removeEventListener("pointermove", onMove);
       document.documentElement.removeEventListener("pointerleave", onLeave);
     };
-  }, [clock, interactive, reach]);
+  }, [children, clock, interactive, reach]);
 
   return (
     <Tag

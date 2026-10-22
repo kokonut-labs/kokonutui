@@ -19,6 +19,31 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 
+/** Marks each tick ahead, current or passed, and keeps one tab stop. */
+function markTicks(ticks: (HTMLButtonElement | null)[], active: number) {
+  ticks.forEach((tick, i) => {
+    if (!tick) {
+      return;
+    }
+    // The section being read is marked apart from the ones passed.
+    let state = "ahead";
+    if (i === active) {
+      state = "current";
+    } else if (i < active) {
+      state = "passed";
+    }
+    tick.dataset.state = state;
+    // One tab stop for the whole rail, on the section being read; the arrow
+    // keys move between the rest.
+    tick.tabIndex = i === Math.max(active, 0) ? 0 : -1;
+    if (i === active) {
+      tick.setAttribute("aria-current", "location");
+    } else {
+      tick.removeAttribute("aria-current");
+    }
+  });
+}
+
 export interface ScrollIndexProps {
   /** The content to index. Defaults to a sample article. */
   children?: ReactNode;
@@ -205,18 +230,7 @@ export default function ScrollIndex({
       const now = current();
       if (now !== active) {
         active = now;
-        tickRefs.current.forEach((tick, i) => {
-          if (tick) {
-            // The section being read is marked apart from the ones passed.
-            let state = "ahead";
-            if (i === active) {
-              state = "current";
-            } else if (i < active) {
-              state = "passed";
-            }
-            tick.dataset.state = state;
-          }
-        });
+        markTicks(tickRefs.current, active);
         // Scrolling into a new section names it briefly.
         if (painted && hover === null && !drag && active >= 0) {
           placeLabel(active, true);
@@ -480,7 +494,7 @@ export default function ScrollIndex({
                 tickRefs.current[index] = el;
               }}
               style={{ top: `${(section.pos * 100).toFixed(3)}%` }}
-              tabIndex={0}
+              tabIndex={index === 0 ? 0 : -1}
               type="button"
             >
               <span className="absolute top-1/2 right-0 h-[1.5px] w-full origin-right -translate-y-1/2 scale-x-[var(--swell,1)] rounded-full bg-zinc-300 in-data-[state=current]:bg-blue-500 in-data-[state=passed]:bg-zinc-900 transition-colors duration-200 ease-out dark:bg-zinc-700 dark:in-data-[state=current]:bg-blue-400 dark:in-data-[state=passed]:bg-zinc-100" />
