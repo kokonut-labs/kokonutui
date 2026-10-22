@@ -1404,6 +1404,131 @@
       ]
     },
     {
+      "name": "card-field",
+      "type": "registry:component",
+      "title": "Card Field",
+      "description": "A one-row card input for checkout. The number groups the way the brand prints it, then slides away to its last four digits to make room for expiry and security code.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/card-field.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "stay-picker",
+      "type": "registry:component",
+      "title": "Stay Picker",
+      "description": "A date range for booking stays. Every night shows its price, sold-out nights are hatched, and your stay is drawn as one pill that wraps from week to week as you drag.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/stay-picker.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "slot-picker",
+      "type": "registry:component",
+      "title": "Slot Picker",
+      "description": "Book a meeting on a real day rail. Click a free gap and drag the meeting; it hops over what's already booked, grows in place when you change the length, and shows the host's local time.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/slot-picker.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "tip-selector",
+      "type": "registry:component",
+      "title": "Tip Selector",
+      "description": "A tip picker for checkout, set on a tape you drag and flick. The ticks you pass fill in, the amounts roll, and Round up makes the total a whole amount.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/tip-selector.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "boarding-pass",
+      "type": "registry:component",
+      "title": "Boarding Pass",
+      "description": "A boarding pass that keeps itself current. When the gate or times change, only the characters that moved roll over, and the old value stays underneath, struck through.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/boarding-pass.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "split-flap-text",
+      "type": "registry:component",
+      "title": "Split Flap Text",
+      "description": "Departure-board lettering for launch headlines and status lines. Each tile flips through its drum only as far as its new letter, on a real hinge, a beat after its neighbour.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/split-flap-text.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "location-picker",
+      "type": "registry:component",
+      "title": "Location Picker",
+      "description": "Set a pickup point the way ride apps do. Drag the map under a fixed pin; it lifts off its shadow, glides onto the nearest curb, drops, and the street rolls in.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/location-picker.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "contact-sheet",
+      "type": "registry:component",
+      "title": "Contact Sheet",
+      "description": "Pick from a shoot the way photographers do. Circle a frame in china marker, click again to strike it, and look through a loupe at the detail first.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/contact-sheet.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "use-auto-resize-textarea",
       "type": "registry:hook",
       "title": "Use Auto Resize Textarea",
