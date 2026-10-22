@@ -1107,23 +1107,23 @@ export const component: Registry = [
     ],
   },
   {
-    name: "engraving-background",
+    name: "pin-screen-background",
     type: "registry:component",
     dependencies: [],
     files: [
       {
-        path: "components/kokonutui/engraving-background.tsx",
+        path: "components/kokonutui/pin-screen-background.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "pixel-sort-image",
+    name: "contact-sheet",
     type: "registry:component",
-    dependencies: [],
+    dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/pixel-sort-image.tsx",
+        path: "components/kokonutui/contact-sheet.tsx",
         type: "registry:component",
       },
     ],

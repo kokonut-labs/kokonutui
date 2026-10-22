@@ -3,72 +3,61 @@
 /**
  * @author: @dorianbaffier
  * @description: Tip Selector
- * @version: 1.0.0
+ * @version: 2.0.0
  * @date: 2026-10-22
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { Check, Delete, Heart } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { Check, Heart } from "lucide-react";
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+} from "motion/react";
+import { type PointerEvent, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
-const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "back"];
-const MAX_CUSTOM = 999;
+/** Width of one percent on the tape, in px. */
+const TICK = 16;
+const SETTLE = { type: "spring", stiffness: 420, damping: 42 } as const;
 
 export interface TipSelectorProps {
   /** The order before the tip. */
   subtotal?: number;
   /** Who the tip goes to. */
-  recipient?: string;
-  /** Preset tips, in percent. */
+  recipient?: { name: string; note?: string };
+  /** Marked on the tape and offered as shortcuts, in percent. */
   percents?: number[];
-  /** Preset picked at first. */
+  /** Where the tape starts. */
   defaultPercent?: number;
+  /** The far end of the tape, in percent. */
+  max?: number;
   currency?: string;
   onChange?: (tip: number) => void;
   onPay?: (total: number) => void;
   className?: string;
 }
 
-type Choice =
-  | { kind: "percent"; value: number }
-  | { kind: "custom" }
-  | { kind: "none" };
-
 const round2 = (n: number) => Math.round(n * 100) / 100;
+const clamp = (n: number, lo: number, hi: number) =>
+  Math.min(hi, Math.max(lo, n));
 
 const fmt = (n: number, currency: string) =>
   `${currency}${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-function tipFor(choice: Choice, subtotal: number, custom: number) {
-  if (choice.kind === "percent") {
-    return round2((subtotal * choice.value) / 100);
+/** Past either end the tape gives, but less and less. */
+const rubber = (value: number, max: number) => {
+  if (value < 0) {
+    return -Math.sqrt(-value) * 0.9;
   }
-  return choice.kind === "custom" ? custom : 0;
-}
-
-/** What pressing `key` makes of the custom amount, or null if it can't take it. */
-function typeCustom(custom: string, key: string): string | null {
-  if (key === "back") {
-    return custom.slice(0, -1);
-  }
-  if (key === ".") {
-    if (custom.includes(".")) {
-      return null;
-    }
-    return custom ? `${custom}.` : "0.";
-  }
-  const [, cents] = custom.split(".");
-  if (cents !== undefined && cents.length >= 2) {
-    return null;
-  }
-  const next = custom === "0" ? key : custom + key;
-  return Number.parseFloat(next) > MAX_CUSTOM ? null : next;
-}
+  return value > max ? max + Math.sqrt(value - max) * 0.9 : value;
+};
 
 /**
  * A money amount whose digits roll: up when it grows, down when it shrinks.
@@ -118,7 +107,7 @@ function Rolling({
                 transition={
                   reduceMotion
                     ? { duration: 0 }
-                    : { duration: 0.26, ease: EASE_OUT, delay: column * 0.012 }
+                    : { duration: 0.22, ease: EASE_OUT, delay: column * 0.01 }
                 }
               >
                 {char}
@@ -131,249 +120,268 @@ function Rolling({
   );
 }
 
+function Ticks({ max, percents }: { max: number; percents: number[] }) {
+  const ticks: number[] = [];
+  for (let i = 0; i <= max; i++) {
+    ticks.push(i);
+  }
+  return (
+    <>
+      {ticks.map((i) => {
+        const major = i % 5 === 0;
+        const marked = percents.includes(i);
+        return (
+          <span
+            className={cn(
+              "absolute bottom-7 w-px -translate-x-1/2 rounded-full bg-current",
+              major || marked ? "h-6" : "h-3"
+            )}
+            key={i}
+            style={{ left: i * TICK }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 /**
- * A tip picker for checkout. Each preset shows what it adds, Custom opens a
- * keypad in place of the presets, and the total rolls as you change it.
+ * A tip picker for checkout, set on a tape you drag. Flick it and it coasts
+ * to a whole percent; the ticks you've passed fill in, the tip and total roll,
+ * and Round up picks the tip that makes the total a whole amount.
  */
 export default function TipSelector({
   subtotal = 42.6,
-  recipient = "Sam",
+  recipient = { name: "Sam", note: "Your courier · 6 min early" },
   percents = [15, 18, 20],
   defaultPercent = 18,
+  max = 30,
   currency = "$",
   onChange,
   onPay,
   className,
 }: TipSelectorProps) {
-  const [choice, setChoice] = useState<Choice>({
-    kind: "percent",
-    value: defaultPercent,
-  });
-  const [custom, setCustom] = useState("");
-  const [editing, setEditing] = useState(false);
+  const [percent, setPercent] = useState(defaultPercent);
+  // Round up sets the tip itself, so the total lands on a whole amount.
+  const [exactTip, setExactTip] = useState<number | null>(null);
+  const [dragging, setDragging] = useState(false);
   const [paid, setPaid] = useState(false);
   const reduceMotion = Boolean(useReducedMotion());
 
-  const customValue = Math.min(MAX_CUSTOM, Number.parseFloat(custom || "0"));
-  const tip = tipFor(choice, subtotal, customValue);
-  const total = round2(subtotal + tip);
+  const position = useMotionValue(defaultPercent);
+  const x = useTransform(position, (v) => -v * TICK);
+  const filled = useTransform(
+    position,
+    (v) => `inset(0px ${(max - clamp(v, 0, max)) * TICK}px 0px -2px)`
+  );
+  const drag = useRef({ x: 0, from: 0, v: 0, t: 0, lastX: 0 });
 
-  const pick = (next: Choice) => {
-    setChoice(next);
+  const tip = exactTip ?? round2((subtotal * percent) / 100);
+  const total = round2(subtotal + tip);
+  const roundTip = round2(Math.floor(subtotal + tip) + 1 - subtotal);
+
+  const commit = (next: number, exact: number | null = null) => {
+    setPercent(next);
+    setExactTip(exact);
     setPaid(false);
-    onChange?.(tipFor(next, subtotal, customValue));
+    onChange?.(exact ?? round2((subtotal * next) / 100));
   };
 
-  const press = (key: string) => {
-    setPaid(false);
-    const next = typeCustom(custom, key);
-    if (next === null) {
+  const glide = (target: number, exact: number | null = null) => {
+    commit(Math.round(target), exact);
+    if (reduceMotion) {
+      position.set(target);
       return;
     }
-    setCustom(next);
-    onChange?.(Math.min(MAX_CUSTOM, Number.parseFloat(next || "0")));
+    animate(position, target, SETTLE);
   };
 
-  const openCustom = () => {
-    // Start from what the current preset would have given, so it's an edit.
-    if (!custom && choice.kind === "percent") {
-      setCustom(String(round2((subtotal * choice.value) / 100)));
+  const onDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) {
+      return;
     }
-    setChoice({ kind: "custom" });
-    setEditing(true);
-    setPaid(false);
+    position.stop();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drag.current = {
+      x: event.clientX,
+      from: position.get(),
+      v: 0,
+      t: event.timeStamp,
+      lastX: event.clientX,
+    };
+    setDragging(true);
   };
 
-  const spring = reduceMotion
-    ? { duration: 0 }
-    : { type: "spring" as const, duration: 0.4, bounce: 0 };
-  const fade = { duration: reduceMotion ? 0 : 0.18, ease: EASE_OUT };
-  const chip =
-    "relative flex h-14 flex-col items-center justify-center rounded-2xl outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-zinc-400";
+  const onMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!dragging) {
+      return;
+    }
+    const d = drag.current;
+    const dt = Math.max(1, event.timeStamp - d.t);
+    d.v = d.v * 0.6 + ((event.clientX - d.lastX) / dt) * 0.4;
+    d.t = event.timeStamp;
+    d.lastX = event.clientX;
+    const raw = d.from - (event.clientX - d.x) / TICK;
+    position.set(rubber(raw, max));
+    const next = clamp(Math.round(raw), 0, max);
+    if (next !== percent || exactTip !== null) {
+      commit(next);
+    }
+  };
+
+  const onUp = () => {
+    if (!dragging) {
+      return;
+    }
+    setDragging(false);
+    // Carry the flick a little way, then settle on a whole percent.
+    const coast = (-drag.current.v * 160) / TICK;
+    glide(clamp(Math.round(position.get() + coast), 0, max));
+  };
 
   return (
     <div
       className={cn(
-        "w-full max-w-sm overflow-hidden rounded-3xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950",
+        "w-full max-w-sm rounded-3xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950",
         className
       )}
     >
-      <div className="flex items-baseline justify-between">
-        <p className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
-          Add a tip for {recipient}
-        </p>
-        <button
-          className={cn(
-            "rounded text-xs outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-zinc-400",
-            choice.kind === "none"
-              ? "text-zinc-900 dark:text-zinc-100"
-              : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+      <div className="flex items-center gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-100 font-medium text-orange-700 text-xs dark:bg-orange-500/15 dark:text-orange-300">
+          {recipient.name.slice(0, 1)}
+        </span>
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="truncate font-medium text-sm text-zinc-900 dark:text-zinc-100">
+            Tip {recipient.name}
+          </p>
+          {recipient.note && (
+            <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+              {recipient.note}
+            </p>
           )}
-          onClick={() => {
-            setEditing(false);
-            pick({ kind: "none" });
-          }}
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col items-center">
+        <Rolling
+          className="font-semibold text-4xl text-zinc-900 tracking-tight dark:text-zinc-50"
+          currency={currency}
+          reduceMotion={reduceMotion}
+          value={tip}
+        />
+        <p className="mt-1 h-4 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+          {tip === 0
+            ? "No tip"
+            : `${exactTip === null ? percent : ((tip / subtotal) * 100).toFixed(1)}% of ${fmt(subtotal, currency)}`}
+        </p>
+      </div>
+
+      {/* The tape. A range input underneath keeps it on the keyboard. */}
+      <div
+        className={cn(
+          "relative mt-4 h-20 touch-none select-none overflow-hidden rounded-2xl text-zinc-300 outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-zinc-400 dark:text-zinc-700",
+          dragging ? "cursor-grabbing" : "cursor-grab"
+        )}
+        onPointerCancel={onUp}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        style={{
+          maskImage:
+            "linear-gradient(to right, transparent, black 22%, black 78%, transparent)",
+        }}
+      >
+        <input
+          aria-label={`Tip for ${recipient.name}, in percent`}
+          aria-valuetext={`${percent}%, ${fmt(tip, currency)}`}
+          className="sr-only"
+          max={max}
+          min={0}
+          onChange={(event) => glide(Number(event.target.value))}
+          step={1}
+          type="range"
+          value={percent}
+        />
+        <motion.div
+          aria-hidden="true"
+          className="absolute inset-y-0 left-1/2"
+          style={{ x, width: max * TICK }}
+        >
+          <Ticks max={max} percents={percents} />
+          <motion.div
+            className="absolute inset-0 text-zinc-900 dark:text-zinc-100"
+            style={{ clipPath: filled }}
+          >
+            <Ticks max={max} percents={percents} />
+          </motion.div>
+          {[...new Set([0, ...percents, max])].map((p) => (
+            <span
+              className={cn(
+                "absolute bottom-2 -translate-x-1/2 text-[10px] tabular-nums",
+                p === percent
+                  ? "text-zinc-900 dark:text-zinc-100"
+                  : "text-zinc-400 dark:text-zinc-500"
+              )}
+              key={p}
+              style={{ left: p * TICK }}
+            >
+              {p}%
+            </span>
+          ))}
+        </motion.div>
+        {/* The needle. */}
+        <span className="pointer-events-none absolute top-3 bottom-7 left-1/2 w-0.5 -translate-x-1/2 rounded-full bg-orange-500" />
+      </div>
+
+      <div className="mt-3 grid grid-cols-4 gap-1.5">
+        {percents.map((p) => (
+          <button
+            aria-pressed={exactTip === null && percent === p}
+            className={cn(
+              "h-8 rounded-full font-medium text-xs tabular-nums outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-zinc-400",
+              exactTip === null && percent === p
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            )}
+            key={p}
+            onClick={() => glide(p)}
+            type="button"
+          >
+            {p}%
+          </button>
+        ))}
+        <button
+          aria-pressed={exactTip !== null}
+          className={cn(
+            "h-8 rounded-full font-medium text-xs outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-zinc-400",
+            exactTip === null
+              ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+          )}
+          onClick={() => glide((roundTip / subtotal) * 100, roundTip)}
+          title={`Round the total up to ${fmt(subtotal + roundTip, currency)}`}
           type="button"
         >
-          No tip
+          Round up
         </button>
       </div>
 
-      <motion.div
-        animate={{ height: editing ? "auto" : 56 }}
-        className="relative mt-3"
-        initial={false}
-        transition={spring}
-      >
-        <AnimatePresence initial={false} mode="popLayout">
-          {editing ? (
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              initial={{ opacity: 0, y: 6 }}
-              key="pad"
-              transition={fade}
-            >
-              <div className="flex h-14 items-center justify-between rounded-2xl bg-zinc-900 pr-1.5 pl-4 text-white dark:bg-zinc-100 dark:text-zinc-900">
-                <div className="flex items-baseline gap-1 font-semibold text-2xl tabular-nums tracking-tight">
-                  <span className="text-white/50 dark:text-zinc-900/50">
-                    {currency}
-                  </span>
-                  <span>{custom || "0"}</span>
-                  <span className="ml-0.5 inline-block h-6 w-px animate-pulse self-center bg-current" />
-                </div>
-                <button
-                  className="flex h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 font-medium text-sm text-zinc-900 outline-none transition-colors duration-150 hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-white/60 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
-                  onClick={() => setEditing(false)}
-                  type="button"
-                >
-                  <Check aria-hidden className="size-4" />
-                  Done
-                </button>
-              </div>
-              <div className="mt-2 grid grid-cols-3 gap-1">
-                {KEYS.map((key) => (
-                  <button
-                    aria-label={key === "back" ? "Delete" : key}
-                    className="flex h-11 items-center justify-center rounded-xl font-medium text-lg text-zinc-900 tabular-nums outline-none transition-colors duration-100 hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-zinc-400 active:bg-zinc-100 active:duration-0 dark:text-zinc-100 dark:active:bg-zinc-800 dark:hover:bg-zinc-900"
-                    key={key}
-                    onClick={() => press(key)}
-                    type="button"
-                  >
-                    {key === "back" ? (
-                      <Delete
-                        aria-hidden
-                        className="size-5 text-zinc-500"
-                        strokeWidth={1.75}
-                      />
-                    ) : (
-                      key
-                    )}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-4 gap-1.5"
-              exit={{ opacity: 0, y: 6 }}
-              initial={{ opacity: 0, y: -6 }}
-              key="chips"
-              transition={fade}
-            >
-              {percents.map((percent) => {
-                const active =
-                  choice.kind === "percent" && choice.value === percent;
-                return (
-                  <button
-                    aria-pressed={active}
-                    className={cn(
-                      chip,
-                      active
-                        ? "text-white dark:text-zinc-900"
-                        : "bg-zinc-50 text-zinc-900 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                    )}
-                    key={percent}
-                    onClick={() => pick({ kind: "percent", value: percent })}
-                    type="button"
-                  >
-                    {active && (
-                      <motion.span
-                        className="absolute inset-0 rounded-2xl bg-zinc-900 dark:bg-zinc-100"
-                        layoutId="tip-selector-active"
-                        transition={spring}
-                      />
-                    )}
-                    <span className="relative font-semibold text-sm">
-                      {percent}%
-                    </span>
-                    <span
-                      className={cn(
-                        "relative text-[11px] tabular-nums",
-                        active
-                          ? "text-white/60 dark:text-zinc-900/60"
-                          : "text-zinc-500 dark:text-zinc-400"
-                      )}
-                    >
-                      {fmt((subtotal * percent) / 100, currency)}
-                    </span>
-                  </button>
-                );
-              })}
-              <button
-                aria-pressed={choice.kind === "custom"}
-                className={cn(
-                  chip,
-                  choice.kind === "custom"
-                    ? "text-white dark:text-zinc-900"
-                    : "bg-zinc-50 text-zinc-900 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                )}
-                onClick={openCustom}
-                type="button"
-              >
-                {choice.kind === "custom" && (
-                  <motion.span
-                    className="absolute inset-0 rounded-2xl bg-zinc-900 dark:bg-zinc-100"
-                    layoutId="tip-selector-active"
-                    transition={spring}
-                  />
-                )}
-                <span className="relative font-semibold text-sm">Custom</span>
-                {choice.kind === "custom" && (
-                  <span className="relative text-[11px] text-white/60 tabular-nums dark:text-zinc-900/60">
-                    {fmt(customValue, currency)}
-                  </span>
-                )}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
-      <p className="mt-3 flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-        <Heart
-          aria-hidden
-          className="size-3 text-rose-500"
-          fill="currentColor"
-        />
-        All of it goes to {recipient}
-      </p>
-
-      <dl className="mt-4 space-y-1.5 border-zinc-100 border-t pt-4 text-sm dark:border-zinc-900">
+      <dl className="mt-5 space-y-1.5 border-zinc-100 border-t pt-4 text-sm dark:border-zinc-900">
         <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
           <dt>Subtotal</dt>
           <dd className="tabular-nums">{fmt(subtotal, currency)}</dd>
         </div>
         <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
-          <dt>Tip</dt>
-          <dd>
-            <Rolling
-              currency={currency}
-              reduceMotion={reduceMotion}
-              value={tip}
+          <dt className="flex items-center gap-1.5">
+            Tip
+            <Heart
+              aria-hidden
+              className="size-3 text-rose-500"
+              fill="currentColor"
             />
-          </dd>
+            <span className="text-xs">all to {recipient.name}</span>
+          </dt>
+          <dd className="tabular-nums">{fmt(tip, currency)}</dd>
         </div>
         <div className="flex items-baseline justify-between pt-1 text-zinc-900 dark:text-zinc-50">
           <dt className="font-medium">Total</dt>
@@ -397,7 +405,6 @@ export default function TipSelector({
         )}
         onClick={() => {
           onPay?.(total);
-          setEditing(false);
           setPaid(true);
         }}
         type="button"
@@ -409,7 +416,7 @@ export default function TipSelector({
             exit={{ opacity: 0, y: -8 }}
             initial={{ opacity: 0, y: 8 }}
             key={paid ? "paid" : "pay"}
-            transition={fade}
+            transition={{ duration: reduceMotion ? 0 : 0.18, ease: EASE_OUT }}
           >
             {paid ? (
               <>
