@@ -45,11 +45,11 @@ export const RELEASES: Release[] = [
       { name: "ai-message-queue", pr: 118 },
       { name: "ai-redact", pr: 118 },
       { name: "ai-memory", pr: 118 },
-      { name: "marker-text", pr: 0 },
-      { name: "ink-background", pr: 0 },
-      { name: "caustics-background", pr: 0 },
-      { name: "rain-glass-background", pr: 0 },
-      { name: "shadow-text", pr: 0 },
+      { name: "marker-text", pr: 119 },
+      { name: "ink-background", pr: 119 },
+      { name: "caustics-background", pr: 119 },
+      { name: "rain-glass-background", pr: 119 },
+      { name: "shadow-text", pr: 119 },
     ],
     improved: [
       {
