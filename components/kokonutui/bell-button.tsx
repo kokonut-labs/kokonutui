@@ -346,14 +346,16 @@ export default function BellButton({
         </g>
       </svg>
 
+      {/* aria-pressed carries the state, so the name stays the label: a
+          screen reader hears "Notify me, pressed", not "Subscribed, pressed". */}
+      {variant === "icon" ? null : <span className="sr-only">{label}</span>}
       {variant === "icon" ? null : (
-        <span className="relative grid">
+        <span aria-hidden="true" className="relative grid">
           {[
             { key: "off", on: !subscribed, text: label },
             { key: "on", on: subscribed, text: subscribedLabel },
           ].map((line) => (
             <span
-              aria-hidden={!line.on}
               className={cn(
                 "col-start-1 row-start-1 whitespace-nowrap transition-[opacity,filter] duration-200 ease-out",
                 line.on ? "opacity-100 blur-0" : "opacity-0 blur-[2px]"

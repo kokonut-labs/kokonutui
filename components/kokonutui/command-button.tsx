@@ -72,11 +72,22 @@ const PC_LABELS: Record<Modifier, string> = {
   alt: "Alt",
   shift: "Shift",
 };
-const SPOKEN: Record<Modifier, [mac: string, pc: string]> = {
-  mod: ["Command", "Control"],
+// aria-keyshortcuts takes KeyboardEvent.key names: Meta, not Command.
+const ARIA_KEYS: Record<Modifier, [mac: string, pc: string]> = {
+  mod: ["Meta", "Control"],
   ctrl: ["Control", "Control"],
-  alt: ["Option", "Alt"],
+  alt: ["Alt", "Alt"],
   shift: ["Shift", "Shift"],
+};
+
+const ariaKey = (key: string) => {
+  if (key === "enter") {
+    return "Enter";
+  }
+  if (key === "space") {
+    return "Space";
+  }
+  return key.length === 1 ? key.toUpperCase() : key;
 };
 
 const keyLabel = (key: string) => {
@@ -206,10 +217,17 @@ export default function CommandButton({
     }
     const sync = (event: KeyboardEvent, isDown: boolean) => {
       const { modifiers, key } = parsedRef.current;
-      setHeld({
+      const next = {
         modifiers: modifiers.filter((m) => isModifierDown(m, event, isMac)),
         key: isDown && isKey(event, key),
-      });
+      };
+      // Every key on the page lands here; only re-render when a cap moves.
+      setHeld((current) =>
+        current.key === next.key &&
+        current.modifiers.join() === next.modifiers.join()
+          ? current
+          : next
+      );
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       const current = parsedRef.current;
@@ -228,7 +246,12 @@ export default function CommandButton({
       }
     };
     const handleKeyUp = (event: KeyboardEvent) => sync(event, false);
-    const release = () => setHeld({ modifiers: [], key: false });
+    const release = () =>
+      setHeld((current) =>
+        current.key || current.modifiers.length > 0
+          ? { modifiers: [], key: false }
+          : current
+      );
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
@@ -241,14 +264,14 @@ export default function CommandButton({
   }, [global, isMac]);
 
   const labels = isMac ? MAC_LABELS : PC_LABELS;
-  const spoken = [
-    ...parsed.modifiers.map((m) => SPOKEN[m][isMac ? 0 : 1]),
-    keyLabel(parsed.key),
+  const keyshortcuts = [
+    ...parsed.modifiers.map((m) => ARIA_KEYS[m][isMac ? 0 : 1]),
+    ariaKey(parsed.key),
   ].join("+");
 
   return (
     <button
-      aria-keyshortcuts={spoken}
+      aria-keyshortcuts={keyshortcuts}
       className={cn(
         "group/command inline-flex h-10 cursor-pointer items-center gap-3 rounded-xl py-1 pr-2 pl-3.5 font-medium text-sm",
         "border border-zinc-200 bg-white text-zinc-700",

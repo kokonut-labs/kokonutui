@@ -389,7 +389,10 @@ export default function SlideToConfirm({
               aria-hidden
               className={cn(
                 "absolute -inset-0.5 size-6 animate-spin transition-opacity duration-200 [animation-duration:700ms]",
-                busy ? "opacity-100 delay-100" : "opacity-0"
+                // Paused, not removed, so it fades out without snapping back.
+                busy
+                  ? "opacity-100 delay-100"
+                  : "opacity-0 [animation-play-state:paused]"
               )}
               viewBox="0 0 24 24"
             >

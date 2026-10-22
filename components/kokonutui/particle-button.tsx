@@ -78,6 +78,8 @@ const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const LABEL_TRANSITION = { duration: 0.2, ease: EASE_OUT };
 const WIDTH_TRANSITION = { type: "spring", duration: 0.35, bounce: 0 } as const;
 const SHAKE = { x: [0, -5, 5, -3, 3, 0] };
+// A computed color with zero alpha: rgba(0, 0, 0, 0) or oklch(… / 0).
+const ZERO_ALPHA = /(,|\/)\s*0\)$/;
 
 // --- Particles -------------------------------------------------------------
 
@@ -249,6 +251,15 @@ function Check() {
 
 // --- Button ----------------------------------------------------------------
 
+// Chips take the button's fill; outline, ghost and link buttons have none, so
+// those burst in the text color instead.
+function burstColor(button: HTMLElement) {
+  const style = getComputedStyle(button);
+  const fill = style.backgroundColor;
+  const clear = fill === "transparent" || ZERO_ALPHA.test(fill);
+  return clear ? style.color : fill;
+}
+
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (
     typeof value === "object" &&
@@ -349,7 +360,7 @@ export default function ParticleButton({
       setBurst({
         id: Date.now(),
         originX,
-        color: getComputedStyle(button).backgroundColor,
+        color: burstColor(button),
       });
     }
     if (status === "error" && !shouldReduceMotion) {
@@ -449,6 +460,12 @@ export default function ParticleButton({
 
   return (
     <MotionConfig reducedMotion="user">
+      {/* Outside the button, so it isn't read twice as part of its name. */}
+      <span aria-live="polite" className="sr-only">
+        {status === "pending" && pendingLabel}
+        {status === "success" && successLabel}
+        {status === "error" && errorLabel}
+      </span>
       <motion.button
         animate={width === undefined ? undefined : { width }}
         aria-busy={status === "pending" || undefined}
@@ -456,7 +473,7 @@ export default function ParticleButton({
         className={cn(
           buttonVariants({ variant, size }),
           "group/status relative overflow-visible",
-          "ease transition-[background-color,color,opacity] duration-200",
+          "transition-[background-color,color,opacity] duration-200 ease-out",
           status === "error" &&
             "bg-red-600 text-white hover:bg-red-600/90 dark:bg-red-500 dark:text-white dark:hover:bg-red-500/90",
           className
@@ -500,11 +517,6 @@ export default function ParticleButton({
             </motion.span>
           </AnimatePresence>
         </motion.span>
-        <span aria-live="polite" className="sr-only">
-          {status === "pending" && pendingLabel}
-          {status === "success" && successLabel}
-          {status === "error" && errorLabel}
-        </span>
       </motion.button>
     </MotionConfig>
   );
