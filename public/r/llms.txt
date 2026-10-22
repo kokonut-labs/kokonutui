@@ -1,6 +1,6 @@
 # KokonutUI - Component Registry Index
 
-Collection of 93 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+Collection of 97 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -20,9 +20,13 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [AI Conversation Branches](https://kokonutui.com/docs/ai/ai-branches.md): A chat where editing a message starts a new branch. A small tree beside it shows every version, and you can jump between them. Install: `npx shadcn@latest add @kokonutui/ai-branches`
 - [AI Diff Review](https://kokonutui.com/docs/ai/ai-diff-review.md): A coding agent's edits streaming in file by file, then reviewed per file with accept, reject and undo. Install: `npx shadcn@latest add @kokonutui/ai-diff-review`
 - [AI Inline Citations](https://kokonutui.com/docs/ai/ai-citations.md): An answer with source chips beside each claim. One preview glides between chips and lights up the sentence it backs. Install: `npx shadcn@latest add @kokonutui/ai-citations`
+- [AI Inline Edit](https://kokonutui.com/docs/ai/ai-inline-edit.md): Select text in a document and ask AI to rewrite it. The edit streams in place as a word-level diff you accept, discard or try again. Install: `npx shadcn@latest add @kokonutui/ai-inline-edit`
 - [AI Input Search](https://kokonutui.com/docs/ai/ai-input-search.md): AI composer with a Tools menu of modes (browse, investigate, draft a visual, run code, reason), a tool header with a Change key, a model picker, an Ask key and a live trace that stacks each source's avatar as it is read. Built with React, Tailwind CSS and Motion. Install: `npx shadcn@latest add @kokonutui/ai-input-search`
 - [AI Input Selector](https://kokonutui.com/docs/ai/ai-prompt.md): AI chat input with a model menu, a separate Effort control, file chips you can drop or paste, a / command menu, and Stop while replying. Install: `npx shadcn@latest add @kokonutui/ai-prompt`
+- [AI Memory](https://kokonutui.com/docs/ai/ai-memory.md): An assistant that saves what it learns about you into a memory list. New facts replace the ones they contradict, and you can edit or forget any of them. Install: `npx shadcn@latest add @kokonutui/ai-memory`
+- [AI Message Queue](https://kokonutui.com/docs/ai/ai-message-queue.md): Keep typing while the agent works. Follow-ups stack above the composer, where you can reorder, edit or send one now, and go in one by one when the run ends. Install: `npx shadcn@latest add @kokonutui/ai-message-queue`
 - [AI Model Selector](https://kokonutui.com/docs/ai/ai-model-selector.md): Pick a model and how hard it thinks. Effort is a detent track that reshapes for each model and keeps your level when you switch. Install: `npx shadcn@latest add @kokonutui/ai-model-selector`
+- [AI Redact](https://kokonutui.com/docs/ai/ai-redact.md): Names, emails, card numbers and keys are masked as placeholders before a prompt is sent. Replies come back with the placeholders and are filled in with the real values. Install: `npx shadcn@latest add @kokonutui/ai-redact`
 - [AI State Loading](https://kokonutui.com/docs/ai/ai-loading.md): Agent progress as a list of steps with a live log, elapsed time and a summary when done. Install: `npx shadcn@latest add @kokonutui/ai-loading`
 - [AI Text Loading](https://kokonutui.com/docs/ai/ai-text-loading.md): AI thinking text with a soft wave through the letters and words that swap letter by letter. Install: `npx shadcn@latest add @kokonutui/ai-text-loading`
 - [AI Token Alternatives](https://kokonutui.com/docs/ai/ai-token-alternatives.md): An answer where every unsure word shows what else the model weighed. Pick another word and the reply writes itself again from there. Install: `npx shadcn@latest add @kokonutui/ai-token-alternatives`
