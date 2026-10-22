@@ -1324,6 +1324,86 @@
       ]
     },
     {
+      "name": "seat-map",
+      "type": "registry:component",
+      "title": "Seat Map",
+      "description": "Pick seats for a show. Drag along a row to take several, and it points out any single seat you'd leave stranded.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/seat-map.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "amount-pad",
+      "type": "registry:component",
+      "title": "Amount Pad",
+      "description": "A keypad for sending money. Digits spring into place, commas slide them along, and the amount shrinks to fit as it grows.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/amount-pad.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "slide-to-confirm",
+      "type": "registry:component",
+      "title": "Slide to Confirm",
+      "description": "A confirm control for payments and other actions you can't take back. Slide the thumb to the end, or flick it.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/slide-to-confirm.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "save-button",
+      "type": "registry:component",
+      "title": "Save Button",
+      "description": "A bookmark button that files into collections. Tap to save to the last one, then change it or make a new one from the strip.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/save-button.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "cart-button",
+      "type": "registry:component",
+      "title": "Cart Button",
+      "description": "An Add button that opens into a quantity stepper in place, with a bin at one and press-and-hold to repeat.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/cart-button.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "use-auto-resize-textarea",
       "type": "registry:hook",
       "title": "Use Auto Resize Textarea",
