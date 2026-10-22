@@ -930,4 +930,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "shadow-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/shadow-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
