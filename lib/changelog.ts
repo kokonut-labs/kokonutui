@@ -43,6 +43,7 @@ export const RELEASES: Release[] = [
       { name: "ai-agent-lanes", pr: 115 },
       { name: "marker-text", pr: 117 },
       { name: "ink-background", pr: 117 },
+      { name: "caustics-background", pr: 117 },
     ],
     improved: [
       {

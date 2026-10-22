@@ -908,4 +908,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "caustics-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/caustics-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
