@@ -14,6 +14,10 @@
     "ai-token-alternatives",
     "ai-branches",
     "ai-agent-lanes",
+    "ai-inline-edit",
+    "ai-message-queue",
+    "ai-redact",
+    "ai-memory",
     "ai-autocomplete",
     "slash-command-menu",
     "image-generation-card"
