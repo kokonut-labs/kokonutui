@@ -1107,12 +1107,12 @@ export const component: Registry = [
     ],
   },
   {
-    name: "blinds-background",
+    name: "location-picker",
     type: "registry:component",
-    dependencies: [],
+    dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/blinds-background.tsx",
+        path: "components/kokonutui/location-picker.tsx",
         type: "registry:component",
       },
     ],
