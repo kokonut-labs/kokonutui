@@ -30,7 +30,7 @@ interface AITextLoadingProps {
 }
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
-// Gap between neighbouring letters in the wave, and one wave's length.
+// Delay between neighbouring letters in the wave, in seconds.
 const WAVE_STEP = 0.07;
 const WAVE_CSS = `
 @keyframes kokonut-ai-wave { 50% { opacity: 0.3; } }
@@ -93,6 +93,8 @@ export default function AITextLoading({
     if (!showElapsed) {
       return;
     }
+    // Counts from zero each time it's turned on, not from the last run.
+    setSeconds(0);
     const startedAt = Date.now();
     const timer = setInterval(
       () => setSeconds(Math.floor((Date.now() - startedAt) / 1000)),

@@ -44,6 +44,7 @@ const OPEN_DELAY_MS = 120;
 const CLOSE_DELAY_MS = 90;
 /** After a preview closes, the next one within this window opens at once. */
 const WARM_MS = 400;
+const WWW = /^www\./;
 
 const DEMO_SOURCES: CitationSource[] = [
   {
@@ -106,7 +107,7 @@ const DEMO_PARTS: AnswerPart[] = [
 
 const hostOf = (url: string) => {
   try {
-    return new URL(url).hostname.replace("www.", "");
+    return new URL(url).hostname.replace(WWW, "");
   } catch {
     return url;
   }
@@ -243,7 +244,9 @@ export default function AICitations({
     .map((id) => byId.get(id))
     .filter((source): source is CitationSource => Boolean(source));
 
-  // Escape closes a preview opened by keyboard or tap.
+  // Escape, or a press anywhere but a chip, closes a preview opened by
+  // keyboard or tap. iOS doesn't focus a tapped button, so blur alone would
+  // leave a tapped preview open.
   useEffect(() => {
     if (!preview) {
       return;
@@ -253,8 +256,22 @@ export default function AICitations({
         hide(true);
       }
     };
+    const onPointer = (event: PointerEvent) => {
+      if (
+        !(
+          event.target instanceof Element &&
+          event.target.closest("[data-citation-chip]")
+        )
+      ) {
+        hide(true);
+      }
+    };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
   }, [preview, hide]);
 
   return (
@@ -297,6 +314,7 @@ export default function AICitations({
                       ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/15"
                   )}
+                  data-citation-chip=""
                   onBlur={() => hide(true)}
                   // Focus already opened it for mouse and keyboard; a tap
                   // on touch opens it here. Blur or Escape closes it.

@@ -209,8 +209,15 @@ export default function AmountPad({
     return { id, char };
   };
 
-  const press = (key: string) => {
+  // Touching the pad after a send keeps what you type: the pending reset
+  // would otherwise wipe it.
+  const clearSent = () => {
+    clearTimeout(sentTimer.current);
     setSent(null);
+  };
+
+  const press = (key: string) => {
+    clearSent();
     if (key === "back") {
       setChars((current) => current.slice(0, -1));
       setCapped(false);
@@ -228,12 +235,15 @@ export default function AmountPad({
   };
 
   const preset = (amount: number) => {
-    setSent(null);
+    clearSent();
     setCapped(false);
     setChars([...String(Math.min(amount, max))].map(make));
   };
 
   const send = () => {
+    if (sent !== null) {
+      return;
+    }
     if (empty || value <= 0) {
       refuse(false);
       return;
@@ -259,11 +269,10 @@ export default function AmountPad({
     } else if (event.key === "Backspace") {
       key = "back";
     }
+    // Enter is left alone: on a focused key or Send it already clicks it.
     if (key) {
       event.preventDefault();
       press(key);
-    } else if (event.key === "Enter" && event.target === event.currentTarget) {
-      send();
     }
   };
 
@@ -320,13 +329,13 @@ export default function AmountPad({
         className="mt-6 flex h-20 items-center justify-center"
         ref={frameRef}
       >
+        <output aria-live="polite" className="sr-only">
+          {money(value, currency)}
+        </output>
         <motion.div
-          aria-atomic
-          aria-label={`${money(value, currency)}`}
-          aria-live="polite"
+          aria-hidden="true"
           className="flex origin-center items-baseline whitespace-nowrap font-semibold text-[56px] text-zinc-900 tabular-nums leading-none tracking-tight dark:text-zinc-50"
           ref={amountRef}
-          role="status"
           style={{ scale: fit, x: shakeX }}
         >
           <span

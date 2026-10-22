@@ -234,6 +234,7 @@ export default function AIAgentLanes({
     (l) => now >= (l.steps[0]?.start ?? 0) && now < laneEnd(l)
   ).length;
   const x = (t: number) => `${(t / total) * 100}%`;
+  const hoverStep = hover ? lanes[hover.lane]?.steps[hover.step] : undefined;
 
   const toggle = () => {
     if (done) {
@@ -316,11 +317,12 @@ export default function AIAgentLanes({
               style={{ left: x(now) }}
             />
             <AnimatePresence>
-              {hover && (
+              {/* A bar scrubbed out of existence never fires pointerleave. */}
+              {hoverStep && hover && now > hoverStep.start && (
                 <StepTip
                   key={`${hover.lane}-${hover.step}`}
                   now={now}
-                  step={lanes[hover.lane].steps[hover.step]}
+                  step={hoverStep}
                   top={hover.lane * LANE_H}
                   total={total}
                 />
@@ -551,9 +553,11 @@ function Connectors({
     if (!el) {
       return;
     }
-    const observer = new ResizeObserver(() => setWidth(el.clientWidth));
+    // clientWidth on an <svg> reads 0 in some engines; the observed box does not.
+    const observer = new ResizeObserver(([entry]) =>
+      setWidth(entry.contentRect.width)
+    );
     observer.observe(el);
-    setWidth(el.clientWidth);
     return () => observer.disconnect();
   }, []);
 
@@ -642,21 +646,22 @@ function Scrubber({
           </span>
         ))}
       </div>
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-[3px] h-[7px] w-[7px] -translate-x-1/2 rounded-full bg-zinc-900 dark:bg-white"
-        style={{ left: `${(now / total) * 100}%` }}
-      />
       <input
         aria-label="Run time"
         aria-valuetext={formatTime(now)}
-        className="absolute inset-x-0 -top-1 h-6 w-full cursor-ew-resize opacity-0"
+        className="peer absolute inset-x-0 -top-1 h-6 w-full cursor-ew-resize opacity-0"
         max={total}
         min={0}
         onChange={(e) => onScrub(Number(e.target.value))}
         step={0.1}
         type="range"
         value={now}
+      />
+      {/* The range input is invisible, so its focus ring lives on the knob. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-[3px] h-[7px] w-[7px] -translate-x-1/2 rounded-full bg-zinc-900 peer-focus-visible:ring-2 peer-focus-visible:ring-zinc-900/30 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-white dark:bg-white dark:peer-focus-visible:ring-white/40 dark:peer-focus-visible:ring-offset-zinc-900"
+        style={{ left: `${(now / total) * 100}%` }}
       />
     </div>
   );

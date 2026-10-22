@@ -201,6 +201,8 @@ function buildings() {
 }
 
 const BUILDINGS = buildings();
+/** Where the pickup starts: the curb a block or so from you. */
+const START = nearestStop(YOU[0] + 110, YOU[1] + 40);
 
 function Town() {
   return (
@@ -361,7 +363,10 @@ function AddressLine({
     line = "Finding the curb…";
   }
   return (
-    <div className="relative h-10 min-w-0 flex-1 overflow-hidden">
+    <div
+      aria-live="polite"
+      className="relative h-10 min-w-0 flex-1 overflow-hidden"
+    >
       <AnimatePresence initial={false} mode="popLayout">
         <motion.div
           animate={{ opacity: 1, y: 0 }}
@@ -409,14 +414,13 @@ export default function LocationPicker({
   onConfirm,
   className,
 }: LocationPickerProps) {
-  const start = nearestStop(YOU[0] + 110, YOU[1] + 40);
   const mapRef = useRef<HTMLButtonElement>(null);
-  const cx = useMotionValue(start.x);
-  const cy = useMotionValue(start.y);
+  const cx = useMotionValue(START.x);
+  const cy = useMotionValue(START.y);
   const [view, setView] = useState({ w: 360, h: 300 });
   const [lifted, setLifted] = useState(false);
   const [status, setStatus] = useState<Status>("ready");
-  const [stop, setStop] = useState(start);
+  const [stop, setStop] = useState(START);
   const [confirmed, setConfirmed] = useState(false);
   const drag = useRef({ x: 0, y: 0, cx: 0, cy: 0, moved: false, on: false });
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -437,8 +441,11 @@ export default function LocationPicker({
     return () => {
       observer.disconnect();
       clearTimeout(timer.current);
+      // A glide finishing after unmount would start the lookup timer again.
+      cx.stop();
+      cy.stop();
     };
-  }, []);
+  }, [cx, cy]);
 
   const clampX = (v: number) =>
     Math.min(W - view.w / 2 / ZOOM, Math.max(view.w / 2 / ZOOM, v));

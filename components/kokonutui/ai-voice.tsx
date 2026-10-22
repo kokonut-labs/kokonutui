@@ -379,10 +379,17 @@ export default function AI_Voice({
     const length = Math.max(duration, 1) * 1000;
     const startedAt = performance.now();
     let frame = 0;
+    let shownSecond = -1;
     const tick = (now: number) => {
       const progress = Math.min((now - startedAt) / length, 1);
       played.style.clipPath = `inset(0 ${((1 - progress) * 100).toFixed(2)}% 0 0)`;
-      setPlayhead(progress * Math.max(duration, 1));
+      // The clip moves every frame; React only hears about it when the
+      // timer's second changes.
+      const position = progress * Math.max(duration, 1);
+      if (Math.floor(position) !== shownSecond || progress >= 1) {
+        shownSecond = Math.floor(position);
+        setPlayhead(Math.max(position, Number.EPSILON));
+      }
       if (progress < 1) {
         frame = requestAnimationFrame(tick);
       } else {
@@ -393,13 +400,17 @@ export default function AI_Voice({
     return () => cancelAnimationFrame(frame);
   }, [playing, duration]);
 
-  const startRecording = () => {
+  // The demo loop calls these with notify = false, so the parent's callbacks
+  // only hear about what the user did.
+  const startRecording = (notify = true) => {
     setPlaying(false);
     setMode("recording");
-    onListeningChange?.(true);
+    if (notify) {
+      onListeningChange?.(true);
+    }
   };
 
-  const stopRecording = () => {
+  const stopRecording = (notify = true) => {
     const taken = Math.max(
       (Date.now() - startedAtRef.current) / 1000,
       takeRef.current.length * (SAMPLE_MS / 1000)
@@ -410,13 +421,18 @@ export default function AI_Voice({
       playedRef.current.style.clipPath = "inset(0 100% 0 0)";
     }
     setMode("review");
-    onListeningChange?.(false);
-    onStop?.(taken);
+    if (notify) {
+      onListeningChange?.(false);
+      onStop?.(taken);
+    }
   };
 
-  const finish = (sent: boolean) => {
+  const finish = (sent: boolean, notify = true) => {
     setPlaying(false);
     setMode("idle");
+    if (!notify) {
+      return;
+    }
     if (sent) {
       onSend?.(duration);
     } else {
@@ -438,11 +454,11 @@ export default function AI_Voice({
   useEffect(() => {
     demoStepRef.current = () => {
       if (mode === "idle") {
-        startRecording();
+        startRecording(false);
       } else if (mode === "recording") {
-        stopRecording();
+        stopRecording(false);
       } else if (hasPlayed) {
-        finish(true);
+        finish(true, false);
       } else {
         togglePlay();
       }

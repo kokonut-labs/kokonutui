@@ -675,22 +675,34 @@ function QueueRow({
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(message.text);
   const inputRef = useRef<HTMLInputElement>(null);
+  const editRef = useRef<HTMLButtonElement>(null);
+  /** Set once an edit ends, so the blur that follows can't save it again. */
+  const finished = useRef(false);
 
   useEffect(() => {
     if (editing) {
+      finished.current = false;
       inputRef.current?.focus();
       inputRef.current?.select();
     }
   }, [editing]);
 
-  const save = () => {
+  /** Ends the edit. Escape passes `save: false`; keyboard exits refocus Edit. */
+  const finish = (save: boolean, refocus: boolean) => {
+    if (finished.current) {
+      return;
+    }
+    finished.current = true;
     const text = value.trim();
-    if (text) {
+    if (save && text) {
       onEdit(text);
     } else {
       setValue(message.text);
     }
     setEditing(false);
+    if (refocus) {
+      editRef.current?.focus();
+    }
   };
 
   const icon =
@@ -741,16 +753,15 @@ function QueueRow({
         <input
           aria-label="Edit queued message"
           className="h-6 min-w-0 flex-1 rounded-md bg-zinc-100 px-1.5 text-[12px] text-zinc-900 outline-hidden dark:bg-zinc-800 dark:text-zinc-100"
-          onBlur={save}
+          onBlur={() => finish(true, false)}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();
-              save();
+              finish(true, true);
             } else if (event.key === "Escape") {
               event.preventDefault();
-              setValue(message.text);
-              setEditing(false);
+              finish(false, true);
             }
           }}
           ref={inputRef}
@@ -766,6 +777,7 @@ function QueueRow({
           aria-label="Edit"
           className={icon}
           onClick={() => setEditing(true)}
+          ref={editRef}
           type="button"
         >
           <Pencil className="size-3" />

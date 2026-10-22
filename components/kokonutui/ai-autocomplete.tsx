@@ -68,6 +68,8 @@ export function AIAutocomplete({
   // keystroke that types through them.
   const [batch, setBatch] = useState(0);
   const [atEnd, setAtEnd] = useState(true);
+  // Announced once per suggestion, not again as typing eats into it.
+  const [spoken, setSpoken] = useState("");
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const request = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,11 +92,18 @@ export function AIAutocomplete({
         if (!text.trim()) {
           return;
         }
-        const result = await suggest(text);
+        let result: string | null;
+        try {
+          result = await suggest(text);
+        } catch {
+          // A failed suggestion just means no suggestion.
+          return;
+        }
         // A reply to text that has since changed is thrown away.
         if (id === request.current && result) {
           setGhost(result);
           setBatch((b) => b + 1);
+          setSpoken(`Suggestion: ${result}. Press Tab to accept.`);
         }
       }, delay);
     },
@@ -211,7 +220,10 @@ export function AIAutocomplete({
                 return (
                   <span
                     // The Tab hint stays on the line of the last word.
-                    className={cn("fade-word", last && "whitespace-nowrap")}
+                    className={cn(
+                      "ai-autocomplete-word",
+                      last && "whitespace-nowrap"
+                    )}
                     // biome-ignore lint/suspicious/noArrayIndexKey: words of one suggestion, in order
                     key={i}
                     style={{ animationDelay: `${Math.min(i, 12) * 28}ms` }}
@@ -242,17 +254,17 @@ export function AIAutocomplete({
         />
       </div>
       <p aria-live="polite" className="sr-only">
-        {showGhost ? `Suggestion: ${ghost}. Press Tab to accept.` : ""}
+        {showGhost ? spoken : ""}
       </p>
       <style>{`
-        .fade-word {
+        .ai-autocomplete-word {
           animation: ai-autocomplete-in 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
         }
         @keyframes ai-autocomplete-in {
           from { opacity: 0; filter: blur(2px); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .fade-word { animation-duration: 1ms; }
+          .ai-autocomplete-word { animation-duration: 1ms; }
         }
       `}</style>
       <AcceptBar

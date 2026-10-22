@@ -195,6 +195,7 @@ export default function SeatMap({
     }
     return result;
   }, [seats, takenSet, selectedSet]);
+  const strandedSet = useMemo(() => new Set(stranded), [stranded]);
 
   const update = (next: string[]) => {
     setSelected(next);
@@ -271,7 +272,7 @@ export default function SeatMap({
   // Clicks from a pointer are handled by the paint above; this is Enter and
   // Space on a focused seat.
   const onSeatClick = (event: MouseEvent<HTMLButtonElement>, seat: Seat) => {
-    if (event.detail !== 0) {
+    if (event.detail !== 0 || takenSet.has(seat.id)) {
       return;
     }
     const mode = selectedSet.has(seat.id) ? "remove" : "add";
@@ -400,7 +401,7 @@ export default function SeatMap({
                           column={column}
                           isAccessible={accessibleSet.has(id)}
                           isSelected={selectedSet.has(id)}
-                          isStranded={stranded.includes(id)}
+                          isStranded={strandedSet.has(id)}
                           isTaken={takenSet.has(id)}
                           key={id}
                           label={`Row ${row}, seat ${seat.number}, ${tier.name}, ${money(tier.price)}${accessibleSet.has(id) ? ", wheelchair space" : ""}`}
@@ -453,7 +454,7 @@ export default function SeatMap({
               <motion.button
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 aria-label={`Remove ${seat.id}`}
-                className="group/chip inline-flex h-7 items-center gap-1 rounded-full bg-zinc-100 pr-1.5 pl-2.5 font-medium text-xs text-zinc-900 tabular-nums transition-colors duration-150 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                className="group/chip inline-flex h-7 items-center gap-1 rounded-full bg-zinc-100 pr-1.5 pl-2.5 font-medium text-xs text-zinc-900 tabular-nums outline-none transition-colors duration-150 hover:bg-zinc-200 focus-visible:ring-2 focus-visible:ring-zinc-400 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                 exit={{
                   opacity: 0,
                   y: 6,

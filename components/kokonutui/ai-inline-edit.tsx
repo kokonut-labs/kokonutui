@@ -462,13 +462,21 @@ export default function AIInlineEdit({
   const [head, setHead] = useState(0);
   const [flash, setFlash] = useState<Span | null>(null);
   const [flashOn, setFlashOn] = useState(false);
-  const [bar, setBar] = useState({ x: PAD, y: 0, width: BAR_WIDTH });
+  /** Null until measured, so the bar never renders (or animates in) at 0,0. */
+  const [bar, setBar] = useState<{
+    x: number;
+    y: number;
+    width: number;
+  } | null>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<HTMLDivElement>(null);
   const regionRef = useRef<HTMLSpanElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const acceptRef = useRef<HTMLButtonElement>(null);
+  const discardRef = useRef<HTMLButtonElement>(null);
+  const skipRef = useRef<HTMLButtonElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const barRef = useRef<HTMLDivElement>(null);
   const pointerDown = useRef(false);
 
@@ -535,11 +543,19 @@ export default function AIInlineEdit({
     return () => clearTimeout(id);
   }, [phase, head, ops, reduceMotion]);
 
+  // Keep focus inside the bar as its controls swap, so Escape keeps working.
   useEffect(() => {
-    if (phase === "review") {
-      acceptRef.current?.focus({ preventScroll: true });
+    let target: HTMLButtonElement | null = null;
+    if (phase === "streaming") {
+      target = skipRef.current;
+    } else if (phase === "review") {
+      const accept = acceptRef.current;
+      target = accept && !accept.disabled ? accept : discardRef.current;
     }
+    target?.focus({ preventScroll: true });
   }, [phase]);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
 
   // The accepted words glow for a moment, then settle into the text.
   useEffect(() => {
@@ -556,6 +572,7 @@ export default function AIInlineEdit({
 
   const clear = useCallback(() => {
     setSpan(null);
+    setBar(null);
     setPhase("idle");
     setVersions([]);
     setVersion(0);
@@ -628,11 +645,11 @@ export default function AIInlineEdit({
   };
 
   const accept = () => {
-    if (!span) {
+    if (!span || phase !== "review") {
       return;
     }
     setPhase("settling");
-    setTimeout(
+    timerRef.current = setTimeout(
       () => {
         const text = doc[span.p];
         const next = [...doc];
@@ -653,8 +670,11 @@ export default function AIInlineEdit({
 
   /** Added words fade and struck ones come back before the text resets. */
   const discard = () => {
+    if (phase !== "review") {
+      return;
+    }
     setPhase("discarding");
-    setTimeout(clear, reduceMotion ? 0 : 160);
+    timerRef.current = setTimeout(clear, reduceMotion ? 0 : 160);
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -790,7 +810,7 @@ export default function AIInlineEdit({
           ))}
 
           <AnimatePresence>
-            {span && (
+            {span && bar && (
               <motion.div
                 animate={{ opacity: 1, scale: 1, x: bar.x, y: bar.y }}
                 aria-label="Edit with AI"
@@ -838,6 +858,7 @@ export default function AIInlineEdit({
                           setHead(ops.length);
                           setPhase("review");
                         }}
+                        ref={skipRef}
                         type="button"
                       >
                         <Square
@@ -854,6 +875,7 @@ export default function AIInlineEdit({
                     <ReviewBar
                       acceptRef={acceptRef}
                       count={versions.length}
+                      discardRef={discardRef}
                       label={unchanged ? "Already reads well" : label}
                       mod={mod}
                       onAccept={accept}
@@ -944,6 +966,7 @@ function ReviewBar({
   version,
   unchanged,
   acceptRef,
+  discardRef,
   onVersion,
   onAgain,
   onDiscard,
@@ -956,6 +979,7 @@ function ReviewBar({
   version: number;
   unchanged: boolean;
   acceptRef: RefObject<HTMLButtonElement | null>;
+  discardRef: RefObject<HTMLButtonElement | null>;
   onVersion: (v: number) => void;
   onAgain: () => void;
   onDiscard: () => void;
@@ -1006,7 +1030,12 @@ function ReviewBar({
         >
           <RotateCw className="size-3.5" />
         </button>
-        <button className={ghost} onClick={onDiscard} type="button">
+        <button
+          className={ghost}
+          onClick={onDiscard}
+          ref={discardRef}
+          type="button"
+        >
           Discard
         </button>
         <button

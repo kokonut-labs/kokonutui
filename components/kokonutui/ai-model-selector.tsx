@@ -207,6 +207,9 @@ function EffortTrack({
       onKeyDown={onKeyDown}
       onLostPointerCapture={() => setDragging(false)}
       onPointerDown={(event) => {
+        if (event.button !== 0) {
+          return;
+        }
         event.currentTarget.setPointerCapture(event.pointerId);
         setDragging(true);
         onChange(indexAt(event.clientX));
@@ -336,6 +339,33 @@ export default function AIModelSelector({
     <MotionConfig reducedMotion="user">
       <div className={cn("w-full max-w-sm", className)} ref={rootRef}>
         <div className="relative flex h-11 items-center rounded-xl bg-black/5 px-1.5 dark:bg-white/5">
+          <button
+            aria-controls={panelId}
+            aria-expanded={open}
+            aria-label={`Model: ${model.name}, ${effort?.label} effort. Change`}
+            className={cn(
+              "flex h-8 items-center gap-2 rounded-lg px-2 text-xs text-zinc-700 outline-hidden transition-colors duration-150 hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-200 dark:hover:bg-white/10",
+              open && "bg-black/5 dark:bg-white/10"
+            )}
+            onClick={() => setOpen((current) => !current)}
+            ref={triggerRef}
+            type="button"
+          >
+            <span className="font-medium">{model.name}</span>
+            <span className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
+              <EffortGlyph count={model.efforts.length} level={level} />
+              {effort?.label}
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className={cn(
+                "size-3 text-zinc-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                open && "rotate-180"
+              )}
+            />
+          </button>
+          {/* After the trigger in the DOM, so Tab moves from it into the
+            panel, which still opens above. */}
           <AnimatePresence>
             {open && (
               <motion.div
@@ -431,32 +461,6 @@ export default function AIModelSelector({
               </motion.div>
             )}
           </AnimatePresence>
-
-          <button
-            aria-controls={panelId}
-            aria-expanded={open}
-            aria-label={`Model: ${model.name}, ${effort?.label} effort. Change`}
-            className={cn(
-              "flex h-8 items-center gap-2 rounded-lg px-2 text-xs text-zinc-700 outline-hidden transition-colors duration-150 hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-200 dark:hover:bg-white/10",
-              open && "bg-black/5 dark:bg-white/10"
-            )}
-            onClick={() => setOpen((current) => !current)}
-            ref={triggerRef}
-            type="button"
-          >
-            <span className="font-medium">{model.name}</span>
-            <span className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
-              <EffortGlyph count={model.efforts.length} level={level} />
-              {effort?.label}
-            </span>
-            <ChevronDown
-              aria-hidden="true"
-              className={cn(
-                "size-3 text-zinc-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
-                open && "rotate-180"
-              )}
-            />
-          </button>
         </div>
       </div>
     </MotionConfig>

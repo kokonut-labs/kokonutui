@@ -236,10 +236,14 @@ const formatSize = (bytes: number) => {
 const waitFor = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve) => {
     const id = setTimeout(resolve, ms);
-    signal.addEventListener("abort", () => {
-      clearTimeout(id);
-      resolve();
-    });
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(id);
+        resolve();
+      },
+      { once: true }
+    );
   });
 
 function AttachmentChip({

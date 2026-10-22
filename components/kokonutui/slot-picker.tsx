@@ -11,8 +11,20 @@
  */
 
 import { ArrowRight, Check, Globe } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type KeyboardEvent, type PointerEvent, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  motion,
+  type Transition,
+  useReducedMotion,
+} from "motion/react";
+import {
+  type KeyboardEvent,
+  type MouseEvent,
+  type PointerEvent,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -183,12 +195,14 @@ function DayStrip({
   minutes,
   onPick,
   spring,
+  layoutId,
 }: {
   days: SlotDay[];
   active: number;
   minutes: number;
   onPick: (index: number) => void;
-  spring: object;
+  spring: Transition;
+  layoutId: string;
 }) {
   return (
     <div className="mt-4 grid grid-cols-5 gap-1">
@@ -213,7 +227,7 @@ function DayStrip({
             {i === active && (
               <motion.span
                 className="absolute inset-0 rounded-2xl border border-zinc-900 dark:border-zinc-100"
-                layoutId="slot-picker-day"
+                layoutId={layoutId}
                 transition={spring}
               />
             )}
@@ -295,7 +309,7 @@ function ConfirmBar({
   host: NonNullable<SlotPickerProps["host"]>;
   booked: boolean;
   onConfirm: () => void;
-  fade: object;
+  fade: Transition;
 }) {
   const hostTime =
     start !== null && host.offset
@@ -396,6 +410,9 @@ export default function SlotPicker({
   const [dragging, setDragging] = useState(false);
   const [booked, setBooked] = useState(false);
   const railRef = useRef<HTMLDivElement>(null);
+  const meetingRef = useRef<HTMLButtonElement>(null);
+  // Scopes the sliding highlights, so two pickers on a page don't share them.
+  const layoutScope = useId();
   const grabRef = useRef(0);
   const reduceMotion = Boolean(useReducedMotion());
 
@@ -483,6 +500,16 @@ export default function SlotPicker({
     }
   };
 
+  // Keyboard way in before anything is placed: Enter or Space on the rail
+  // drops the meeting in the first free gap, then the arrows move it.
+  const placeFirst = (event: MouseEvent<HTMLButtonElement>) => {
+    if (event.detail !== 0 || starts.length === 0) {
+      return;
+    }
+    place(starts[0]);
+    requestAnimationFrame(() => meetingRef.current?.focus());
+  };
+
   const pickDay = (index: number) => {
     setDayIndex(index);
     place(null);
@@ -532,7 +559,7 @@ export default function SlotPicker({
             {d === minutes && (
               <motion.span
                 className="absolute inset-0 -z-10 rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.08)] dark:bg-zinc-700"
-                layoutId="slot-picker-length"
+                layoutId={`${layoutScope}-length`}
                 transition={spring}
               />
             )}
@@ -544,6 +571,7 @@ export default function SlotPicker({
       <DayStrip
         active={dayIndex}
         days={days}
+        layoutId={`${layoutScope}-day`}
         minutes={minutes}
         onPick={pickDay}
         spring={spring}
@@ -579,6 +607,14 @@ export default function SlotPicker({
           ref={railRef}
           style={{ height: (to - from) * PX }}
         >
+          {start === null && (
+            <button
+              aria-label={`${day ? longDate(day.date) : "Day"}: no time picked. Press Enter to place a ${lengthLabel(minutes)} meeting in the first free gap.`}
+              className="pointer-events-none absolute inset-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+              onClick={placeFirst}
+              type="button"
+            />
+          )}
           {hours.map((t) => (
             <span
               className="absolute inset-x-0 border-zinc-100 border-t dark:border-zinc-900"
@@ -630,6 +666,7 @@ export default function SlotPicker({
                   !(booked || dragging) && "cursor-grab"
                 )}
                 onKeyDown={onKey}
+                ref={meetingRef}
                 type="button"
               >
                 {booked && (
