@@ -34,6 +34,20 @@ export const NEW_FOR_DAYS = 30;
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-22",
+    added: [
+      { name: "card-field", pr: 120 },
+      { name: "stay-picker", pr: 120 },
+      { name: "slot-picker", pr: 120 },
+      { name: "tip-selector", pr: 120 },
+      { name: "boarding-pass", pr: 120 },
+      { name: "split-flap-text", pr: 120 },
+      { name: "location-picker", pr: 120 },
+      { name: "contact-sheet", pr: 120 },
+    ],
+    improved: [],
+  },
+  {
     date: "2026-10-21",
     added: [
       { name: "timezone-planner", pr: 115 },

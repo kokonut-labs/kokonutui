@@ -12,6 +12,11 @@
     "timezone-planner",
     "amount-pad",
     "seat-map",
+    "card-field",
+    "stay-picker",
+    "slot-picker",
+    "tip-selector",
+    "location-picker",
     "swatch-fan",
     "price-range"
   ]

@@ -1040,4 +1040,92 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "card-field",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/card-field.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "stay-picker",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/stay-picker.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "slot-picker",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/slot-picker.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "tip-selector",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/tip-selector.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "boarding-pass",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/boarding-pass.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "split-flap-text",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/split-flap-text.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "location-picker",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/location-picker.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "contact-sheet",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/contact-sheet.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
