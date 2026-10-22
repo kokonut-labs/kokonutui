@@ -930,15 +930,4 @@ export const component: Registry = [
       },
     ],
   },
-  {
-    name: "promo-code",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/promo-code.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
 ];
