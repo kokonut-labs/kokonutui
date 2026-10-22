@@ -70,7 +70,7 @@ function cast(dx: number, dy: number, strength: number) {
     const blur = Math.max(spacing * 1.15, 0.3 + f * length * 0.08);
     const alpha = strength * (3.6 / steps) * (1 - f) ** 1.6;
     parts.push(
-      `${(dx * f).toFixed(1)}px ${(dy * f).toFixed(1)}px ${blur.toFixed(1)}px rgb(var(--shadow) / ${alpha.toFixed(3)})`
+      `${(dx * f).toFixed(1)}px ${(dy * f).toFixed(1)}px ${blur.toFixed(1)}px rgb(var(--shadow) / calc(var(--shadow-strength) * ${alpha.toFixed(3)}))`
     );
   }
   return parts.join(",");
@@ -240,7 +240,10 @@ export function ShadowText({
 
   return (
     <Tag
-      className={cn("[--shadow:24_24_27] dark:[--shadow:0_0_0]", className)}
+      className={cn(
+        "[--shadow-strength:1] [--shadow:24_24_27] dark:[--shadow-strength:1.7] dark:[--shadow:0_0_0]",
+        className
+      )}
       ref={rootRef}
     >
       <span className="sr-only">{children}</span>
