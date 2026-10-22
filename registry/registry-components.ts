@@ -908,37 +908,4 @@ export const component: Registry = [
       },
     ],
   },
-  {
-    name: "reflow-text",
-    type: "registry:component",
-    dependencies: [],
-    files: [
-      {
-        path: "components/kokonutui/reflow-text.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "fold-menu",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/fold-menu.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "tone-curve",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/tone-curve.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
 ];

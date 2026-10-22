@@ -43,9 +43,6 @@ export const RELEASES: Release[] = [
       { name: "ai-agent-lanes", pr: 115 },
       { name: "marker-text", pr: 117 },
       { name: "ink-background", pr: 117 },
-      { name: "reflow-text", pr: 117 },
-      { name: "fold-menu", pr: 117 },
-      { name: "tone-curve", pr: 117 },
     ],
     improved: [
       {
