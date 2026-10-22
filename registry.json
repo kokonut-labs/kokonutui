@@ -1257,6 +1257,73 @@
       ]
     },
     {
+      "name": "marker-text",
+      "type": "registry:component",
+      "title": "Marker Text",
+      "description": "Hand-drawn highlights, underlines, circles, boxes and strikes that draw themselves in reading order when the text comes into view.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/marker-text.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ink-background",
+      "type": "registry:component",
+      "title": "Ink Background",
+      "description": "A hero written in ink on water. Stir it and the letters bleed, drop ink with a click, and the headline gathers itself again, built with React, WebGL and a fluid simulation.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/ink-background.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "caustics-background",
+      "type": "registry:component",
+      "title": "Caustics Background",
+      "description": "A hero on the floor of a pool. Light ripples across it, clicks drop rings that bend the light, and the headline floats on the surface with its shadow wobbling below.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/caustics-background.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "rain-glass-background",
+      "type": "registry:component",
+      "title": "Rain Glass Background",
+      "description": "A hero seen through a rainy window. Drops gather, run and swallow each other, each one a tiny lens showing the view, and dragging wipes the fog off the glass for a while.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/rain-glass-background.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "shadow-text",
+      "type": "registry:component",
+      "title": "Shadow Text",
+      "description": "A headline that works as a sundial. Each letter casts a long, soft shadow set by the reader's clock, and bringing the pointer close turns it into a lamp.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "components/kokonutui/shadow-text.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "use-auto-resize-textarea",
       "type": "registry:hook",
       "title": "Use Auto Resize Textarea",
