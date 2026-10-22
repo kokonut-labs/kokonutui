@@ -214,6 +214,7 @@ export default function PageFlip({
   const frameRef = useRef<HTMLDivElement>(null);
   /** Narrow frames show one page at a time; the spine sits off to the left. */
   const [single, setSingle] = useState(false);
+  const singleRef = useRef(false);
   // The spread on two pages, or the page on one.
   const [spread, setSpread] = useState(0);
   const [turn, setTurn] = useState<Turn | null>(null);
@@ -242,15 +243,12 @@ export default function PageFlip({
     }
     const measure = () => {
       const narrow = frame.clientWidth < SINGLE_BELOW;
-      setSingle((was) => {
-        if (was !== narrow) {
-          // Keep the same page in view when the layout changes.
-          setSpread((s) =>
-            narrow ? Math.max(0, 2 * s - 1) : Math.ceil(s / 2)
-          );
-        }
-        return narrow;
-      });
+      if (narrow !== singleRef.current) {
+        singleRef.current = narrow;
+        setSingle(narrow);
+        // Keep the same page in view when the layout changes.
+        setSpread((s) => (narrow ? Math.max(0, 2 * s - 1) : Math.ceil(s / 2)));
+      }
       setSize({ w: book.clientWidth / 2, h: book.clientHeight });
     };
     measure();
@@ -294,8 +292,9 @@ export default function PageFlip({
     const start = from.at;
     const lift = complete ? size.h * 0.14 * (from.corner.y === 0 ? 1 : -1) : 0;
     committingRef.current = complete;
+    const next = spread + from.dir;
     if (complete) {
-      setHeading(spread + from.dir);
+      setHeading(next);
     }
     playingRef.current = true;
     animRef.current = animate(0, 1, {
@@ -313,11 +312,8 @@ export default function PageFlip({
         setAt(null);
         setHeading(null);
         if (complete) {
-          setSpread((s) => {
-            const next = s + from.dir;
-            onSpreadChangeRef.current?.(next);
-            return next;
-          });
+          setSpread(next);
+          onSpreadChangeRef.current?.(next);
         }
       },
     });
@@ -331,7 +327,7 @@ export default function PageFlip({
       return;
     }
     if (reduceMotion) {
-      setSpread((s) => s + dir);
+      setSpread(spread + dir);
       onSpreadChangeRef.current?.(spread + dir);
       return;
     }
@@ -351,12 +347,7 @@ export default function PageFlip({
   };
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (
-      event.button !== 0 ||
-      !size.w ||
-      reduceMotion ||
-      committingRef.current
-    ) {
+    if (event.button !== 0 || !size.w || committingRef.current) {
       return;
     }
     const p = local(event);
@@ -364,6 +355,11 @@ export default function PageFlip({
     const backZone = single && p.x < size.w * 1.3;
     const dir: 1 | -1 = p.x >= size.w && !backZone ? 1 : -1;
     if (!canTurn(dir)) {
+      return;
+    }
+    if (reduceMotion) {
+      // No corner to drag: a press turns the page in place.
+      go(dir);
       return;
     }
     stop();
@@ -423,7 +419,7 @@ export default function PageFlip({
       setAt({ ...current, at: reach(p, current.corner) });
       return;
     }
-    if (event.pointerType === "mouse" && !playingRef.current) {
+    if (event.pointerType === "mouse" && !playingRef.current && !reduceMotion) {
       peek(p);
     }
   };
@@ -438,13 +434,15 @@ export default function PageFlip({
       }
       return;
     }
-    if (!current) {
+    // Only a press that started on the page turns it: a release after a
+    // right click, or a press that began outside, leaves a peek to settle.
+    if (!(press && current)) {
       return;
     }
     // A tap turns the page; a drag turns it once the corner crosses the spine.
     const crossed =
       current.dir === 1 ? current.at.x < size.w : current.at.x > size.w;
-    const complete = press?.dragging ? crossed : true;
+    const complete = press.dragging ? crossed : true;
     run(
       current,
       complete
@@ -618,10 +616,12 @@ function NavButton({
 }) {
   return (
     <button
+      // aria-disabled, not disabled: the last press keeps focus on the button,
+      // so the arrow keys keep working.
+      aria-disabled={disabled || undefined}
       aria-label={label}
-      className="flex size-8 items-center justify-center rounded-full text-zinc-600 ring-1 ring-black/10 transition-colors duration-150 ease-out hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-700/50 disabled:cursor-default disabled:text-zinc-300 disabled:hover:bg-transparent dark:text-zinc-300 dark:ring-white/15 dark:disabled:text-zinc-600 dark:hover:bg-white/10 dark:hover:text-white dark:disabled:hover:bg-transparent"
-      disabled={disabled}
-      onClick={onClick}
+      className="flex size-8 items-center justify-center rounded-full text-zinc-600 ring-1 ring-black/10 transition-colors duration-150 ease-out hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-700/50 aria-disabled:cursor-default aria-disabled:text-zinc-300 aria-disabled:hover:bg-transparent aria-disabled:hover:text-zinc-300 dark:text-zinc-300 dark:ring-white/15 dark:aria-disabled:text-zinc-600 dark:hover:bg-white/10 dark:hover:text-white dark:aria-disabled:hover:bg-transparent dark:aria-disabled:hover:text-zinc-600"
+      onClick={disabled ? undefined : onClick}
       onKeyDown={onKeyDown}
       type="button"
     >

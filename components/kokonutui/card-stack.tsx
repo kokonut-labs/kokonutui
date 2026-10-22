@@ -357,6 +357,19 @@ export default function CardStack({
 
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
+  // A new set of cards (a different count) starts a fresh, squared-up pile.
+  useEffect(() => {
+    if (orderRef.current.length === count) {
+      return;
+    }
+    const next = Array.from({ length: count }, (_, i) => i);
+    bodies.current = next.map((i) => makeBody(i));
+    orderRef.current = next;
+    setOrder(next);
+    setOpenId(null);
+    kick();
+  }, [count, kick]);
+
   const commitOrder = useCallback(
     (next: number[]) => {
       orderRef.current = next;
@@ -645,6 +658,8 @@ export default function CardStack({
         <section
           aria-label="Card deck. Drag a card away or use the arrow keys to cycle."
           className="relative aspect-[4/5] w-[min(16rem,calc(100%-5rem))]"
+          // The details view is modal: nothing behind it takes focus.
+          inert={Boolean(open)}
         >
           {cards.map((card, index) => {
             const depth = order.indexOf(index);
@@ -726,7 +741,10 @@ export default function CardStack({
           })}
         </section>
 
-        <div className="mt-8 flex w-[min(16rem,calc(100%-5rem))] items-center justify-between gap-2">
+        <div
+          className="mt-8 flex w-[min(16rem,calc(100%-5rem))] items-center justify-between gap-2"
+          inert={Boolean(open)}
+        >
           <button
             aria-label="Previous card"
             className={NAV_BUTTON}

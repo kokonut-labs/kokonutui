@@ -191,6 +191,9 @@ export default function LiquidGauge({
   const [internal, setInternal] = useState(defaultValue);
   const value = clamp(valueProp ?? internal, 0, 100);
   const [dragging, setDragging] = useState(false);
+  // The level, its readout and the surface are written by the simulation;
+  // React renders them once, from the first value, and leaves them alone.
+  const [initial] = useState(value);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const liquidRef = useRef<HTMLDivElement>(null);
@@ -225,7 +228,6 @@ export default function LiquidGauge({
 
   // Read inside the animation loop, which outlives the render it came from.
   const totalRef = useRef(total);
-  totalRef.current = total;
 
   const setValue = useCallback(
     (next: number) => {
@@ -386,6 +388,13 @@ export default function LiquidGauge({
       s.raf = requestAnimationFrame(tick);
     }
   }, [tick]);
+
+  // A new capacity rewrites the readout even when the level stays put.
+  useEffect(() => {
+    totalRef.current = total;
+    sim.current.shown = -1;
+    draw();
+  }, [total, draw]);
 
   // A new value: the spring takes it from here.
   useEffect(() => {
@@ -583,8 +592,8 @@ export default function LiquidGauge({
   const textProps = {
     label,
     status,
-    value,
-    used,
+    value: initial,
+    used: ((Math.round(initial) / 100) * total).toFixed(1),
     total,
     unit,
   };
@@ -592,6 +601,7 @@ export default function LiquidGauge({
   return (
     <div
       aria-label={label}
+      aria-orientation="vertical"
       aria-readonly={readOnly || undefined}
       aria-valuemax={100}
       aria-valuemin={0}
@@ -632,7 +642,7 @@ export default function LiquidGauge({
           warn ? "bg-red-300 dark:bg-red-900" : "bg-zinc-300 dark:bg-zinc-600"
         )}
         ref={rimRef}
-        style={{ clipPath: flatPolygon(value, RIM) }}
+        style={{ clipPath: flatPolygon(initial, RIM) }}
       />
 
       {/* The liquid, with a second copy of the text in its own colour. */}
@@ -645,7 +655,7 @@ export default function LiquidGauge({
             : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
         )}
         ref={liquidRef}
-        style={{ clipPath: flatPolygon(value) }}
+        style={{ clipPath: flatPolygon(initial) }}
       >
         <GaugeText
           {...textProps}

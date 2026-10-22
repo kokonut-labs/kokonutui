@@ -185,7 +185,7 @@ function Field({
       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">{label}</p>
       <Flap
         className={cn(
-          "font-semibold text-zinc-900 tabular-nums tracking-tight transition-colors duration-500 dark:text-zinc-50",
+          "font-semibold text-zinc-900 tabular-nums tracking-tight transition-colors duration-300 ease-out dark:text-zinc-50",
           large ? "text-xl" : "text-base",
           changed && "text-orange-600 dark:text-orange-400"
         )}
@@ -341,7 +341,7 @@ export default function BoardingPass({ flight, className }: BoardingPassProps) {
                 {current.from.city} ·{" "}
                 <Flap
                   className={cn(
-                    "tabular-nums transition-colors duration-500",
+                    "tabular-nums transition-colors duration-300 ease-out",
                     current.from.time === issued.from.time
                       ? "text-zinc-700 dark:text-zinc-300"
                       : "text-orange-600 dark:text-orange-400"
@@ -366,7 +366,7 @@ export default function BoardingPass({ flight, className }: BoardingPassProps) {
               <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
                 <Flap
                   className={cn(
-                    "tabular-nums transition-colors duration-500",
+                    "tabular-nums transition-colors duration-300 ease-out",
                     current.to.time === issued.to.time
                       ? "text-zinc-700 dark:text-zinc-300"
                       : "text-orange-600 dark:text-orange-400"

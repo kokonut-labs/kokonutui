@@ -206,7 +206,7 @@ function StepNode({ state }: { state: StepState }) {
         // Fades in once the rail has arrived, then turns. A quick turn
         // reads as fast progress; reduced motion keeps the still arc.
         <span
-          className="absolute inset-0 animate-[ct-in_200ms_ease-out_both] motion-reduce:animate-none"
+          className="absolute inset-0 animate-[kokonutui-ct-in_200ms_ease-out_both] motion-reduce:animate-none"
           style={{ animationDelay: `${RAIL_MS - 100}ms` }}
         >
           <svg
@@ -233,7 +233,7 @@ function StepNode({ state }: { state: StepState }) {
         >
           {/* The tick draws once, as the step finishes. */}
           <path
-            className="animate-[ct-draw_300ms_cubic-bezier(0.23,1,0.32,1)_both] motion-reduce:animate-none"
+            className="animate-[kokonutui-ct-draw_300ms_cubic-bezier(0.23,1,0.32,1)_both] motion-reduce:animate-none"
             d="M2.5 6.25 5 8.5l4.5-5"
             pathLength={1}
             stroke="currentColor"
@@ -406,10 +406,11 @@ export default function CurrencyTransfer({
         className
       )}
     >
-      {/* Tick draw and text blur-in; scoped names so they cannot clash with app CSS. */}
-      <style>
+      {/* Tick draw and text blur-in; prefixed so they cannot clash with app
+          CSS, and hoisted once however many cards are on the page. */}
+      <style href="kokonutui-currency-transfer" precedence="default">
         {
-          "@keyframes ct-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}@keyframes ct-in{from{opacity:0;filter:blur(2px)}}"
+          "@keyframes kokonutui-ct-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}@keyframes kokonutui-ct-in{from{opacity:0;filter:blur(2px)}}"
         }
       </style>
       <output aria-live="polite" className="sr-only">
@@ -513,7 +514,7 @@ export default function CurrencyTransfer({
                 >
                   {/* Keyed, so changed words blur in rather than snap. */}
                   <span
-                    className="block animate-[ct-in_200ms_ease-out_both] motion-reduce:animate-none"
+                    className="block animate-[kokonutui-ct-in_200ms_ease-out_both] motion-reduce:animate-none"
                     key={state === "failed" ? "failed" : step.title}
                   >
                     {state === "failed" ? "Couldn't complete" : step.title}
@@ -528,7 +529,7 @@ export default function CurrencyTransfer({
                   )}
                 >
                   <span
-                    className="block animate-[ct-in_200ms_ease-out_both] motion-reduce:animate-none"
+                    className="block animate-[kokonutui-ct-in_200ms_ease-out_both] motion-reduce:animate-none"
                     key={state === "failed" ? "failed" : step.detail}
                   >
                     {state === "failed"
@@ -538,7 +539,7 @@ export default function CurrencyTransfer({
                 </p>
                 {state === "failed" && onRetry && (
                   <button
-                    className="mt-2 inline-flex h-7 animate-[ct-in_200ms_ease-out_150ms_both] items-center gap-1.5 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs transition-colors duration-150 hover:bg-zinc-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/50 motion-reduce:animate-none dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                    className="mt-2 inline-flex h-7 animate-[kokonutui-ct-in_200ms_ease-out_150ms_both] items-center gap-1.5 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs transition-colors duration-150 hover:bg-zinc-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/50 motion-reduce:animate-none dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
                     onClick={onRetry}
                     type="button"
                   >

@@ -145,9 +145,8 @@ export default function SpendingRing({
   className,
 }: SpendingRingProps) {
   const [selected, setSelected] = useState(0);
-  const [spinning, setSpinning] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const ringRef = useRef<SVGGElement>(null);
-  const surfaceRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef(0);
 
   const total = categories.reduce((sum, c) => sum + c.amount, 0);
@@ -190,6 +189,17 @@ export default function SpendingRing({
       }),
     [currency]
   );
+  // The legend rounds to whole units.
+  const wholeMoney = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 0,
+        minimumFractionDigits: 0,
+      }),
+    [currency]
+  );
 
   const paint = useCallback(() => {
     ringRef.current?.setAttribute(
@@ -227,7 +237,6 @@ export default function SpendingRing({
       if (settled) {
         s.last = 0;
         s.coast = false;
-        setSpinning(false);
       } else {
         s.raf = requestAnimationFrame(tick);
       }
@@ -257,7 +266,6 @@ export default function SpendingRing({
         track();
         return;
       }
-      setSpinning(true);
       if (!s.raf) {
         s.last = 0;
         s.raf = requestAnimationFrame(tick);
@@ -266,12 +274,17 @@ export default function SpendingRing({
     [paint, spans, tick, track]
   );
 
-  // New data keeps the same slice under the marker.
+  // New data keeps the same slice under the marker. A re-render with the same
+  // numbers in a fresh array leaves a spin or drag in progress alone.
   useEffect(() => {
     const s = sim.current;
-    const index = Math.min(selectedRef.current, spans.length - 1);
-    s.a = -(spans[index]?.mid ?? 0);
-    s.target = s.a;
+    const index = Math.max(0, Math.min(selectedRef.current, spans.length - 1));
+    const goal = -(spans[index]?.mid ?? 0);
+    if (Math.abs(wrap(goal - s.target)) < 0.001) {
+      return;
+    }
+    s.a = goal;
+    s.target = goal;
     s.v = 0;
     selectedRef.current = index;
     setSelected(index);
@@ -327,7 +340,7 @@ export default function SpendingRing({
     s.v = s.v * 0.6 + (delta / dt) * 0.4;
     drag.angle = angle;
     drag.time = event.timeStamp;
-    setSpinning(true);
+    setDragging(true);
     paint();
     track();
   };
@@ -339,6 +352,7 @@ export default function SpendingRing({
       return;
     }
     s.drag = null;
+    setDragging(false);
     if (drag.moved < TAP_SLOP) {
       // A tap on the ring picks the slice under the finger; the middle is
       // only a readout.
@@ -362,6 +376,9 @@ export default function SpendingRing({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (categories.length === 0) {
+      return;
+    }
     const step: Record<string, number> = {
       ArrowRight: 1,
       ArrowDown: 1,
@@ -411,7 +428,7 @@ export default function SpendingRing({
         }
         className={cn(
           "relative mx-auto mt-3 aspect-square w-full max-w-[240px] touch-none select-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-zinc-950",
-          spinning ? "cursor-grabbing" : "cursor-grab"
+          dragging ? "cursor-grabbing" : "cursor-grab"
         )}
         onKeyDown={handleKeyDown}
         onLostPointerCapture={release}
@@ -419,7 +436,6 @@ export default function SpendingRing({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={release}
-        ref={surfaceRef}
         role="slider"
         tabIndex={0}
       >
@@ -505,7 +521,7 @@ export default function SpendingRing({
               />
               <span className="min-w-0 flex-1 truncate">{category.name}</span>
               <span className="tabular-nums">
-                {money.format(Math.round(category.amount)).replace(".00", "")}
+                {wholeMoney.format(category.amount)}
               </span>
             </button>
           </li>

@@ -194,6 +194,11 @@ export default function ReceiptPrinter({
   const cardRef = useRef<HTMLDivElement>(null);
   const paperRef = useRef<HTMLDivElement>(null);
   const printerRef = useRef<HTMLDivElement>(null);
+  const printButtonRef = useRef<HTMLButtonElement>(null);
+  const tearButtonRef = useRef<HTMLButtonElement>(null);
+  // Set when a keyboard press started the print or the tear, whose button
+  // then goes away: focus follows to the next control instead of the body.
+  const keyboardFocus = useRef(false);
 
   const sim = useRef({
     phase: "idle" as Phase,
@@ -227,6 +232,9 @@ export default function ReceiptPrinter({
     raf: 0,
     last: 0,
     carry: 0,
+    // Motion in the last fixed step. Kept across frames: on a display
+    // faster than the step rate some frames run no step at all.
+    busy: 0,
     visible: false,
     reduceMotion: false,
   });
@@ -236,6 +244,8 @@ export default function ReceiptPrinter({
 
   const setPhaseBoth = useCallback((next: Phase) => {
     sim.current.phase = next;
+    // A new phase is in motion until its first step says otherwise.
+    sim.current.busy = 1;
     setPhase(next);
   }, []);
 
@@ -358,17 +368,16 @@ export default function ReceiptPrinter({
   const stepPhysics = useCallback(
     (elapsed: number) => {
       const s = sim.current;
-      let busy = 0;
       s.carry += elapsed;
       while (s.carry >= STEP) {
         s.carry -= STEP;
         if (s.phase === "falling") {
-          busy = stepFalling();
+          s.busy = stepFalling();
         } else if (s.phase === "hanging" || s.phase === "held") {
-          busy = stepPendulum();
+          s.busy = stepPendulum();
         }
       }
-      return busy;
+      return s.busy;
     },
     [stepFalling, stepPendulum]
   );
@@ -636,9 +645,24 @@ export default function ReceiptPrinter({
     wake();
   };
 
+  // Keyboard users land on the next control once the button they pressed
+  // has gone: the tear button after printing, Print again after the fall.
+  useEffect(() => {
+    if (!keyboardFocus.current) {
+      return;
+    }
+    if (phase === "hanging") {
+      tearButtonRef.current?.focus({ preventScroll: true });
+    } else if (phase === "idle") {
+      keyboardFocus.current = false;
+      printButtonRef.current?.focus({ preventScroll: true });
+    }
+  }, [phase]);
+
   const handleTearKey = () => {
     const s = sim.current;
     if (s.phase === "hanging") {
+      keyboardFocus.current = true;
       s.spin = 1.2;
       s.pcy = s.cy - 3;
       tear(false);
@@ -672,7 +696,7 @@ export default function ReceiptPrinter({
         <div
           aria-label={`Receipt from ${merchant}, order ${order}`}
           className={cn(
-            "absolute top-0 w-56 bg-white shadow-[0_1px_2px_rgb(0_0_0/0.06),0_8px_24px_-12px_rgb(0_0_0/0.25)] outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:bg-zinc-100",
+            "absolute top-0 w-56 bg-white shadow-[0_1px_2px_rgb(0_0_0/0.06),0_8px_24px_-12px_rgb(0_0_0/0.25)] dark:bg-zinc-100",
             phase === "hanging" && "cursor-grab active:cursor-grabbing",
             phase === "held" && "cursor-grabbing",
             phase === "idle" && torn && "invisible"
@@ -688,6 +712,9 @@ export default function ReceiptPrinter({
             left: "50%",
             marginLeft: "-7rem",
             transformOrigin: "0 0",
+            // Inside the printer until the first frame places it, so the
+            // server render does not flash a full receipt.
+            transform: "translate3d(0,-100%,0)",
             mask: torn ? MASK_TORN : MASK_RESTING,
             WebkitMask: torn ? MASK_TORN : MASK_RESTING,
             touchAction: "none",
@@ -729,6 +756,7 @@ export default function ReceiptPrinter({
         <button
           className="sr-only focus:not-sr-only focus:absolute focus:right-4 focus:bottom-4 focus:rounded-full focus:bg-zinc-900 focus:px-3 focus:py-1.5 focus:text-white focus:text-xs dark:focus:bg-zinc-100 dark:focus:text-zinc-900"
           onClick={handleTearKey}
+          ref={tearButtonRef}
           type="button"
         >
           Tear off receipt
@@ -744,7 +772,12 @@ export default function ReceiptPrinter({
         <button
           className="rounded-full bg-zinc-900 px-4 py-2 font-medium text-sm text-white outline-none transition-colors duration-150 ease-out hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           disabled={phase !== "idle"}
-          onClick={print}
+          onClick={(event) => {
+            // detail is 0 for a click from Enter or Space.
+            keyboardFocus.current = event.detail === 0;
+            print();
+          }}
+          ref={printButtonRef}
           tabIndex={phase === "idle" ? 0 : -1}
           type="button"
         >
