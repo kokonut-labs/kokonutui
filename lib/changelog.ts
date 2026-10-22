@@ -45,6 +45,7 @@ export const RELEASES: Release[] = [
       { name: "ai-message-queue", pr: 118 },
       { name: "ai-redact", pr: 118 },
       { name: "ai-memory", pr: 118 },
+      { name: "cart-button", pr: 0 },
     ],
     improved: [
       {

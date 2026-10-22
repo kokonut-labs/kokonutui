@@ -930,4 +930,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "cart-button",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/cart-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
