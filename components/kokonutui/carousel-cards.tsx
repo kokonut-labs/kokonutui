@@ -765,6 +765,8 @@ interface RailState {
   raf: number;
   last: number;
   suppressClick: boolean;
+  /** The press caught a moving rail, so letting go must settle it. */
+  caught: boolean;
 }
 
 const maxScroll = (scroller: HTMLElement) =>
@@ -818,6 +820,7 @@ function useMomentumRail(
     raf: 0,
     last: 0,
     suppressClick: false,
+    caught: false,
   });
   const onIndexRef = useRef(onIndex);
   onIndexRef.current = onIndex;
@@ -887,7 +890,9 @@ function useMomentumRail(
         return;
       }
       cancelAnimationFrame(s.raf);
-      if (s.mode !== "spring" && s.mode !== "dragging") {
+      // A spring, drag or caught press carries its own virtual position,
+      // overshoot included.
+      if (s.mode === "idle") {
         s.pos = scroller.scrollLeft;
       }
       s.target = target;
@@ -951,6 +956,13 @@ function useMomentumRail(
       });
     };
 
+    const suppressNextClick = () => {
+      s.suppressClick = true;
+      setTimeout(() => {
+        s.suppressClick = false;
+      }, 0);
+    };
+
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType !== "mouse" || e.button !== 0) {
         return;
@@ -960,7 +972,8 @@ function useMomentumRail(
       }
       cancelAnimationFrame(s.raf);
       // Catching a moving rail keeps its virtual position, overshoot included.
-      s.pos = s.mode === "spring" ? s.pos : scroller.scrollLeft;
+      s.caught = s.mode === "spring";
+      s.pos = s.caught ? s.pos : scroller.scrollLeft;
       s.mode = "pressing";
       s.pointerId = e.pointerId;
       s.startX = e.clientX;
@@ -996,16 +1009,22 @@ function useMomentumRail(
       }
       s.pointerId = -1;
       if (s.mode !== "dragging") {
+        if (s.caught) {
+          // A rail caught mid-flight (or mid-rubber-band) and let go
+          // settles on the nearest card instead of freezing there. Like a
+          // native list, the tap that stopped it does not open a card.
+          suppressNextClick();
+          const points = snapPoints(scroller, track);
+          springTo(points[nearestIndex(points, s.pos)], 0);
+          return;
+        }
         // A press that never became a drag hands back to native snapping.
         s.mode = "idle";
         setFree(false);
         return;
       }
       scroller.dataset.dragging = "false";
-      s.suppressClick = true;
-      setTimeout(() => {
-        s.suppressClick = false;
-      }, 0);
+      suppressNextClick();
       const v = releaseVelocity(s.samples, e.timeStamp);
       const projected = s.pos + (v * DECELERATION) / (1 - DECELERATION);
       const points = snapPoints(scroller, track);

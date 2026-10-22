@@ -32,7 +32,6 @@ export const component: Registry = [
   {
     name: "card-flip",
     type: "registry:component",
-    dependencies: ["lucide-react"],
     files: [
       {
         path: "components/kokonutui/card-flip.tsx",

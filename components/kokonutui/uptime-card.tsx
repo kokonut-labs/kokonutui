@@ -235,6 +235,23 @@ function barAt(weights: Float64Array, x: number) {
   return weights.length - 1;
 }
 
+function incidentsOn(services: UptimeService[], day: number) {
+  return services.flatMap((s) => {
+    const incident = s.incidents?.[day];
+    return incident ? [{ service: s.name, incident }] : [];
+  });
+}
+
+function describeDay(list: { service: string; incident: Incident }[]) {
+  const first = list[0];
+  if (!first) {
+    return "No incidents";
+  }
+  const how = first.incident.status === "down" ? "down" : "degraded";
+  const more = list.length > 1 ? `, +${list.length - 1} more` : "";
+  return `${first.service} ${how} for ${first.incident.minutes} min${more}`;
+}
+
 const BAR_COLOR: Record<DayStatus, string> = {
   up: "bg-emerald-500 dark:bg-emerald-400",
   degraded: "bg-amber-400 dark:bg-amber-300",
@@ -371,6 +388,10 @@ export default function UptimeCard({
       return;
     }
     const day = dayAt(event.clientX);
+    // Most moves stay on the same bar: skip the re-render and the retarget.
+    if (day === active) {
+      return;
+    }
     setActive(day);
     focusOn(day);
   };
@@ -413,7 +434,8 @@ export default function UptimeCard({
     }
     if (event.key === "Escape") {
       setPinned(null);
-      leave();
+      setActive(null);
+      focusOn(null);
       return;
     }
     const move = moves[event.key];
@@ -427,28 +449,17 @@ export default function UptimeCard({
   };
 
   const shownDay = active ?? pinned;
-  const shownIncidents =
+  const summary =
     shownDay === null
-      ? []
-      : services.flatMap((s) => {
-          const incident = s.incidents?.[shownDay];
-          return incident ? [{ service: s.name, incident }] : [];
-        });
-  let summary = "Hover a day to see what happened";
-  if (shownDay !== null) {
-    const first = shownIncidents[0];
-    const what = first
-      ? `${first.service} ${first.incident.status === "down" ? "down" : "degraded"} for ${first.incident.minutes} min${shownIncidents.length > 1 ? `, +${shownIncidents.length - 1} more` : ""}`
-      : "No incidents";
-    summary = `${formatDay(dateOf(shownDay))} · ${what}`;
+      ? "Hover a day to see what happened"
+      : `${formatDay(dateOf(shownDay))} · ${describeDay(incidentsOn(services, shownDay))}`;
+  // The log keeps showing the last pinned day while it collapses.
+  const lastPinned = useRef<number | null>(null);
+  if (pinned !== null) {
+    lastPinned.current = pinned;
   }
-  const pinnedIncidents =
-    pinned === null
-      ? []
-      : services.flatMap((s) => {
-          const incident = s.incidents?.[pinned];
-          return incident ? [{ service: s.name, incident }] : [];
-        });
+  const logDay = pinned ?? lastPinned.current;
+  const pinnedIncidents = logDay === null ? [] : incidentsOn(services, logDay);
 
   return (
     <div
@@ -486,9 +497,20 @@ export default function UptimeCard({
         aria-valuenow={(shownDay ?? days - 1) + 1}
         aria-valuetext={summary}
         className="mt-4 cursor-pointer touch-pan-y rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-zinc-950"
+        onBlur={() => {
+          if (active !== null) {
+            leave();
+          }
+        }}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
-        onLostPointerCapture={leave}
+        onLostPointerCapture={(event) => {
+          // A touch's implicit capture on the bar it started on moves to this
+          // element on pointerdown; that bubbling event is not the end.
+          if (event.target === event.currentTarget) {
+            leave();
+          }
+        }}
         onPointerDown={handlePointerDown}
         onPointerLeave={(event) => {
           if (event.pointerType === "mouse") {
@@ -542,13 +564,14 @@ export default function UptimeCard({
             ? "grid-rows-[0fr] opacity-0"
             : "grid-rows-[1fr] opacity-100"
         )}
+        inert={pinned === null}
       >
         <div className="overflow-hidden">
-          {pinned !== null && (
+          {logDay !== null && (
             <div className="mt-4 rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-900">
               <div className="flex items-center justify-between">
                 <p className="font-medium text-sm">
-                  {formatDay(dateOf(pinned))}
+                  {formatDay(dateOf(logDay))}
                 </p>
                 <button
                   aria-label="Close day"

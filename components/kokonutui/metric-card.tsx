@@ -139,6 +139,10 @@ const formatShort = (date: string) =>
 
 /** Linear resample of `values` to `count` evenly spaced points. */
 function resample(values: number[], count: number) {
+  // Too little history (no previous period yet): a flat line on the floor.
+  if (values.length === 0) {
+    return new Array<number>(count).fill(0);
+  }
   const out = new Array<number>(count);
   for (let i = 0; i < count; i++) {
     const at = (i / (count - 1)) * (values.length - 1);
@@ -153,7 +157,13 @@ const yOf = (height: number) => PAD_Y + (1 - height) * (H - PAD_Y * 2);
 
 /** Heights 0..1 to an SVG path, smoothed with a Catmull-Rom spline. */
 function toPath(heights: number[]) {
-  const pts = heights.map((h, i) => [(i / (heights.length - 1)) * W, yOf(h)]);
+  if (heights.length === 0) {
+    return "";
+  }
+  const pts = heights.map((h, i) => [
+    (i / Math.max(1, heights.length - 1)) * W,
+    yOf(h),
+  ]);
   let d = `M${pts[0][0].toFixed(2)} ${pts[0][1].toFixed(2)}`;
   for (let i = 0; i < pts.length - 1; i++) {
     const p0 = pts[i - 1] ?? pts[i];

@@ -369,7 +369,12 @@ export default function CardFlip({
   };
 
   const hoverTilt = (e: PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== "mouse" || !rootRef.current) {
+    // The tilt follows the cursor: it's movement, so reduced motion skips it.
+    if (
+      e.pointerType !== "mouse" ||
+      sim.current.reduceMotion ||
+      !rootRef.current
+    ) {
       return;
     }
     const r = rootRef.current.getBoundingClientRect();

@@ -184,18 +184,22 @@ function IconButton({
   className,
   children,
   buttonRef,
+  unavailable,
 }: {
   label: string;
   onClick: () => void;
   className?: string;
   children: ReactNode;
   buttonRef?: Ref<HTMLButtonElement>;
+  /** Dimmed but still focusable, so focus never drops out of the viewer. */
+  unavailable?: boolean;
 }) {
   return (
     <button
+      aria-disabled={unavailable || undefined}
       aria-label={label}
       className={cn(
-        "flex size-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors duration-150 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white/70 disabled:pointer-events-none disabled:opacity-30",
+        "flex size-10 items-center justify-center rounded-full bg-white/10 text-white transition-[background-color,opacity] duration-150 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white/70 aria-disabled:cursor-default aria-disabled:opacity-30 aria-disabled:hover:bg-white/10",
         className
       )}
       onClick={onClick}
@@ -475,6 +479,7 @@ function Viewer({
           className="pointer-events-auto absolute top-1/2 left-4 hidden -translate-y-1/2 sm:flex"
           label="Previous photo"
           onClick={() => hasPrev && onStep(-1)}
+          unavailable={!hasPrev}
         >
           <Chevron flip />
         </IconButton>
@@ -482,6 +487,7 @@ function Viewer({
           className="pointer-events-auto absolute top-1/2 right-4 hidden -translate-y-1/2 sm:flex"
           label="Next photo"
           onClick={() => hasNext && onStep(1)}
+          unavailable={!hasNext}
         >
           <Chevron />
         </IconButton>
@@ -512,6 +518,7 @@ export default function LightboxGrid({
   const [settled, setSettled] = useState(false);
   const [closing, setClosing] = useState(false);
   const thumbs = useRef<(HTMLButtonElement | null)[]>([]);
+  const closeTimer = useRef(0);
   const reduceMotion = useReducedMotion();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -607,7 +614,7 @@ export default function LightboxGrid({
       animate(clip, to.clip, CLOSE);
       animate(fade, 0, { duration: 0.28, ease: EASE });
       // The clip spring settles last; reveal the thumbnail when it lands.
-      window.setTimeout(finish, 420);
+      closeTimer.current = window.setTimeout(finish, 420);
     },
     [
       active,
@@ -626,7 +633,8 @@ export default function LightboxGrid({
 
   const step = useCallback(
     (direction: 1 | -1) => {
-      if (active === null) {
+      // Mid-close, the photo is already flying home to this slot.
+      if (active === null || closing) {
         return;
       }
       const next = active + direction;
@@ -650,8 +658,10 @@ export default function LightboxGrid({
       animate(x, 0, { duration: 0.32, ease: EASE });
       animate(alpha, 1, { duration: 0.22, ease: EASE });
     },
-    [active, alpha, clip, fade, images, reduceMotion, scale, x, y]
+    [active, alpha, clip, closing, fade, images, reduceMotion, scale, x, y]
   );
+
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
 
   // Lock the page behind the viewer and keep the open photo fitted.
   useEffect(() => {

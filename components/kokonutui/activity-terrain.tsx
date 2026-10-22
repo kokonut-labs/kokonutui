@@ -863,11 +863,17 @@ export default function ActivityTerrain({
       </div>
 
       <canvas
-        aria-label={`${title}: ${total} contributions over ${weeks} weeks. Use the arrow keys to read each day.`}
+        aria-label={`${title}: ${total.toLocaleString("en-US")} contributions over ${weeks} weeks. Use the arrow keys to read each day.`}
         className={cn(
           "block h-72 w-full touch-pan-y rounded-b-3xl outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset",
           dragging ? "cursor-grabbing" : "cursor-grab"
         )}
+        onBlur={() => {
+          // Keyboard reading ends with focus; don't leave a day lit.
+          if (!sim.current.drag) {
+            hover(null);
+          }
+        }}
         onKeyDown={handleKeyDown}
         onLostPointerCapture={handlePointerUp}
         onPointerCancel={handlePointerUp}
