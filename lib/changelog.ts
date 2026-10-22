@@ -48,6 +48,7 @@ export const RELEASES: Release[] = [
       { name: "seat-map", pr: 117 },
       { name: "amount-pad", pr: 117 },
       { name: "slide-to-confirm", pr: 117 },
+      { name: "save-button", pr: 117 },
     ],
     improved: [
       {

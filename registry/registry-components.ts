@@ -963,4 +963,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "save-button",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/save-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
