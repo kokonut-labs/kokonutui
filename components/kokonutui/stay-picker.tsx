@@ -145,6 +145,18 @@ function settleStay(
   };
 }
 
+/**
+ * One row of the pill as a clip over a full-width bar, so it grows and
+ * shrinks on the GPU. Ends are round only where the stay starts or stops.
+ */
+function clipFor(s: Segment) {
+  const left = (s.from / 7) * 100;
+  const right = 100 - ((s.to + 1) / 7) * 100;
+  const l = s.roundLeft ? "22px" : "0px";
+  const r = s.roundRight ? "22px" : "0px";
+  return `inset(0% ${right}% 0% ${left}% round ${l} ${r} ${r} ${l})`;
+}
+
 /** The stay, cut into one segment per week row it crosses. */
 function segmentsFor(
   start: number | null,
@@ -539,21 +551,19 @@ export default function StayPicker({
               really starts and stops, so it reads as a single shape. */}
             {segments.map((s) => (
               <motion.div
-                animate={{
-                  left: `calc(${(s.from / 7) * 100}% + ${s.roundLeft ? 2 : 0}px)`,
-                  width: `calc(${((s.to - s.from + 1) / 7) * 100}% - ${(s.roundLeft ? 2 : 0) + (s.roundRight ? 2 : 0)}px)`,
-                  opacity: 1,
-                }}
+                animate={{ clipPath: clipFor(s), opacity: 1 }}
                 aria-hidden="true"
                 className={cn(
-                  "pointer-events-none absolute h-11 bg-zinc-100 dark:bg-zinc-800/70",
-                  s.roundLeft ? "rounded-l-full" : "rounded-l-none",
-                  s.roundRight ? "rounded-r-full" : "rounded-r-none",
+                  "pointer-events-none absolute inset-x-0 h-11 bg-zinc-100 dark:bg-zinc-800/70",
                   picking && "bg-zinc-100/70 dark:bg-zinc-800/50"
                 )}
                 initial={{
-                  left: `calc(${(s.from / 7) * 100}% + 2px)`,
-                  width: `calc(${(1 / 7) * 100}% - 4px)`,
+                  clipPath: clipFor({
+                    ...s,
+                    to: s.from,
+                    roundLeft: true,
+                    roundRight: true,
+                  }),
                   opacity: 0,
                 }}
                 key={s.row}

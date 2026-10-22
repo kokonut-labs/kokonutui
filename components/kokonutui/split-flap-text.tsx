@@ -255,7 +255,7 @@ export default function SplitFlapText({
   return (
     <span
       className={cn(
-        "inline-flex gap-[0.08em] font-semibold text-5xl tabular-nums leading-none",
+        "inline-flex gap-[0.08em] font-semibold text-3xl tabular-nums leading-none sm:text-5xl",
         className
       )}
     >

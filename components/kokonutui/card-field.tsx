@@ -446,7 +446,7 @@ function NumberMirror({
   const ghost = ghostsFor(spec, typedLength);
   return (
     <motion.div
-      animate={{ x: -shift }}
+      animate={{ transform: `translateX(${-shift}px)` }}
       aria-hidden="true"
       className="pointer-events-none absolute inset-y-0 left-0 flex items-center whitespace-pre text-[15px] text-zinc-900 tabular-nums tracking-wide dark:text-zinc-100"
       initial={false}
