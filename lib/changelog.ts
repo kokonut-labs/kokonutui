@@ -44,6 +44,7 @@ export const RELEASES: Release[] = [
       { name: "marker-text", pr: 117 },
       { name: "ink-background", pr: 117 },
       { name: "caustics-background", pr: 117 },
+      { name: "rain-glass-background", pr: 117 },
     ],
     improved: [
       {

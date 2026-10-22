@@ -919,4 +919,15 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "rain-glass-background",
+    type: "registry:component",
+    dependencies: [],
+    files: [
+      {
+        path: "components/kokonutui/rain-glass-background.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
