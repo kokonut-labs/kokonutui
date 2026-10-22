@@ -62,6 +62,21 @@ const SWATCHES = [
 
 type View = "closed" | "saved" | "picking" | "removed";
 
+// The panel sits under AnimatePresence, so it's found by query, not ref.
+const findPanel = (root: HTMLElement | null) =>
+  root?.querySelector("[data-save-panel]") ?? null;
+
+const focusInPanel = (root: HTMLElement | null) =>
+  Boolean(findPanel(root)?.contains(document.activeElement));
+
+// Whatever closes or swaps the panel's content would drop focus on <body>,
+// so it goes back to the button first.
+const returnFocus = (root: HTMLElement | null, button: HTMLElement | null) => {
+  if (focusInPanel(root)) {
+    button?.focus();
+  }
+};
+
 /** A bookmark whose ink drops in from the top like a ribbon when saved. */
 function Ribbon({
   saved,
@@ -136,6 +151,7 @@ export default function SaveButton({
   const reduceMotion = Boolean(useReducedMotion());
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const hoverRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -164,7 +180,7 @@ export default function SaveButton({
   const schedule = (ms = STRIP_FOR) => {
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      if (!hoverRef.current) {
+      if (!(hoverRef.current || focusInPanel(rootRef.current))) {
         setView((v) => (v === "picking" ? v : "closed"));
       }
     }, ms);
@@ -183,6 +199,7 @@ export default function SaveButton({
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        returnFocus(rootRef.current, buttonRef.current);
         setView("closed");
       }
     };
@@ -192,6 +209,15 @@ export default function SaveButton({
       document.removeEventListener("pointerdown", onPointer);
       document.removeEventListener("keydown", onKey);
     };
+  }, [view]);
+
+  // Opening the picker moves focus onto the collection it's saved in.
+  useEffect(() => {
+    if (view === "picking") {
+      findPanel(rootRef.current)
+        ?.querySelector<HTMLButtonElement>('[aria-current="true"]')
+        ?.focus();
+    }
   }, [view]);
 
   const toggle = () => {
@@ -210,6 +236,7 @@ export default function SaveButton({
   };
 
   const moveTo = (id: string) => {
+    returnFocus(rootRef.current, buttonRef.current);
     setSavedTo(id);
     setLastUsed(id);
     setMoved(id !== savedTo);
@@ -265,6 +292,7 @@ export default function SaveButton({
             : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
         )}
         onClick={toggle}
+        ref={buttonRef}
         type="button"
       >
         <Ribbon reduceMotion={reduceMotion} saved={saved} />
@@ -288,6 +316,7 @@ export default function SaveButton({
           <motion.div
             animate={{ opacity: 1, y: 0, scale: 1 }}
             className="absolute top-full left-1/2 z-20 mt-2 w-72 origin-top -translate-x-1/2 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-[0_8px_24px_-8px_rgb(0_0_0/0.6)]"
+            data-save-panel
             exit={{
               opacity: 0,
               y: -4,

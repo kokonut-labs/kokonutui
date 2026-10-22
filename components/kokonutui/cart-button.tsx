@@ -78,6 +78,8 @@ export function AddToCartButton({
   const valueRef = useRef(value);
   valueRef.current = value;
   const holdRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // A touch press waiting to turn out a tap, a hold, or the start of a scroll.
+  const touchRef = useRef<number | null>(null);
   const limitRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const addRef = useRef<HTMLButtonElement>(null);
   const plusRef = useRef<HTMLButtonElement>(null);
@@ -125,7 +127,20 @@ export function AddToCartButton({
     [commit, hitLimit, max]
   );
 
-  const stopHold = useCallback(() => clearTimeout(holdRef.current), []);
+  const stopHold = useCallback(() => {
+    clearTimeout(holdRef.current);
+    touchRef.current = null;
+  }, []);
+
+  // A touch that was neither cancelled by a scroll nor held long enough to
+  // repeat counts as one tap when the finger lifts.
+  const endPress = () => {
+    const delta = touchRef.current;
+    stopHold();
+    if (delta !== null) {
+      step(delta);
+    }
+  };
 
   const startHold = (delta: number) => (event: PointerEvent) => {
     if (event.button !== 0) {
@@ -133,9 +148,6 @@ export function AddToCartButton({
     }
     event.currentTarget.setPointerCapture(event.pointerId);
     stopHold();
-    if (!step(delta)) {
-      return;
-    }
     let interval = REPEAT_FIRST;
     const tick = () => {
       // A hold on − stops at one: emptying the line takes its own tap.
@@ -148,10 +160,26 @@ export function AddToCartButton({
       interval = Math.max(REPEAT_FASTEST, interval * 0.82);
       holdRef.current = setTimeout(tick, interval);
     };
+    // In a list, a finger landing on + may be starting a scroll, so touch
+    // waits for the lift (or the hold) instead of stepping on contact.
+    if (event.pointerType === "touch") {
+      touchRef.current = delta;
+      holdRef.current = setTimeout(() => {
+        touchRef.current = null;
+        if (step(delta)) {
+          holdRef.current = setTimeout(tick, REPEAT_FIRST);
+        }
+      }, HOLD_DELAY);
+      return;
+    }
+    if (!step(delta)) {
+      return;
+    }
     holdRef.current = setTimeout(tick, HOLD_DELAY);
   };
 
-  // Pointer presses step on pointerdown; Enter and Space arrive as a click.
+  // Mouse presses step on pointerdown, touch on release; Enter and Space
+  // arrive as a click.
   const keyStep = (delta: number) => (event: MouseEvent) => {
     if (event.detail === 0) {
       step(delta);
@@ -247,7 +275,7 @@ export function AddToCartButton({
               onLostPointerCapture={stopHold}
               onPointerCancel={stopHold}
               onPointerDown={startHold(-1)}
-              onPointerUp={stopHold}
+              onPointerUp={endPress}
               transition={fade}
               type="button"
             >
@@ -294,7 +322,7 @@ export function AddToCartButton({
               onLostPointerCapture={stopHold}
               onPointerCancel={stopHold}
               onPointerDown={startHold(1)}
-              onPointerUp={stopHold}
+              onPointerUp={endPress}
               ref={plusRef}
               type="button"
             >

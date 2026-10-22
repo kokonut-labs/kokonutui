@@ -268,7 +268,10 @@ export default function MorphPopover({
               align === "start" ? "left-0" : "right-0",
               expanded
                 ? "shadow-xl shadow-zinc-950/10 dark:shadow-black/40"
-                : "shadow-sm shadow-zinc-950/5"
+                : "shadow-sm shadow-zinc-950/5",
+              // The shell clips the button, so its focus ring is drawn here.
+              phase === "idle" &&
+                "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-zinc-400 has-[:focus-visible]:ring-offset-2 dark:has-[:focus-visible]:ring-offset-zinc-950"
             )}
             initial={false}
             onKeyDown={handleKeyDown}

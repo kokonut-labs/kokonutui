@@ -174,6 +174,8 @@ export default function TearButton({
   const rootRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const stubRef = useRef<HTMLButtonElement>(null);
+  // Set when the stub tears away with focus on it, so focus can follow.
+  const hadFocusRef = useRef(false);
 
   const sim = useRef({
     angle: 0,
@@ -256,6 +258,7 @@ export default function TearButton({
     s.flying = true;
     if (stubRef.current) {
       stubRef.current.style.transition = "none";
+      hadFocusRef.current = document.activeElement === stubRef.current;
     }
     setPhase("flying");
     latest.current.onConfirm?.();
@@ -392,6 +395,20 @@ export default function TearButton({
     return () => window.clearTimeout(id);
   }, [phase, resetAfter]);
 
+  // The torn stub unmounts, which would drop focus on <body>. Hold it on the
+  // ticket meanwhile and hand it to the fresh stub when one is printed.
+  useEffect(() => {
+    if (!hadFocusRef.current) {
+      return;
+    }
+    if (phase === "torn") {
+      rootRef.current?.focus({ preventScroll: true });
+    } else if (phase === "idle") {
+      hadFocusRef.current = false;
+      stubRef.current?.focus({ preventScroll: true });
+    }
+  }, [phase]);
+
   // In reduced motion the stub doesn't fall: it fades where it tore.
   useEffect(() => {
     if (phase !== "flying" || !sim.current.reduceMotion) {
@@ -493,9 +510,10 @@ export default function TearButton({
 
   return (
     <div
-      className={cn("relative select-none", className)}
+      className={cn("relative select-none outline-none", className)}
       ref={rootRef}
       style={{ width: BODY_WIDTH + STUB_WIDTH, height: HEIGHT }}
+      tabIndex={-1}
     >
       <div
         className={cn(
@@ -564,7 +582,10 @@ export default function TearButton({
         <button
           aria-label={`${label}: ${description}`}
           className={cn(
-            "absolute inset-y-0 flex touch-none flex-col items-center justify-center gap-1 rounded-r-2xl outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:ring-offset-zinc-950",
+            "absolute inset-y-0 flex touch-none flex-col items-center justify-center gap-1 rounded-r-2xl outline-none",
+            // The notch mask clips anything drawn outside the stub, so the
+            // focus ring sits inside it.
+            "focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-inset",
             colors.paper,
             colors.stub,
             "starting:-translate-x-3 starting:opacity-0 transition-[opacity,translate] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
