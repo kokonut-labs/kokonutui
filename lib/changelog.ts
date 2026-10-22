@@ -41,8 +41,10 @@ export const RELEASES: Release[] = [
       { name: "ai-token-alternatives", pr: 115 },
       { name: "ai-branches", pr: 115 },
       { name: "ai-agent-lanes", pr: 115 },
-      { name: "rating-face", pr: 0 },
-      { name: "save-button", pr: 0 },
+      { name: "ai-inline-edit", pr: 118 },
+      { name: "ai-message-queue", pr: 118 },
+      { name: "ai-redact", pr: 118 },
+      { name: "ai-memory", pr: 118 },
     ],
     improved: [
       {
