@@ -42,7 +42,7 @@ export const RELEASES: Release[] = [
       { name: "tip-selector", pr: 120 },
       { name: "boarding-pass", pr: 120 },
       { name: "split-flap-text", pr: 120 },
-      { name: "pin-screen-background", pr: 120 },
+      { name: "blinds-background", pr: 120 },
       { name: "contact-sheet", pr: 120 },
     ],
     improved: [],

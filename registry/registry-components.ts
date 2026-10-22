@@ -1107,12 +1107,12 @@ export const component: Registry = [
     ],
   },
   {
-    name: "pin-screen-background",
+    name: "blinds-background",
     type: "registry:component",
     dependencies: [],
     files: [
       {
-        path: "components/kokonutui/pin-screen-background.tsx",
+        path: "components/kokonutui/blinds-background.tsx",
         type: "registry:component",
       },
     ],
