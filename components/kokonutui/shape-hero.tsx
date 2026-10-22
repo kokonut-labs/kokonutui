@@ -553,9 +553,12 @@ export default function ShapeHero({
       wake();
     };
 
+    // A tab coming back must not wake a background that's scrolled away.
+    let onScreen = true;
     const intersection = new IntersectionObserver(
       ([entry]) => {
-        visible = entry.isIntersecting && !document.hidden;
+        onScreen = entry.isIntersecting;
+        visible = onScreen && !document.hidden;
         if (visible) {
           // Wait for fonts, so each shape is measured at its final width.
           document.fonts.ready.then(begin);
@@ -566,7 +569,7 @@ export default function ShapeHero({
     );
     intersection.observe(root);
     const onVisibility = () => {
-      visible = !document.hidden;
+      visible = onScreen && !document.hidden;
       wake();
     };
     document.addEventListener("visibilitychange", onVisibility);

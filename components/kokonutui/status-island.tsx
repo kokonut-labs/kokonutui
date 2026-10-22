@@ -231,6 +231,24 @@ export function StatusIsland({
   const behind = Math.min(tasks.length - 1, MAX_PEEK);
   const expanded = open && tasks.length > 0;
   const islandRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  // The pill and the list swap places, so whichever held keyboard focus
+  // hands it to the other instead of dropping it on the page.
+  const focusList = useRef(false);
+  const focusPill = useRef(false);
+  const skipOpen = useRef(false);
+
+  useEffect(() => {
+    if (expanded && focusList.current) {
+      focusList.current = false;
+      listRef.current?.focus({ preventScroll: true });
+    } else if (!expanded && focusPill.current) {
+      focusPill.current = false;
+      skipOpen.current = true;
+      pillRef.current?.focus({ preventScroll: true });
+    }
+  }, [expanded]);
 
   // A tap anywhere else closes the list on touch screens.
   useEffect(() => {
@@ -314,8 +332,22 @@ export function StatusIsland({
     }
   }, []);
 
+  const handleFocus = useCallback((event: FocusEvent<HTMLDivElement>) => {
+    if (skipOpen.current) {
+      skipOpen.current = false;
+      return;
+    }
+    if ((event.target as Node) === pillRef.current) {
+      focusList.current = true;
+    }
+    setOpen(true);
+  }, []);
+
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key === "Escape") {
+      focusPill.current = Boolean(
+        islandRef.current?.contains(document.activeElement)
+      );
       setOpen(false);
     }
   }, []);
@@ -357,7 +389,7 @@ export function StatusIsland({
                 className="relative overflow-hidden bg-zinc-950 text-white shadow-black/20 shadow-lg ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10"
                 layout
                 onBlur={handleBlur}
-                onFocus={() => setOpen(true)}
+                onFocus={handleFocus}
                 onKeyDown={handleKeyDown}
                 onPointerEnter={handlePointerEnter}
                 onPointerLeave={handlePointerLeave}
@@ -368,10 +400,13 @@ export function StatusIsland({
                 {expanded ? (
                   <motion.ul
                     animate={{ opacity: 1, filter: "blur(0px)" }}
-                    className="flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-3.5 px-4 py-3.5"
+                    aria-label="Tasks"
+                    className="flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-3.5 px-4 py-3.5 outline-none"
                     initial={{ opacity: 0, filter: "blur(4px)" }}
                     key="list"
                     layout="position"
+                    ref={listRef}
+                    tabIndex={-1}
                     transition={{ ...SWAP, delay: 0.05 }}
                   >
                     {tasks.map((task) => (
@@ -386,6 +421,7 @@ export function StatusIsland({
                     aria-label={`${describe(current)}. ${tasks.length} ${tasks.length === 1 ? "task" : "tasks"}, show all`}
                     className="flex h-10 max-w-[calc(100vw-2rem)] items-center px-4 text-left focus-visible:outline-none"
                     onClick={() => setOpen(true)}
+                    ref={pillRef}
                     type="button"
                   >
                     <AnimatePresence initial={false} mode="popLayout">

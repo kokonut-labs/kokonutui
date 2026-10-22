@@ -252,6 +252,7 @@ function RowView({
       <button
         aria-checked={row.checked}
         className={className}
+        data-row={row.id}
         onClick={onClick}
         role="switch"
         type="button"
@@ -264,6 +265,7 @@ function RowView({
     <button
       aria-pressed={row.selected}
       className={className}
+      data-row={row.id}
       onClick={onClick}
       type="button"
     >
@@ -289,6 +291,8 @@ export function StackPanel({ pages, root, className }: StackPanelProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLButtonElement>(null);
   const observer = useRef<ResizeObserver | null>(null);
+  // The row that opened each page, so Back can hand focus to it again.
+  const openers = useRef<string[]>([]);
   // The top page's offset; the page underneath is derived from it, so a
   // push, a pop and a swipe all move both pages together.
   const x = useMotionValue(0);
@@ -344,23 +348,35 @@ export function StackPanel({ pages, root, className }: StackPanelProps) {
     setBusy(true);
     x.set(width);
     const to = row.to;
+    openers.current.push(row.id);
     flushSync(() => setStack((s) => [...s, to]));
     animate(x, 0, PUSH).then(() => setBusy(false));
     backRef.current?.focus({ preventScroll: true });
   };
 
   const pop = () => {
-    if (stack.length < 2) {
+    if (stack.length < 2 || busy) {
       return;
     }
     setOrigin(null);
     setDirection(-1);
     setBusy(true);
+    const opener = openers.current.pop();
+    const hadFocus = panelRef.current?.contains(document.activeElement);
     animate(x, width, { ...PUSH, duration: 0.34 }).then(() => {
       // Both in one frame: the old top unmounts as the offset resets.
       flushSync(() => setStack((s) => s.slice(0, -1)));
       x.set(0);
       setBusy(false);
+      // The focused Back button or row just unmounted; land on the row that
+      // opened the page instead of dropping focus to the document.
+      if (hadFocus && opener) {
+        const rows = bodyRef.current?.querySelectorAll<HTMLElement>(
+          `[data-row="${CSS.escape(opener)}"]`
+        );
+        const row = [...(rows ?? [])].find((el) => !el.closest("[inert]"));
+        row?.focus({ preventScroll: true });
+      }
     });
   };
 
@@ -376,7 +392,6 @@ export function StackPanel({ pages, root, className }: StackPanelProps) {
     if (event.key === "Escape" && stack.length > 1) {
       event.preventDefault();
       pop();
-      backRef.current?.focus({ preventScroll: true });
     }
   };
 

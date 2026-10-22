@@ -105,6 +105,7 @@ export default function PluckedText({
   const pathRef = useRef<SVGPathElement>(null);
   const ghostRef = useRef<SVGPathElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: text renders the letter spans the effect reads
   useEffect(() => {
     const stage = stageRef.current;
     const lettersEl = lettersRef.current;
@@ -436,7 +437,7 @@ export default function PluckedText({
       stage.removeEventListener("pointercancel", onUp);
       stage.removeEventListener("pointerleave", onLeave);
     };
-  }, [tension, strum]);
+  }, [text, tension, strum]);
 
   return (
     <div className={cn("@container flex w-full justify-center", className)}>

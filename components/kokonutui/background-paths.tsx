@@ -270,15 +270,18 @@ export default function BackgroundPaths({
     canvas.style.opacity = "1";
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(canvas);
+    // A tab coming back must not wake a background that's scrolled away.
+    let onScreen = true;
     const intersection = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting && !document.hidden;
+      onScreen = entry.isIntersecting;
+      visible = onScreen && !document.hidden;
       if (visible) {
         play();
       }
     });
     intersection.observe(root);
     const onVisibility = () => {
-      visible = !document.hidden;
+      visible = onScreen && !document.hidden;
       if (visible) {
         play();
       }
@@ -286,6 +289,9 @@ export default function BackgroundPaths({
     document.addEventListener("visibilitychange", onVisibility);
     // Follow theme changes, which only change the inherited text color.
     const colorTimer = window.setInterval(() => {
+      if (!visible) {
+        return;
+      }
       const next = getComputedStyle(canvas).color;
       if (next !== color) {
         color = next;

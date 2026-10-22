@@ -390,10 +390,12 @@ export default function HalftoneBackground({
     });
     resizeObserver.observe(canvas);
 
+    // A tab coming back must not wake a background that's scrolled away.
+    let onScreen = true;
     const intersection = new IntersectionObserver(
       ([entry]) => {
-        visible =
-          entry.isIntersecting && document.visibilityState === "visible";
+        onScreen = entry.isIntersecting;
+        visible = onScreen && document.visibilityState === "visible";
         if (visible && introStart === 0 && entry.intersectionRatio > 0.3) {
           introStart = performance.now();
         }
@@ -403,13 +405,17 @@ export default function HalftoneBackground({
     );
     intersection.observe(root);
     const onVisibility = () => {
-      visible = document.visibilityState === "visible";
+      visible = onScreen && document.visibilityState === "visible";
       start();
     };
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Follow light and dark mode without asking the app for a theme.
+    // Follow light and dark mode without asking the app for a theme. Only
+    // checked while the background is on screen.
     const themeTimer = window.setInterval(() => {
+      if (!visible) {
+        return;
+      }
       if (readTheme()) {
         build();
       }

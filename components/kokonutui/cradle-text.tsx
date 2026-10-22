@@ -85,6 +85,7 @@ export default function CradleText({
   const lettersRef = useRef<HTMLSpanElement>(null);
   const railRef = useRef<HTMLSpanElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: text renders the letter spans the effect reads
   useEffect(() => {
     const stage = stageRef.current;
     const lettersEl = lettersRef.current;
@@ -470,12 +471,12 @@ export default function CradleText({
       stage.removeEventListener("pointercancel", onUp);
       stage.removeEventListener("pointerleave", onLeave);
     };
-  }, [intro, bounce]);
+  }, [text, intro, bounce]);
 
   return (
     <div className={cn("@container flex w-full justify-center", className)}>
       <div
-        className="relative cursor-grab touch-pan-y select-none px-[0.9em] pt-[1.5em] pb-[0.45em] font-semibold text-[clamp(2rem,11cqi,6rem)] text-zinc-900 leading-none tracking-tight data-[grabbing]:cursor-grabbing dark:text-zinc-100"
+        className="relative cursor-grab touch-pan-y select-none px-[0.9em] pt-[1.5em] pb-[0.45em] font-semibold text-[clamp(2rem,11cqi,6rem)] text-zinc-900 leading-none tracking-tight data-[grabbing]:cursor-grabbing motion-reduce:cursor-default dark:text-zinc-100"
         ref={stageRef}
       >
         <span className="sr-only">{text}</span>

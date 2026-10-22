@@ -173,7 +173,7 @@ function Tile({
     <span
       aria-hidden="true"
       className={cn(
-        "relative inline-block h-[1.15em] w-[0.72em] rounded-[0.12em] bg-zinc-900 text-zinc-50 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)] [perspective:5em] dark:bg-zinc-900",
+        "relative inline-block h-[1.15em] w-[0.72em] rounded-[0.12em] bg-zinc-900 text-zinc-50 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)] [perspective:5em]",
         className
       )}
     >
@@ -259,7 +259,12 @@ export default function SplitFlapText({
         className
       )}
     >
-      <span aria-live="polite" className="sr-only">
+      {/* Only announce text the app sets; a board cycling on its own would
+          talk over the reader every few seconds. */}
+      <span
+        aria-live={text === undefined ? "off" : "polite"}
+        className="sr-only"
+      >
         {value}
       </span>
       {[...padded].map((char, i) => (
