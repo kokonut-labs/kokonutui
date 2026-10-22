@@ -985,4 +985,59 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "seat-map",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/seat-map.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "amount-pad",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/amount-pad.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "slide-to-confirm",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/slide-to-confirm.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "save-button",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/save-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "cart-button",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/cart-button.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
