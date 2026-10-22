@@ -46,9 +46,6 @@
       "type": "registry:component",
       "title": "Flick Card",
       "description": "A two-sided card you spin with a drag or a flick, with thickness, light and a floor shadow that follow the angle.",
-      "dependencies": [
-        "lucide-react"
-      ],
       "files": [
         {
           "path": "components/kokonutui/card-flip.tsx",
