@@ -1193,6 +1193,70 @@
       ]
     },
     {
+      "name": "ai-inline-edit",
+      "type": "registry:component",
+      "title": "AI Inline Edit",
+      "description": "Select text in a document and ask AI to rewrite it. The edit streams in place as a word-level diff you accept, discard or try again.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-inline-edit.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-message-queue",
+      "type": "registry:component",
+      "title": "AI Message Queue",
+      "description": "Keep typing while the agent works. Follow-ups stack above the composer, where you can reorder, edit or send one now, and go in one by one when the run ends.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-message-queue.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-redact",
+      "type": "registry:component",
+      "title": "AI Redact",
+      "description": "Names, emails, card numbers and keys are masked as placeholders before a prompt is sent. Replies come back with the placeholders and are filled in with the real values.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-redact.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-memory",
+      "type": "registry:component",
+      "title": "AI Memory",
+      "description": "An assistant that saves what it learns about you into a memory list. New facts replace the ones they contradict, and you can edit or forget any of them.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-memory.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "use-auto-resize-textarea",
       "type": "registry:hook",
       "title": "Use Auto Resize Textarea",

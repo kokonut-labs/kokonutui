@@ -887,12 +887,56 @@ export const component: Registry = [
     ],
   },
   {
-    name: "slide-to-confirm",
+    name: "ai-inline-edit",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/slide-to-confirm.tsx",
+        path: "components/kokonutui/ai-inline-edit.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-message-queue",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-message-queue.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-redact",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-redact.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-memory",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-memory.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "seat-map",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/seat-map.tsx",
         type: "registry:component",
       },
     ],
@@ -909,12 +953,12 @@ export const component: Registry = [
     ],
   },
   {
-    name: "seat-map",
+    name: "slide-to-confirm",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/seat-map.tsx",
+        path: "components/kokonutui/slide-to-confirm.tsx",
         type: "registry:component",
       },
     ],
