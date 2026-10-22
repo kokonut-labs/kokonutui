@@ -137,6 +137,15 @@ function useDemoCalls(enabled: boolean) {
     }))
   );
   const alwaysRef = useRef(new Set<string>());
+  // The short pause after a denial, so Replay or unmount can cancel it.
+  const denyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearDenyTimer = useCallback(() => {
+    if (denyTimer.current) {
+      clearTimeout(denyTimer.current);
+      denyTimer.current = null;
+    }
+  }, []);
+  useEffect(() => clearDenyTimer, [clearDenyTimer]);
 
   const update = useCallback((id: string, patch: Partial<ToolCall>) => {
     setCalls((list) =>
@@ -189,13 +198,15 @@ function useDemoCalls(enabled: boolean) {
       }
       update(id, { state: approved ? "approval-responded" : "output-denied" });
       if (!approved) {
-        setTimeout(next, 240);
+        clearDenyTimer();
+        denyTimer.current = setTimeout(next, 240);
       }
     },
-    [update, next]
+    [update, next, clearDenyTimer]
   );
 
   const reset = useCallback(() => {
+    clearDenyTimer();
     alwaysRef.current.clear();
     setCalls(
       DEMO_CALLS.slice(0, 1).map((call) => ({
@@ -204,7 +215,7 @@ function useDemoCalls(enabled: boolean) {
         output: [],
       }))
     );
-  }, []);
+  }, [clearDenyTimer]);
 
   return { calls, respond, reset };
 }
@@ -267,6 +278,10 @@ function HoldToAllow({ onConfirm }: { onConfirm: () => void }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const start = () => {
+    // A key and a pointer can both start a hold; keep only one timer.
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     setHolding(true);
     timer.current = setTimeout(() => {
       setHolding(false);
@@ -293,6 +308,7 @@ function HoldToAllow({ onConfirm }: { onConfirm: () => void }) {
     <button
       aria-label="Allow. Press and hold to confirm"
       className="relative h-8 select-none overflow-hidden rounded-lg bg-red-50 px-3 font-medium text-red-700 text-sm outline-hidden ring-1 ring-red-600/15 focus-visible:ring-2 focus-visible:ring-red-500 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20"
+      onBlur={stop}
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={(event) => {
         if ((event.key === " " || event.key === "Enter") && !event.repeat) {
@@ -343,12 +359,15 @@ function ApprovalCard({
     // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Escape bubbles up from the card's own buttons and checkbox
     <section
       aria-labelledby={titleId}
-      className="rounded-xl bg-white p-3 shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10"
+      className="rounded-xl bg-white p-3 shadow-[0_1px_2px_rgb(0_0_0/0.04)] outline-hidden ring-1 ring-black/5 dark:bg-zinc-900 dark:ring-white/10"
+      data-call-id={call.id}
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           onRespond(false, false);
         }
       }}
+      // Focus target when the previous card is decided from the keyboard.
+      tabIndex={-1}
     >
       <header className="mb-2.5 flex items-center gap-2">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
@@ -601,7 +620,17 @@ export default function AIToolApproval({
 }: AIToolApprovalProps) {
   const demo = useDemoCalls(callsProp === undefined);
   const calls = callsProp ?? demo.calls;
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Set when the user decides from the keyboard (or with focus inside), so
+  // the next card takes focus instead of it falling back to the page.
+  const refocusRef = useRef(false);
+  const keepFocus = () => {
+    refocusRef.current = Boolean(
+      rootRef.current?.contains(document.activeElement)
+    );
+  };
   const respond = (id: string, approved: boolean, always: boolean) => {
+    keepFocus();
     if (callsProp === undefined) {
       demo.respond(id, approved, always);
     }
@@ -617,9 +646,26 @@ export default function AIToolApproval({
     pending.length === 0 &&
     calls.every((call) => call.state !== "approval-responded");
 
+  const currentId = current?.id;
+  useEffect(() => {
+    if (!(currentId && refocusRef.current)) {
+      return;
+    }
+    refocusRef.current = false;
+    const root = rootRef.current;
+    const focused = document.activeElement;
+    // Leave focus alone if the user has moved on elsewhere meanwhile.
+    if (focused && focused !== document.body && !root?.contains(focused)) {
+      return;
+    }
+    root
+      ?.querySelector<HTMLElement>(`[data-call-id="${CSS.escape(currentId)}"]`)
+      ?.focus();
+  }, [currentId]);
+
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("w-full max-w-md", className)}>
+      <div className={cn("w-full max-w-md", className)} ref={rootRef}>
         <div className="rounded-2xl bg-black/5 p-1.5 dark:bg-white/5">
           {decided.length > 0 && (
             <div className="px-2.5 pt-1 pb-1.5">
@@ -662,7 +708,10 @@ export default function AIToolApproval({
             <div className="flex justify-end px-2.5 pb-1">
               <button
                 className="rounded-md px-1.5 py-1 text-xs text-zinc-500 outline-hidden transition-colors duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/40 dark:text-zinc-400 dark:hover:text-white"
-                onClick={demo.reset}
+                onClick={() => {
+                  keepFocus();
+                  demo.reset();
+                }}
                 type="button"
               >
                 Replay

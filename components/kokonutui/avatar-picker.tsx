@@ -437,22 +437,34 @@ function MorphingFace({
 }: Omit<FaceArtProps, "face"> & { seed: string; morph?: boolean }) {
   const [face, setFace] = useState(() => createFace(seed));
   const shownRef = useRef(face);
+  // The seed whose face is fully on screen, or null mid-morph. Lets the
+  // effect skip a no-op morph on mount and after every spin lands, each of
+  // which would otherwise re-render the face every frame for nothing.
+  const settledRef = useRef<string | null>(seed);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (settledRef.current === seed) {
+      return;
+    }
     const target = createFace(seed);
     if (!morph || reduceMotion) {
       shownRef.current = target;
+      settledRef.current = seed;
       setFace(target);
       return;
     }
     const from = shownRef.current;
+    settledRef.current = null;
     const controls = animate(0, 1, {
       ...MORPH,
       onUpdate: (t) => {
         const next = lerpFace(from, target, t);
         shownRef.current = next;
         setFace(next);
+      },
+      onComplete: () => {
+        settledRef.current = seed;
       },
     });
     return () => controls.stop();
@@ -823,12 +835,23 @@ function useDragSpin(spinner: Spinner, reduceMotion: boolean | null) {
     }
   };
 
-  return {
-    onPointerDown,
-    onPointerMove,
-    onPointerUp,
-    onPointerCancel: onPointerUp,
+  // The browser took the gesture (a vertical scroll that started on the
+  // coin): settle on the nearest face instead of treating it as a tap.
+  const onPointerCancel = (e: PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) {
+      return;
+    }
+    drag.current = null;
+    const target = Math.round(spinner.angle.get() / 180);
+    if (reduceMotion) {
+      spinner.jumpBy(target);
+    } else {
+      spinner.spinTo(target, { ...DRAG_SPRING, velocity: 0 });
+    }
   };
+
+  return { onPointerDown, onPointerMove, onPointerUp, onPointerCancel };
 }
 
 /**

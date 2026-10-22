@@ -196,10 +196,14 @@ const simulateUpload = (
         resolve();
       }
     }, SIMULATED_TICK);
-    signal.addEventListener("abort", () => {
-      clearInterval(interval);
-      reject(new DOMException("Upload cancelled", "AbortError"));
-    });
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearInterval(interval);
+        reject(new DOMException("Upload cancelled", "AbortError"));
+      },
+      { once: true }
+    );
   });
 
 const buildItems = (
@@ -504,6 +508,7 @@ export default function FileUpload({
   const baseId = useId();
   const hintId = `${baseId}-hint`;
   const inputRef = useRef<HTMLInputElement>(null);
+  const zoneRef = useRef<HTMLButtonElement>(null);
   const nextIndex = useRef(0);
   const controllers = useRef(new Map<string, AbortController>());
   const previewUrls = useRef(new Map<string, string>());
@@ -622,7 +627,8 @@ export default function FileUpload({
     const busy = items.some(
       (item) => item.status === "queued" || item.status === "uploading"
     );
-    if (wasBusy.current && !busy) {
+    // Cancelling everything clears the list; that is not a completion.
+    if (wasBusy.current && !busy && items.length > 0) {
       latest.current.onComplete?.(
         items.filter((item) => item.status === "done").map((item) => item.file)
       );
@@ -769,10 +775,21 @@ export default function FileUpload({
     [items, onFileRemove]
   );
 
+  // The clicked button leaves with its row, so focus returns to the drop
+  // zone instead of falling back to the page.
+  const removeAndRefocus = useCallback(
+    (id: string) => {
+      removeItem(id);
+      zoneRef.current?.focus({ preventScroll: true });
+    },
+    [removeItem]
+  );
+
   const clearAll = useCallback(() => {
     for (const item of items) {
       removeItem(item.id);
     }
+    zoneRef.current?.focus({ preventScroll: true });
   }, [items, removeItem]);
 
   const retryItem = useCallback(
@@ -868,6 +885,7 @@ export default function FileUpload({
         onDragOver={handleZoneDrag}
         onDrop={handleZoneDrop}
         onPaste={handlePaste}
+        ref={zoneRef}
         type="button"
       >
         <span
@@ -936,7 +954,7 @@ export default function FileUpload({
             <QueueRow
               item={item}
               key={item.id}
-              onRemove={removeItem}
+              onRemove={removeAndRefocus}
               onRetry={retryItem}
               reduceMotion={reduceMotion}
             />

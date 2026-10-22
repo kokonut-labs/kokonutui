@@ -61,7 +61,6 @@ interface Token {
 
 interface Open {
   slot: string;
-  index: number;
   x: number;
   y: number;
 }
@@ -232,6 +231,10 @@ export default function AITokenAlternatives({
     (slotId: string, text: string) => {
       const index = tokens.findIndex((t) => t.slot === slotId);
       setOpen(null);
+      // The list unmounts, so focus goes back to the word either way.
+      requestAnimationFrame(() =>
+        tokenRefs.current.get(slotId)?.focus({ preventScroll: true })
+      );
       if (choice[slotId] === text) {
         return;
       }
@@ -239,14 +242,11 @@ export default function AITokenAlternatives({
       setChoice((c) => ({ ...c, [slotId]: text }));
       // Keep everything up to the new word, then write the rest again.
       setShown(index + 1);
-      requestAnimationFrame(() =>
-        tokenRefs.current.get(slotId)?.focus({ preventScroll: true })
-      );
     },
     [choice, tokens]
   );
 
-  const toggle = (token: Token, index: number) => {
+  const toggle = (token: Token) => {
     const slotId = token.slot;
     const button = slotId ? tokenRefs.current.get(slotId) : undefined;
     const box = answerRef.current;
@@ -261,7 +261,6 @@ export default function AITokenAlternatives({
     const r = box.getBoundingClientRect();
     setOpen({
       slot: slotId,
-      index,
       x: Math.max(0, Math.min(b.left - r.left - 10, r.width - MENU_WIDTH)),
       y: b.bottom - r.top + 6,
     });
@@ -313,7 +312,7 @@ export default function AITokenAlternatives({
             ref={textRef}
             style={{ minHeight: streaming ? minHeight : undefined }}
           >
-            {tokens.slice(0, shown).map((token, index) => (
+            {tokens.slice(0, shown).map((token) => (
               <TokenView
                 active={open?.slot === token.slot && Boolean(token.slot)}
                 edited={
@@ -321,7 +320,7 @@ export default function AITokenAlternatives({
                 }
                 heat={heat}
                 key={token.key}
-                onToggle={() => toggle(token, index)}
+                onToggle={() => toggle(token)}
                 ref={(el) => {
                   if (token.slot && el) {
                     tokenRefs.current.set(token.slot, el);

@@ -200,6 +200,7 @@ export default function LiquidSlider({
     // Pointer, while held: where it is, in drawing units, and its sideways
     // speed.
     held: false,
+    pointerId: -1,
     px: 0,
     py: 0,
     pvx: 0,
@@ -476,14 +477,19 @@ export default function LiquidSlider({
     if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
+    const s = sim.current;
+    // A second finger mid-drag is ignored rather than jumping the level.
+    if (s.held) {
+      return;
+    }
     event.preventDefault();
     // Focus without scrolling, so the keyboard picks up where the hand left.
     (event.currentTarget.parentElement as HTMLElement | null)?.focus({
       preventScroll: true,
     });
     event.currentTarget.setPointerCapture(event.pointerId);
-    const s = sim.current;
     s.held = true;
+    s.pointerId = event.pointerId;
     s.lastT = 0;
     s.pvx = 0;
     setDragging(true);
@@ -491,14 +497,15 @@ export default function LiquidSlider({
   };
 
   const handlePointerMove = (event: PointerEvent<SVGSVGElement>) => {
-    if (sim.current.held) {
+    const s = sim.current;
+    if (s.held && s.pointerId === event.pointerId) {
       follow(event);
     }
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (event: PointerEvent<SVGSVGElement>) => {
     const s = sim.current;
-    if (!s.held) {
+    if (!s.held || s.pointerId !== event.pointerId) {
       return;
     }
     s.held = false;

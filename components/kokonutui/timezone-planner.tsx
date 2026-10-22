@@ -535,9 +535,18 @@ export default function TimezonePlanner({
     ([s, d]: number[]) => polar(WEDGE_OUT, s + d)[1]
   );
 
+  // Runs every frame of a drag or glide: only re-render when the readout moves.
   const sync = useCallback(() => {
-    setSlot({ start: mod(snap(start.get()), DAY), duration: duration.get() });
+    const nextStart = mod(snap(start.get()), DAY);
+    const nextDuration = duration.get();
+    setSlot((prev) =>
+      prev.start === nextStart && prev.duration === nextDuration
+        ? prev
+        : { start: nextStart, duration: nextDuration }
+    );
   }, [start, duration]);
+
+  useEffect(() => () => glideRef.current?.stop(), []);
   useMotionValueEvent(start, "change", sync);
   useMotionValueEvent(duration, "change", sync);
 
@@ -743,7 +752,10 @@ export default function TimezonePlanner({
     : [];
   const available = statuses.filter((s) => s === "working").length;
   const everyone = day !== null && available === people.length;
-  const best = day ? bestStart(people, day.shifts, slot.duration) : null;
+  const best = useMemo(
+    () => (day ? bestStart(people, day.shifts, slot.duration) : null),
+    [day, people, slot.duration]
+  );
   const atBest = best === slot.start;
   const end = slot.start + slot.duration;
   const hours = slot.duration / 60;
@@ -1003,33 +1015,32 @@ function Rings({
         "opacity-100 starting:opacity-0"
       )}
     >
-      {day &&
-        segments.map((ring, i) => (
-          <g
-            className={cn(
-              "transition-opacity duration-150 ease-out",
-              focus !== null && focus !== i && "opacity-35"
-            )}
-            key={people[i]?.id ?? i}
-          >
+      {segments.map((ring, i) => (
+        <g
+          className={cn(
+            "transition-opacity duration-150 ease-out",
+            focus !== null && focus !== i && "opacity-35"
+          )}
+          key={people[i]?.id ?? i}
+        >
+          <Ring
+            count={people.length}
+            index={i}
+            lit={false}
+            segments={ring}
+            shift={day.shifts[i]}
+          />
+          <g clipPath={`url(#${clipId})`}>
             <Ring
               count={people.length}
               index={i}
-              lit={false}
+              lit
               segments={ring}
               shift={day.shifts[i]}
             />
-            <g clipPath={`url(#${clipId})`}>
-              <Ring
-                count={people.length}
-                index={i}
-                lit
-                segments={ring}
-                shift={day.shifts[i]}
-              />
-            </g>
           </g>
-        ))}
+        </g>
+      ))}
     </g>
   );
 }

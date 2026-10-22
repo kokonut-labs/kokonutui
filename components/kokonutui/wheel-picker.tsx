@@ -147,12 +147,19 @@ export default function WheelPicker({
 }: WheelPickerProps) {
   const [internal, setInternal] = useState(defaultValue);
   const value = valueProp ?? internal;
+  // A column settles from a callback made when its spin started. If another
+  // column changed in the meantime, merging into that render's `value`
+  // would undo it, so merge into the latest selection instead.
+  const latestValue = useRef(value);
+  latestValue.current = value;
 
   const select = (columnId: string, optionValue: string) => {
-    if (value[columnId] === optionValue) {
+    const current = latestValue.current;
+    if (current[columnId] === optionValue) {
       return;
     }
-    const next = { ...value, [columnId]: optionValue };
+    const next = { ...current, [columnId]: optionValue };
+    latestValue.current = next;
     if (valueProp === undefined) {
       setInternal(next);
     }
@@ -353,6 +360,11 @@ function WheelColumnView({
     }
     drag.current = null;
 
+    if (!current.moved && event.type !== "pointerup") {
+      // Cancelled before it became a drag: settle where it is.
+      goTo(clampIndex(Math.round(position.get())));
+      return;
+    }
     if (!current.moved) {
       // A tap: turn to the row under the finger. asin undoes the drum's
       // foreshortening, so rows near the edges are hit accurately too.

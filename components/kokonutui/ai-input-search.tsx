@@ -218,10 +218,14 @@ const STACK_MAX = 5;
 const wait = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
     const id = setTimeout(resolve, ms);
-    signal.addEventListener("abort", () => {
-      clearTimeout(id);
-      reject(new DOMException("Stopped", "AbortError"));
-    });
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(id);
+        reject(new DOMException("Stopped", "AbortError"));
+      },
+      { once: true }
+    );
   });
 
 async function demoRun(
@@ -242,6 +246,9 @@ async function demoRun(
   }
   await wait(700, signal);
 }
+
+const fileKey = (file: File) =>
+  `${file.name}-${file.size}-${file.lastModified}`;
 
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
@@ -897,9 +904,12 @@ function ToolHeader({
       <span className="relative min-w-0 flex-1">
         <AnimatePresence initial={false} mode="popLayout">
           <motion.span
-            {...swap}
+            animate={swap.animate}
             className="flex min-w-0 items-center gap-2"
+            exit={swap.exit}
+            initial={swap.initial}
             key={tool?.id ?? "none"}
+            transition={swap.transition}
           >
             <Icon
               aria-hidden="true"
@@ -1064,6 +1074,18 @@ export default function AI_Input_Search({
     textareaRef.current?.focus();
   };
 
+  // A metered tool spends a run; at zero it drops off the box.
+  const spendRun = (spent: SearchTool | null) => {
+    const left = spent ? remaining[spent.id] : undefined;
+    if (!spent || left === undefined) {
+      return;
+    }
+    setRemaining((current) => ({ ...current, [spent.id]: left - 1 }));
+    if (left - 1 <= 0) {
+      setToolId(null);
+    }
+  };
+
   const submit = async () => {
     const query = value.trim();
     if (!query || running) {
@@ -1081,14 +1103,7 @@ export default function AI_Input_Search({
     setRunTool(tool);
     setPhase("working");
 
-    // A metered tool spends a run; at zero it drops off the box.
-    const left = tool ? remaining[tool.id] : undefined;
-    if (tool && left !== undefined) {
-      setRemaining((current) => ({ ...current, [tool.id]: left - 1 }));
-      if (left - 1 <= 0) {
-        setToolId(null);
-      }
-    }
+    spendRun(tool);
 
     const onSource = (source: SearchSource) => {
       if (controller.signal.aborted) {
@@ -1113,7 +1128,11 @@ export default function AI_Input_Search({
         setPhase("done");
       }
     } catch {
-      // Stopped: `stop` has already set the phase.
+      // Stopped: `stop` has already set the phase. Any other failure still
+      // ends the run, so the clock and the Stop button don't hang.
+      if (!controller.signal.aborted) {
+        setPhase("stopped");
+      }
     } finally {
       if (abortRef.current === controller) {
         abortRef.current = null;
@@ -1177,7 +1196,7 @@ export default function AI_Input_Search({
                       {files.map((file) => (
                         <FileChip
                           file={file}
-                          key={`${file.name}-${file.size}-${file.lastModified}`}
+                          key={fileKey(file)}
                           onRemove={() =>
                             setFiles((current) =>
                               current.filter((f) => f !== file)
@@ -1245,7 +1264,14 @@ export default function AI_Input_Search({
                 multiple
                 onChange={(e) => {
                   const picked = Array.from(e.target.files ?? []);
-                  setFiles((current) => [...current, ...picked]);
+                  // The same file picked twice would share a chip key.
+                  setFiles((current) => [
+                    ...current,
+                    ...picked.filter(
+                      (file) =>
+                        !current.some((f) => fileKey(f) === fileKey(file))
+                    ),
+                  ]);
                   e.target.value = "";
                 }}
                 ref={fileInputRef}

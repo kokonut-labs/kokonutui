@@ -255,6 +255,7 @@ export default function AIBranches({
     const user = `edit-${count.current}`;
     const answer = `${user}-reply`;
     const parent = tree[id].parent ?? ROOT;
+    const answerText = reply(trimmed);
     setTree((t) => ({
       ...t,
       [parent]: { ...t[parent], children: [...t[parent].children, user] },
@@ -268,7 +269,7 @@ export default function AIBranches({
       [answer]: {
         id: answer,
         role: "assistant",
-        text: reply(trimmed),
+        text: answerText,
         parent: user,
         children: [],
       },
@@ -291,7 +292,7 @@ export default function AIBranches({
             {title}
           </h3>
           <p className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
-            {leaves} branches
+            {leaves} {leaves === 1 ? "branch" : "branches"}
           </p>
         </header>
 
@@ -390,6 +391,16 @@ function MessageView({
   onSubmit: (text: string) => void;
   onStep: (by: number) => void;
 }) {
+  const editRef = useRef<HTMLButtonElement>(null);
+  const wasEditing = useRef(editing);
+  // Cancelling unmounts the text box, so focus goes back to Edit.
+  useEffect(() => {
+    if (wasEditing.current && !editing) {
+      editRef.current?.focus();
+    }
+    wasEditing.current = editing;
+  }, [editing]);
+
   if (node.role === "assistant") {
     const text =
       words === undefined
@@ -434,6 +445,7 @@ function MessageView({
             aria-label="Edit message"
             className="flex size-6 items-center justify-center rounded-md opacity-0 transition-[opacity,color,background-color] duration-150 hover:bg-zinc-100 hover:text-zinc-700 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:bg-white/[0.07] dark:hover:text-zinc-200 [@media(hover:none)]:opacity-100"
             onClick={onEdit}
+            ref={editRef}
             type="button"
           >
             <Pencil className="size-3" />
@@ -618,11 +630,10 @@ function Rail({
                 )}
                 cx={p.x}
                 cy={p.y}
-                initial={{ scale: 0, opacity: 0 }}
+                initial={{ scale: 0.5, opacity: 0 }}
                 key={n.id}
                 r={n.role === ROOT ? 2.5 : 3.5}
                 strokeWidth={1.5}
-                style={{ transformOrigin: `${p.x}px ${p.y}px` }}
                 transition={{ duration: 0.2, ease: EASE_OUT }}
               />
             );

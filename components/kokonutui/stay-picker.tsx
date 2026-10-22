@@ -326,7 +326,9 @@ export default function StayPicker({
   const reduceMotion = Boolean(useReducedMotion());
 
   const dragging = useRef(false);
-  const gridRef = useRef<HTMLDivElement>(null);
+  // The month grid is keyed, so a ref on it goes null once the old month
+  // finishes leaving; the card itself stays put.
+  const rootRef = useRef<HTMLDivElement>(null);
   const noteTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => () => clearTimeout(noteTimer.current), []);
@@ -442,10 +444,17 @@ export default function StayPicker({
     if (event.key in ARROW_STEP) {
       event.preventDefault();
       const next = day + ARROW_STEP[event.key];
-      const cell = gridRef.current?.querySelector<HTMLElement>(
-        `[data-day="${next}"]`
-      );
-      cell?.focus();
+      const focusDay = () =>
+        rootRef.current
+          ?.querySelector<HTMLElement>(`[data-day="${next}"]`)
+          ?.focus();
+      if (next < first || next >= first + daysIn) {
+        // Off the edge of the month: turn the page, then land on the day.
+        go(next < first ? -1 : 1);
+        requestAnimationFrame(focusDay);
+      } else {
+        focusDay();
+      }
       if (start !== null && end === null) {
         setHover(next);
       }
@@ -478,6 +487,9 @@ export default function StayPicker({
   const fade = { duration: reduceMotion ? 0 : 0.18, ease: EASE_OUT };
 
   const summary = summaryFor(start, end);
+  // The one day Tab lands on: check-in when it's in this month, else the 1st.
+  const tabDay =
+    start !== null && start >= first && start < first + daysIn ? start : first;
 
   return (
     <div
@@ -485,6 +497,7 @@ export default function StayPicker({
         "w-full max-w-sm select-none rounded-3xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950",
         className
       )}
+      ref={rootRef}
     >
       <div className="flex items-center justify-between px-1">
         <div className="relative h-5 flex-1 overflow-hidden">
@@ -544,7 +557,6 @@ export default function StayPicker({
             onPointerLeave={() => setHover(null)}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            ref={gridRef}
             style={{ height: rows * ROW }}
           >
             {/* The stay: one pill per row, ends rounded only where the stay
@@ -580,7 +592,7 @@ export default function StayPicker({
                 edge={
                   day === start || day === end || (day === shownEnd && !picking)
                 }
-                focusable={day === (start ?? first)}
+                focusable={day === tabDay}
                 hoverEnd={picking && day === shownEnd}
                 inStay={
                   start !== null &&
@@ -599,7 +611,7 @@ export default function StayPicker({
         </motion.div>
       </AnimatePresence>
 
-      <div className="relative mt-2 h-4 px-1 text-xs">
+      <div aria-live="polite" className="relative mt-2 h-4 px-1 text-xs">
         <AnimatePresence initial={false} mode="popLayout">
           <motion.p
             animate={{ opacity: 1, y: 0 }}

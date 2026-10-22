@@ -273,7 +273,11 @@ export default function TeamSelector({
   const vibrationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
-  const scrubRef = useRef<{ startX: number; startCount: number } | null>(null);
+  const scrubRef = useRef<{
+    id: number;
+    startX: number;
+    startCount: number;
+  } | null>(null);
   const stretchX = useMotionValue(0);
   const prefersReducedMotion = useReducedMotion();
 
@@ -319,19 +323,24 @@ export default function TeamSelector({
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) {
+    // A second finger mid-scrub is ignored rather than jumping the count.
+    if (event.button !== 0 || scrubRef.current) {
       return;
     }
     // No preventDefault: the mousedown that follows focuses the spinbutton
     // (without a focus-visible ring), so the arrow keys work after a drag.
     event.currentTarget.setPointerCapture(event.pointerId);
-    scrubRef.current = { startX: event.clientX, startCount: count };
+    scrubRef.current = {
+      id: event.pointerId,
+      startX: event.clientX,
+      startCount: count,
+    };
     setIsScrubbing(true);
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const scrub = scrubRef.current;
-    if (!scrub) {
+    if (!scrub || scrub.id !== event.pointerId) {
       return;
     }
     const travel = event.clientX - scrub.startX;
@@ -354,8 +363,8 @@ export default function TeamSelector({
     stretchX.set(stretch);
   };
 
-  const endScrub = () => {
-    if (!scrubRef.current) {
+  const endScrub = (event: PointerEvent<HTMLDivElement>) => {
+    if (scrubRef.current?.id !== event.pointerId) {
       return;
     }
     scrubRef.current = null;

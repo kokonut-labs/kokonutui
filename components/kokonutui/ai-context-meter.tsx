@@ -203,7 +203,9 @@ function Ring({ share }: { share: number }) {
         strokeWidth="2"
       />
       <circle
-        className="stroke-current transition-[stroke-dashoffset] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+        // No CSS transition: `share` is already tweened, and easing it twice
+        // made the ring trail the percentage beside it.
+        className="stroke-current"
         cx="8"
         cy="8"
         r={radius}
@@ -362,6 +364,7 @@ export default function AIContextMeter({
   const shownShare = useTweened(share);
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Closes on Escape or a press outside, like any popover.
   useEffect(() => {
@@ -375,6 +378,10 @@ export default function AIContextMeter({
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // Focus inside the panel would be lost with it; hand it back.
+        if (rootRef.current?.contains(document.activeElement)) {
+          triggerRef.current?.focus();
+        }
         setOpen(false);
       }
     };
@@ -426,6 +433,7 @@ export default function AIContextMeter({
               levelColor(share, compactAt)
             )}
             onClick={() => setOpen((value) => !value)}
+            ref={triggerRef}
             type="button"
           >
             <Ring share={shownShare} />

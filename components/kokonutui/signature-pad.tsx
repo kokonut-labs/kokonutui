@@ -185,6 +185,7 @@ export default function SignaturePad({
     last: 0,
     carry: 0,
     reduceMotion: false,
+    clearing: false,
     size: { width: 0, height: 0 },
   });
 
@@ -287,6 +288,19 @@ export default function SignaturePad({
     return speed;
   }, []);
 
+  /** Stops the pen settling after a lift, leaving the stroke where it is. */
+  const stopSettling = useCallback(() => {
+    const s = sim.current;
+    if (!s.raf) {
+      return false;
+    }
+    cancelAnimationFrame(s.raf);
+    s.raf = 0;
+    s.last = 0;
+    s.carry = 0;
+    return true;
+  }, []);
+
   const tick = useCallback(
     (now: number) => {
       const s = sim.current;
@@ -335,11 +349,8 @@ export default function SignaturePad({
     }
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    if (s.raf) {
-      // Still settling the last stroke: finish it at once.
-      cancelAnimationFrame(s.raf);
-      s.raf = 0;
-      s.last = 0;
+    // Still settling the last stroke: finish it at once.
+    if (stopSettling()) {
       emit();
     }
     const p = localPoint(event);
@@ -394,22 +405,26 @@ export default function SignaturePad({
 
   const undo = useCallback(() => {
     const s = sim.current;
-    if (s.held || !s.strokes.length) {
+    if (s.held || s.clearing || !s.strokes.length) {
       return;
     }
+    // Otherwise the settling pen would keep inking the stroke before it.
+    stopSettling();
     s.strokes.pop();
     redraw();
     emit();
-  }, [emit, redraw]);
+  }, [emit, redraw, stopSettling]);
 
   // The ink lifts off in the reverse of the order it went down.
   const clear = useCallback(() => {
     const s = sim.current;
-    if (s.held || !s.strokes.length) {
+    if (s.held || s.clearing || !s.strokes.length) {
       return;
     }
+    stopSettling();
     const done = () => {
       s.strokes = [];
+      s.clearing = false;
       redraw();
       setClearing(false);
       emit();
@@ -418,6 +433,7 @@ export default function SignaturePad({
       done();
       return;
     }
+    s.clearing = true;
     setClearing(true);
     const start = performance.now();
     const frame = (now: number) => {
@@ -433,7 +449,7 @@ export default function SignaturePad({
       }
     };
     s.raf = requestAnimationFrame(frame);
-  }, [emit, redraw]);
+  }, [emit, redraw, stopSettling]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "z" && (event.metaKey || event.ctrlKey)) {
@@ -477,10 +493,7 @@ export default function SignaturePad({
         </div>
         <canvas
           aria-label={`${label}${count ? `, ${count} stroke${count === 1 ? "" : "s"}` : ", empty"}`}
-          className={cn(
-            "absolute inset-0 h-full w-full touch-none dark:hue-rotate-180 dark:invert",
-            "cursor-crosshair"
-          )}
+          className="absolute inset-0 h-full w-full cursor-crosshair touch-none focus-visible:outline-2 focus-visible:outline-zinc-400 focus-visible:-outline-offset-2 dark:hue-rotate-180 dark:invert"
           onLostPointerCapture={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onPointerDown={handlePointerDown}

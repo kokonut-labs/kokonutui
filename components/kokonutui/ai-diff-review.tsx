@@ -362,6 +362,20 @@ function FileRow({
   const dir = file.path.slice(0, slash + 1);
   const name = file.path.slice(slash + 1);
   const isOpen = open && decision === "pending";
+  // The pressed button unmounts with its group, so focus moves to the button
+  // that replaces it instead of dropping to the page.
+  const focusNext = useRef<"undo" | "accept" | null>(null);
+  const takeFocus =
+    (target: "undo" | "accept") => (node: HTMLButtonElement | null) => {
+      if (node && focusNext.current === target) {
+        focusNext.current = null;
+        node.focus();
+      }
+    };
+  const decideFrom = (next: FileDecision) => {
+    focusNext.current = next === "pending" ? "accept" : "undo";
+    onDecide(next);
+  };
 
   return (
     <motion.li
@@ -449,7 +463,7 @@ function FileRow({
                 <button
                   aria-label={`Reject ${file.path}`}
                   className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-red-400"
-                  onClick={() => onDecide("rejected")}
+                  onClick={() => decideFrom("rejected")}
                   type="button"
                 >
                   <X aria-hidden="true" className="size-3.5" />
@@ -457,7 +471,8 @@ function FileRow({
                 <button
                   aria-label={`Accept ${file.path}`}
                   className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-emerald-600 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-emerald-400"
-                  onClick={() => onDecide("accepted")}
+                  onClick={() => decideFrom("accepted")}
+                  ref={takeFocus("accept")}
                   type="button"
                 >
                   <Check aria-hidden="true" className="size-3.5" />
@@ -485,7 +500,8 @@ function FileRow({
               <button
                 aria-label={`Undo for ${file.path}`}
                 className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-zinc-200"
-                onClick={() => onDecide("pending")}
+                onClick={() => decideFrom("pending")}
+                ref={takeFocus("undo")}
                 type="button"
               >
                 <Undo2 aria-hidden="true" className="size-3.5" />
@@ -519,14 +535,6 @@ export default function AIDiffReview({
   const writing = filesProp === undefined && demo.writing;
   const [decisions, setDecisions] = useState<Record<string, FileDecision>>({});
   const [opened, setOpened] = useState<Record<string, boolean>>({});
-
-  // A replayed demo starts with a clean slate.
-  useEffect(() => {
-    if (demo.run > 0) {
-      setDecisions({});
-      setOpened({});
-    }
-  }, [demo.run]);
 
   const decide = (path: string, decision: FileDecision) => {
     setDecisions((current) => ({ ...current, [path]: decision }));
@@ -663,7 +671,12 @@ export default function AIDiffReview({
                     }}
                     initial={{ opacity: 0, filter: "blur(2px)" }}
                     key="replay"
-                    onClick={demo.replay}
+                    onClick={() => {
+                      // A replayed demo starts with a clean slate.
+                      setDecisions({});
+                      setOpened({});
+                      demo.replay();
+                    }}
                     type="button"
                   >
                     Replay

@@ -478,10 +478,15 @@ export default function AILoadingState({
 
   // Open while working; folds away once everything is done, until the user
   // opens it again.
-  const [isOpen, setIsOpen] = useState(true);
-  useEffect(() => {
-    setIsOpen(!(isDone && collapseWhenDone));
-  }, [isDone, collapseWhenDone]);
+  // Synced during render rather than in an effect, so a list that mounts
+  // already done starts folded instead of playing a collapse.
+  const shouldCollapse = isDone && collapseWhenDone;
+  const [isOpen, setIsOpen] = useState(!shouldCollapse);
+  const [wasCollapsed, setWasCollapsed] = useState(shouldCollapse);
+  if (wasCollapsed !== shouldCollapse) {
+    setWasCollapsed(shouldCollapse);
+    setIsOpen(!shouldCollapse);
+  }
 
   let title = "Getting ready";
   if (failed) {

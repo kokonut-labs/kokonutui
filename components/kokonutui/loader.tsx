@@ -1,8 +1,8 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 interface LoaderProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, "title" | "children"> {
+  extends Omit<HTMLAttributes<HTMLDivElement>, "title" | "children"> {
   title?: string;
   /** Pass an empty string to show the title alone. */
   subtitle?: string;

@@ -404,6 +404,9 @@ export default function TipSelector({
             : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
         )}
         onClick={() => {
+          if (paid) {
+            return;
+          }
           onPay?.(total);
           setPaid(true);
         }}

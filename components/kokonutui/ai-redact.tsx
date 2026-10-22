@@ -109,6 +109,15 @@ const ICON: Record<RedactKind, LucideIcon> = {
 const DEMO_TEXT =
   "Draft a reply to Dana Whitfield (dana.whitfield@acme.co, +1 415 555 0132) confirming the refund to card 4242 4242 4242 4242. The charge failed with key sk_live_51Hx9aQ2vT8eLm, what does that error mean?";
 
+const DEMO_NAMES = ["Dana Whitfield"];
+
+/**
+ * What "send as is" remembers. Tokens are numbered by position, so keying on
+ * the token would unmask a different value once the text above it changes.
+ */
+const keepKey = (m: { kind: RedactKind; value: string }) =>
+  `${m.kind}:${m.value}`;
+
 const demoRespond = (masked: string) => {
   const person = masked.match(PERSON_TOKEN)?.[0] ?? "there";
   const card = masked.match(CARD_TOKEN)?.[0] ?? "your card";
@@ -161,7 +170,7 @@ const toSegments = (text: string, matches: Match[], kept: Set<string>) => {
   const out: Segment[] = [];
   let at = 0;
   for (const m of matches) {
-    if (kept.has(m.token)) {
+    if (kept.has(keepKey(m))) {
       continue;
     }
     if (m.start > at) {
@@ -211,7 +220,7 @@ const uid = () => {
 export default function AIRedact({
   title = "Support assistant",
   defaultValue = DEMO_TEXT,
-  names = ["Dana Whitfield"],
+  names = DEMO_NAMES,
   respond = demoRespond,
   className,
 }: AIRedactProps) {
@@ -224,6 +233,7 @@ export default function AIRedact({
   const [modelView, setModelView] = useState(false);
   const [pointed, setPointed] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
 
   const matches = useMemo(() => detect(text, names), [text, names]);
@@ -231,7 +241,7 @@ export default function AIRedact({
     () => [...new Map(matches.map((m) => [m.token, m])).values()],
     [matches]
   );
-  const masking = tokens.filter((t) => !kept.has(t.token));
+  const masking = tokens.filter((t) => !kept.has(keepKey(t)));
 
   const reply = messages.at(-1);
   const replyPieces = useMemo(
@@ -301,13 +311,13 @@ export default function AIRedact({
     }
   };
 
-  const toggle = (token: string) =>
+  const toggle = (key: string) =>
     setKept((set) => {
       const next = new Set(set);
-      if (next.has(token)) {
-        next.delete(token);
+      if (next.has(key)) {
+        next.delete(key);
       } else {
-        next.add(token);
+        next.add(key);
       }
       return next;
     });
@@ -373,21 +383,33 @@ export default function AIRedact({
               {/* Highlights sit under the transparent textarea, letter for letter. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-3 top-2.5 whitespace-pre-wrap break-words text-[13px] text-transparent leading-6"
+                className="pointer-events-none absolute inset-x-3 top-2.5 bottom-0 overflow-hidden"
               >
-                <Highlights
-                  kept={kept}
-                  matches={matches}
-                  pointed={pointed}
-                  text={text}
-                />
-                {"​"}
+                <div
+                  className="whitespace-pre-wrap break-words text-[13px] text-transparent leading-6"
+                  ref={highlightRef}
+                >
+                  <Highlights
+                    kept={kept}
+                    matches={matches}
+                    pointed={pointed}
+                    text={text}
+                  />
+                  {"​"}
+                </div>
               </div>
               <textarea
                 aria-label="Message"
                 className="relative block max-h-40 min-h-12 w-full resize-none overflow-y-auto bg-transparent text-[13px] text-zinc-900 leading-6 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                 onChange={(event) => setText(event.target.value)}
                 onKeyDown={onKeyDown}
+                onScroll={(event) => {
+                  // Past max height the textarea scrolls; the highlights follow.
+                  const layer = highlightRef.current;
+                  if (layer) {
+                    layer.style.transform = `translateY(${-event.currentTarget.scrollTop}px)`;
+                  }
+                }}
                 placeholder="Paste a customer message…"
                 ref={textareaRef}
                 rows={2}
@@ -404,11 +426,11 @@ export default function AIRedact({
                 <AnimatePresence initial={false} mode="popLayout">
                   {tokens.map((t) => (
                     <TokenChip
-                      kept={kept.has(t.token)}
+                      kept={kept.has(keepKey(t))}
                       key={t.token}
                       match={t}
                       onPoint={(on) => setPointed(on ? t.token : null)}
-                      onToggle={() => toggle(t.token)}
+                      onToggle={() => toggle(keepKey(t))}
                     />
                   ))}
                 </AnimatePresence>
@@ -464,11 +486,11 @@ function Highlights({
       <mark
         className={cn(
           "rounded-[3px] text-transparent transition-[background-color,box-shadow] duration-150 [box-decoration-break:clone]",
-          kept.has(part.token)
+          kept.has(keepKey(part))
             ? "bg-transparent underline decoration-zinc-400 decoration-dotted underline-offset-4"
             : "bg-orange-500/[0.16] dark:bg-orange-400/20",
           pointed === part.token &&
-            (kept.has(part.token)
+            (kept.has(keepKey(part))
               ? "bg-zinc-900/[0.07] dark:bg-white/10"
               : "bg-orange-500/30 shadow-[0_0_0_1px_rgb(249_115_22/0.45)] dark:bg-orange-400/35")
         )}

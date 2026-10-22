@@ -24,6 +24,7 @@ import {
   type ReactNode,
   type RefObject,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -483,11 +484,13 @@ function NumberMirror({
 }
 
 function Hint({
+  id,
   error,
   onCvc,
   spec,
   fade,
 }: {
+  id: string;
   error: string | null;
   onCvc: boolean;
   spec: BrandSpec;
@@ -508,7 +511,7 @@ function Hint({
     body = `${spec.cvc} digits, ${spec.brand === "amex" ? "on the front" : "on the back"} of your card`;
   }
   return (
-    <div className="relative mt-2 h-4 text-xs" id="card-field-error">
+    <div className="relative mt-2 h-4 text-xs" id={id}>
       <AnimatePresence initial={false} mode="popLayout">
         <motion.p
           animate={{ opacity: 1, y: 0 }}
@@ -554,42 +557,53 @@ function PayButton({
   if (status === "paid") {
     payTone = PAY_TONES.paid;
   }
+  let announcement = "";
+  if (status === "paying") {
+    announcement = "Processing payment";
+  } else if (status === "paid") {
+    announcement = `Paid ${money}`;
+  }
   return (
-    <button
-      aria-disabled={!ready}
-      className={cn(
-        "mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl font-medium text-sm outline-none",
-        "transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950",
-        payTone
-      )}
-      onClick={onPay}
-      type="button"
-    >
-      <AnimatePresence initial={false} mode="popLayout">
-        <motion.span
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2"
-          exit={{ opacity: 0, y: -8 }}
-          initial={{ opacity: 0, y: 8 }}
-          key={status}
-          transition={fade}
-        >
-          {status === "idle" && `Pay ${money}`}
-          {status === "paying" && (
-            <>
-              <span className="size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
-              Processing
-            </>
-          )}
-          {status === "paid" && (
-            <>
-              <Check aria-hidden className="size-4" strokeWidth={2.5} />
-              Paid {money}
-            </>
-          )}
-        </motion.span>
-      </AnimatePresence>
-    </button>
+    <>
+      <span aria-live="polite" className="sr-only">
+        {announcement}
+      </span>
+      <button
+        aria-disabled={!ready}
+        className={cn(
+          "mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl font-medium text-sm outline-none",
+          "transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950",
+          payTone
+        )}
+        onClick={onPay}
+        type="button"
+      >
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.span
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2"
+            exit={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: 8 }}
+            key={status}
+            transition={fade}
+          >
+            {status === "idle" && `Pay ${money}`}
+            {status === "paying" && (
+              <>
+                <span className="size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                Processing
+              </>
+            )}
+            {status === "paid" && (
+              <>
+                <Check aria-hidden className="size-4" strokeWidth={2.5} />
+                Paid {money}
+              </>
+            )}
+          </motion.span>
+        </AnimatePresence>
+      </button>
+    </>
   );
 }
 
@@ -623,6 +637,9 @@ export default function CardField({
   const fillTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const resetTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [shift, setShift] = useState(0);
+  const id = useId();
+  const numberId = `${id}-number`;
+  const hintId = `${id}-hint`;
 
   const spec = specFor(number);
   const full = lengthOf(spec);
@@ -651,6 +668,11 @@ export default function CardField({
   useLayoutEffect(() => {
     const input = numberRef.current;
     if (caretRef.current === null || !input) {
+      return;
+    }
+    // Setting a selection on a field that isn't focused can pull focus to it.
+    if (document.activeElement !== input) {
+      caretRef.current = null;
       return;
     }
     const want = caretRef.current;
@@ -682,12 +704,21 @@ export default function CardField({
     requestAnimationFrame(() => expiryRef.current?.focus());
   };
 
+  // Editing after a payment keeps the new input: the pending reset would
+  // otherwise wipe it.
+  const touch = () => {
+    clearTimeout(resetTimer.current);
+    setStatus((current) => (current === "paying" ? current : "idle"));
+  };
+
   const writeNumber = (digits: string, caretDigits: number | null) => {
     const nextSpec = specFor(digits);
     const clipped = digits.slice(0, lengthOf(nextSpec));
     caretRef.current = caretDigits;
     setNumber(clipped);
-    setStatus("idle");
+    // A code typed for Amex is one digit too long for the other brands.
+    setCvc((current) => current.slice(0, nextSpec.cvc));
+    touch();
     const complete = clipped.length === lengthOf(nextSpec);
     const bad = complete && !luhn(clipped);
     setNumberError(bad);
@@ -715,7 +746,7 @@ export default function CardField({
       (event.nativeEvent as InputEvent).inputType
     );
     setExpiry(digits);
-    setStatus("idle");
+    touch();
     if (digits.length === 4 && !expiryProblem(digits)) {
       cvcRef.current?.focus();
     }
@@ -723,7 +754,7 @@ export default function CardField({
 
   const onCvc = (event: ChangeEvent<HTMLInputElement>) => {
     setCvc(event.target.value.replace(NOT_DIGIT, "").slice(0, spec.cvc));
-    setStatus("idle");
+    touch();
   };
 
   const editNumber = () => {
@@ -800,8 +831,14 @@ export default function CardField({
       last4: number.slice(-4),
       expiry: `${expiry.slice(0, 2)}/${expiry.slice(2)}`,
     };
-    await (onPay?.(details) ??
-      new Promise((resolve) => setTimeout(resolve, 1100)));
+    try {
+      await (onPay?.(details) ??
+        new Promise((resolve) => setTimeout(resolve, 1100)));
+    } catch {
+      // A declined charge leaves the card as typed, ready to try again.
+      setStatus("idle");
+      return;
+    }
     setStatus("paid");
     clearTimeout(resetTimer.current);
     resetTimer.current = setTimeout(() => {
@@ -829,7 +866,7 @@ export default function CardField({
       <div className="flex items-baseline justify-between">
         <label
           className="font-medium text-sm text-zinc-900 dark:text-zinc-100"
-          htmlFor="card-field-number"
+          htmlFor={numberId}
         >
           Card
         </label>
@@ -873,14 +910,14 @@ export default function CardField({
             </span>
           )}
           <input
-            aria-describedby="card-field-error"
+            aria-describedby={hintId}
             aria-invalid={numberError}
             autoComplete="cc-number"
             className={cn(
               "absolute inset-0 h-full w-full bg-transparent text-[15px] text-transparent tabular-nums tracking-wide caret-zinc-900 outline-none dark:caret-zinc-100",
               collapsed && "pointer-events-none"
             )}
-            id="card-field-number"
+            id={numberId}
             inputMode="numeric"
             onBlur={onNumberBlur}
             onChange={onNumber}
@@ -903,7 +940,7 @@ export default function CardField({
           {collapsed && (
             <button
               aria-label={`Edit card number ending ${number.slice(-4)}`}
-              className="absolute inset-0 cursor-text outline-none"
+              className="absolute inset-0 cursor-text rounded-md outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset"
               onClick={editNumber}
               type="button"
             />
@@ -961,7 +998,13 @@ export default function CardField({
         </AnimatePresence>
       </motion.div>
 
-      <Hint error={error} fade={fade} onCvc={focus === "cvc"} spec={spec} />
+      <Hint
+        error={error}
+        fade={fade}
+        id={hintId}
+        onCvc={focus === "cvc"}
+        spec={spec}
+      />
 
       <PayButton
         fade={fade}
