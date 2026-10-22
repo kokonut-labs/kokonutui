@@ -12,6 +12,7 @@
 
 import { ArrowRight, Check } from "lucide-react";
 import {
+  AnimatePresence,
   animate,
   motion,
   useMotionValue,
@@ -98,35 +99,24 @@ export default function SlideToConfirm({
 
   const x = useMotionValue(0);
   const width = useMotionValue(0);
-  // 0 is the full track, 1 has it folded into a circle round the thumb.
-  const fold = useMotionValue(0);
+  // 0: the ink ends at the thumb. 1: it fills the whole track, thumb and all.
+  const cover = useMotionValue(0);
 
   const max = () => Math.max(0, width.get() - THUMB - INSET * 2);
 
   // The ink fill runs from the left edge to just past the thumb, so the label
-  // turns white as the thumb wipes over it.
+  // turns white as the thumb wipes over it. Once committed it floods the rest.
   const fillClip = useTransform(
-    [x, width],
-    ([value, total]: number[]) =>
-      `inset(0px ${Math.max(0, total - value - INSET - THUMB / 2)}px 0px 0px round ${HEIGHT}px)`
+    [x, width, cover],
+    ([value, total, covered]: number[]) =>
+      `inset(0px ${(1 - covered) * Math.max(0, total - value - INSET - THUMB / 2)}px 0px 0px round ${HEIGHT}px)`
   );
   // Hidden at rest, so no ink shows round the thumb before it moves.
-  const fillOpacity = useTransform(
-    [x, fold],
-    ([value, folded]: number[]) => Math.min(1, value / 20) * (1 - folded)
-  );
-  const trackClip = useTransform(
-    [fold, width],
-    ([value, total]: number[]) =>
-      `inset(0px 0px 0px ${value * Math.max(0, total - HEIGHT)}px round ${HEIGHT}px)`
-  );
-  const labelOpacity = useTransform(
-    [x, width, fold],
-    ([value, total, folded]: number[]) => {
-      const progress = value / Math.max(1, total - THUMB - INSET * 2);
-      return Math.max(0, 1 - progress * 0.55) * (1 - folded);
-    }
-  );
+  const fillOpacity = useTransform(x, (value) => Math.min(1, value / 20));
+  const labelOpacity = useTransform([x, width], ([value, total]: number[]) => {
+    const progress = value / Math.max(1, total - THUMB - INSET * 2);
+    return Math.max(0, 1 - progress * 0.55);
+  });
 
   useLayoutEffect(() => {
     const track = trackRef.current;
@@ -157,63 +147,63 @@ export default function SlideToConfirm({
       ? { duration: 0.15, ease: EASE_OUT }
       : { type: "spring" as const, stiffness: 520, damping: 42, velocity };
 
+  // The ink drains back behind the thumb as it springs home.
   const settleBack = (velocity = 0) => {
     setArmed(false);
     setPhase("idle");
+    animate(cover, 0, { duration: reduceMotion ? 0 : 0.3, ease: EASE_OUT });
     animate(x, 0, spring(velocity));
   };
 
+  // The reset nobody asked for runs slower, so it reads as a rewind.
+  const rewind = () => {
+    setArmed(false);
+    setPhase("idle");
+    const duration = reduceMotion ? 0 : 0.6;
+    animate(cover, 0, { duration: duration * 0.6, ease: EASE_OUT });
+    animate(x, 0, { duration, ease: EASE_IN_OUT });
+  };
+
+  // One motion from release to result: the thumb carries on to the end while
+  // the ink floods the track and the label turns to "Paying", and the work
+  // starts at once instead of waiting for the thumb to land.
   const commit = async (velocity: number, glide = false) => {
     const run = ++runRef.current;
     const alive = () => runRef.current === run;
     setPhase("confirming");
     setArmed(true);
 
-    await animate(
+    const landing = animate(
       x,
       max(),
       glide && !reduceMotion
         ? { duration: 0.42, ease: EASE_IN_OUT }
         : spring(velocity)
     );
-    if (alive()) {
-      await confirmAndShow(alive);
-    }
-  };
-
-  // Folds the track into the thumb while the work runs, then opens it back
-  // up as the done state, or unfolds and returns if the work failed.
-  const confirmAndShow = async (alive: () => boolean) => {
-    const folding = animate(fold, 1, {
-      duration: reduceMotion ? 0 : 0.34,
+    const flooding = animate(cover, 1, {
+      duration: reduceMotion ? 0 : 0.36,
       ease: EASE_OUT,
     });
 
     try {
       // A floor on the wait, so a fast handler doesn't flash the spinner.
-      await Promise.all([confirmRef.current(), wait(700), folding]);
+      await Promise.all([confirmRef.current(), wait(800), landing, flooding]);
     } catch {
-      if (!alive()) {
-        return;
+      if (alive()) {
+        settleBack();
       }
-      await animate(fold, 0, { duration: 0.24, ease: EASE_OUT });
-      settleBack();
       return;
     }
     if (!alive()) {
       return;
     }
     setPhase("done");
-    await animate(fold, 0, {
-      duration: reduceMotion ? 0 : 0.36,
-      ease: EASE_OUT,
-    });
-    if (!alive() || resetAfter === null) {
+    if (resetAfter === null) {
       return;
     }
     await wait(resetAfter);
     if (alive()) {
-      settleBack();
+      rewind();
     }
   };
 
@@ -283,6 +273,15 @@ export default function SlideToConfirm({
 
   const done = phase === "done";
   const busy = phase === "confirming";
+  let stage = "slide";
+  let stageLabel = label;
+  if (busy) {
+    stage = "busy";
+    stageLabel = `${confirmingLabel}…`;
+  } else if (done) {
+    stage = "done";
+    stageLabel = doneLabel;
+  }
 
   return (
     <div
@@ -296,7 +295,7 @@ export default function SlideToConfirm({
           disabled && "opacity-50"
         )}
         ref={trackRef}
-        style={{ height: HEIGHT, clipPath: trackClip }}
+        style={{ height: HEIGHT }}
       >
         {/* The label as it reads on the empty track. */}
         <motion.span
@@ -307,41 +306,40 @@ export default function SlideToConfirm({
           {label}
         </motion.span>
 
-        {/* The same label in white on the ink the thumb leaves behind. */}
+        {/* The ink the thumb leaves behind, with the label in white on it. It
+            turns emerald in place when the work is done. */}
         <motion.div
           aria-hidden
-          className="absolute inset-0 bg-zinc-900 dark:bg-zinc-100"
+          className={cn(
+            "absolute inset-0 transition-colors duration-300 ease-out motion-reduce:transition-none",
+            done
+              ? "bg-emerald-600 dark:bg-emerald-500"
+              : "bg-zinc-900 dark:bg-zinc-100"
+          )}
           style={{ clipPath: fillClip, opacity: fillOpacity }}
         >
-          <motion.span
-            className="absolute inset-0 flex items-center justify-center whitespace-nowrap pl-12 font-medium text-sm text-white dark:text-zinc-900"
-            style={{ opacity: labelOpacity }}
-          >
-            {label}
-          </motion.span>
-        </motion.div>
-
-        {/* Done: the track opens back up as a filled pill. */}
-        <motion.div
-          animate={{ opacity: done ? 1 : 0 }}
-          aria-hidden
-          className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2 bg-emerald-600 font-medium text-sm text-white dark:bg-emerald-500 dark:text-emerald-950"
-          initial={false}
-          transition={{ duration: done ? 0.2 : 0.3, ease: EASE_OUT }}
-        >
-          <motion.span
-            animate={{ y: done ? 0 : 6, opacity: done ? 1 : 0 }}
-            className="inline-flex items-center gap-2"
-            initial={false}
-            transition={{
-              duration: 0.28,
-              ease: EASE_OUT,
-              delay: done ? 0.08 : 0,
-            }}
-          >
-            <Check aria-hidden className="size-4" strokeWidth={2.5} />
-            {doneLabel}
-          </motion.span>
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.span
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              className={cn(
+                "absolute inset-0 flex items-center justify-center gap-2 whitespace-nowrap font-medium text-sm",
+                done
+                  ? "text-white dark:text-emerald-950"
+                  : "text-white dark:text-zinc-900",
+                phase === "idle" || phase === "dragging" ? "pl-12" : "pr-12"
+              )}
+              exit={{ opacity: 0, y: -8, filter: "blur(2px)" }}
+              initial={{ opacity: 0, y: 8, filter: "blur(2px)" }}
+              key={stage}
+              transition={
+                reduceMotion
+                  ? { duration: 0 }
+                  : { duration: 0.26, ease: EASE_OUT }
+              }
+            >
+              {stageLabel}
+            </motion.span>
+          </AnimatePresence>
         </motion.div>
 
         <motion.button
@@ -353,8 +351,7 @@ export default function SlideToConfirm({
             "dark:bg-zinc-800 dark:text-zinc-100 dark:shadow-[0_1px_2px_rgb(0_0_0/0.5),0_0_0_1px_rgb(255_255_255/0.08)]",
             "focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-100 dark:focus-visible:ring-offset-zinc-900",
             phase === "idle" && !disabled && "cursor-grab",
-            phase === "dragging" && "cursor-grabbing",
-            done && "opacity-0"
+            phase === "dragging" && "cursor-grabbing"
           )}
           onClick={onClick}
           onPointerCancel={onPointerUp}
@@ -375,15 +372,16 @@ export default function SlideToConfirm({
             <ArrowRight
               aria-hidden
               className={cn(
-                "absolute inset-0 size-5 transition-[opacity,translate] duration-150 ease-out",
-                (armed || busy) && "translate-x-1 opacity-0"
+                "absolute inset-0 size-5 transition-[opacity,translate,filter] duration-200 ease-out motion-reduce:transition-none",
+                armed && !busy && !done && "translate-x-0.5",
+                (busy || done) && "translate-x-1.5 opacity-0 blur-[2px]"
               )}
             />
             <Check
               aria-hidden
               className={cn(
-                "absolute inset-0 size-5 transition-[opacity,translate] duration-150 ease-out",
-                armed && !busy ? "opacity-100" : "-translate-x-1 opacity-0"
+                "absolute inset-0 size-5 text-emerald-600 transition-[opacity,scale,filter] duration-200 ease-out motion-reduce:transition-none dark:text-emerald-400",
+                done ? "scale-100 opacity-100" : "scale-50 opacity-0 blur-[2px]"
               )}
               strokeWidth={2.5}
             />
@@ -391,7 +389,7 @@ export default function SlideToConfirm({
               aria-hidden
               className={cn(
                 "absolute -inset-0.5 size-6 animate-spin transition-opacity duration-200 [animation-duration:700ms]",
-                busy ? "opacity-100" : "opacity-0"
+                busy ? "opacity-100 delay-100" : "opacity-0"
               )}
               viewBox="0 0 24 24"
             >
