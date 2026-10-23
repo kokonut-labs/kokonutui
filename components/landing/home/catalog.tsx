@@ -75,9 +75,12 @@ const PLATES = [
 
 export function Catalog({
   parts,
+  cover,
   className,
 }: {
   parts: Part[];
+  /** Replaces the cover, for trying other heroes on the same page. */
+  cover?: ReactNode;
   className?: string;
 }) {
   const byName = new Map(parts.map((p) => [p.name, p]));
@@ -93,11 +96,13 @@ export function Catalog({
         className
       )}
     >
-      <Cover
-        browse={byName.get(BROWSE)}
-        count={parts.length}
-        featured={featured}
-      />
+      {cover ?? (
+        <Cover
+          browse={byName.get(BROWSE)}
+          count={parts.length}
+          featured={featured}
+        />
+      )}
       <Plates plates={plates} />
       <Index parts={parts} />
       <Ordering />
@@ -123,29 +128,7 @@ function Cover({
       aria-label="Kokonut UI"
       className={cn("grid grid-cols-1 border", GRID, LINE)}
     >
-      <div className={cn("grid grid-cols-2 md:grid-cols-4", GRID)}>
-        {[
-          "Kokonut UI",
-          "Component catalog",
-          "React, Tailwind CSS, Motion",
-          "Free and open source",
-        ].map((label, i) => (
-          <p
-            className={cn(
-              "home-enter flex h-10 items-center px-4",
-              CELL,
-              i === 0
-                ? "font-medium text-[11.5px] text-black dark:text-white"
-                : META
-            )}
-            key={label}
-            style={enter(0)}
-          >
-            {label}
-          </p>
-        ))}
-      </div>
-
+      <CoverMeta />
       <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
         <div
           className={cn(
@@ -179,49 +162,94 @@ function Cover({
         {featured ? <FeaturedPlate part={featured} /> : null}
       </div>
 
-      <div className={cn("grid grid-cols-1 md:grid-cols-12", GRID)}>
-        <div
-          className={cn(
-            "home-enter flex flex-col gap-3 p-5 sm:p-6 md:col-span-7",
-            CELL
-          )}
-          style={enter(2)}
-        >
-          <p className={META}>Ask your agent</p>
-          <PromptLine prompt={AGENT_PROMPT} />
-        </div>
-        <ConnectEditor />
-        <BrowseAll count={count} part={browse} />
-        <a
-          className={cn(
-            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-2",
-            CELL,
-            "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
-            EASE_COLORS,
-            FOCUS_INSET
-          )}
-          href={VERCEL_OSS_URL}
-          rel="noreferrer"
-          style={enter(2)}
-          target="_blank"
-        >
-          <span className="flex flex-col gap-1">
-            <span className={META}>Backed by</span>
-            <span className={cn("font-medium text-[17px]", INK)}>
-              Vercel OSS
-            </span>
-          </span>
-          <svg
-            aria-hidden="true"
-            className="size-4 text-black/40 transition-colors duration-150 ease-out group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
-            fill="currentColor"
-            viewBox="0 0 76 65"
-          >
-            <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
-          </svg>
-        </a>
-      </div>
+      <CoverActions browse={browse} count={count} prompt={AGENT_PROMPT} />
     </section>
+  );
+}
+
+/** The cover's top rule: what this is, in four plain labels. */
+export function CoverMeta({
+  labels = [
+    "Kokonut UI",
+    "Component catalog",
+    "React, Tailwind CSS, Motion",
+    "Free and open source",
+  ],
+}: {
+  labels?: string[];
+}) {
+  return (
+    <div className={cn("grid grid-cols-2 md:grid-cols-4", GRID)}>
+      {labels.map((label, i) => (
+        <p
+          className={cn(
+            "home-enter flex h-10 items-center px-4",
+            CELL,
+            i === 0
+              ? "font-medium text-[11.5px] text-black dark:text-white"
+              : META
+          )}
+          key={label}
+          style={enter(0)}
+        >
+          {label}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/** The cover's bottom rows: ask your agent, connect the editor, browse. */
+export function CoverActions({
+  count,
+  browse,
+  prompt,
+}: {
+  count: number;
+  browse?: Part;
+  prompt: string;
+}) {
+  return (
+    <div className={cn("grid grid-cols-1 md:grid-cols-12", GRID)}>
+      <div
+        className={cn(
+          "home-enter flex flex-col gap-3 p-5 sm:p-6 md:col-span-7",
+          CELL
+        )}
+        style={enter(2)}
+      >
+        <p className={META}>Ask your agent</p>
+        <PromptLine prompt={prompt} />
+      </div>
+      <ConnectEditor />
+      <BrowseAll count={count} part={browse} />
+      <a
+        className={cn(
+          "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-2",
+          CELL,
+          "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
+          EASE_COLORS,
+          FOCUS_INSET
+        )}
+        href={VERCEL_OSS_URL}
+        rel="noreferrer"
+        style={enter(2)}
+        target="_blank"
+      >
+        <span className="flex flex-col gap-1">
+          <span className={META}>Backed by</span>
+          <span className={cn("font-medium text-[17px]", INK)}>Vercel OSS</span>
+        </span>
+        <svg
+          aria-hidden="true"
+          className="size-4 text-black/40 transition-colors duration-150 ease-out group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
+          fill="currentColor"
+          viewBox="0 0 76 65"
+        >
+          <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+        </svg>
+      </a>
+    </div>
   );
 }
 
@@ -454,7 +482,7 @@ function PlateHead({ code, note }: { code: string; note: string }) {
   );
 }
 
-function PlateFoot({ part }: { part: Part }) {
+export function PlateFoot({ part }: { part: Part }) {
   const spec = part.dependencies.length
     ? part.dependencies.join(", ")
     : "no extra packages";

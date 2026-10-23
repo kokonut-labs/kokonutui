@@ -115,6 +115,51 @@ export const LIVE: Record<string, LiveEntry> = {
     ({ default: C }) => <C />,
     "Drag sideways to slosh it"
   ),
+  "ai-tool-approval": live(
+    () => import("@/components/kokonutui/ai-tool-approval"),
+    ({ default: C }) => <C className="w-full max-w-[440px]" />,
+    "Allow it, or hold for risky ones"
+  ),
+  "ai-diff-review": live(
+    () => import("@/components/kokonutui/ai-diff-review"),
+    ({ default: C }) => <C className="w-full max-w-[420px]" />,
+    "Accept or reject each file"
+  ),
+  "ai-context-meter": live(
+    () => import("@/components/kokonutui/ai-context-meter"),
+    ({ default: C }) => <C className="w-full max-w-[300px]" />,
+    "Compact before the window fills"
+  ),
+  "ai-model-selector": live(
+    () => import("@/components/kokonutui/ai-model-selector"),
+    ({ default: C }) => <C className="w-full max-w-[300px]" />,
+    "Pick a model, then the effort"
+  ),
+  "ai-input-search": live(
+    () => import("@/components/kokonutui/ai-input-search"),
+    ({ default: C }) => <C className="w-[480px] max-w-none" />,
+    "Pick a tool with /, then ask"
+  ),
+  "ai-citations": live(
+    () => import("@/components/kokonutui/ai-citations"),
+    ({ default: C }) => <C className="w-full max-w-[460px]" />,
+    "Hover a source to read it"
+  ),
+  "ai-inline-edit": live(
+    () => import("@/components/kokonutui/ai-inline-edit"),
+    ({ default: C }) => <C className="w-full max-w-[460px]" />,
+    "Select a sentence, ask for an edit"
+  ),
+  "ai-message-queue": live(
+    () => import("@/components/kokonutui/ai-message-queue"),
+    ({ default: C }) => <C className="w-full max-w-[400px]" />,
+    "Queue messages while it works"
+  ),
+  "ai-agent-lanes": live(
+    () => import("@/components/kokonutui/ai-agent-lanes"),
+    ({ default: C }) => <C className="w-full max-w-[560px]" />,
+    "Agents working side by side"
+  ),
 };
 
 /**
