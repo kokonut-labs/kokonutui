@@ -20,10 +20,6 @@ const REGISTRY_NAMESPACE = "@kokonutui";
 export const GITHUB_URL = "https://github.com/kokonut-labs/kokonutui";
 export const VERCEL_OSS_URL =
   "https://vercel.com/blog/spring25-oss-program#kokonutui";
-export const PRO_URL =
-  "https://kokonutui.pro?utm_source=kokonutui.com&utm_medium=landing";
-export const PRO_TEMPLATES_URL =
-  "https://kokonutui.pro/templates?utm_source=kokonutui.com&utm_medium=landing";
 
 // The one line people add to components.json (see /docs).
 export const REGISTRY_ENTRY = `"${REGISTRY_NAMESPACE}": "https://kokonutui.com/r/{name}.json"`;
@@ -120,6 +116,26 @@ export const V0_THREAD = {
 } as const;
 
 export const VIDEO_ID = "2Fj3WewGRow";
+
+// The offer as kokonutui.pro shows it (Pro's config/pricing.ts and
+// INCLUDED); change both together.
+export const PRO_PRICE = { list: 159, code: "PRO25", percent: 25, off: 40 };
+export const PRO_PRICING_URL =
+  "https://kokonutui.pro/?utm_source=kokonutui.com&utm_medium=landing#pricing";
+export const PRO_INCLUDED = [
+  "Every component and section, as source you own",
+  "Every website template, current and future",
+  "Install with the shadcn CLI, the MCP server or a prompt",
+  "Every future release, no subscription",
+] as const;
+
+/** Four Pro stills from /docs/pro, picked to show range: hero, app, AI, card. */
+export const PRO_STILLS = [
+  "agent-flow-hero",
+  "kanban-board",
+  "slash-command-menu",
+  "onboarding-checklist",
+] as const;
 
 export const PRO_TEMPLATES = [
   {

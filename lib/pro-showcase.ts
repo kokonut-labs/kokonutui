@@ -26,11 +26,11 @@ const PRO_URL = "https://kokonutui.pro";
 
 export const PRO_SHOWCASE_PAGE = "/docs/pro";
 
-/** Counted from Pro's docs on 2026-10-17; round down as it grows. */
+/** Counted from Pro's docs on 2026-10-17 (templates on 2026-10-23); round down as it grows. */
 export const PRO_STATS = [
   { value: "120+", label: "components" },
   { value: "20+", label: "categories" },
-  { value: "5", label: "templates" },
+  { value: "6", label: "templates" },
 ];
 
 export const PRO_SHOWCASE: ShowcaseGroup[] = [
