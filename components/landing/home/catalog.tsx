@@ -15,7 +15,7 @@ import {
   showcaseStill,
   showcaseUrl,
 } from "@/lib/pro-showcase";
-import { PRO_TEMPLATE_LIST, proTemplateUrl } from "@/lib/pro-templates";
+import { PRO_TEMPLATE_LIST, PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
 import { cn } from "@/lib/utils";
 import { AgentIcon, Avatar, CopyIconSwap, useCopy } from "./client";
 import { ClientPicker, CopyLine } from "./controls";
@@ -978,10 +978,8 @@ function Supplement() {
                 EASE_COLORS,
                 FOCUS_INSET
               )}
-              href={proTemplateUrl(t.slug, "landing")}
+              href={`${PRO_TEMPLATES_PAGE}#${t.slug}`}
               key={t.slug}
-              rel="noopener"
-              target="_blank"
             >
               <span className="flex items-baseline justify-between px-4 pt-3.5">
                 <span className={META}>Template · {t.category}</span>
