@@ -2,6 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
 import { ThemeToggle } from "@/lib/theme-toggle";
 import { HeaderPro } from "./header-pro";
 
@@ -86,8 +87,7 @@ export function Header() {
                   </Link>
                   <Link
                     className="flex items-center gap-1 rounded-lg px-3 py-1 font-medium text-[15px] text-black/80 tracking-tighter transition-colors duration-200 hover:bg-black/5 dark:text-white/80 dark:hover:bg-white/5"
-                    href="https://kokonutui.pro/templates?utm_source=kokonutui.com&utm_medium=header"
-                    target="_blank"
+                    href={PRO_TEMPLATES_PAGE}
                   >
                     Templates
                   </Link>
@@ -147,8 +147,7 @@ export function Header() {
                 </Link>
                 <Link
                   className="rounded-md border border-transparent px-3 py-1.5 text-sm text-zinc-600 transition-colors hover:border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-                  href="https://kokonutui.pro/templates?utm_source=kokonutui.com&utm_medium=header"
-                  target="_blank"
+                  href={PRO_TEMPLATES_PAGE}
                 >
                   Templates
                 </Link>

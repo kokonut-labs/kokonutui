@@ -7,6 +7,15 @@ import { useRouter } from "next/navigation";
 import { type ComponentType, type ReactNode, Suspense, useState } from "react";
 import AttractButton from "@/components/kokonutui/attract-button";
 import { componentPrompt } from "@/lib/agents";
+import {
+  PRO_SHOWCASE,
+  PRO_SHOWCASE_COUNT,
+  PRO_SHOWCASE_PAGE,
+  PRO_STATS,
+  showcaseStill,
+  showcaseUrl,
+} from "@/lib/pro-showcase";
+import { PRO_TEMPLATE_LIST, PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
 import { cn } from "@/lib/utils";
 import { AgentIcon, Avatar, CopyIconSwap, useCopy } from "./client";
 import { ClientPicker, CopyLine } from "./controls";
@@ -16,9 +25,10 @@ import {
   type McpClient,
   mcpCommand,
   POSTS,
-  PRO_TEMPLATES,
-  PRO_TEMPLATES_URL,
-  PRO_URL,
+  PRO_INCLUDED,
+  PRO_PRICE,
+  PRO_PRICING_URL,
+  PRO_STILLS,
   REGISTRY_ENTRY,
   V0_THREAD,
   VERCEL_OSS_URL,
@@ -833,46 +843,163 @@ function Quote({ post }: { post: (typeof POSTS)[number] }) {
 
 /* Supplement (Pro) ------------------------------------------------------ */
 
+const PRO_RED = "text-[#FF2D55]";
+const PRO_PAID = PRO_PRICE.list - PRO_PRICE.off;
+const RECEIPT_ROW =
+  "flex items-baseline justify-between border-b py-2 tabular-nums";
+
+/** Pro's stills fade out at the bottom, the way kokonutui.pro draws them. */
+const STILL_FADE = {
+  maskImage: "linear-gradient(to bottom, #000 60%, transparent 98%)",
+  WebkitMaskImage: "linear-gradient(to bottom, #000 60%, transparent 98%)",
+};
+
+const SHOWCASE_ITEMS = new Map(
+  PRO_SHOWCASE.flatMap((group) =>
+    group.items.map((item) => [item.name, { ...item, group: group.title }])
+  )
+);
+
 function Supplement() {
+  const stills = PRO_STILLS.map((name) => SHOWCASE_ITEMS.get(name)).filter(
+    (item) => item !== undefined
+  );
+  const templates = PRO_TEMPLATE_LIST.filter((t) => t.poster).slice(0, 3);
+
   return (
     <section aria-labelledby="supplement" className="pt-24 md:pt-32">
       <SectionHead
-        aside="Complete website templates and premium sections, on the same stack: Next.js, Tailwind CSS, Motion and shadcn/ui."
+        aside="The paid half of the catalog: heroes, app screens, pricing, AI parts and full website templates, on the same stack and installed the same way."
         id="supplement"
         number="05"
         title="Kokonut UI Pro"
       />
-      <div className={cn("grid grid-cols-1 border md:grid-cols-3", GRID, LINE)}>
-        {PRO_TEMPLATES.map((t, i) => (
-          <a
-            className={cn("group flex flex-col", CELL, FOCUS_INSET)}
-            href={PRO_TEMPLATES_URL}
-            key={t.name}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <span className="flex items-baseline justify-between px-4 pt-3.5">
-              <span
-                className={cn(MONO, "font-medium text-[#FF2D55] text-[12px]")}
+      <div className={cn("grid grid-cols-1 border", GRID, LINE)}>
+        <dl className={cn("grid grid-cols-3", GRID)}>
+          {PRO_STATS.map((stat) => (
+            <div
+              className={cn(
+                "flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-3",
+                CELL
+              )}
+              key={stat.label}
+            >
+              <dd
+                className={cn(
+                  MONO,
+                  "order-first text-[20px] tabular-nums tracking-[-0.02em]",
+                  INK
+                )}
               >
-                PR-{String(i + 1).padStart(2, "0")}
+                {stat.value}
+              </dd>
+              <dt className={META}>{stat.label}</dt>
+            </div>
+          ))}
+        </dl>
+
+        <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
+          <ProOffer />
+          <ul className={cn("grid grid-cols-2 lg:col-span-8", GRID)}>
+            {stills.map((item, i) => (
+              <li className={CELL} key={item.name}>
+                <a
+                  className={cn(
+                    "group flex h-full flex-col",
+                    CELL,
+                    "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
+                    EASE_COLORS,
+                    FOCUS_INSET
+                  )}
+                  href={showcaseUrl(item, "landing")}
+                  rel="noopener"
+                  target="_blank"
+                >
+                  <span className="flex items-baseline justify-between gap-3 px-4 pt-3.5">
+                    <span
+                      className={cn(MONO, "font-medium text-[12px]", PRO_RED)}
+                    >
+                      PR-{String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className={META}>{item.group}</span>
+                  </span>
+                  <span
+                    className="relative mx-4 mt-3 block aspect-[16/11] overflow-clip"
+                    style={STILL_FADE}
+                  >
+                    <Image
+                      alt={`${item.title}, a Kokonut UI Pro component`}
+                      className="object-cover object-top dark:hidden"
+                      fill
+                      sizes="(min-width: 1024px) 400px, 50vw"
+                      src={showcaseStill(item.name, "light")}
+                      unoptimized
+                    />
+                    <Image
+                      alt=""
+                      className="hidden object-cover object-top dark:block"
+                      fill
+                      sizes="(min-width: 1024px) 400px, 50vw"
+                      src={showcaseStill(item.name, "dark")}
+                      unoptimized
+                    />
+                  </span>
+                  <span className="flex flex-col gap-1 px-4 pt-1 pb-4">
+                    <span
+                      className={cn(
+                        "font-medium text-[14px] underline-offset-4 group-hover:underline sm:text-[15px]",
+                        INK
+                      )}
+                    >
+                      {item.title}
+                    </span>
+                    <span
+                      className={cn(
+                        "hidden text-[13px] leading-snug sm:block",
+                        SOFT
+                      )}
+                    >
+                      {item.line}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className={cn("grid grid-cols-1 md:grid-cols-3", GRID)}>
+          {templates.map((t) => (
+            <a
+              className={cn(
+                "group flex flex-col",
+                CELL,
+                "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
+                EASE_COLORS,
+                FOCUS_INSET
+              )}
+              href={`${PRO_TEMPLATES_PAGE}#${t.slug}`}
+              key={t.slug}
+            >
+              <span className="flex items-baseline justify-between px-4 pt-3.5">
+                <span className={META}>Template · {t.category}</span>
+                <span className={cn(META, "tabular-nums")}>
+                  ${t.price} alone, or in Pro
+                </span>
               </span>
-              <span className={META}>Template</span>
-            </span>
-            <span className="block p-4">
-              <span className="block overflow-hidden border border-black/[0.08] dark:border-white/[0.1]">
-                <Image
-                  alt={`${t.name} template`}
-                  className="aspect-[16/10] w-full object-cover object-top"
-                  height={t.height}
-                  sizes="(min-width: 768px) 400px, 100vw"
-                  src={t.image}
-                  width={t.width}
-                />
+              <span className="block p-4">
+                <span className="block overflow-hidden border border-black/[0.08] dark:border-white/[0.1]">
+                  <Image
+                    alt={`${t.name} website template`}
+                    className="aspect-[16/10] w-full object-cover object-top"
+                    height={800}
+                    sizes="(min-width: 768px) 400px, 100vw"
+                    src={t.poster ?? ""}
+                    width={1280}
+                  />
+                </span>
               </span>
-            </span>
-            <span className="flex items-end justify-between gap-4 px-4 pb-3.5">
-              <span className="flex flex-col gap-0.5">
+              <span className="flex flex-col gap-0.5 px-4 pb-4">
                 <span
                   className={cn(
                     "font-medium text-[15px] underline-offset-4 group-hover:underline",
@@ -881,36 +1008,96 @@ function Supplement() {
                 >
                   {t.name}
                 </span>
-                <span className={META}>{t.blurb}</span>
+                <span className={cn("text-[13px] leading-snug", SOFT)}>
+                  {t.blurb}
+                </span>
               </span>
-            </span>
-          </a>
-        ))}
+            </a>
+          ))}
+        </div>
       </div>
-      <div
-        className={cn(
-          "flex flex-col gap-4 border-x border-b p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6",
-          LINE
-        )}
-      >
-        <p className={cn("text-[15px]", SOFT)}>
-          Pro adds full website templates and sections built with Next.js,
-          Tailwind CSS, Motion and shadcn/ui.
+    </section>
+  );
+}
+
+/** The price as checkout shows it, what it covers, and the way in. */
+function ProOffer() {
+  return (
+    <div
+      className={cn(
+        "flex flex-col justify-between gap-8 p-5 sm:p-6 lg:col-span-4",
+        CELL
+      )}
+    >
+      <div className="flex flex-col gap-4">
+        <p className={cn("font-medium text-[14px]", INK)}>
+          One payment, everything included
         </p>
+        <p
+          className={cn(
+            "font-semibold text-[72px] tabular-nums leading-[0.85] tracking-[-0.06em] md:text-[88px]",
+            INK
+          )}
+        >
+          ${PRO_PAID}
+        </p>
+        <dl className={cn("flex flex-col border-t text-[13.5px]", LINE)}>
+          <div className={cn(RECEIPT_ROW, LINE, SOFT)}>
+            <dt>Lifetime access</dt>
+            <dd>${PRO_PRICE.list}</dd>
+          </div>
+          <div className={cn(RECEIPT_ROW, LINE, PRO_RED)}>
+            <dt className={cn(MONO, "text-[12.5px]")}>
+              {PRO_PRICE.code} · {PRO_PRICE.percent}% off
+            </dt>
+            <dd>−${PRO_PRICE.off}</dd>
+          </div>
+          <div className={cn(RECEIPT_ROW, "border-b-0 font-medium", INK)}>
+            <dt>You pay, once</dt>
+            <dd>${PRO_PAID}</dd>
+          </div>
+        </dl>
+        <ul className={cn("flex flex-col border-t", LINE)}>
+          {PRO_INCLUDED.map((line) => (
+            <li
+              className={cn(
+                "border-b py-2 text-[13.5px] last:border-b-0",
+                LINE,
+                SOFT
+              )}
+              key={line}
+            >
+              {line}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="flex flex-col items-start gap-3">
         <a
           className={cn(
-            "inline-flex h-10 shrink-0 items-center gap-2 bg-black px-5 font-medium text-[14px] text-white hover:bg-black/85 active:bg-black/75 dark:bg-white dark:text-black dark:active:bg-white/75 dark:hover:bg-white/85",
+            "inline-flex h-10 w-full items-center justify-between gap-2 bg-black px-4 font-medium text-[14px] text-white hover:bg-black/85 active:bg-black/75 dark:bg-white dark:text-black dark:active:bg-white/75 dark:hover:bg-white/85",
             EASE_COLORS,
             FOCUS
           )}
-          href={PRO_URL}
-          rel="noreferrer"
+          href={PRO_PRICING_URL}
+          rel="noopener"
           target="_blank"
         >
-          Explore Pro
+          Get Kokonut UI Pro
           <ArrowUpRightIcon aria-hidden className="size-4" />
         </a>
+        <Link
+          className={cn(
+            "text-[13px] underline decoration-black/25 underline-offset-4 hover:decoration-black dark:decoration-white/25 dark:hover:decoration-white",
+            SOFT,
+            EASE_COLORS,
+            FOCUS
+          )}
+          href={PRO_SHOWCASE_PAGE}
+        >
+          See {PRO_SHOWCASE_COUNT} Pro components in the docs
+        </Link>
       </div>
-    </section>
+    </div>
   );
 }

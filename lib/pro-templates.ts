@@ -29,6 +29,17 @@ export const PRO_TEMPLATE_LIST: ProTemplate[] = [
     previewLink: "https://marlow-template.vercel.app/",
   },
   {
+    slug: "fleet",
+    name: "Fleet",
+    category: "AI agents",
+    blurb:
+      "A launch site for an AI agent product: a browser where agents split one request, work their own tabs and come back with a plan to approve.",
+    price: 59,
+    video: "https://cdn.kokonutui.pro/templates/fleet/fleet-demo.mp4",
+    poster: "/landing/pro-fleet-2.webp",
+    previewLink: "https://fleet-template-omega.vercel.app/",
+  },
+  {
     slug: "agenta",
     name: "Agenta",
     category: "Startups",
@@ -71,5 +82,5 @@ export const PRO_TEMPLATE_LIST: ProTemplate[] = [
 ];
 
 /** The template's entry on the Pro templates page, tagged as coming from here. */
-export const proTemplateUrl = (slug: string) =>
-  `https://kokonutui.pro/templates?utm_source=kokonutui.com&utm_medium=docs-templates#${slug}`;
+export const proTemplateUrl = (slug: string, medium = "docs-templates") =>
+  `https://kokonutui.pro/templates?utm_source=kokonutui.com&utm_medium=${medium}#${slug}`;
