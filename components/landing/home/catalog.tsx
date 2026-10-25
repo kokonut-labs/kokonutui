@@ -1,11 +1,12 @@
 "use client";
 
+import { useSearchContext } from "fumadocs-ui/contexts/search";
 import { ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type ComponentType, type ReactNode, Suspense, useState } from "react";
-import AttractButton from "@/components/kokonutui/attract-button";
+import CommandButton from "@/components/kokonutui/command-button";
+import SlideTextButton from "@/components/kokonutui/slide-text-button";
 import { componentPrompt } from "@/lib/agents";
 import {
   PRO_SHOWCASE,
@@ -55,8 +56,6 @@ import { VideoCard } from "./video";
 const FEATURED = "apple-activity-card";
 /** Sits under the featured part: the other half of a checkout screen. */
 const FEATURED_ACTION = "slide-to-confirm";
-/** The cover's way into the library is itself a part: Magnet Button. */
-const BROWSE = "attract-button";
 /** The featured part, asked for the way you'd ask a colleague. */
 const AGENT_PROMPT = "Add @kokonutui/apple-activity-card to my dashboard";
 // The wide background comes after four plates, so it starts a row at both
@@ -98,7 +97,6 @@ export function Catalog({
     >
       <Cover
         action={action && LIVE[action.name] ? action : undefined}
-        browse={byName.get(BROWSE)}
         count={parts.length}
         featured={featured}
       />
@@ -116,12 +114,10 @@ export function Catalog({
 function Cover({
   featured,
   action,
-  browse,
   count,
 }: {
   featured?: Part;
   action?: Part;
-  browse?: Part;
   count: number;
 }) {
   return (
@@ -155,8 +151,7 @@ function Cover({
       <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
         <div
           className={cn(
-            // Clips the Browse all button's field of filings at the rules.
-            "flex flex-col justify-between gap-10 overflow-hidden p-5 sm:p-8 lg:col-span-8 lg:p-10",
+            "flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
             CELL
           )}
         >
@@ -183,7 +178,7 @@ function Cover({
               shadcn/ui. Every component on this page is live: try it, then
               install it with one command or one prompt.
             </p>
-            <BrowseAll count={count} part={browse} />
+            <HeroActions count={count} />
           </div>
         </div>
         <div className={cn("grid grid-cols-1 lg:col-span-4", GRID)}>
@@ -238,44 +233,29 @@ function Cover({
 }
 
 /**
- * The way into the library, drawn with Magnet Button: the first button people
- * meet on the page is itself a component, and the note beside it names it.
+ * The two ways into the library, each drawn with a Kokonut button: Slide Text
+ * Button opens the docs, Command Button opens search (and answers ⌘K).
  */
-function BrowseAll({ count, part }: { count: number; part?: Part }) {
-  const router = useRouter();
+function HeroActions({ count }: { count: number }) {
+  const { setOpenSearch } = useSearchContext();
   return (
     <div
-      className="home-enter flex flex-wrap items-center gap-x-6 gap-y-3"
+      className="home-enter flex flex-wrap items-center gap-3"
       style={enter(2)}
     >
-      <AttractButton
-        className={cn(
-          "h-10 min-w-0 shrink-0 rounded-full bg-black px-[18px] font-medium text-[14px] text-white tracking-[-0.01em] shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:bg-[#1c1c1c] active:bg-[#2a2a2a] dark:bg-white dark:text-black dark:shadow-[inset_0_-1px_0_rgba(0,0,0,0.08)] dark:active:bg-[#dcdcdc] dark:hover:bg-[#ececec]",
-          FOCUS
-        )}
-        containerClassName="shrink-0"
-        onClick={() => router.push("/docs")}
-        onFocus={() => router.prefetch("/docs")}
-        onPointerEnter={() => router.prefetch("/docs")}
-        radius={26}
+      <SlideTextButton
+        animateIn={false}
+        className="rounded-full px-5 text-[15px] tracking-[-0.01em] active:scale-100 md:min-w-0"
+        hoverText="Open the docs"
+        href="/docs"
+        text={`Browse ${count} components`}
+      />
+      <CommandButton
+        className="rounded-full border-black/[0.13] bg-white pl-4 text-black/70 hover:border-black/30 hover:bg-white hover:text-black dark:border-white/[0.14] dark:bg-black dark:text-white/70 dark:hover:border-white/35 dark:hover:bg-black dark:hover:text-white"
+        onClick={() => setOpenSearch(true)}
       >
-        Browse all {count} components
-      </AttractButton>
-      {part ? (
-        <Link
-          className={cn(
-            "group flex w-fit items-baseline gap-2 whitespace-nowrap rounded-sm text-[11.5px]",
-            MONO,
-            FOCUS
-          )}
-          href={part.url}
-        >
-          <span className={cn("font-medium", LEAF)}>{part.code}</span>
-          <span className="text-black/50 underline-offset-4 group-hover:text-black group-hover:underline dark:text-white/50 dark:group-hover:text-white">
-            {part.title}
-          </span>
-        </Link>
-      ) : null}
+        Search
+      </CommandButton>
     </div>
   );
 }
