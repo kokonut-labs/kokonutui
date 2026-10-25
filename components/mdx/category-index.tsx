@@ -43,13 +43,20 @@ export function CategoryIndex({ category }: { category: string }) {
               {part.code}
             </span>
             <span className="flex min-w-0 flex-col gap-1">
-              <span
-                className={cn(
-                  "font-medium text-[15px] tracking-[-0.01em] underline-offset-4 group-hover:underline",
-                  INK
-                )}
-              >
-                {part.title}
+              <span className="flex items-baseline gap-3">
+                <span
+                  className={cn(
+                    "font-medium text-[15px] tracking-[-0.01em] underline-offset-4 group-hover:underline",
+                    INK
+                  )}
+                >
+                  {part.title}
+                </span>
+                {part.isNew || part.updated ? (
+                  <span className={cn(MONO, "text-[11px]", LEAF)}>
+                    {part.isNew ? "New" : "Updated"}
+                  </span>
+                ) : null}
               </span>
               {part.description ? (
                 <span className={cn("text-[14px] leading-relaxed", SOFT)}>
