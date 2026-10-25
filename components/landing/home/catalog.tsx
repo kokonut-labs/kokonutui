@@ -1,13 +1,19 @@
 "use client";
 
 import { useSearchContext } from "fumadocs-ui/contexts/search";
-import { ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
+import { ArrowRightIcon, ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type ComponentType, type ReactNode, Suspense, useState } from "react";
 import CommandButton from "@/components/kokonutui/command-button";
 import SlideTextButton from "@/components/kokonutui/slide-text-button";
 import { componentPrompt } from "@/lib/agents";
+import {
+  CHANGELOG_URL,
+  formatReleaseDate,
+  RELEASES,
+  releaseAnchor,
+} from "@/lib/changelog";
 import {
   PRO_SHOWCASE,
   PRO_SHOWCASE_COUNT,
@@ -53,6 +59,8 @@ import {
 } from "./styles";
 import { VideoCard } from "./video";
 
+/** The newest release, shown under Vercel in the cover. */
+const LATEST = RELEASES[0];
 const FEATURED = "apple-activity-card";
 /** Sits under the featured part: the other half of a checkout screen. */
 const FEATURED_ACTION = "slide-to-confirm";
@@ -99,6 +107,7 @@ export function Catalog({
         action={action && LIVE[action.name] ? action : undefined}
         count={parts.length}
         featured={featured}
+        latest={LATEST.added.flatMap((e) => byName.get(e.name) ?? [])}
       />
       <Plates plates={plates} />
       <Index parts={parts} />
@@ -114,10 +123,12 @@ export function Catalog({
 function Cover({
   featured,
   action,
+  latest,
   count,
 }: {
   featured?: Part;
   action?: Part;
+  latest: Part[];
   count: number;
 }) {
   return (
@@ -201,7 +212,7 @@ function Cover({
         <ConnectEditor />
         <a
           className={cn(
-            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-span-2 md:row-start-1",
+            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-1",
             CELL,
             "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
             EASE_COLORS,
@@ -227,6 +238,7 @@ function Cover({
             <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
           </svg>
         </a>
+        <LatestRelease parts={latest} />
       </div>
     </section>
   );
@@ -317,6 +329,45 @@ function ActionPlate({ part }: { part: Part }) {
       </div>
       <PlateFoot part={part} />
     </figure>
+  );
+}
+
+/** The newest release, under Vercel: what was added and when. */
+function LatestRelease({ parts }: { parts: Part[] }) {
+  if (parts.length === 0) {
+    return null;
+  }
+  const shown = parts.slice(0, 3).map((p) => p.title);
+  const more = parts.length - shown.length;
+  return (
+    <Link
+      className={cn(
+        "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-2",
+        CELL,
+        "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
+        EASE_COLORS,
+        FOCUS_INSET
+      )}
+      href={`${CHANGELOG_URL}#${releaseAnchor(LATEST.date)}`}
+      style={enter(2)}
+    >
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className={META}>
+          What&apos;s new · {formatReleaseDate(LATEST.date)}
+        </span>
+        <span className={cn("font-medium text-[17px]", INK)}>
+          {parts.length} new components
+        </span>
+        <span className={cn("text-pretty text-[13px] leading-snug", SOFT)}>
+          {shown.join(", ")}
+          {more > 0 ? ` and ${more} more` : null}
+        </span>
+      </span>
+      <ArrowRightIcon
+        aria-hidden
+        className="size-4 shrink-0 text-black/40 transition-colors duration-150 ease-out group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
+      />
+    </Link>
   );
 }
 
