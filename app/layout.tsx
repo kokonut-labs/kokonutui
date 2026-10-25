@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: `${siteConfig.name} - Free Open Source UI Components for React and Tailwind CSS`,
+  title: `${siteConfig.name}: Free Open-Source React & Tailwind Components`,
   description: siteConfig.description,
   metadataBase: new URL(siteConfig.url),
   applicationName: siteConfig.name,

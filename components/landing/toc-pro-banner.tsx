@@ -29,7 +29,7 @@ const TEMPLATE = PRO_TEMPLATES[0];
  */
 export default function TocProBanner() {
   return (
-    <div className="mt-4 flex flex-col gap-2">
+    <div className="mt-4 flex flex-col gap-2" data-nosnippet>
       <Link
         className={cn("group flex w-full flex-col border", CELL, LINE, FOCUS)}
         href="https://kokonutui.pro?utm_source=kokonutui.com&utm_medium=toc"

@@ -257,8 +257,14 @@ export async function generateMetadata(props: {
     alt: page.data.title,
   };
 
+  // Component pages say what they are in the search result title, so
+  // "AI Input Selector" also answers "react chat input component".
+  const isComponent = getParts().some((p) => p.url === page.url);
+
   return {
-    title: page.data.title,
+    title: isComponent
+      ? `${page.data.title} - React Component`
+      : page.data.title,
     description: page.data.description,
     alternates: {
       canonical: `${siteConfig.url}${page.url}`,

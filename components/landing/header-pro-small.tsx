@@ -29,7 +29,10 @@ export default function HeaderProSmall() {
       href="https://kokonutui.pro?utm_source=kokonutui.com&utm_medium=header"
       target="_blank"
     >
-      <span className="flex w-full items-center justify-between gap-2">
+      <span
+        className="flex w-full items-center justify-between gap-2"
+        data-nosnippet
+      >
         <span className="flex items-baseline gap-2">
           <span className={cn(MONO, "font-medium text-[#FF2D55] text-[11px]")}>
             PRO
@@ -45,7 +48,7 @@ export default function HeaderProSmall() {
           className="size-3.5 shrink-0 text-[#FF2D55]"
         />
       </span>
-      <span className={cn("text-[12.5px] leading-snug", SOFT)}>
+      <span className={cn("text-[12.5px] leading-snug", SOFT)} data-nosnippet>
         100+ components to build websites faster, works with Claude Code, Cursor
         and more
       </span>
