@@ -58,8 +58,9 @@ function folderTag(
 
 /**
  * The sidebar reads like the homepage's index: each component is listed by
- * its catalog code instead of an icon, recent additions say "New" and
- * recent reworks say "Updated".
+ * its catalog code instead of an icon. Only the category says how many of
+ * its parts are new or updated; the rows themselves stay plain, and the
+ * category page tags each one.
  */
 function withCodes(tree: PageTree.Root): PageTree.Root {
   const parts = getParts();
@@ -99,10 +100,8 @@ function withCodes(tree: PageTree.Root): PageTree.Root {
     if (!code || node.type !== "page") {
       return node;
     }
-    const tag = tags.get(node.url);
     return {
       ...node,
-      name: tag ? tagged(node.name, tag) : node.name,
       icon: (
         <span
           className={cn(
