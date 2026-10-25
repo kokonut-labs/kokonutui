@@ -1,11 +1,12 @@
 "use client";
 
+import { useSearchContext } from "fumadocs-ui/contexts/search";
 import { ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type ComponentType, type ReactNode, Suspense, useState } from "react";
-import AttractButton from "@/components/kokonutui/attract-button";
+import CommandButton from "@/components/kokonutui/command-button";
+import SlideTextButton from "@/components/kokonutui/slide-text-button";
 import { componentPrompt } from "@/lib/agents";
 import {
   PRO_SHOWCASE,
@@ -53,8 +54,8 @@ import {
 import { VideoCard } from "./video";
 
 const FEATURED = "apple-activity-card";
-/** The cover's way into the library is itself a part: Magnet Button. */
-const BROWSE = "attract-button";
+/** Sits under the featured part: the other half of a checkout screen. */
+const FEATURED_ACTION = "slide-to-confirm";
 /** The featured part, asked for the way you'd ask a colleague. */
 const AGENT_PROMPT = "Add @kokonutui/apple-activity-card to my dashboard";
 // The wide background comes after four plates, so it starts a row at both
@@ -82,6 +83,7 @@ export function Catalog({
 }) {
   const byName = new Map(parts.map((p) => [p.name, p]));
   const featured = byName.get(FEATURED);
+  const action = byName.get(FEATURED_ACTION);
   const plates = PLATES.map((name) => byName.get(name)).filter((p): p is Part =>
     Boolean(p && LIVE[p.name])
   );
@@ -94,7 +96,7 @@ export function Catalog({
       )}
     >
       <Cover
-        browse={byName.get(BROWSE)}
+        action={action && LIVE[action.name] ? action : undefined}
         count={parts.length}
         featured={featured}
       />
@@ -111,11 +113,11 @@ export function Catalog({
 
 function Cover({
   featured,
-  browse,
+  action,
   count,
 }: {
   featured?: Part;
-  browse?: Part;
+  action?: Part;
   count: number;
 }) {
   return (
@@ -164,19 +166,25 @@ function Cover({
             Components <br />
             that feel right.
           </h1>
-          <p
-            className={cn(
-              "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
-              SOFT
-            )}
-            style={enter(1)}
-          >
-            Open-source React components built with Tailwind CSS, Motion and
-            shadcn/ui. Every component on this page is live: try it, then
-            install it with one command or one prompt.
-          </p>
+          <div className="flex flex-col gap-8">
+            <p
+              className={cn(
+                "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
+                SOFT
+              )}
+              style={enter(1)}
+            >
+              Open-source React components built with Tailwind CSS, Motion and
+              shadcn/ui. Every component on this page is live: try it, then
+              install it with one command or one prompt.
+            </p>
+            <HeroActions count={count} />
+          </div>
         </div>
-        {featured ? <FeaturedPlate part={featured} /> : null}
+        <div className={cn("grid grid-cols-1 lg:col-span-4", GRID)}>
+          {featured ? <FeaturedPlate part={featured} /> : null}
+          {action ? <ActionPlate part={action} /> : null}
+        </div>
       </div>
 
       <div className={cn("grid grid-cols-1 md:grid-cols-12", GRID)}>
@@ -191,10 +199,9 @@ function Cover({
           <PromptLine prompt={AGENT_PROMPT} />
         </div>
         <ConnectEditor />
-        <BrowseAll count={count} part={browse} />
         <a
           className={cn(
-            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-2",
+            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-span-2 md:row-start-1",
             CELL,
             "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
             EASE_COLORS,
@@ -226,56 +233,29 @@ function Cover({
 }
 
 /**
- * The way into the library, drawn with Magnet Button: the first button people
- * meet on the page is itself a component, and the note under it names it.
+ * The two ways into the library, each drawn with a Kokonut button: Slide Text
+ * Button opens the docs, Command Button opens search (and answers ⌘K).
  */
-function BrowseAll({ count, part }: { count: number; part?: Part }) {
-  const router = useRouter();
+function HeroActions({ count }: { count: number }) {
+  const { setOpenSearch } = useSearchContext();
   return (
     <div
-      className={cn(
-        // Clips the button's field of filings at the rules.
-        "home-enter flex items-center justify-between gap-4 overflow-hidden p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-1",
-        CELL
-      )}
+      className="home-enter flex flex-wrap items-center gap-3"
       style={enter(2)}
     >
-      <span className="flex min-w-0 flex-col gap-1">
-        <span className={META}>Library</span>
-        <span className={cn("font-medium text-[17px]", INK)}>
-          {count} components
-        </span>
-        {part ? (
-          <Link
-            className={cn(
-              "group flex w-fit items-baseline gap-2 whitespace-nowrap rounded-sm text-[11.5px]",
-              MONO,
-              FOCUS
-            )}
-            href={part.url}
-          >
-            <span className={cn("font-medium", LEAF)}>{part.code}</span>
-            <span className="text-black/50 underline-offset-4 group-hover:text-black group-hover:underline dark:text-white/50 dark:group-hover:text-white">
-              {part.title}
-            </span>
-          </Link>
-        ) : null}
-      </span>
-      <AttractButton
-        className={cn(
-          "h-10 min-w-0 shrink-0 rounded-full bg-black px-[18px] font-medium text-[14px] text-white tracking-[-0.01em] shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:bg-[#1c1c1c] active:bg-[#2a2a2a] dark:bg-white dark:text-black dark:shadow-[inset_0_-1px_0_rgba(0,0,0,0.08)] dark:active:bg-[#dcdcdc] dark:hover:bg-[#ececec]",
-          FOCUS
-        )}
-        containerClassName="shrink-0"
-        onClick={() => router.push("/docs")}
-        onFocus={() => router.prefetch("/docs")}
-        onPointerEnter={() => router.prefetch("/docs")}
-        // Small enough that the field fades out inside the cell instead of
-        // being cut at its corner.
-        radius={26}
+      <SlideTextButton
+        animateIn={false}
+        className="rounded-full px-5 text-[15px] tracking-[-0.01em] active:scale-100 md:min-w-0"
+        hoverText="Open the docs"
+        href="/docs"
+        text={`Browse ${count} components`}
+      />
+      <CommandButton
+        className="rounded-full border-black/[0.13] bg-white pl-4 text-black/70 hover:border-black/30 hover:bg-white hover:text-black dark:border-white/[0.14] dark:bg-black dark:text-white/70 dark:hover:border-white/35 dark:hover:bg-black dark:hover:text-white"
+        onClick={() => setOpenSearch(true)}
       >
-        Browse all
-      </AttractButton>
+        Search
+      </CommandButton>
     </div>
   );
 }
@@ -286,10 +266,7 @@ function FeaturedPlate({ part }: { part: Part }) {
   const [run, setRun] = useState(0);
   return (
     <figure
-      className={cn(
-        "home-enter flex min-h-[360px] flex-col lg:col-span-4",
-        CELL
-      )}
+      className={cn("home-enter flex min-h-[360px] flex-col", CELL)}
       style={enter(1)}
     >
       <div className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
@@ -317,6 +294,24 @@ function FeaturedPlate({ part }: { part: Part }) {
         <Fit className="p-6">
           <Suspense fallback={<LiveFallback />}>
             <Demo key={run} />
+          </Suspense>
+        </Fit>
+      </div>
+      <PlateFoot part={part} />
+    </figure>
+  );
+}
+
+/** A short plate under the featured part, for a control rather than a card. */
+function ActionPlate({ part }: { part: Part }) {
+  const { Component: Demo, hint } = LIVE[part.name];
+  return (
+    <figure className={cn("home-enter flex flex-col", CELL)} style={enter(1)}>
+      <PlateHead code={part.code} note={hint} />
+      <div className="relative h-[120px]">
+        <Fit className="px-6 py-4">
+          <Suspense fallback={<LiveFallback />}>
+            <Demo />
           </Suspense>
         </Fit>
       </div>
