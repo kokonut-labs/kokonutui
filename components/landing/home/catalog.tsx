@@ -155,7 +155,8 @@ function Cover({
       <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
         <div
           className={cn(
-            "flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
+            // Clips the Browse all button's field of filings at the rules.
+            "flex flex-col justify-between gap-10 overflow-hidden p-5 sm:p-8 lg:col-span-8 lg:p-10",
             CELL
           )}
         >
@@ -170,17 +171,20 @@ function Cover({
             Components <br />
             that feel right.
           </h1>
-          <p
-            className={cn(
-              "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
-              SOFT
-            )}
-            style={enter(1)}
-          >
-            Open-source React components built with Tailwind CSS, Motion and
-            shadcn/ui. Every component on this page is live: try it, then
-            install it with one command or one prompt.
-          </p>
+          <div className="flex flex-col gap-8">
+            <p
+              className={cn(
+                "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
+                SOFT
+              )}
+              style={enter(1)}
+            >
+              Open-source React components built with Tailwind CSS, Motion and
+              shadcn/ui. Every component on this page is live: try it, then
+              install it with one command or one prompt.
+            </p>
+            <BrowseAll count={count} part={browse} />
+          </div>
         </div>
         <div className={cn("grid grid-cols-1 lg:col-span-4", GRID)}>
           {featured ? <FeaturedPlate part={featured} /> : null}
@@ -200,10 +204,9 @@ function Cover({
           <PromptLine prompt={AGENT_PROMPT} />
         </div>
         <ConnectEditor />
-        <BrowseAll count={count} part={browse} />
         <a
           className={cn(
-            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-2",
+            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-span-2 md:row-start-1",
             CELL,
             "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
             EASE_COLORS,
@@ -236,40 +239,15 @@ function Cover({
 
 /**
  * The way into the library, drawn with Magnet Button: the first button people
- * meet on the page is itself a component, and the note under it names it.
+ * meet on the page is itself a component, and the note beside it names it.
  */
 function BrowseAll({ count, part }: { count: number; part?: Part }) {
   const router = useRouter();
   return (
     <div
-      className={cn(
-        // Clips the button's field of filings at the rules.
-        "home-enter flex items-center justify-between gap-4 overflow-hidden p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-1",
-        CELL
-      )}
+      className="home-enter flex flex-wrap items-center gap-x-6 gap-y-3"
       style={enter(2)}
     >
-      <span className="flex min-w-0 flex-col gap-1">
-        <span className={META}>Library</span>
-        <span className={cn("font-medium text-[17px]", INK)}>
-          {count} components
-        </span>
-        {part ? (
-          <Link
-            className={cn(
-              "group flex w-fit items-baseline gap-2 whitespace-nowrap rounded-sm text-[11.5px]",
-              MONO,
-              FOCUS
-            )}
-            href={part.url}
-          >
-            <span className={cn("font-medium", LEAF)}>{part.code}</span>
-            <span className="text-black/50 underline-offset-4 group-hover:text-black group-hover:underline dark:text-white/50 dark:group-hover:text-white">
-              {part.title}
-            </span>
-          </Link>
-        ) : null}
-      </span>
       <AttractButton
         className={cn(
           "h-10 min-w-0 shrink-0 rounded-full bg-black px-[18px] font-medium text-[14px] text-white tracking-[-0.01em] shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.14)] hover:bg-[#1c1c1c] active:bg-[#2a2a2a] dark:bg-white dark:text-black dark:shadow-[inset_0_-1px_0_rgba(0,0,0,0.08)] dark:active:bg-[#dcdcdc] dark:hover:bg-[#ececec]",
@@ -279,12 +257,25 @@ function BrowseAll({ count, part }: { count: number; part?: Part }) {
         onClick={() => router.push("/docs")}
         onFocus={() => router.prefetch("/docs")}
         onPointerEnter={() => router.prefetch("/docs")}
-        // Small enough that the field fades out inside the cell instead of
-        // being cut at its corner.
         radius={26}
       >
-        Browse all
+        Browse all {count} components
       </AttractButton>
+      {part ? (
+        <Link
+          className={cn(
+            "group flex w-fit items-baseline gap-2 whitespace-nowrap rounded-sm text-[11.5px]",
+            MONO,
+            FOCUS
+          )}
+          href={part.url}
+        >
+          <span className={cn("font-medium", LEAF)}>{part.code}</span>
+          <span className="text-black/50 underline-offset-4 group-hover:text-black group-hover:underline dark:text-white/50 dark:group-hover:text-white">
+            {part.title}
+          </span>
+        </Link>
+      ) : null}
     </div>
   );
 }
