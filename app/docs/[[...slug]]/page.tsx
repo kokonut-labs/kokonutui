@@ -11,8 +11,10 @@ import { getCategories } from "@/components/landing/home/get-categories";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, META, MONO } from "@/components/landing/home/styles";
 import TocProBanner from "@/components/landing/toc-pro-banner";
+import { CategoryIndex } from "@/components/mdx/category-index";
 import { Release } from "@/components/mdx/changelog-release";
 import { DocsPre } from "@/components/mdx/code-block";
+import { ComponentGuide } from "@/components/mdx/component-guide";
 import {
   AgentEndpoints,
   AgentPrompts,
@@ -217,6 +219,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
             AgentEndpoints,
             AgentPrompts,
             AgentRules,
+            CategoryIndex,
             Command,
             McpSetup,
             Note,
@@ -232,6 +235,13 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
             WhatIncluded,
           }}
         />
+        {part ? (
+          <ComponentGuide
+            docsPath={page.path}
+            hasUsage={page.data.toc.some((item) => item.url === "#usage")}
+            part={part}
+          />
+        ) : null}
       </DocsBody>
     </DocsPage>
   );
@@ -257,14 +267,21 @@ export async function generateMetadata(props: {
     alt: page.data.title,
   };
 
-  // Component pages say what they are in the search result title, so
-  // "AI Input Selector" also answers "react chat input component".
+  // Component and category pages say what they are in the search result
+  // title, so "AI Input Selector" also answers "react chat input component".
   const isComponent = getParts().some((p) => p.url === page.url);
+  const isCategory = getCategories().some(
+    (c) => `/docs/${c.slug}` === page.url
+  );
+  let title = page.data.title;
+  if (isComponent) {
+    title = `${page.data.title} - React Component`;
+  } else if (isCategory) {
+    title = `${page.data.title} for React and Tailwind CSS`;
+  }
 
   return {
-    title: isComponent
-      ? `${page.data.title} - React Component`
-      : page.data.title,
+    title,
     description: page.data.description,
     alternates: {
       canonical: `${siteConfig.url}${page.url}`,

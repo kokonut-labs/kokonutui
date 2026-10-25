@@ -42,11 +42,9 @@ function getColumns(): FooterColumn[] {
   return [
     {
       title: "Components",
-      // Categories have no index page of their own; each opens on its first
-      // component, where the sidebar lists the rest.
       links: categories.map((c) => ({
         label: `${c.title} components`,
-        href: c.items[0].url,
+        href: `/docs/${c.slug}`,
       })),
     },
     {

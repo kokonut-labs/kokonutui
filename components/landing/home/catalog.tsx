@@ -605,7 +605,15 @@ function Index({ parts }: { parts: Part[] }) {
                 INK
               )}
             >
-              {category}
+              <Link
+                className={cn(
+                  "underline-offset-4 hover:underline",
+                  FOCUS_INSET
+                )}
+                href={`/docs/${items[0]?.categorySlug}`}
+              >
+                {category}
+              </Link>
               <span className={META}>{items[0]?.code.slice(0, 2)}</span>
             </h3>
             <ul className="flex flex-col">
