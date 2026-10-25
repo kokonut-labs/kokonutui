@@ -32,13 +32,19 @@ export const OG_HEIGHT = 630;
 
 /* Meta type is set larger than the site's 11.5px: a link preview is shown at
    about 40% of its size in a feed, so anything smaller turns to grain. */
-const META = cn(MONO, "text-[15px] text-black/50 dark:text-white/50");
+export const META = cn(MONO, "text-[15px] text-black/50 dark:text-white/50");
 
 /**
  * One 1200 by 630 canvas, in a fixed theme whatever the browser prefers, so a
  * screenshot of it is the link-preview image.
  */
-function Canvas({ theme, children }: { theme: Theme; children: ReactNode }) {
+export function Canvas({
+  theme,
+  children,
+}: {
+  theme: Theme;
+  children: ReactNode;
+}) {
   // The page's own theme class would leak into a light frame, so the frame
   // sets it.
   useEffect(() => {
@@ -66,7 +72,7 @@ function Canvas({ theme, children }: { theme: Theme; children: ReactNode }) {
   );
 }
 
-function MetaRow({ cells }: { cells: ReactNode[] }) {
+export function MetaRow({ cells }: { cells: ReactNode[] }) {
   return (
     <div className={cn("grid h-[54px] grid-cols-4", GRID)}>
       {cells.map((cell, i) => (
@@ -83,7 +89,7 @@ function MetaRow({ cells }: { cells: ReactNode[] }) {
   );
 }
 
-function Brand({ theme }: { theme: Theme }) {
+export function Brand({ theme }: { theme: Theme }) {
   return (
     <>
       <OgLogo dark={theme === "dark"} size={24} />
@@ -94,13 +100,13 @@ function Brand({ theme }: { theme: Theme }) {
   );
 }
 
-const SITE_META = [
+export const SITE_META = [
   "Component catalog",
   "React, Tailwind CSS, Motion",
   "Free and open source",
 ];
 
-function Live({ name }: { name: string }) {
+export function Live({ name }: { name: string }) {
   const entry = LIVE[name];
   if (!entry) {
     return null;

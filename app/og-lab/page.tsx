@@ -32,7 +32,8 @@ export default function OgLab() {
         </h1>
         <p className={cn(META, "text-[13px]")}>
           The homepage image is a screenshot of the cover frame: run `bun run
-          og` after changing it. Docs images are drawn per page by /docs-og.
+          og` after changing it. Docs images are drawn per page by /docs-og. New
+          directions are at /og-lab/proposals.
         </p>
       </header>
       <section className="flex flex-wrap gap-4">
