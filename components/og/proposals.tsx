@@ -22,7 +22,7 @@ import {
   SITE_META,
   type Theme,
 } from "./frames";
-import { AI_PART, type ProposalId, SHEET_PARTS } from "./proposal-list";
+import { AI_PART, type ProposalId } from "./proposal-list";
 
 /** One docs category, as the index lists it. */
 export interface FrameCategory {
@@ -89,67 +89,6 @@ function Tagline({ className }: { className?: string }) {
       <br />
       that feel right.
     </h1>
-  );
-}
-
-/** A: six live parts on one sheet, so the preview shows a range, not one card. */
-function SheetFrame({ theme, data }: { theme: Theme; data: ProposalData }) {
-  const parts = SHEET_PARTS.flatMap((name) => data.parts[name] ?? []);
-  return (
-    <Canvas theme={theme}>
-      <div className={cn("grid grid-rows-[54px_1fr_68px]", GRID)}>
-        <SiteRow theme={theme} />
-        <div className={cn("grid grid-cols-12", GRID)}>
-          <div
-            className={cn(
-              "col-span-5 flex flex-col justify-between px-9 pt-10 pb-9",
-              CELL
-            )}
-          >
-            <Tagline className="text-[66px]" />
-            <p className={cn("text-pretty text-[20px] leading-[1.45]", SOFT)}>
-              Open-source React components built with Tailwind CSS, Motion and
-              shadcn/ui.
-            </p>
-          </div>
-          <div className={cn("col-span-7 grid grid-cols-3 grid-rows-2", GRID)}>
-            {parts.map((part) => (
-              <figure className={cn("flex flex-col", CELL)} key={part.name}>
-                <span
-                  className={cn(
-                    MONO,
-                    "px-4 pt-3 font-medium text-[13px]",
-                    LEAF
-                  )}
-                >
-                  {part.code}
-                </span>
-                <div className="relative flex-1">
-                  <Fit className="p-3">
-                    <Live name={part.name} />
-                  </Fit>
-                </div>
-                <figcaption className="truncate px-4 pb-3 font-medium text-[14px]">
-                  {part.title}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-        <div className={cn("grid grid-cols-12", GRID)}>
-          <p
-            className={cn(
-              "col-span-5 flex items-center gap-2 px-9 text-[18px]",
-              CELL
-            )}
-          >
-            <span className="font-medium">{data.count} components</span>
-            <span className={SOFT}>in {data.categories.length} categories</span>
-          </p>
-          <Install className="col-span-7 px-5" name={INSTALL_PART} />
-        </div>
-      </div>
-    </Canvas>
   );
 }
 
@@ -303,7 +242,6 @@ const FRAMES: Record<
   ProposalId,
   (props: { theme: Theme; data: ProposalData }) => ReactNode
 > = {
-  sheet: SheetFrame,
   index: IndexFrame,
   ai: AiFrame,
 };

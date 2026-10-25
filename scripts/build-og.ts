@@ -6,7 +6,7 @@
  *   bun dev        # in another terminal
  *   bun run og     # writes app/opengraph-image.png and app/twitter-image.png
  *
- * Re-run it when the cover's copy, featured part or component count changes.
+ * Re-run it when the cover's copy, featured parts or component count changes.
  * OG_PATH draws another frame instead, such as a direction from
  * /og-lab/proposals: OG_PATH=/og-lab/proposals/index/light bun run og
  * Uses your installed Chrome, or the browser at OG_BROWSER. OG_URL points it
