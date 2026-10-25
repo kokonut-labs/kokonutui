@@ -6,8 +6,17 @@ import { CoverFrame, type Theme } from "@/components/og/frames";
 export const metadata: Metadata = { robots: "noindex, nofollow" };
 
 const THEMES: Theme[] = ["light", "dark"];
-/** The part on the cover, as on the homepage. */
-const FEATURED = "apple-activity-card";
+/** The parts on the cover: one or two from each of several shelves. */
+const FEATURED = [
+  "pull-cord",
+  "apple-activity-card",
+  "wheel-picker",
+  "detent-dial",
+  "bell-button",
+  "liquid-gauge",
+];
+/** The part the install line names. */
+const INSTALL = "slide-to-confirm";
 
 export function generateStaticParams() {
   return THEMES.map((theme) => ({ theme }));
@@ -23,21 +32,30 @@ export default async function CoverImage({
     notFound();
   }
   const { theme } = await params;
-  const parts = getParts();
-  const featured = parts.find((p) => p.name === FEATURED);
-  if (!(featured && THEMES.includes(theme as Theme))) {
+  if (!THEMES.includes(theme as Theme)) {
     notFound();
   }
+  const parts = getParts();
+  const featured = FEATURED.flatMap((name) => {
+    const part = parts.find((p) => p.name === name);
+    return part
+      ? [
+          {
+            code: part.code,
+            name: part.name,
+            title: part.title,
+            category: part.category,
+            dependencies: part.dependencies,
+          },
+        ]
+      : [];
+  });
   return (
     <CoverFrame
+      categories={new Set(parts.map((p) => p.categorySlug)).size}
       count={parts.length}
-      featured={{
-        code: featured.code,
-        name: featured.name,
-        title: featured.title,
-        category: featured.category,
-        dependencies: featured.dependencies,
-      }}
+      install={INSTALL}
+      parts={featured}
       theme={theme as Theme}
     />
   );

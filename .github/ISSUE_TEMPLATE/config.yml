@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://kokonutui.com/docs
+    about: Installation, every component's props, and setup for AI agents.
+  - name: Kokonut UI Pro
+    url: https://kokonutui.pro
+    about: Questions about Pro components, templates or your license.

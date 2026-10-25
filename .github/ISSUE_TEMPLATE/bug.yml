@@ -1,0 +1,28 @@
+name: Bug
+description: A component doesn't work or look the way its docs page shows.
+labels: ["bug"]
+body:
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      description: Its name as you installed it, e.g. slide-to-confirm.
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, what you got instead, and the steps to get there.
+    validations:
+      required: true
+  - type: input
+    id: repro
+    attributes:
+      label: Reproduction
+      description: A link to a repo, sandbox or deployed page where it happens, if you have one.
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, React, Next.js and Tailwind CSS versions.
