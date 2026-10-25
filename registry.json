@@ -164,7 +164,7 @@
       "name": "ai-input-search",
       "type": "registry:component",
       "title": "AI Input Search",
-      "description": "AI composer with a Tools menu of modes (browse, investigate, draft a visual, run code, reason), a tool header with a Change key, a model picker, an Ask key and a live trace that stacks each source's avatar as it is read. Built with React, Tailwind CSS and Motion.",
+      "description": "AI composer with a Tools menu (browse, investigate, draft, run code, reason), a model picker and a live trace that stacks each source's avatar as it is read.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -201,7 +201,7 @@
       "name": "currency-transfer",
       "type": "registry:component",
       "title": "Currency Transfer",
-      "description": "Transfer tracker that converts the amount in place, walks through each step on a filling rail, and ends with a copyable reference. Built with React and Tailwind CSS.",
+      "description": "Transfer tracker that converts the amount in place, walks through each step on a filling rail and ends with a copyable reference.",
       "dependencies": [
         "lucide-react"
       ],
@@ -503,7 +503,7 @@
       "name": "gradient-button",
       "type": "registry:component",
       "title": "Gradient Button",
-      "description": "Layered gradient button with emerald, purple, and orange variants, a gradient border in light and dark mode, soft inner glow, press feedback, and an optional icon, styled entirely with Tailwind CSS in React.",
+      "description": "Layered gradient button with emerald, purple and orange variants, a gradient border, a soft inner glow, press feedback and an optional icon.",
       "registryDependencies": [
         "button"
       ],
@@ -1225,7 +1225,7 @@
       "name": "ai-redact",
       "type": "registry:component",
       "title": "AI Redact",
-      "description": "Names, emails, card numbers and keys are masked as placeholders before a prompt is sent. Replies come back with the placeholders and are filled in with the real values.",
+      "description": "Masks names, emails, card numbers and keys as placeholders before a prompt is sent, then fills the real values back into the reply.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -1272,7 +1272,7 @@
       "name": "ink-background",
       "type": "registry:component",
       "title": "Ink Background",
-      "description": "A hero written in ink on water. Stir it and the letters bleed, drop ink with a click, and the headline gathers itself again, built with React, WebGL and a fluid simulation.",
+      "description": "A hero written in ink on water. Stir it and the letters bleed, click to drop ink, and the headline gathers itself again. Built with WebGL.",
       "dependencies": [],
       "files": [
         {
@@ -1285,7 +1285,7 @@
       "name": "caustics-background",
       "type": "registry:component",
       "title": "Caustics Background",
-      "description": "A hero on the floor of a pool. Light ripples across it, clicks drop rings that bend the light, and the headline floats on the surface with its shadow wobbling below.",
+      "description": "A hero on the floor of a pool. Light ripples across it, clicks drop rings that bend the light, and the headline's shadow wobbles below.",
       "dependencies": [],
       "files": [
         {
@@ -1298,7 +1298,7 @@
       "name": "rain-glass-background",
       "type": "registry:component",
       "title": "Rain Glass Background",
-      "description": "A hero seen through a rainy window. Drops gather, run and swallow each other, each one a tiny lens showing the view, and dragging wipes the fog off the glass for a while.",
+      "description": "A hero seen through a rainy window. Drops gather and run, each a tiny lens on the view, and dragging wipes the fog off the glass.",
       "dependencies": [],
       "files": [
         {
@@ -1404,7 +1404,7 @@
       "name": "card-field",
       "type": "registry:component",
       "title": "Card Field",
-      "description": "A one-row card input for checkout. The number groups the way the brand prints it, then slides away to its last four digits to make room for expiry and security code.",
+      "description": "A one-row card input for checkout. The number groups the way the brand prints it, then slides to its last four to make room for expiry and CVC.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -1420,7 +1420,7 @@
       "name": "stay-picker",
       "type": "registry:component",
       "title": "Stay Picker",
-      "description": "A date range for booking stays. Every night shows its price, sold-out nights are hatched, and your stay is drawn as one pill that wraps from week to week as you drag.",
+      "description": "A date range picker for booking stays. Every night shows its price, sold-out nights are hatched, and your stay is one pill that wraps across weeks.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -1436,7 +1436,7 @@
       "name": "slot-picker",
       "type": "registry:component",
       "title": "Slot Picker",
-      "description": "Book a meeting on a real day rail. Click a free gap and drag the meeting; it hops over what's already booked, grows in place when you change the length, and shows the host's local time.",
+      "description": "Book a meeting on a day rail. Drag a meeting into a free gap; it hops over existing bookings, resizes in place and shows the host's local time.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -1468,7 +1468,7 @@
       "name": "boarding-pass",
       "type": "registry:component",
       "title": "Boarding Pass",
-      "description": "A boarding pass that keeps itself current. When the gate or times change, only the characters that moved roll over, and the old value stays underneath, struck through.",
+      "description": "A boarding pass that keeps itself current. When the gate or times change, only the changed characters roll over, the old value struck through.",
       "dependencies": [
         "lucide-react",
         "motion"
@@ -1484,7 +1484,7 @@
       "name": "split-flap-text",
       "type": "registry:component",
       "title": "Split Flap Text",
-      "description": "Departure-board lettering for launch headlines and status lines. Each tile flips through its drum only as far as its new letter, on a real hinge, a beat after its neighbour.",
+      "description": "Departure-board lettering for headlines and status lines. Each tile flips only as far as its new letter, on a hinge, a beat after its neighbour.",
       "dependencies": [],
       "files": [
         {
