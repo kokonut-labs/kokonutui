@@ -58,6 +58,11 @@ export const LIVE: Record<string, LiveEntry> = {
     ),
     "Rings fill as it mounts"
   ),
+  "slide-to-confirm": live(
+    () => import("@/components/kokonutui/slide-to-confirm"),
+    ({ default: C }) => <C className="w-[320px]" />,
+    "Slide all the way to pay"
+  ),
   "ai-prompt": live(
     () => import("@/components/kokonutui/ai-prompt"),
     ({ default: C }) => <C className="w-full max-w-[520px]" />,

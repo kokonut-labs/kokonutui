@@ -53,6 +53,8 @@ import {
 import { VideoCard } from "./video";
 
 const FEATURED = "apple-activity-card";
+/** Sits under the featured part: the other half of a checkout screen. */
+const FEATURED_ACTION = "slide-to-confirm";
 /** The cover's way into the library is itself a part: Magnet Button. */
 const BROWSE = "attract-button";
 /** The featured part, asked for the way you'd ask a colleague. */
@@ -82,6 +84,7 @@ export function Catalog({
 }) {
   const byName = new Map(parts.map((p) => [p.name, p]));
   const featured = byName.get(FEATURED);
+  const action = byName.get(FEATURED_ACTION);
   const plates = PLATES.map((name) => byName.get(name)).filter((p): p is Part =>
     Boolean(p && LIVE[p.name])
   );
@@ -94,6 +97,7 @@ export function Catalog({
       )}
     >
       <Cover
+        action={action && LIVE[action.name] ? action : undefined}
         browse={byName.get(BROWSE)}
         count={parts.length}
         featured={featured}
@@ -111,10 +115,12 @@ export function Catalog({
 
 function Cover({
   featured,
+  action,
   browse,
   count,
 }: {
   featured?: Part;
+  action?: Part;
   browse?: Part;
   count: number;
 }) {
@@ -176,7 +182,10 @@ function Cover({
             install it with one command or one prompt.
           </p>
         </div>
-        {featured ? <FeaturedPlate part={featured} /> : null}
+        <div className={cn("grid grid-cols-1 lg:col-span-4", GRID)}>
+          {featured ? <FeaturedPlate part={featured} /> : null}
+          {action ? <ActionPlate part={action} /> : null}
+        </div>
       </div>
 
       <div className={cn("grid grid-cols-1 md:grid-cols-12", GRID)}>
@@ -286,10 +295,7 @@ function FeaturedPlate({ part }: { part: Part }) {
   const [run, setRun] = useState(0);
   return (
     <figure
-      className={cn(
-        "home-enter flex min-h-[360px] flex-col lg:col-span-4",
-        CELL
-      )}
+      className={cn("home-enter flex min-h-[360px] flex-col", CELL)}
       style={enter(1)}
     >
       <div className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
@@ -317,6 +323,24 @@ function FeaturedPlate({ part }: { part: Part }) {
         <Fit className="p-6">
           <Suspense fallback={<LiveFallback />}>
             <Demo key={run} />
+          </Suspense>
+        </Fit>
+      </div>
+      <PlateFoot part={part} />
+    </figure>
+  );
+}
+
+/** A short plate under the featured part, for a control rather than a card. */
+function ActionPlate({ part }: { part: Part }) {
+  const { Component: Demo, hint } = LIVE[part.name];
+  return (
+    <figure className={cn("home-enter flex flex-col", CELL)} style={enter(1)}>
+      <PlateHead code={part.code} note={hint} />
+      <div className="relative h-[120px]">
+        <Fit className="px-6 py-4">
+          <Suspense fallback={<LiveFallback />}>
+            <Demo />
           </Suspense>
         </Fit>
       </div>
