@@ -29,7 +29,7 @@ export interface LiveEntry {
   wide?: boolean;
 }
 
-export function live<M extends { default: unknown }>(
+function live<M extends { default: unknown }>(
   load: () => Promise<M>,
   render: (mod: M) => ReactNode,
   hint: string,
