@@ -1,7 +1,6 @@
 import { ArrowUpRight, Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { PRO_TEMPLATES } from "@/components/landing/home/data";
 import {
   CELL,
   EASE_COLORS,
@@ -12,6 +11,7 @@ import {
   MONO,
   SOFT,
 } from "@/components/landing/home/styles";
+import { showcaseStill } from "@/lib/pro-showcase";
 import { cn } from "@/lib/utils";
 
 const FEATURES = [
@@ -20,7 +20,8 @@ const FEATURES = [
   "One command installation with shadcn/cli",
 ] as const;
 
-const TEMPLATE = PRO_TEMPLATES[0];
+/** The still beside every docs page: a Pro hero, in the page's theme. */
+const STILL = { name: "dither-reveal-hero", title: "Dither Reveal Hero" };
 
 /**
  * Pro beside every docs page, drawn like a catalog cell: a hairline frame,
@@ -40,17 +41,25 @@ export default function TocProBanner() {
           <span className={cn(MONO, "font-medium text-[#FF2D55] text-[12px]")}>
             PRO
           </span>
-          <span className={META}>Templates</span>
+          <span className={META}>Heroes</span>
         </span>
         <span className="block px-3.5 pt-3">
           <span className="block overflow-hidden border border-black/[0.08] dark:border-white/[0.1]">
             <Image
-              alt={`${TEMPLATE.name}, a Kokonut UI Pro template`}
-              className="aspect-[16/10] w-full object-cover object-top"
-              height={TEMPLATE.height}
+              alt={`${STILL.title}, a Kokonut UI Pro component`}
+              className="aspect-[16/10] w-full object-cover object-top dark:hidden"
+              height={1736}
               sizes="240px"
-              src={TEMPLATE.image}
-              width={TEMPLATE.width}
+              src={showcaseStill(STILL.name, "light")}
+              width={2152}
+            />
+            <Image
+              alt=""
+              className="hidden aspect-[16/10] w-full object-cover object-top dark:block"
+              height={1736}
+              sizes="240px"
+              src={showcaseStill(STILL.name, "dark")}
+              width={2152}
             />
           </span>
         </span>
