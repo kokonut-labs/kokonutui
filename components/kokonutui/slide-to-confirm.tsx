@@ -297,10 +297,12 @@ export default function SlideToConfirm({
         ref={trackRef}
         style={{ height: HEIGHT }}
       >
-        {/* The label as it reads on the empty track. */}
+        {/* The label as it reads on the empty track. Nudged off the thumb by
+            half its width, so it sits between the track and free-space
+            centers and reads as centered. */}
         <motion.span
           aria-hidden
-          className="absolute inset-0 flex items-center justify-center whitespace-nowrap pl-12 font-medium text-sm text-zinc-500 dark:text-zinc-400"
+          className="absolute inset-0 flex items-center justify-center whitespace-nowrap pl-6 font-medium text-sm text-zinc-500 dark:text-zinc-400"
           style={{ opacity: labelOpacity }}
         >
           {label}
@@ -326,7 +328,7 @@ export default function SlideToConfirm({
                 done
                   ? "text-white dark:text-emerald-950"
                   : "text-white dark:text-zinc-900",
-                phase === "idle" || phase === "dragging" ? "pl-12" : "pr-12"
+                phase === "idle" || phase === "dragging" ? "pl-6" : "pr-6"
               )}
               exit={{ opacity: 0, y: -8, filter: "blur(2px)" }}
               initial={{ opacity: 0, y: 8, filter: "blur(2px)" }}
