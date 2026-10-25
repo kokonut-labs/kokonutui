@@ -14,8 +14,7 @@ import { baseOptions } from "../layout.config";
 export const metadata: Metadata = {
   title: {
     template: "%s | Kokonut UI",
-    default:
-      "Kokonut UI - Open Source UI Components for React and Tailwind CSS",
+    default: "Kokonut UI: Free Open-Source React & Tailwind Components",
   },
 };
 

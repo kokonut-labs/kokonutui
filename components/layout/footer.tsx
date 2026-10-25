@@ -105,7 +105,10 @@ export function Footer() {
   return (
     <footer className="w-full bg-white dark:bg-black">
       <div className="mx-auto w-full max-w-[1280px] px-4 pb-10 sm:px-6">
-        <div className={cn("grid grid-cols-1 border", GRID, LINE)}>
+        <div
+          className={cn("grid grid-cols-1 border", GRID, LINE)}
+          data-nosnippet
+        >
           <div
             className={cn(
               "flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6",

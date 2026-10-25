@@ -62,7 +62,9 @@ export function InstallBar({
     );
 
   return (
-    <div className={cn("grid grid-cols-1 border-b", GRID, LINE)}>
+    // Kept out of search snippets: Google was showing the agent prompt as the
+    // page summary instead of the description above it.
+    <div className={cn("grid grid-cols-1 border-b", GRID, LINE)} data-nosnippet>
       <div className={cn("flex flex-wrap items-stretch justify-between", CELL)}>
         <fieldset className="m-0 flex min-w-0 border-0 p-0">
           <legend className="sr-only">Install with</legend>
