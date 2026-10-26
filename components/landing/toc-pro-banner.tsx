@@ -105,7 +105,7 @@ export default function TocProBanner({ category }: { category?: string }) {
           <ArrowUpRight aria-hidden className="size-3.5" />
         </span>
       </Link>
-      <span className={META}>Trusted by 10k+ users worldwide</span>
+      <span className={META}>Trusted by 1k+ users worldwide</span>
     </div>
   );
 }
