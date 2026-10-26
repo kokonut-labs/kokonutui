@@ -8,22 +8,22 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "fumadocs-ui/layouts/docs/slots/sidebar";
+import { AtlasSidebar } from "./atlas-sidebar";
 import { useSidebarProto } from "./context";
-import { FilterSidebar } from "./filter-sidebar";
-import { IndexSidebar } from "./index-sidebar";
+import { LedgerSidebar } from "./ledger-sidebar";
 import { SidebarPicker } from "./picker";
-import { RailSidebar } from "./rail-sidebar";
+import { TerminalSidebar } from "./terminal-sidebar";
 
 /** Draws whichever prototype is picked, or Fumadocs' own sidebar. */
 function ProtoSidebar(props: SidebarProps) {
   const { variant } = useSidebarProto();
   let sidebar = <Sidebar {...props} />;
   if (variant === "a") {
-    sidebar = <IndexSidebar footer={props.footer} />;
+    sidebar = <TerminalSidebar footer={props.footer} />;
   } else if (variant === "b") {
-    sidebar = <RailSidebar footer={props.footer} />;
+    sidebar = <LedgerSidebar footer={props.footer} />;
   } else if (variant === "c") {
-    sidebar = <FilterSidebar footer={props.footer} />;
+    sidebar = <AtlasSidebar footer={props.footer} />;
   }
   return (
     <>

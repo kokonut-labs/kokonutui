@@ -6,6 +6,8 @@ import { source } from "@/lib/source";
 
 export interface SidebarLink {
   name: string;
+  /** Last URL segment, the name the shadcn CLI installs it by. */
+  slug: string;
   url: string;
   /** Catalog code, e.g. "AI-03"; only components have one. */
   code?: string;
@@ -16,6 +18,8 @@ export interface SidebarLink {
 
 export interface SidebarSection {
   name: string;
+  /** The folder's URL segment, e.g. "ai". */
+  slug: string;
   /** Two-letter category code, e.g. "AI". */
   code: string;
   /** The category page, when it has one. */
@@ -43,6 +47,7 @@ export function getSidebarModel(): SidebarModel {
     if (node.type === "page") {
       guide.push({
         name: String(node.name),
+        slug: String(node.name).toLowerCase().replaceAll(" ", "-"),
         url: node.url,
         pro: isPro(node.url),
       });
@@ -59,6 +64,7 @@ export function getSidebarModel(): SidebarModel {
       const part = parts.get(child.url);
       items.push({
         name: String(child.name),
+        slug: child.url.split("/").at(-1) ?? child.url,
         url: child.url,
         code: part?.code,
         isNew: part?.isNew,
@@ -69,6 +75,8 @@ export function getSidebarModel(): SidebarModel {
     const code = items.find((item) => item.code)?.code?.slice(0, 2) ?? "··";
     sections.push({
       name: String(node.name),
+      slug:
+        node.index?.url.split("/").at(-1) ?? String(node.name).toLowerCase(),
       code,
       url: node.index?.url,
       items,

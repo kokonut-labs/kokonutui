@@ -13,9 +13,9 @@ import type { SidebarModel } from "./model";
 
 export const VARIANTS = [
   { id: "current", label: "Current" },
-  { id: "a", label: "A · Index" },
-  { id: "b", label: "B · Rail" },
-  { id: "c", label: "C · Filter" },
+  { id: "a", label: "A · Terminal" },
+  { id: "b", label: "B · Ledger" },
+  { id: "c", label: "C · Atlas" },
 ] as const;
 
 export type Variant = (typeof VARIANTS)[number]["id"];
