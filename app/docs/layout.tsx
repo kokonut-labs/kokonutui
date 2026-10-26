@@ -1,9 +1,11 @@
 import type * as PageTree from "fumadocs-core/page-tree";
-import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import type { Metadata } from "next";
 import HeaderProSmall from "@/components/landing/header-pro-small";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, MONO } from "@/components/landing/home/styles";
+import { SidebarProtoProvider } from "@/components/layout/sidebar-protos/context";
+import { getSidebarModel } from "@/components/layout/sidebar-protos/model";
+import { ProtoDocsLayout } from "@/components/layout/sidebar-protos/slots";
 import { isProPeekUrl } from "@/lib/pro-peeks";
 import { PRO_SHOWCASE_PAGE } from "@/lib/pro-showcase";
 import { PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
@@ -120,13 +122,17 @@ function withCodes(tree: PageTree.Root): PageTree.Root {
 }
 
 export default function Layout({ children }: LayoutProps<"/docs">) {
+  // Sidebar prototypes: pick one with ?sidebar=current|a|b|c or the switch
+  // in the bottom right corner.
   return (
-    <DocsLayout
-      {...baseOptions()}
-      sidebar={{ footer: <HeaderProSmall /> }}
-      tree={withCodes(source.getPageTree())}
-    >
-      {children}
-    </DocsLayout>
+    <SidebarProtoProvider model={getSidebarModel()}>
+      <ProtoDocsLayout
+        {...baseOptions()}
+        sidebar={{ footer: <HeaderProSmall /> }}
+        tree={withCodes(source.getPageTree())}
+      >
+        {children}
+      </ProtoDocsLayout>
+    </SidebarProtoProvider>
   );
 }
