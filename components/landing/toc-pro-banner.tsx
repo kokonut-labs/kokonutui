@@ -11,7 +11,7 @@ import {
   MONO,
   SOFT,
 } from "@/components/landing/home/styles";
-import { showcaseStill } from "@/lib/pro-showcase";
+import { proPickFor, proPickStill, proPickUrl } from "@/lib/pro-siblings";
 import { cn } from "@/lib/utils";
 
 const FEATURES = [
@@ -20,20 +20,20 @@ const FEATURES = [
   "One command installation with shadcn/cli",
 ] as const;
 
-/** The still beside every docs page: a Pro hero, in the page's theme. */
-const STILL = { name: "dither-reveal-hero", title: "Dither Reveal Hero" };
-
 /**
  * Pro beside every docs page, drawn like a catalog cell: a hairline frame,
  * square corners and mono labels. Pro's red is the highlight, on its code and
  * on the bar that closes the card.
  */
-export default function TocProBanner() {
+export default function TocProBanner({ category }: { category?: string }) {
+  // The page's own category in Pro: a Buttons page shows a Pro button and
+  // opens Pro's Buttons docs, not the Pro homepage.
+  const { item, width, height } = proPickFor(category);
   return (
     <div className="mt-4 flex flex-col gap-2" data-nosnippet>
       <Link
         className={cn("group flex w-full flex-col border", CELL, LINE, FOCUS)}
-        href="https://kokonutui.pro?utm_source=kokonutui.com&utm_medium=toc"
+        href={proPickUrl(item, "toc")}
         rel="noopener"
         target="_blank"
       >
@@ -41,25 +41,25 @@ export default function TocProBanner() {
           <span className={cn(MONO, "font-medium text-[#FF2D55] text-[12px]")}>
             PRO
           </span>
-          <span className={META}>Heroes</span>
+          <span className={META}>{item.group}</span>
         </span>
         <span className="block px-3.5 pt-3">
           <span className="block overflow-hidden border border-black/[0.08] dark:border-white/[0.1]">
             <Image
-              alt={`${STILL.title}, a Kokonut UI Pro component`}
-              className="aspect-[16/10] w-full object-cover object-top dark:hidden"
-              height={1736}
+              alt={`${item.title}, a Kokonut UI Pro component`}
+              className="w-full dark:hidden"
+              height={height}
               sizes="240px"
-              src={showcaseStill(STILL.name, "light")}
-              width={2152}
+              src={proPickStill(item.name, "light")}
+              width={width}
             />
             <Image
               alt=""
-              className="hidden aspect-[16/10] w-full object-cover object-top dark:block"
-              height={1736}
+              className="hidden w-full dark:block"
+              height={height}
               sizes="240px"
-              src={showcaseStill(STILL.name, "dark")}
-              width={2152}
+              src={proPickStill(item.name, "dark")}
+              width={width}
             />
           </span>
         </span>
@@ -70,10 +70,10 @@ export default function TocProBanner() {
               INK
             )}
           >
-            Kokonut UI Pro
+            {item.title}
           </span>
           <span className={cn("text-[13px] leading-snug", SOFT)}>
-            Build beautiful websites faster.
+            {item.line}
           </span>
         </span>
         <ul className={cn("border-t", LINE)}>
