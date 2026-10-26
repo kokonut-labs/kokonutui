@@ -27,6 +27,7 @@ import {
 import { Preview, type PreviewProps } from "@/components/mdx/preview";
 import { PreviewClient } from "@/components/mdx/preview-client";
 import PreviewTemplate from "@/components/mdx/preview-template";
+import { ProNext } from "@/components/mdx/pro-next";
 import { ProPeek } from "@/components/mdx/pro-peek";
 import { ProShowcase, ProShowcaseIntro } from "@/components/mdx/pro-showcase";
 import { ProTemplates } from "@/components/mdx/pro-templates";
@@ -156,7 +157,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         container: hasHeadings
           ? undefined
           : { className: "toc-headings-empty" },
-        footer: <TocProBanner />,
+        footer: <TocProBanner category={params.slug?.[0]} />,
       };
 
   return (
@@ -235,6 +236,9 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
             WhatIncluded,
           }}
         />
+        {part && !proCategory ? (
+          <ProNext category={params.slug?.[0]} slug={params.slug?.at(-1)} />
+        ) : null}
         {part ? (
           <ComponentGuide
             docsPath={page.path}
