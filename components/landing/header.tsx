@@ -64,15 +64,15 @@ export function Header() {
           <HeaderPro />
           <div className="relative flex w-full items-center justify-between px-6 py-3.5">
             <div className="relative z-10 mx-auto flex w-full max-w-[1400px] items-center justify-between gap-2">
-              <div className="flex items-center gap-6">
-                <Link className="flex items-center gap-2" href="/">
+              <div className="flex items-center gap-3 sm:gap-6">
+                <Link className="flex shrink-0 items-center gap-2" href="/">
                   <Image alt="logo" height={28} src="/logo.svg" width={28} />
                   <span className="hidden font-semibold text-lg sm:block">
                     Kokonut UI
                   </span>
                 </Link>
                 <span className="text-zinc-300 dark:text-zinc-700">|</span>
-                <div className="hidden items-center gap-0.5 sm:flex">
+                <div className="hidden items-center gap-0.5 md:flex">
                   <Link
                     className="flex items-center gap-1 rounded-lg px-3 py-1 font-medium text-[15px] text-black/80 tracking-tighter transition-colors duration-200 hover:bg-black/5 dark:text-white/80 dark:hover:bg-white/5"
                     href="/docs"
@@ -100,7 +100,7 @@ export function Header() {
                 </div>
               </div>
 
-              <div className="hidden items-center gap-3 sm:flex">
+              <div className="hidden items-center gap-3 md:flex">
                 <Link
                   className="group relative inline-flex items-center gap-2 rounded-md border border-transparent px-3 py-1.5 text-sm text-zinc-600 transition-colors hover:border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
                   href="https://github.com/kokonut-labs/kokonutui"
@@ -138,15 +138,15 @@ export function Header() {
                 <ThemeToggle />
               </div>
 
-              <div className="flex items-center gap-4 sm:hidden">
+              <div className="flex items-center gap-1 md:hidden">
                 <Link
-                  className="rounded-md border border-transparent px-3 py-1.5 text-sm text-zinc-600 transition-colors hover:border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+                  className="rounded-md border border-transparent px-2.5 py-1.5 text-sm text-zinc-600 transition-colors hover:border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
                   href="/docs"
                 >
                   Components
                 </Link>
                 <Link
-                  className="rounded-md border border-transparent px-3 py-1.5 text-sm text-zinc-600 transition-colors hover:border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+                  className="rounded-md border border-transparent px-2.5 py-1.5 text-sm text-zinc-600 transition-colors hover:border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
                   href={PRO_TEMPLATES_PAGE}
                 >
                   Templates

@@ -168,7 +168,7 @@ function Cover({
         >
           <h1
             className={cn(
-              "home-enter font-semibold text-[clamp(52px,9vw,124px)] leading-[0.9] tracking-[-0.06em]",
+              "home-enter font-semibold text-[clamp(40px,13vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,9vw,124px)]",
               INK
             )}
             style={enter(0)}
@@ -843,7 +843,7 @@ function References() {
           </span>
           <span
             className={cn(
-              "font-semibold text-[clamp(72px,12vw,148px)] leading-[0.85] tracking-[-0.065em]",
+              "font-semibold text-[clamp(52px,17vw,72px)] leading-[0.85] tracking-[-0.065em] sm:text-[clamp(72px,12vw,148px)]",
               INK
             )}
           >
