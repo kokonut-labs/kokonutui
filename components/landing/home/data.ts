@@ -49,7 +49,7 @@ export interface Post {
   text: string;
 }
 
-// Verbatim from components/landing/testimonials-data.tsx.
+// Real posts about KokonutUI, quoted verbatim.
 export const POSTS: Post[] = [
   {
     name: "Rexan Wong",
@@ -89,7 +89,7 @@ export const POSTS: Post[] = [
   },
 ];
 
-// The v0 launch post and shadcn's reply, from components/landing/testimonials.tsx.
+// The v0 launch post and shadcn's reply.
 export const V0_THREAD = {
   post: {
     name: "Dorian",

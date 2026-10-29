@@ -37,3 +37,21 @@ jobs:
         run: bunx fumadocs-mdx
 
       - run: bunx tsc --noEmit
+
+  lint:
+    name: Lint and dead code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      - run: bunx biome ci .
+
+      # Files and packages nothing imports. Registry components, hooks and
+      # docs pages count as used (see knip.json).
+      - run: bunx knip --no-progress
