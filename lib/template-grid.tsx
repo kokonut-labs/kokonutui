@@ -158,11 +158,13 @@ const ListWithIcon = ({ items }: { items: ListItem[] }) => (
 
 export default function TemplateGrid({ template }: { template: string }) {
   const templateData = data[template];
-  if (!templateData) return null;
+  if (!templateData) {
+    return null;
+  }
 
   const { columnOneData, columnTwoData, technologies } = templateData;
 
-  const techColumns = [];
+  const techColumns: (typeof technologies.items)[] = [];
   for (let i = 0; i < technologies.items.length; i += 4) {
     techColumns.push(technologies.items.slice(i, i + 4));
   }

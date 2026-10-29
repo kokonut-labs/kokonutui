@@ -1,7 +1,7 @@
-import { createHash } from "crypto";
-import { promises as fs } from "fs";
+import { createHash } from "node:crypto";
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { glob } from "glob";
-import path from "path";
 import type { z } from "zod";
 import type { registryItemFileSchema } from "@/registry/schema";
 import { registry } from "../registry/index";
@@ -133,15 +133,21 @@ interface ComponentInfo {
   route: string;
 }
 
+const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---/;
+const TITLE_RE = /title:\s*(.+)/;
+const DESCRIPTION_RE = /description:\s*(.+)/;
+
 const extractFrontmatter = (
   content: string
 ): { title?: string; description?: string } => {
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!frontmatterMatch) return {};
+  const frontmatterMatch = content.match(FRONTMATTER_RE);
+  if (!frontmatterMatch) {
+    return {};
+  }
 
   const frontmatter = frontmatterMatch[1];
-  const titleMatch = frontmatter.match(/title:\s*(.+)/);
-  const descriptionMatch = frontmatter.match(/description:\s*(.+)/);
+  const titleMatch = frontmatter.match(TITLE_RE);
+  const descriptionMatch = frontmatter.match(DESCRIPTION_RE);
 
   return {
     title: titleMatch?.[1]?.trim(),
@@ -178,7 +184,7 @@ const getComponentsInfo = async (): Promise<ComponentInfo[]> => {
             route,
           });
         }
-      } catch (error) {
+      } catch {
         console.error(
           `    ${colors.red}${symbols.error} Error reading MDX file ${mdxFile}${colors.reset}`
         );
@@ -186,7 +192,7 @@ const getComponentsInfo = async (): Promise<ComponentInfo[]> => {
     }
 
     return components.sort((a, b) => a.title.localeCompare(b.title));
-  } catch (error) {
+  } catch {
     console.error(
       `  ${colors.red}${symbols.error} Error getting component info${colors.reset}`
     );
@@ -387,7 +393,9 @@ const main = async () => {
   for (let i = 0; i < registry.length; i++) {
     const component = registry[i];
     const files = component.files;
-    if (!files) throw new Error("No files found for component");
+    if (!files) {
+      throw new Error("No files found for component");
+    }
 
     console.log(
       `${colors.yellow}${symbols.arrow} Component ${i + 1}/${totalComponents}: ${colors.reset}${component.name}`

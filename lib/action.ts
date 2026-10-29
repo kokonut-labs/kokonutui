@@ -1,7 +1,7 @@
 "use server";
 
-import { promises as fs } from "fs";
-import path from "path";
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { cache } from "react";
 
 // Create a cached version of the file reading operation
@@ -23,14 +23,14 @@ export const getComponent = async (fileName: string | null, folder: string) => {
   return await readFileCache(fullPath);
 };
 
-export type CopyComponentState = {
+export interface CopyComponentState {
   error: string;
   content: string;
   success: boolean;
-};
+}
 
 export const copyComponent = async (
-  prevState: CopyComponentState,
+  _prevState: CopyComponentState,
   formData: FormData
 ) => {
   try {

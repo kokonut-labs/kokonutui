@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "components/kokonutui/*.tsx",
+    "hooks/*.ts",
+    "registry/index.ts",
+    "scripts/*.ts",
+    "content/**/*.mdx",
+    "lib/demo.tsx"
+  ],
+  "project": ["**/*.{ts,tsx,mdx}", "!.agents/**"],
+  "ignoreDependencies": ["tailwindcss", "tw-animate-css"],
+  "compilers": {
+    "mdx": true
+  },
+  "rules": {
+    "exports": "off",
+    "types": "off",
+    "duplicates": "off"
+  }
+}

@@ -14,7 +14,9 @@ export function useAutoResizeTextarea({
   const adjustHeight = useCallback(
     (reset?: boolean) => {
       const textarea = textareaRef.current;
-      if (!textarea) return;
+      if (!textarea) {
+        return;
+      }
 
       if (reset) {
         textarea.style.height = `${minHeight}px`;
