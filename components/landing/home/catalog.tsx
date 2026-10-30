@@ -8,12 +8,6 @@ import { type ComponentType, type ReactNode, Suspense, useState } from "react";
 import CommandButton from "@/components/kokonutui/command-button";
 import SlideTextButton from "@/components/kokonutui/slide-text-button";
 import { Fright, PumpkinAccent } from "@/components/landing/halloween/fright";
-import {
-  GhostHunt,
-  GhostSlot,
-  GhostTally,
-} from "@/components/landing/halloween/ghost";
-import { Spider } from "@/components/landing/halloween/spider";
 import { componentPrompt } from "@/lib/agents";
 import {
   CHANGELOG_URL,
@@ -117,9 +111,7 @@ export function Catalog({
         featured={featured}
         latest={LATEST.added.flatMap((e) => byName.get(e.name) ?? [])}
       />
-      <GhostHunt>
-        <Plates plates={plates} />
-      </GhostHunt>
+      <Plates plates={plates} />
       <Index parts={parts} />
       <Ordering />
       <References />
@@ -172,11 +164,10 @@ function Cover({
       <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
         <div
           className={cn(
-            "@container relative flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
+            "@container flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
             CELL
           )}
         >
-          <Spider />
           <h1
             className={cn(
               "home-enter home-title font-semibold text-[clamp(40px,13vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,9vw,124px)]",
@@ -462,16 +453,15 @@ function Plates({ plates }: { plates: Part[] }) {
           LINE
         )}
       >
-        <GhostTally />
-        {plates.map((part, i) => (
-          <Plate key={part.name} part={part} slot={i} />
+        {plates.map((part) => (
+          <Plate key={part.name} part={part} />
         ))}
       </div>
     </section>
   );
 }
 
-function Plate({ part, slot }: { part: Part; slot: number }) {
+function Plate({ part }: { part: Part }) {
   const entry = LIVE[part.name];
   const Demo = entry.Component;
   const { ref, near } = useNearViewport<HTMLDivElement>();
@@ -482,13 +472,8 @@ function Plate({ part, slot }: { part: Part; slot: number }) {
   ) : null;
   return (
     <figure
-      className={cn(
-        "relative flex flex-col",
-        entry.wide && "sm:col-span-2",
-        CELL
-      )}
+      className={cn("flex flex-col", entry.wide && "sm:col-span-2", CELL)}
     >
-      <GhostSlot slot={slot} />
       <PlateHead code={part.code} note={entry.hint} />
       {/* Every plate is the same height; big parts are shown reduced, and
           backgrounds fill a double plate edge to edge. */}
