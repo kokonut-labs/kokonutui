@@ -39,6 +39,17 @@ const nextConfig = {
         ],
       },
       {
+        // scripts/subset-fonts.py puts a content hash in every file name, so
+        // a changed font is a new URL and the old one can be cached forever.
+        source: "/fonts/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
         // Not `immutable`: `/_next/image` is keyed by query string, so the
         // same URL serves different bytes when the source image changes.
         // `immutable` would pin a stale image in every browser for the full
