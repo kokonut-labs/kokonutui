@@ -17,11 +17,12 @@ import {
 import { useHalloween } from "@/lib/halloween";
 import { cn } from "@/lib/utils";
 
-// On Halloween a ghost haunts a few component pages. It leans out from behind
-// the demo's frame, ducks when the pointer comes close, and turns up again a
-// moment later. Catch it on three of these pages for a treat.
+// On Halloween a ghost haunts every component page and the homepage's plates.
+// It leans out from behind the frame, ducks when the pointer comes close, and
+// turns up again a moment later. Catch it on three pages for a treat.
 
-const HAUNTED = [
+/** Pages the note points to once you've caught one. */
+const SUGGESTED = [
   { name: "ai-prompt", title: "AI Input Selector", href: "/docs/ai/ai-prompt" },
   {
     name: "detent-dial",
@@ -47,7 +48,7 @@ const HAUNTED = [
 const CATCHES = 3;
 const MARKS = ["first", "second", "third"];
 /** How long it stays out when nobody comes for it. */
-const PEEK_MS = 4200;
+const PEEK_MS = 5200;
 /** Its reaction time once the pointer is close: catch it inside this. */
 const SPOOK_MS = 380;
 const NOTICE_PX = 90;
@@ -66,7 +67,7 @@ function readCaught(): string[] {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(STORE_KEY) ?? "[]");
     caughtCache = Array.isArray(saved)
-      ? HAUNTED.map((h) => h.name).filter((name) => saved.includes(name))
+      ? saved.filter((name): name is string => typeof name === "string")
       : NONE;
   } catch {
     caughtCache = NONE;
@@ -101,11 +102,9 @@ function useCaught() {
   );
 }
 
-/** True when this page is haunted today and its ghost is still loose. */
-function useHaunt(name: string) {
-  const on = useHalloween("ghost");
-  const haunted = on && HAUNTED.some((h) => h.name === name);
-  return { haunted, caught: useCaught() };
+/** Whether the ghost is out today, and which pages it's been caught on. */
+function useHaunt() {
+  return { haunted: useHalloween("ghost"), caught: useCaught() };
 }
 
 /* The ghost ------------------------------------------------------------- */
@@ -120,7 +119,7 @@ const wait = (min: number, max: number) => min + Math.random() * (max - min);
  * lean out from behind the frame's own hairline.
  */
 export function HauntedSurface({ name }: { name: string }) {
-  const { haunted, caught } = useHaunt(name);
+  const { haunted, caught } = useHaunt();
   if (!haunted || caught.includes(name)) {
     return null;
   }
@@ -143,7 +142,10 @@ function Ghost({ name }: { name: string }) {
     const id = window.setTimeout(
       () => {
         const r = layerRef.current?.getBoundingClientRect();
-        if (!r || r.bottom < 120 || r.top > window.innerHeight - 120) {
+        // Only the part of the frame that's on screen, clear of the header.
+        const from = r ? Math.max(24, 96 - r.top) : 0;
+        const to = r ? Math.min(r.height, window.innerHeight - r.top) - 104 : 0;
+        if (!r || to < from) {
           setPhase("duck");
           return;
         }
@@ -151,11 +153,11 @@ function Ghost({ name }: { name: string }) {
         setSpot((last) => ({
           // Never the same side twice running.
           side: last?.side === "left" ? "right" : "left",
-          top: Math.round(wait(24, Math.max(32, r.height - 96))),
+          top: Math.round(wait(from, to)),
         }));
         setPhase("peek");
       },
-      first.current ? 1200 : wait(1500, 3200)
+      first.current ? 700 : wait(900, 1800)
     );
     return () => window.clearTimeout(id);
   }, [phase]);
@@ -203,13 +205,13 @@ function Ghost({ name }: { name: string }) {
   const sign = spot?.side === "right" ? 1 : -1;
   let animate = { x: `${sign * 110}%`, y: 0, rotate: 0, opacity: 1 };
   if (out) {
-    animate = { x: `${sign * 30}%`, y: 0, rotate: sign * -14, opacity: 1 };
+    animate = { x: `${sign * 18}%`, y: 0, rotate: sign * -14, opacity: 1 };
   }
   if (phase === "caught") {
-    animate = { x: `${sign * 30}%`, y: -28, rotate: sign * -14, opacity: 0 };
+    animate = { x: `${sign * 18}%`, y: -28, rotate: sign * -14, opacity: 0 };
   }
   if (reduce) {
-    animate = { ...animate, x: `${sign * 30}%`, y: 0, opacity: out ? 1 : 0 };
+    animate = { ...animate, x: `${sign * 18}%`, y: 0, opacity: out ? 1 : 0 };
   }
 
   return (
@@ -223,7 +225,7 @@ function Ghost({ name }: { name: string }) {
           animate={animate}
           aria-label="Catch the ghost"
           className={cn(
-            "absolute size-[72px] cursor-pointer touch-manipulation outline-none",
+            "absolute size-[84px] cursor-pointer touch-manipulation outline-none",
             out && "pointer-events-auto",
             spot.side === "left" ? "left-0" : "right-0"
           )}
@@ -296,26 +298,35 @@ const GHOST_PATH =
  * A row at the foot of a haunted preview: the dare, then where the other
  * ghosts are, then the treat once three are caught.
  */
-export function HauntedNote({ name }: { name: string }) {
-  const { haunted, caught } = useHaunt(name);
+export function HauntedNote({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
+  const { haunted, caught } = useHaunt();
   const { copied, copy } = useCopy();
   if (!haunted) {
     return null;
   }
   const done = caught.length >= CATCHES;
-  const loose = HAUNTED.filter(
+  const next = SUGGESTED.filter(
     (h) => h.name !== name && !caught.includes(h.name)
   );
   const left = CATCHES - caught.length;
 
   let message = (
-    <p className={META}>A ghost is hiding behind this demo. Catch it.</p>
+    <p className={META}>
+      A ghost is hiding behind {name === "home" ? "these plates" : "this demo"}.
+      Catch it on three pages for a treat.
+    </p>
   );
   if (caught.includes(name) && !done) {
     message = (
       <p className={META}>
-        Caught. {left} more {left === 1 ? "hides" : "hide"} in{" "}
-        {loose.slice(0, 2).map((h, i) => (
+        Caught. {left} more to go on other pages, like{" "}
+        {next.slice(0, 2).map((h, i) => (
           <span key={h.name}>
             {i > 0 ? " or " : null}
             <Link
@@ -357,7 +368,8 @@ export function HauntedNote({ name }: { name: string }) {
     <div
       className={cn(
         "flex min-h-10 flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t px-4 py-2",
-        LINE
+        LINE,
+        className
       )}
     >
       {message}

@@ -8,6 +8,7 @@ import { type ComponentType, type ReactNode, Suspense, useState } from "react";
 import CommandButton from "@/components/kokonutui/command-button";
 import SlideTextButton from "@/components/kokonutui/slide-text-button";
 import { Fright, PumpkinAccent } from "@/components/landing/halloween/fright";
+import { HauntedNote, HauntedSurface } from "@/components/mdx/haunted";
 import { componentPrompt } from "@/lib/agents";
 import {
   CHANGELOG_URL,
@@ -448,14 +449,19 @@ function Plates({ plates }: { plates: Part[] }) {
       />
       <div
         className={cn(
-          "grid grid-cols-1 border sm:grid-cols-2 lg:grid-cols-3",
+          "relative grid grid-cols-1 border sm:grid-cols-2 lg:grid-cols-3",
           GRID,
           LINE
         )}
       >
+        <HauntedNote
+          className={cn("border-t-0 sm:col-span-2 lg:col-span-3", CELL)}
+          name="home"
+        />
         {plates.map((part) => (
           <Plate key={part.name} part={part} />
         ))}
+        <HauntedSurface name="home" />
       </div>
     </section>
   );

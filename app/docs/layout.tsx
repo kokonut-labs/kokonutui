@@ -1,6 +1,7 @@
 import type * as PageTree from "fumadocs-core/page-tree";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import type { Metadata } from "next";
+import { PumpkinAccent } from "@/components/landing/halloween/fright";
 import HeaderProSmall from "@/components/landing/header-pro-small";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, MONO } from "@/components/landing/home/styles";
@@ -126,6 +127,7 @@ export default function Layout({ children }: LayoutProps<"/docs">) {
       sidebar={{ footer: <HeaderProSmall /> }}
       tree={withCodes(source.getPageTree())}
     >
+      <PumpkinAccent />
       {children}
     </DocsLayout>
   );

@@ -37,8 +37,8 @@ export function Fright({ children }: { children: ReactNode }) {
 }
 
 /**
- * The one color in the catalog, Kokonut's leaf, turns pumpkin for the day:
- * every part code, New tag and prompt caret follows it.
+ * The one color in the catalog, Kokonut's leaf, turns pumpkin for the day on
+ * the homepage and the docs: every part code, New tag and caret follows it.
  */
 export function PumpkinAccent() {
   const on = useHalloween("fright");
@@ -55,19 +55,35 @@ export function PumpkinAccent() {
   return null;
 }
 
-/** The header logo, with a face carved into the coconut for the day. */
-export function LogoMark() {
+/** The site logo, with a face carved into the coconut for the day. */
+export function LogoMark({
+  size = 28,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
   const on = useHalloween("fright");
   if (!on) {
-    return <Image alt="logo" height={28} src="/logo.svg" width={28} />;
+    return (
+      <Image
+        alt="logo"
+        className={className}
+        height={size}
+        src="/logo.svg"
+        width={size}
+      />
+    );
   }
   return (
     <svg
       aria-label="logo"
-      className="size-7"
+      className={className}
       fill="none"
+      height={size}
       role="img"
       viewBox="0 0 32 32"
+      width={size}
     >
       <path
         className="fill-[#0C0C0C]/82 dark:fill-white"
