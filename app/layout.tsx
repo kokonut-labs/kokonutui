@@ -1,15 +1,26 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import "./fonts.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { RootProvider } from "fumadocs-ui/provider/next";
+import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import { preload } from "react-dom";
 import { CopyToast } from "@/components/copy-toast";
 import LazySearchDialog from "@/components/search-dialog-lazy";
 import { META_THEME_COLORS, siteConfig } from "@/config/site";
-import { fontPreloads } from "@/lib/fonts";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
+});
+
+// Codes, labels and commands are set in a monospace face, on the homepage
+// and the docs alike.
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-home-mono",
+});
 
 export const metadata: Metadata = {
   title: `${siteConfig.name}: Free Open-Source React & Tailwind Components`,
@@ -87,17 +98,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Geist for text and Geist Mono for codes, labels and commands, cut down to
-  // what the site uses by scripts/subset-fonts.py (app/fonts.css). Pages
-  // preload the small core files; the extended ones load only for the
-  // characters they cover.
-  for (const href of fontPreloads) {
-    preload(href, { as: "font", type: "font/woff2", crossOrigin: "" });
-  }
-
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="site-fonts antialiased">
+      <body
+        className={cn(
+          geist.variable,
+          geistMono.variable,
+          geist.className,
+          "antialiased"
+        )}
+      >
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: static schema.org JSON-LD built from siteConfig
           dangerouslySetInnerHTML={{ __html: structuredData }}
