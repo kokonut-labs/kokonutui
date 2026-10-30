@@ -17,7 +17,8 @@ import {
 import { useHalloween } from "@/lib/halloween";
 import { cn } from "@/lib/utils";
 
-// On Halloween a ghost haunts every component page and the homepage's plates.
+// On Halloween a ghost haunts every component page, the installation page and
+// the homepage's plates.
 // It leans out from behind the frame, ducks when the pointer comes close, and
 // turns up again a moment later. Catch it on three pages for a treat.
 
@@ -45,6 +46,11 @@ const SUGGESTED = [
     href: "/docs/texts/plucked-text",
   },
 ];
+/** What the ghost hides behind, where it isn't a component demo. */
+const HIDING: Record<string, string> = {
+  home: "these plates",
+  installation: "these cards",
+};
 const CATCHES = 3;
 const MARKS = ["first", "second", "third"];
 /** How long it stays out when nobody comes for it. */
@@ -318,8 +324,8 @@ export function HauntedNote({
 
   let message = (
     <p className={META}>
-      A ghost is hiding behind {name === "home" ? "these plates" : "this demo"}.
-      Catch it on three pages for a treat.
+      A ghost is hiding behind {HIDING[name] ?? "this demo"}. Catch it on three
+      pages for a treat.
     </p>
   );
   if (caught.includes(name) && !done) {
