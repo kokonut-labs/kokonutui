@@ -106,13 +106,18 @@ export function Catalog({
       )}
     >
       <PumpkinAccent />
-      <Cover
-        action={action && LIVE[action.name] ? action : undefined}
-        count={parts.length}
-        featured={featured}
-        latest={LATEST.added.flatMap((e) => byName.get(e.name) ?? [])}
-      />
-      <Plates plates={plates} />
+      {/* The cover and the plates share one frame width, so on Halloween the
+          ghost can lean out from behind either, from the first screen on. */}
+      <div className="relative">
+        <Cover
+          action={action && LIVE[action.name] ? action : undefined}
+          count={parts.length}
+          featured={featured}
+          latest={LATEST.added.flatMap((e) => byName.get(e.name) ?? [])}
+        />
+        <Plates plates={plates} />
+        <HauntedSurface name="home" />
+      </div>
       <Index parts={parts} />
       <Ordering />
       <References />
@@ -449,7 +454,7 @@ function Plates({ plates }: { plates: Part[] }) {
       />
       <div
         className={cn(
-          "relative grid grid-cols-1 border sm:grid-cols-2 lg:grid-cols-3",
+          "grid grid-cols-1 border sm:grid-cols-2 lg:grid-cols-3",
           GRID,
           LINE
         )}
@@ -461,7 +466,6 @@ function Plates({ plates }: { plates: Part[] }) {
         {plates.map((part) => (
           <Plate key={part.name} part={part} />
         ))}
-        <HauntedSurface name="home" />
       </div>
     </section>
   );
