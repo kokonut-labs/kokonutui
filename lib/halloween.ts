@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 
 /**
- * Halloween touches for the site. Each one turns itself on for October 31
- * in the visitor's own time zone and is gone on November 1, so nothing needs
- * to be reverted on the day.
+ * Halloween touches for the site. Each one turns itself on for October 30
+ * and 31 in the visitor's own time zone and is gone on November 1, so nothing
+ * needs to be reverted after.
  *
  * - fright: the homepage headline, accent and logo.
  * - ghost: a ghost haunting a few component pages in the docs.
@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 export type HalloweenIdea = "fright" | "ghost";
 
 const IDEAS: HalloweenIdea[] = ["fright", "ghost"];
-/** What runs on October 31 itself. */
+/** What runs on October 30 and 31. */
 const ON_THE_DAY: HalloweenIdea[] = IDEAS;
 
 const PREVIEW_KEY = "kokonut-halloween-preview";
@@ -43,7 +43,7 @@ function activeIdeas(): HalloweenIdea[] {
       : IDEAS.filter((idea) => param.split(",").includes(idea));
   }
   const now = new Date();
-  return now.getMonth() === 9 && now.getDate() === 31 ? ON_THE_DAY : [];
+  return now.getMonth() === 9 && now.getDate() >= 30 ? ON_THE_DAY : [];
 }
 
 /**
