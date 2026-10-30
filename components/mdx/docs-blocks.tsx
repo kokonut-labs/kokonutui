@@ -15,6 +15,7 @@ import {
   SOFT,
 } from "@/components/landing/home/styles";
 import { useEditor, usePackageManager } from "@/components/mdx/docs-prefs";
+import { HauntedNote, HauntedSurface } from "@/components/mdx/haunted";
 import { CopyFile, CopyRow, Picker, Plate } from "@/components/mdx/plate";
 import {
   AGENT_ENDPOINTS,
@@ -159,7 +160,8 @@ export function SetupChoice({
 }) {
   const { copied, copy } = useCopy();
   return (
-    <Plate className="md:grid-cols-12">
+    <Plate className="relative md:grid-cols-12">
+      <HauntedSurface name="installation" />
       <button
         aria-label={copied ? "Copied" : `Copy the prompt: ${SETUP_PROMPT}`}
         className={cn(
@@ -225,6 +227,10 @@ export function SetupChoice({
           className="size-4 text-black/40 group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
         />
       </a>
+      <HauntedNote
+        className={cn("border-t-0 md:col-span-12", CELL)}
+        name="installation"
+      />
     </Plate>
   );
 }
