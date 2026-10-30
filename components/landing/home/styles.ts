@@ -13,7 +13,7 @@ export const META = cn(MONO, "text-[11.5px] text-black/50 dark:text-white/50");
 export const INK = "text-black dark:text-white";
 export const SOFT = "text-black/60 dark:text-white/60";
 /** The one color in the catalog: Kokonut's leaf, for the codes. */
-export const LEAF = "text-[#1FA834] dark:text-[#3BB44B]";
+export const LEAF = "text-[color:var(--leaf)]";
 
 /** Hover and press read through color alone; nothing on the page scales. */
 export const EASE_COLORS =

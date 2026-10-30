@@ -7,6 +7,13 @@ import Link from "next/link";
 import { type ComponentType, type ReactNode, Suspense, useState } from "react";
 import CommandButton from "@/components/kokonutui/command-button";
 import SlideTextButton from "@/components/kokonutui/slide-text-button";
+import { Fright, PumpkinAccent } from "@/components/landing/halloween/fright";
+import {
+  GhostHunt,
+  GhostSlot,
+  GhostTally,
+} from "@/components/landing/halloween/ghost";
+import { Spider } from "@/components/landing/halloween/spider";
 import { componentPrompt } from "@/lib/agents";
 import {
   CHANGELOG_URL,
@@ -103,13 +110,16 @@ export function Catalog({
         className
       )}
     >
+      <PumpkinAccent />
       <Cover
         action={action && LIVE[action.name] ? action : undefined}
         count={parts.length}
         featured={featured}
         latest={LATEST.added.flatMap((e) => byName.get(e.name) ?? [])}
       />
-      <Plates plates={plates} />
+      <GhostHunt>
+        <Plates plates={plates} />
+      </GhostHunt>
       <Index parts={parts} />
       <Ordering />
       <References />
@@ -162,20 +172,21 @@ function Cover({
       <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
         <div
           className={cn(
-            "flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
+            "@container relative flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
             CELL
           )}
         >
+          <Spider />
           <h1
             className={cn(
-              "home-enter font-semibold text-[clamp(40px,13vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,9vw,124px)]",
+              "home-enter home-title font-semibold text-[clamp(40px,13vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,9vw,124px)]",
               INK
             )}
             style={enter(0)}
           >
             {/* The space keeps the words apart for crawlers and screen readers. */}
             Components <br />
-            that feel right.
+            that feel <Fright>right.</Fright>
           </h1>
           <div className="flex flex-col gap-8">
             <p
@@ -451,15 +462,16 @@ function Plates({ plates }: { plates: Part[] }) {
           LINE
         )}
       >
-        {plates.map((part) => (
-          <Plate key={part.name} part={part} />
+        <GhostTally />
+        {plates.map((part, i) => (
+          <Plate key={part.name} part={part} slot={i} />
         ))}
       </div>
     </section>
   );
 }
 
-function Plate({ part }: { part: Part }) {
+function Plate({ part, slot }: { part: Part; slot: number }) {
   const entry = LIVE[part.name];
   const Demo = entry.Component;
   const { ref, near } = useNearViewport<HTMLDivElement>();
@@ -470,8 +482,13 @@ function Plate({ part }: { part: Part }) {
   ) : null;
   return (
     <figure
-      className={cn("flex flex-col", entry.wide && "sm:col-span-2", CELL)}
+      className={cn(
+        "relative flex flex-col",
+        entry.wide && "sm:col-span-2",
+        CELL
+      )}
     >
+      <GhostSlot slot={slot} />
       <PlateHead code={part.code} note={entry.hint} />
       {/* Every plate is the same height; big parts are shown reduced, and
           backgrounds fill a double plate edge to edge. */}
@@ -676,7 +693,7 @@ function Index({ parts }: { parts: Part[] }) {
                     <span
                       className={cn(
                         MONO,
-                        "w-[5ch] shrink-0 text-[11.5px] text-black/35 transition-colors duration-150 ease-out group-hover/row:text-[#1FA834] dark:text-white/35 dark:group-hover/row:text-[#3BB44B]"
+                        "w-[5ch] shrink-0 text-[11.5px] text-black/35 transition-colors duration-150 ease-out group-hover/row:text-[color:var(--leaf)] dark:text-white/35"
                       )}
                     >
                       {p.code}

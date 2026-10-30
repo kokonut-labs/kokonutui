@@ -36,3 +36,61 @@
     animation: home-fade 150ms ease-out both;
   }
 }
+
+/* Halloween: "feel right" becomes "feel fright". The f's column opens from
+   nothing, pushing "right" over, then the letter drops into the gap. */
+.fright {
+  display: inline-grid;
+  grid-template-columns: 0fr;
+  transition: grid-template-columns 500ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.fright > span {
+  min-width: 0;
+  overflow: clip;
+  overflow-clip-margin: 0.3em;
+}
+
+.fright > span > span {
+  display: inline-block;
+  opacity: 0;
+  translate: 0 -0.18em;
+  filter: blur(4px);
+  transition:
+    opacity 300ms ease-out 180ms,
+    translate 500ms cubic-bezier(0.23, 1, 0.32, 1) 180ms,
+    filter 300ms ease-out 180ms;
+}
+
+.fright[data-shown] {
+  grid-template-columns: 1fr;
+}
+
+/* "that feel fright." is wider than the line it replaces, so the headline
+   eases down just enough to keep it on one line (about 6.2em of Geist). */
+.home-title:has(.fright[data-shown]) {
+  font-size: min(clamp(52px, 9vw, 124px), 15.8cqi);
+  /* Balancing would pull "fright." down to a line of its own. */
+  text-wrap: wrap;
+  transition: font-size 500ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (max-width: 639px) {
+  .home-title:has(.fright[data-shown]) {
+    font-size: min(clamp(40px, 13vw, 52px), 15.8cqi);
+  }
+}
+
+.fright[data-shown] > span > span {
+  opacity: 1;
+  translate: 0 0;
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fright,
+  .fright > span > span,
+  .home-title {
+    transition-duration: 0ms;
+  }
+}
