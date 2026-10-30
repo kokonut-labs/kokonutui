@@ -18,6 +18,7 @@ bun run knip           # Unused files and packages (CI runs it too)
 bun x ultracite fix    # Format and auto-fix lint issues
 
 bun run ./scripts/build-registry.ts  # Rebuild public/r/*.json, registry.json and public/llms.txt
+uv run scripts/subset-fonts.py       # Rebuild public/fonts/, app/fonts.css and lib/fonts.ts (by hand, see the script for when)
 ```
 
 `bun x ultracite fix` fails on paths with parentheses like `app/(root)`. Use `bunx biome check --write "./app/(root)/..."` there.
@@ -78,4 +79,5 @@ Each component has an entry in `registry/registry-components.ts` (name, dependen
 - Never make a registry component need app-level setup: no `next-themes`, no `next/font`. `next/image`, `next/link` and `usePathname` are fine.
 - Never rely on site-only CSS, keyframes or assets (`/logo.svg`, `globals.css` classes) in a registry component.
 - Never edit `public/r/*.json` or `registry.json` by hand.
+- Never edit `public/fonts/`, `app/fonts.css` or `lib/fonts.ts` by hand, or load fonts through `next/font`; rerun `scripts/subset-fonts.py`.
 - Never add a file or package that nothing uses; knip fails CI.
