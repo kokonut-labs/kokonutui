@@ -286,6 +286,24 @@ button {
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
+/* Kokonut's leaf: the one color in the catalog, for part codes and tags. On
+   Halloween (lib/halloween.ts) it turns pumpkin for the day. */
+:root {
+  --leaf: #1fa834;
+}
+
+.dark {
+  --leaf: #3bb44b;
+}
+
+:root[data-halloween] {
+  --leaf: #e8590c;
+}
+
+:root.dark[data-halloween] {
+  --leaf: #fd7e14;
+}
+
 @theme inline {
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);

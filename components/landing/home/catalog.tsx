@@ -7,6 +7,8 @@ import Link from "next/link";
 import { type ComponentType, type ReactNode, Suspense, useState } from "react";
 import CommandButton from "@/components/kokonutui/command-button";
 import SlideTextButton from "@/components/kokonutui/slide-text-button";
+import { Fright, PumpkinAccent } from "@/components/landing/halloween/fright";
+import { HauntedNote, HauntedSurface } from "@/components/mdx/haunted";
 import { componentPrompt } from "@/lib/agents";
 import {
   CHANGELOG_URL,
@@ -103,13 +105,19 @@ export function Catalog({
         className
       )}
     >
-      <Cover
-        action={action && LIVE[action.name] ? action : undefined}
-        count={parts.length}
-        featured={featured}
-        latest={LATEST.added.flatMap((e) => byName.get(e.name) ?? [])}
-      />
-      <Plates plates={plates} />
+      <PumpkinAccent />
+      {/* The cover and the plates share one frame width, so on Halloween the
+          ghost can lean out from behind either, from the first screen on. */}
+      <div className="relative">
+        <Cover
+          action={action && LIVE[action.name] ? action : undefined}
+          count={parts.length}
+          featured={featured}
+          latest={LATEST.added.flatMap((e) => byName.get(e.name) ?? [])}
+        />
+        <Plates plates={plates} />
+        <HauntedSurface name="home" />
+      </div>
       <Index parts={parts} />
       <Ordering />
       <References />
@@ -162,20 +170,20 @@ function Cover({
       <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
         <div
           className={cn(
-            "flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
+            "@container flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
             CELL
           )}
         >
           <h1
             className={cn(
-              "home-enter font-semibold text-[clamp(40px,13vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,9vw,124px)]",
+              "home-enter home-title font-semibold text-[clamp(40px,13vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,9vw,124px)]",
               INK
             )}
             style={enter(0)}
           >
             {/* The space keeps the words apart for crawlers and screen readers. */}
             Components <br />
-            that feel right.
+            that feel <Fright>right.</Fright>
           </h1>
           <div className="flex flex-col gap-8">
             <p
@@ -451,6 +459,10 @@ function Plates({ plates }: { plates: Part[] }) {
           LINE
         )}
       >
+        <HauntedNote
+          className={cn("border-t-0 sm:col-span-2 lg:col-span-3", CELL)}
+          name="home"
+        />
         {plates.map((part) => (
           <Plate key={part.name} part={part} />
         ))}
@@ -676,7 +688,7 @@ function Index({ parts }: { parts: Part[] }) {
                     <span
                       className={cn(
                         MONO,
-                        "w-[5ch] shrink-0 text-[11.5px] text-black/35 transition-colors duration-150 ease-out group-hover/row:text-[#1FA834] dark:text-white/35 dark:group-hover/row:text-[#3BB44B]"
+                        "w-[5ch] shrink-0 text-[11.5px] text-black/35 transition-colors duration-150 ease-out group-hover/row:text-[color:var(--leaf)] dark:text-white/35"
                       )}
                     >
                       {p.code}
