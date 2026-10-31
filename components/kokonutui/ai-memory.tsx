@@ -166,6 +166,29 @@ export default function AIMemory({
     null
   );
   const threadRef = useRef<HTMLDivElement>(null);
+  const memoryRef = useRef<HTMLElement>(null);
+  const undoRef = useRef<HTMLButtonElement>(null);
+  // Forget and Undo each take away the button that was pressed; focus moves
+  // to the button that replaces it.
+  const focusNext = useRef<"undo" | { row: string } | null>(null);
+  useEffect(() => {
+    const target = focusNext.current;
+    if (!target) {
+      return;
+    }
+    focusNext.current = null;
+    if (target === "undo") {
+      undoRef.current?.focus();
+    } else {
+      memoryRef.current
+        ?.querySelector<HTMLElement>(
+          `[data-memory="${CSS.escape(target.row)}"] button`
+        )
+        ?.focus();
+    }
+  });
+  const hadFocus = () =>
+    Boolean(memoryRef.current?.contains(document.activeElement));
 
   const last = messages.at(-1);
   const words = useMemo(
@@ -309,6 +332,9 @@ export default function AIMemory({
   };
 
   const forget = (row: Row) => {
+    if (hadFocus()) {
+      focusNext.current = "undo";
+    }
     const index = rows.findIndex((r) => r.id === row.id);
     setRows((list) => list.filter((r) => r.id !== row.id));
     setUndo({ row, index });
@@ -317,6 +343,9 @@ export default function AIMemory({
   const restoreRow = () => {
     if (!undo) {
       return;
+    }
+    if (hadFocus()) {
+      focusNext.current = { row: undo.row.id };
     }
     setRows((list) => {
       const copy = [...list];
@@ -453,7 +482,7 @@ export default function AIMemory({
               >
                 <input
                   aria-label="Message"
-                  className="h-8 min-w-0 flex-1 bg-transparent text-[13px] text-zinc-900 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                  className="h-8 min-w-0 flex-1 bg-transparent text-[13px] text-zinc-900 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
                   onChange={(event) => setDraft(event.target.value)}
                   placeholder="Tell it something about you…"
                   value={draft}
@@ -478,6 +507,7 @@ export default function AIMemory({
           <section
             aria-label="Memory"
             className="flex min-w-0 flex-col bg-zinc-50/60 dark:bg-zinc-950/30"
+            ref={memoryRef}
           >
             <header className="flex h-11 items-center gap-2 border-black/[0.06] border-b px-4 dark:border-white/[0.08]">
               <h3 className="font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
@@ -541,6 +571,7 @@ export default function AIMemory({
                     <button
                       className="h-6 shrink-0 rounded-md px-2 font-medium transition-colors duration-100 hover:bg-white/15 active:bg-white/25 dark:active:bg-black/15 dark:hover:bg-black/10"
                       onClick={restoreRow}
+                      ref={undoRef}
                       type="button"
                     >
                       Undo
@@ -571,6 +602,7 @@ function MemoryRow({
   const [value, setValue] = useState(row.text);
   const inputRef = useRef<HTMLInputElement>(null);
   const rowRef = useRef<HTMLLIElement>(null);
+  const editRef = useRef<HTMLButtonElement>(null);
   const replaced = row.state === "replaced";
 
   // Tapping "Saved to memory" in the chat brings the fact into view.
@@ -580,10 +612,15 @@ function MemoryRow({
     }
   }, [flash]);
 
+  // Enter or Escape closes the field; Edit takes focus back once it returns.
+  const refocus = useRef(false);
   useEffect(() => {
     if (editing) {
       inputRef.current?.focus();
       inputRef.current?.select();
+    } else if (refocus.current) {
+      refocus.current = false;
+      editRef.current?.focus();
     }
   }, [editing]);
 
@@ -604,6 +641,7 @@ function MemoryRow({
     <motion.li
       animate={{ opacity: 1, height: "auto" }}
       className="overflow-hidden"
+      data-memory={row.id}
       exit={{ opacity: 0, height: 0, transition: { duration: 0.2 } }}
       initial={{ opacity: 0, height: 0 }}
       ref={rowRef}
@@ -624,11 +662,16 @@ function MemoryRow({
             onBlur={save}
             onChange={(event) => setValue(event.target.value)}
             onKeyDown={(event) => {
+              if (event.nativeEvent.isComposing) {
+                return;
+              }
               if (event.key === "Enter") {
                 event.preventDefault();
+                refocus.current = true;
                 save();
               } else if (event.key === "Escape") {
                 event.preventDefault();
+                refocus.current = true;
                 setValue(row.text);
                 setEditing(false);
               }
@@ -666,6 +709,7 @@ function MemoryRow({
               aria-label={`Edit “${row.text}”`}
               className={icon}
               onClick={() => setEditing(true)}
+              ref={editRef}
               type="button"
             >
               <Pencil className="size-3" />

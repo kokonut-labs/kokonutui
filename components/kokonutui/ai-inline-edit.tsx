@@ -929,7 +929,7 @@ function PromptBar({
       >
         <input
           aria-label="Tell AI how to edit the selection"
-          className="min-w-0 flex-1 bg-transparent text-[13px] text-zinc-900 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+          className="min-w-0 flex-1 bg-transparent text-[13px] text-zinc-900 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
           onChange={(event) => onInstruction(event.target.value)}
           placeholder="Ask AI to edit…"
           ref={inputRef}

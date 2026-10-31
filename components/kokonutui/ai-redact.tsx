@@ -305,7 +305,11 @@ export default function AIRedact({
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !event.nativeEvent.isComposing
+    ) {
       event.preventDefault();
       send();
     }
@@ -383,10 +387,10 @@ export default function AIRedact({
               {/* Highlights sit under the transparent textarea, letter for letter. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-3 top-2.5 bottom-0 overflow-hidden"
+                className="pointer-events-none absolute inset-x-3 top-2.5 bottom-0 overflow-hidden [scrollbar-gutter:stable]"
               >
                 <div
-                  className="whitespace-pre-wrap break-words text-[13px] text-transparent leading-6"
+                  className="whitespace-pre-wrap break-words text-[13px] text-transparent leading-6 [@media(pointer:coarse)]:text-base"
                   ref={highlightRef}
                 >
                   <Highlights
@@ -400,7 +404,7 @@ export default function AIRedact({
               </div>
               <textarea
                 aria-label="Message"
-                className="relative block max-h-40 min-h-12 w-full resize-none overflow-y-auto bg-transparent text-[13px] text-zinc-900 leading-6 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                className="relative block max-h-40 min-h-12 w-full resize-none overflow-y-auto bg-transparent text-[13px] text-zinc-900 leading-6 outline-hidden [scrollbar-gutter:stable] placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
                 onChange={(event) => setText(event.target.value)}
                 onKeyDown={onKeyDown}
                 onScroll={(event) => {

@@ -185,6 +185,12 @@ export default function AIBranches({
   const [writing, setWriting] = useState<{ id: string; words: number } | null>(
     null
   );
+  // Switching version or sending an edit swaps the message, and the button
+  // pressed goes with it. The control to focus in its replacement:
+  const [refocus, setRefocus] = useState<{
+    id: string;
+    control: Control;
+  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const count = useRef(0);
 
@@ -242,6 +248,7 @@ export default function AIBranches({
     const next = siblings[siblings.indexOf(id) + by];
     if (next) {
       show(next, by);
+      setRefocus({ id: next, control: by < 0 ? "prev" : "next" });
     }
   };
 
@@ -277,6 +284,7 @@ export default function AIBranches({
     setPicked((p) => ({ ...p, [parent]: tree[parent].children.length }));
     setDir(1);
     setWriting({ id: answer, words: 0 });
+    setRefocus({ id: user, control: "edit" });
   };
 
   return (
@@ -317,10 +325,12 @@ export default function AIBranches({
                   >
                     <MessageView
                       editing={editing === id}
+                      focus={refocus?.id === id ? refocus.control : undefined}
                       lit={hover === id}
                       node={tree[id]}
                       onCancel={() => setEditing(null)}
                       onEdit={() => setEditing(id)}
+                      onFocused={() => setRefocus(null)}
                       onStep={(by) => step(id, by)}
                       onSubmit={(text) => submitEdit(id, text)}
                       siblings={tree[tree[id].parent ?? ROOT].children}
@@ -364,6 +374,8 @@ export default function AIBranches({
   );
 }
 
+type Control = "prev" | "next" | "edit";
+
 const slide = {
   from: (dir: number) => ({ opacity: 0, x: dir * 18 }),
   in: { opacity: 1, x: 0 },
@@ -374,25 +386,52 @@ function MessageView({
   node,
   siblings,
   editing,
+  focus,
   lit,
   words,
   onEdit,
   onCancel,
+  onFocused,
   onSubmit,
   onStep,
 }: {
   node: Node;
   siblings: string[];
   editing: boolean;
+  /** Takes focus on mount: the pager arrow or Edit that brought it here. */
+  focus?: Control;
   lit: boolean;
   words?: number;
+  onFocused: () => void;
   onEdit: () => void;
   onCancel: () => void;
   onSubmit: (text: string) => void;
   onStep: (by: number) => void;
 }) {
   const editRef = useRef<HTMLButtonElement>(null);
+  const prevRef = useRef<HTMLButtonElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(editing);
+
+  useEffect(() => {
+    if (!focus) {
+      return;
+    }
+    // At the first or last version that arrow is disabled; use the other.
+    const order =
+      focus === "edit"
+        ? [editRef]
+        : [
+            focus === "prev" ? prevRef : nextRef,
+            focus === "prev" ? nextRef : prevRef,
+            editRef,
+          ];
+    order
+      .map((ref) => ref.current)
+      .find((button) => button && !button.disabled)
+      ?.focus({ preventScroll: true });
+    onFocused();
+  }, [focus, onFocused]);
   // Cancelling unmounts the text box, so focus goes back to Edit.
   useEffect(() => {
     if (wasEditing.current && !editing) {
@@ -457,6 +496,7 @@ function MessageView({
                 className="flex size-6 items-center justify-center rounded-md transition-colors duration-150 enabled:hover:bg-zinc-100 enabled:hover:text-zinc-700 disabled:opacity-40 dark:enabled:hover:bg-white/[0.07] dark:enabled:hover:text-zinc-200"
                 disabled={index === 0}
                 onClick={() => onStep(-1)}
+                ref={prevRef}
                 type="button"
               >
                 <ChevronLeft className="size-3.5" />
@@ -469,6 +509,7 @@ function MessageView({
                 className="flex size-6 items-center justify-center rounded-md transition-colors duration-150 enabled:hover:bg-zinc-100 enabled:hover:text-zinc-700 disabled:opacity-40 dark:enabled:hover:bg-white/[0.07] dark:enabled:hover:text-zinc-200"
                 disabled={index === siblings.length - 1}
                 onClick={() => onStep(1)}
+                ref={nextRef}
                 type="button"
               >
                 <ChevronRight className="size-3.5" />
@@ -500,6 +541,10 @@ function EditBox({
   }, []);
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter that confirms an IME candidate must not send.
+    if (event.nativeEvent.isComposing) {
+      return;
+    }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       onSubmit(draft);
@@ -512,7 +557,7 @@ function EditBox({
     <div className="w-full max-w-[85%] rounded-2xl bg-zinc-100 p-2 dark:bg-zinc-800">
       <textarea
         aria-label="Edit message"
-        className="block w-full resize-none bg-transparent px-1.5 py-1 text-[14px] text-zinc-900 leading-snug outline-hidden dark:text-zinc-100"
+        className="block w-full resize-none bg-transparent px-1.5 py-1 text-[14px] text-zinc-900 leading-snug outline-hidden dark:text-zinc-100 [@media(pointer:coarse)]:text-base"
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={onKeyDown}
         ref={ref}

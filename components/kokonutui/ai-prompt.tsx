@@ -831,7 +831,9 @@ export default function AI_Prompt({
     textareaRef.current?.focus();
   };
 
-  const canSend = value.trim().length > 0 && !responding;
+  // A dropped screenshot with no text is still a message.
+  const canSend =
+    (value.trim().length > 0 || attachments.length > 0) && !responding;
 
   const submit = async () => {
     if (!canSend) {
@@ -1052,7 +1054,10 @@ export default function AI_Prompt({
             aria-autocomplete="list"
             aria-controls={menuOpen ? menuId : undefined}
             aria-expanded={menuOpen}
-            className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent dark:text-white dark:placeholder:text-white/35"
+            // shadow-none and md:text-[15px] beat the shadow-xs and
+            // md:text-sm of the current shadcn Textarea. Touch screens get 16px so
+            // iOS does not zoom into the field on focus.
+            className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed shadow-none placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-[15px] dark:bg-transparent dark:text-white dark:placeholder:text-white/35 [@media(pointer:coarse)]:text-base"
             id={textareaId}
             onBlur={() => setMenuDismissed(true)}
             onChange={(e) => {

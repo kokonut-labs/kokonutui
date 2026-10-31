@@ -74,8 +74,11 @@ export function AIAutocomplete({
   const request = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // The last value this component produced, to tell a parent's change apart.
+  const lastSet = useRef(value);
   const setValue = useCallback(
     (next: string) => {
+      lastSet.current = next;
       setOwnValue(next);
       onValueChange?.(next);
     },
@@ -118,6 +121,16 @@ export function AIAutocomplete({
     },
     []
   );
+
+  // A parent that clears or replaces the text (after sending, say) drops the
+  // suggestion for the old text instead of showing it after the new one.
+  useEffect(() => {
+    if (value !== lastSet.current) {
+      lastSet.current = value;
+      request.current++;
+      setGhost("");
+    }
+  }, [value]);
 
   // The first suggestion for the starting text, once it's on screen.
   const asked = useRef(false);
@@ -209,7 +222,7 @@ export function AIAutocomplete({
           the box grows with the suggestion and never scrolls. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none min-h-32 whitespace-pre-wrap break-words px-4 py-3 text-[15px] leading-6"
+          className="pointer-events-none min-h-32 whitespace-pre-wrap break-words px-4 py-3 text-[15px] leading-6 [@media(pointer:coarse)]:text-base"
         >
           <span className="text-transparent">{value || "​"}</span>
           {value.endsWith("\n") && "​"}
@@ -242,7 +255,7 @@ export function AIAutocomplete({
         </div>
         <textarea
           aria-label={label}
-          className="absolute inset-0 h-full w-full resize-none overflow-hidden bg-transparent px-4 py-3 text-[15px] text-zinc-900 leading-6 caret-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-100 dark:caret-zinc-100 dark:placeholder:text-zinc-500"
+          className="absolute inset-0 h-full w-full resize-none overflow-hidden bg-transparent px-4 py-3 text-[15px] text-zinc-900 leading-6 caret-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-100 dark:caret-zinc-100 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
           onChange={onChange}
           onFocus={onSelect}
           onKeyDown={onKeyDown}
@@ -256,7 +269,7 @@ export function AIAutocomplete({
       <p aria-live="polite" className="sr-only">
         {showGhost ? spoken : ""}
       </p>
-      <style>{`
+      <style href="ai-autocomplete" precedence="default">{`
         .ai-autocomplete-word {
           animation: ai-autocomplete-in 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
         }
