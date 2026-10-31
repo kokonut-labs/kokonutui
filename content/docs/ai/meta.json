@@ -7,6 +7,10 @@
     "ai-text-loading",
     "ai-voice",
     "ai-tool-approval",
+    "ai-tool-calls",
+    "ai-checkout",
+    "ai-connect",
+    "ai-send",
     "ai-context-meter",
     "ai-citations",
     "ai-diff-review",
@@ -19,11 +23,6 @@
     "ai-redact",
     "ai-memory",
     "ai-autocomplete",
-    "ai-checkpoints",
-    "ai-compare",
-    "ai-routine",
-    "ai-translate",
-    "ai-summary-depth",
     "slash-command-menu",
     "image-generation-card"
   ]

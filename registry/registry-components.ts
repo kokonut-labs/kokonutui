@@ -864,56 +864,45 @@ export const component: Registry = [
     ],
   },
   {
-    name: "ai-checkpoints",
+    name: "ai-tool-calls",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/ai-checkpoints.tsx",
+        path: "components/kokonutui/ai-tool-calls.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "ai-compare",
+    name: "ai-checkout",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/ai-compare.tsx",
+        path: "components/kokonutui/ai-checkout.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "ai-routine",
+    name: "ai-connect",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/ai-routine.tsx",
+        path: "components/kokonutui/ai-connect.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "ai-translate",
+    name: "ai-send",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/ai-translate.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "ai-summary-depth",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/ai-summary-depth.tsx",
+        path: "components/kokonutui/ai-send.tsx",
         type: "registry:component",
       },
     ],
