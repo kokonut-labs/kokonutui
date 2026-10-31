@@ -10,22 +10,38 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { Check, GitPullRequest, Pause } from "lucide-react";
+import { Ban, Check, Eye, GitPullRequest, Lock, Pause } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+
+export interface ConnectScope {
+  label: string;
+  /** A limit rather than a permission, shown struck through in grey. */
+  denied?: boolean;
+  icon?: ReactNode;
+}
 
 export interface AIConnectProps {
   prompt?: string;
+  /** Your product's name, as the person knows it. */
+  agent?: string;
+  /** Your product's mark, about 18px. */
+  agentLogo?: ReactNode;
   /** The app the tool needs, e.g. "GitHub". */
   app?: string;
-  /** Its mark, about 16px. */
-  logo?: ReactNode;
-  /** Why the agent needs it, e.g. "To open pull requests on acme/web". */
+  /** Its mark, about 18px. */
+  appLogo?: ReactNode;
+  /** Background of the app's tile and button, its brand colour. */
+  appColor?: string;
+  /** Why it's needed, e.g. "to open a pull request on acme/web". */
   reason?: string;
+  scopes?: ConnectScope[];
   /** The tool call, while running and once done. */
   running?: string;
   done?: string;
+  /** What the call works on, e.g. a repo. */
+  target?: string;
   /** Shown on the right of the call once done, e.g. "#142". */
   result?: string;
   answer?: string;
@@ -43,6 +59,8 @@ type Step =
   | "done"
   | "skipped";
 
+type Link = "idle" | "waiting" | "linked";
+
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 function GitHubMark({ className }: { className?: string }) {
@@ -58,30 +76,48 @@ function GitHubMark({ className }: { className?: string }) {
   );
 }
 
-const demoConnect = () =>
-  new Promise<void>((resolve) => setTimeout(resolve, 1400));
+const DEMO_SCOPES: ConnectScope[] = [
+  { label: "Read code in kokonut/web", icon: <Eye className="size-3.5" /> },
+  {
+    label: "Open and update pull requests",
+    icon: <GitPullRequest className="size-3.5" />,
+  },
+  {
+    label: "Push to main or change settings",
+    denied: true,
+    icon: <Ban className="size-3.5" />,
+  },
+];
 
-/** How long each automatic step lasts in the demo. */
+const demoConnect = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 1600));
+
+/** Steps that move on by themselves, and after how long. */
 const AUTO: Partial<Record<Step, [number, Step]>> = {
   running: [900, "blocked"],
-  connected: [800, "resumed"],
-  resumed: [1100, "done"],
+  connected: [1000, "resumed"],
+  resumed: [1200, "done"],
 };
 
 export default function AIConnect({
   prompt = "Open a PR with the theme fix",
+  agent = "Kokonut",
+  agentLogo,
   app = "GitHub",
-  logo,
-  reason = "To open pull requests on kokonut/web",
+  appLogo,
+  appColor = "#1f2328",
+  reason = "to open a pull request on kokonut/web",
+  scopes = DEMO_SCOPES,
   running = "Opening a pull request",
   done = "Opened a pull request",
+  target = "kokonut/web",
   result = "#142",
   answer = "Opened #142, “Fix theme flash on load”, against main. CI is running now.",
   onConnect = demoConnect,
   className,
 }: AIConnectProps) {
   const [step, setStep] = useState<Step>("running");
-  const mark = logo ?? <GitHubMark className="size-4" />;
+  const logo = appLogo ?? <GitHubMark className="size-[18px]" />;
 
   useEffect(() => {
     const auto = AUTO[step];
@@ -104,202 +140,403 @@ export default function AIConnect({
 
   const asking =
     step === "blocked" || step === "authorizing" || step === "connected";
-  const busy = step === "running" || step === "resumed";
-  const connected = step === "resumed" || step === "done";
-
-  let label = running;
-  if (step === "done") {
-    label = done;
-  } else if (step === "blocked" || step === "authorizing") {
-    label = `Needs ${app} to continue`;
-  } else if (step === "skipped") {
-    label = "Stopped";
-  }
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("flex w-full max-w-md flex-col gap-3", className)}>
-        <p className="mb-1 max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+      <div className={cn("flex w-full max-w-md flex-col gap-4", className)}>
+        <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
           {prompt}
         </p>
 
-        <div className="flex h-7 items-center gap-2 text-[13px]">
-          <span className="flex size-5 items-center justify-center text-zinc-900 dark:text-zinc-100">
-            <StateIcon step={step} />
-          </span>
-          <AnimatePresence initial={false} mode="popLayout">
-            <motion.span
-              animate={{ opacity: 1, filter: "blur(0px)" }}
-              className={cn(
-                step === "done" || step === "skipped"
-                  ? "text-zinc-600 dark:text-zinc-400"
-                  : "text-zinc-900 dark:text-zinc-100"
-              )}
-              exit={{ opacity: 0, filter: "blur(2px)" }}
-              initial={{ opacity: 0, filter: "blur(2px)" }}
-              key={label}
-              transition={{ duration: 0.18 }}
-            >
-              {label}
-            </motion.span>
-          </AnimatePresence>
-          <AnimatePresence>
-            {connected && (
-              <motion.span
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-1 text-[12px] text-zinc-400 dark:text-zinc-500"
-                initial={{ opacity: 0, x: -4 }}
-                transition={{ duration: 0.25, ease: EASE_OUT, delay: 0.2 }}
+        <AutoHeight className="rounded-[22px] bg-black/[0.04] dark:bg-white/[0.06]">
+          <CallBand
+            app={app}
+            done={done}
+            logo={logo}
+            result={result}
+            running={running}
+            step={step}
+            target={target}
+          />
+          <AnimatePresence initial={false}>
+            {asking && (
+              <motion.div
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, filter: "blur(4px)" }}
+                initial={{ opacity: 0, filter: "blur(4px)" }}
+                transition={{ duration: 0.25, ease: EASE_OUT }}
               >
-                via{" "}
-                <span className="text-zinc-700 dark:text-zinc-300">{mark}</span>
-              </motion.span>
+                <AccessCard
+                  agent={agent}
+                  agentLogo={agentLogo}
+                  app={app}
+                  appColor={appColor}
+                  logo={logo}
+                  onConnect={connect}
+                  onSkip={() => setStep("skipped")}
+                  reason={reason}
+                  scopes={scopes}
+                  step={step}
+                />
+              </motion.div>
             )}
           </AnimatePresence>
-          {step === "done" && (
-            <motion.span
-              animate={{ opacity: 1 }}
-              className="ml-auto flex items-center gap-1 font-mono text-[12px] text-zinc-600 dark:text-zinc-300"
-              initial={{ opacity: 0 }}
-            >
-              <GitPullRequest aria-hidden="true" className="size-3.5" />
-              {result}
-            </motion.span>
-          )}
-          {busy && <Busy />}
-        </div>
-
-        <AnimatePresence initial={false}>
-          {asking && (
-            <motion.div
-              animate={{ height: "auto", opacity: 1 }}
-              className="overflow-hidden"
-              exit={{ height: 0, opacity: 0 }}
-              initial={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.35, ease: EASE_OUT }}
-            >
-              <ConnectCard
-                app={app}
-                logo={mark}
-                onConnect={connect}
-                onSkip={() => setStep("skipped")}
-                reason={reason}
-                step={step}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        </AutoHeight>
 
         <AnimatePresence>
-          {step === "done" && (
+          {(step === "done" || step === "skipped") && (
             <motion.p
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="mt-1 text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.15 }}
             >
-              {answer}
-            </motion.p>
-          )}
-          {step === "skipped" && (
-            <motion.p
-              animate={{ opacity: 1 }}
-              className="mt-1 text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
-              initial={{ opacity: 0 }}
-            >
-              No problem. The branch is pushed, so you can open the PR from{" "}
-              {app} whenever you like.
+              {step === "done"
+                ? answer
+                : `No problem. The branch is pushed, so you can open the PR on ${app} whenever you like.`}
             </motion.p>
           )}
         </AnimatePresence>
-        <p aria-live="polite" className="sr-only">
-          {label}
-        </p>
       </div>
     </MotionConfig>
   );
 }
 
-function ConnectCard({
+/** The tool call itself, in the frame above the access card. */
+function CallBand({
+  step,
   app,
   logo,
+  running,
+  done,
+  target,
+  result,
+}: {
+  step: Step;
+  app: string;
+  logo: ReactNode;
+  running: string;
+  done: string;
+  target: string;
+  result: string;
+}) {
+  const paused = step === "blocked" || step === "authorizing";
+  const via = step === "resumed" || step === "done";
+
+  let label = running;
+  if (step === "done") {
+    label = done;
+  } else if (step === "skipped") {
+    label = "Stopped before the pull request";
+  }
+
+  return (
+    <div className="flex h-10 items-center gap-2 px-4 text-[13px]">
+      <span className="flex size-4 items-center justify-center text-zinc-900 dark:text-zinc-100">
+        <StateIcon step={step} />
+      </span>
+      <AnimatePresence initial={false} mode="popLayout">
+        <motion.span
+          animate={{ opacity: 1, filter: "blur(0px)" }}
+          className={cn(
+            "shrink-0",
+            step === "done" || step === "skipped"
+              ? "text-zinc-600 dark:text-zinc-400"
+              : "font-medium text-zinc-900 dark:text-zinc-100"
+          )}
+          exit={{ opacity: 0, filter: "blur(2px)" }}
+          initial={{ opacity: 0, filter: "blur(2px)" }}
+          key={label}
+          transition={{ duration: 0.18 }}
+        >
+          {label}
+        </motion.span>
+      </AnimatePresence>
+      {step !== "skipped" && (
+        <span className="min-w-0 truncate font-mono text-[11.5px] text-zinc-400 dark:text-zinc-500">
+          {target}
+        </span>
+      )}
+      <span className="ml-auto flex shrink-0 items-center gap-2 pl-2">
+        <AnimatePresence initial={false} mode="popLayout">
+          {paused && (
+            <motion.span
+              animate={{ opacity: 1 }}
+              className="text-[12px] text-zinc-500 dark:text-zinc-400"
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              key="paused"
+            >
+              Needs {app}
+            </motion.span>
+          )}
+          {via && (
+            <motion.span
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-1.5 text-[12px]"
+              initial={{ opacity: 0, x: 4 }}
+              key="via"
+              transition={{ duration: 0.25, ease: EASE_OUT }}
+            >
+              <span className="text-zinc-800 dark:text-zinc-200 [&_svg]:size-3.5">
+                {logo}
+              </span>
+              {step === "done" && (
+                <span className="font-mono text-zinc-700 dark:text-zinc-300">
+                  {result}
+                </span>
+              )}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </span>
+    </div>
+  );
+}
+
+function AccessCard({
+  agent,
+  agentLogo,
+  app,
+  appColor,
+  logo,
   reason,
+  scopes,
   step,
   onConnect,
   onSkip,
 }: {
+  agent: string;
+  agentLogo?: ReactNode;
   app: string;
+  appColor: string;
   logo: ReactNode;
   reason: string;
+  scopes: ConnectScope[];
   step: Step;
   onConnect: () => void;
   onSkip: () => void;
 }) {
   const waiting = step === "authorizing";
   const linked = step === "connected";
+  let link: Link = "idle";
+  if (linked) {
+    link = "linked";
+  } else if (waiting) {
+    link = "waiting";
+  }
 
   return (
-    <div className="mt-1 rounded-2xl bg-white p-4 ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10">
-      <div className="flex items-start gap-3">
-        <span className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
-          {logo}
-          <AnimatePresence>
-            {linked && (
-              <motion.span
-                animate={{ scale: 1, opacity: 1 }}
-                className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-emerald-600 text-white ring-2 ring-white dark:bg-emerald-500 dark:ring-zinc-900"
-                initial={{ scale: 0.4, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 520, damping: 24 }}
-              >
-                <Check className="size-2.5" strokeWidth={3} />
-              </motion.span>
-            )}
-          </AnimatePresence>
+    <div className="m-1 mt-0 rounded-[18px] bg-white px-4 pt-5 pb-3 shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/[0.06] dark:bg-zinc-900 dark:ring-white/[0.08]">
+      <div className="flex items-center justify-center">
+        <span className="flex size-10 items-center justify-center rounded-xl bg-zinc-100 font-semibold text-[15px] text-zinc-900 ring-1 ring-black/[0.06] dark:bg-zinc-800 dark:text-zinc-100 dark:ring-white/10">
+          {agentLogo ?? agent.slice(0, 1)}
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="font-medium text-[14px] text-zinc-900 dark:text-zinc-100">
-            {linked ? `${app} connected` : `Connect ${app}`}
-          </p>
-          <p className="mt-0.5 text-[13px] text-zinc-500 leading-snug dark:text-zinc-400">
-            {linked ? "Picking up where it stopped…" : reason}
-          </p>
-        </div>
+        <Handshake state={link} />
+        <span
+          className="flex size-10 items-center justify-center rounded-xl text-white dark:ring-1 dark:ring-white/15"
+          style={{ backgroundColor: appColor }}
+        >
+          {logo}
+        </span>
       </div>
-      <div className="mt-4 flex gap-2">
+
+      <div className="mt-4 text-center">
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.p
+            animate={{ opacity: 1, y: 0 }}
+            className="font-medium text-[15px] text-zinc-900 dark:text-zinc-100"
+            exit={{ opacity: 0, y: -4 }}
+            initial={{ opacity: 0, y: 4 }}
+            key={linked ? "linked" : "ask"}
+            transition={{ duration: 0.2, ease: EASE_OUT }}
+          >
+            {linked ? `${app} connected` : `Connect ${app} to continue`}
+          </motion.p>
+        </AnimatePresence>
+        <p className="mt-1 text-[13px] text-zinc-500 dark:text-zinc-400">
+          {linked
+            ? "Picking up where it stopped…"
+            : `${agent} needs access ${reason}.`}
+        </p>
+      </div>
+
+      <ul className="mt-4 space-y-2 rounded-xl bg-zinc-50 px-3 py-2.5 text-[12.5px] ring-1 ring-black/[0.04] dark:bg-white/[0.03] dark:ring-white/[0.06]">
+        {scopes.map((scope) => (
+          <li
+            className={cn(
+              "flex items-center gap-2",
+              scope.denied
+                ? "text-zinc-400 dark:text-zinc-500"
+                : "text-zinc-700 dark:text-zinc-300"
+            )}
+            key={scope.label}
+          >
+            <span className="flex size-4 shrink-0 items-center justify-center text-zinc-400 dark:text-zinc-500">
+              {scope.icon ?? <Check className="size-3.5" />}
+            </span>
+            <span
+              className={cn(
+                scope.denied &&
+                  "line-through decoration-zinc-300 dark:decoration-zinc-600"
+              )}
+            >
+              {scope.label}
+            </span>
+            {scope.denied && (
+              <span className="ml-auto shrink-0 text-[11px]">Not asked</span>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <button
+        aria-busy={waiting}
+        className="mt-4 flex h-10 w-full items-center justify-center rounded-xl font-medium text-[14px] text-white outline-hidden transition-[filter,background-color] duration-300 hover:brightness-125 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-2 disabled:pointer-events-none dark:ring-1 dark:ring-white/15 dark:focus-visible:ring-offset-zinc-900"
+        disabled={step !== "blocked"}
+        onClick={onConnect}
+        style={{ backgroundColor: linked ? "#059669" : appColor }}
+        type="button"
+      >
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.span
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 [&_svg]:size-4"
+            exit={{ opacity: 0, y: -6 }}
+            initial={{ opacity: 0, y: 6 }}
+            key={link}
+            transition={{ duration: 0.18, ease: EASE_OUT }}
+          >
+            <ButtonFace app={app} link={link} logo={logo} />
+          </motion.span>
+        </AnimatePresence>
+      </button>
+      <div className="mt-1 flex justify-center">
         <button
-          className="h-9 rounded-lg px-3 text-[13px] text-zinc-600 outline-hidden transition-colors duration-100 hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-zinc-400/50 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-300 dark:hover:bg-white/[0.07]"
+          className="rounded-md px-2 py-1 text-[12.5px] text-zinc-500 outline-hidden transition-[color,opacity] duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 disabled:opacity-0 dark:text-zinc-400 dark:hover:text-zinc-100"
           disabled={step !== "blocked"}
           onClick={onSkip}
           type="button"
         >
           Not now
         </button>
-        <button
-          aria-busy={waiting}
-          className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-zinc-900 px-3 font-medium text-[13px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-2 disabled:pointer-events-none dark:bg-white dark:text-zinc-900 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-zinc-200"
-          disabled={step !== "blocked"}
-          onClick={onConnect}
-          type="button"
-        >
-          <AnimatePresence initial={false} mode="popLayout">
-            <motion.span
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2"
-              exit={{ opacity: 0, y: -6 }}
-              initial={{ opacity: 0, y: 6 }}
-              key={step}
-              transition={{ duration: 0.18, ease: EASE_OUT }}
-            >
-              {waiting && <Spinner />}
-              {linked && <Check aria-hidden="true" className="size-4" />}
-              {waiting && `Waiting for ${app}…`}
-              {linked && "Connected"}
-              {!(waiting || linked) && "Connect"}
-            </motion.span>
-          </AnimatePresence>
-        </button>
       </div>
+      <p aria-live="polite" className="sr-only">
+        {waiting ? `Waiting for ${app}` : ""}
+        {linked ? `${app} connected` : ""}
+      </p>
     </div>
+  );
+}
+
+function ButtonFace({
+  link,
+  app,
+  logo,
+}: {
+  link: Link;
+  app: string;
+  logo: ReactNode;
+}) {
+  if (link === "waiting") {
+    return (
+      <>
+        <Spinner />
+        Waiting for {app}…
+      </>
+    );
+  }
+  if (link === "linked") {
+    return (
+      <>
+        <Check aria-hidden="true" />
+        Connected
+      </>
+    );
+  }
+  return (
+    <>
+      {logo}
+      Continue with {app}
+    </>
+  );
+}
+
+/**
+ * The line between the two tiles: dashed while it waits, dashes flowing while
+ * the person approves, then drawn solid green with a check in the middle.
+ */
+function Handshake({ state }: { state: Link }) {
+  const waiting = state === "waiting";
+  return (
+    <span className="relative mx-2 flex h-10 w-20 items-center justify-center">
+      <svg
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full"
+        fill="none"
+        viewBox="0 0 80 40"
+      >
+        <motion.line
+          animate={{ strokeDashoffset: waiting ? [0, -12] : 0 }}
+          className="stroke-zinc-300 dark:stroke-zinc-600"
+          strokeDasharray="3 3"
+          strokeLinecap="round"
+          strokeWidth="1.5"
+          transition={
+            waiting
+              ? {
+                  duration: 0.6,
+                  ease: "linear",
+                  repeat: Number.POSITIVE_INFINITY,
+                }
+              : { duration: 0 }
+          }
+          x1="2"
+          x2="78"
+          y1="20"
+          y2="20"
+        />
+        <motion.line
+          animate={{
+            pathLength: state === "linked" ? 1 : 0,
+            opacity: state === "linked" ? 1 : 0,
+          }}
+          className="stroke-emerald-500"
+          initial={false}
+          strokeLinecap="round"
+          strokeWidth="1.5"
+          transition={{ duration: 0.45, ease: EASE_OUT }}
+          x1="2"
+          x2="78"
+          y1="20"
+          y2="20"
+        />
+      </svg>
+      <span
+        className={cn(
+          "relative flex size-6 items-center justify-center rounded-full ring-1 transition-colors duration-300",
+          state === "linked"
+            ? "bg-emerald-500 text-white ring-emerald-500"
+            : "bg-white text-zinc-500 ring-black/10 dark:bg-zinc-900 dark:text-zinc-400 dark:ring-white/15"
+        )}
+      >
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.span
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            initial={{ opacity: 0, scale: 0.5 }}
+            key={state === "linked" ? "check" : "lock"}
+            transition={{ type: "spring", stiffness: 500, damping: 28 }}
+          >
+            {state === "linked" ? (
+              <Check className="size-3" strokeWidth={3} />
+            ) : (
+              <Lock className="size-3" />
+            )}
+          </motion.span>
+        </AnimatePresence>
+      </span>
+    </span>
   );
 }
 
@@ -342,23 +579,6 @@ function StateIcon({ step }: { step: Step }) {
   );
 }
 
-/** A faint bar that runs under the label while the call works. */
-function Busy() {
-  return (
-    <span className="relative ml-auto h-px w-14 overflow-hidden bg-zinc-200 dark:bg-zinc-700">
-      <motion.span
-        animate={{ x: ["-100%", "250%"] }}
-        className="absolute inset-y-0 w-6 bg-zinc-500 dark:bg-zinc-300"
-        transition={{
-          duration: 1.1,
-          ease: "easeInOut",
-          repeat: Number.POSITIVE_INFINITY,
-        }}
-      />
-    </span>
-  );
-}
-
 function Spinner() {
   return (
     <motion.svg
@@ -388,5 +608,38 @@ function Spinner() {
         strokeWidth="1.5"
       />
     </motion.svg>
+  );
+}
+
+/** Eases the frame to its content's height when the card opens or folds. */
+function AutoHeight({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | "auto">("auto");
+
+  useEffect(() => {
+    const inner = innerRef.current;
+    if (!inner) {
+      return;
+    }
+    const observer = new ResizeObserver(() => setHeight(inner.offsetHeight));
+    observer.observe(inner);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <motion.div
+      animate={{ height }}
+      className={cn("overflow-hidden", className)}
+      initial={false}
+      transition={{ duration: 0.45, ease: EASE_OUT }}
+    >
+      <div ref={innerRef}>{children}</div>
+    </motion.div>
   );
 }
