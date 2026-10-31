@@ -232,11 +232,12 @@ function EffortTrack({
         <span
           aria-hidden="true"
           className={cn(
-            "absolute inset-y-0 rounded-md bg-white shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-black/5 transition-[left,width] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none dark:bg-zinc-700 dark:ring-white/10",
+            "absolute inset-y-0 left-0 rounded-md bg-white shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-black/5 transition-[translate,width] duration-250 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none dark:bg-zinc-700 dark:ring-white/10",
             dragging && "duration-150"
           )}
+          // Moved with translate, which skips layout, rather than left.
           style={{
-            left: `${(value / count) * 100}%`,
+            translate: `${value * 100}% 0`,
             width: `${100 / count}%`,
           }}
         />
@@ -311,8 +312,12 @@ export default function AIModelSelector({
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        // Only pull focus back when it was in the panel; Escape pressed
+        // elsewhere on the page just closes it.
+        if (rootRef.current?.contains(document.activeElement)) {
+          triggerRef.current?.focus();
+        }
         setOpen(false);
-        triggerRef.current?.focus();
       }
     };
     document.addEventListener("pointerdown", onPointer);
@@ -427,7 +432,7 @@ export default function AIModelSelector({
                     >
                       Effort
                     </p>
-                    <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                    <p className="text-[11px] text-zinc-400 dark:text-zinc-500 [@media(hover:none)]:hidden">
                       ← → to adjust
                     </p>
                   </div>

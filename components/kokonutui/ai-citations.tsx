@@ -12,7 +12,14 @@
 
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export interface CitationSource {
@@ -44,7 +51,10 @@ const OPEN_DELAY_MS = 120;
 const CLOSE_DELAY_MS = 90;
 /** After a preview closes, the next one within this window opens at once. */
 const WARM_MS = 400;
+/** Height to assume for a preview that hasn't been measured yet. */
+const CARD_GUESS = 200;
 const WWW = /^www\./;
+const LAST_WORD = /\S+\s*$/;
 
 const DEMO_SOURCES: CitationSource[] = [
   {
@@ -139,6 +149,8 @@ interface Preview {
   part: number;
   x: number;
   y: number;
+  /** Opens under the chip when there is no room above it on screen. */
+  below: boolean;
 }
 
 /**
@@ -226,18 +238,33 @@ export default function AICitations({
     .map((id) => byId.get(id))
     .filter((source): source is CitationSource => Boolean(source));
 
+  const cardRef = useRef<HTMLDivElement>(null);
+  const cardHeight = useRef(CARD_GUESS);
   const place = (index: number, chip: HTMLElement): Preview => {
     const root = rootRef.current?.getBoundingClientRect();
     const rect = chip.getBoundingClientRect();
     const width = Math.min(CARD_WIDTH, root?.width ?? CARD_WIDTH);
     const left = rect.left - (root?.left ?? 0) + rect.width / 2 - width / 2;
     const max = (root?.width ?? width) - width;
+    // A chip on the first line of a chat sits under its header: open below
+    // rather than get clipped.
+    const below = rect.top < cardHeight.current + 16;
     return {
       part: index,
       x: Math.min(Math.max(0, left), Math.max(0, max)),
-      y: rect.top - (root?.top ?? 0) - 8,
+      y: below
+        ? rect.bottom - (root?.top ?? 0) + 8
+        : rect.top - (root?.top ?? 0) - 8,
+      below,
     };
   };
+
+  // Remember how tall the open preview is, to decide the next one's side.
+  useLayoutEffect(() => {
+    if (preview && cardRef.current) {
+      cardHeight.current = cardRef.current.offsetHeight;
+    }
+  });
 
   const active = preview ? parts[preview.part] : null;
   const activeSources = (active?.cite ?? [])
@@ -291,59 +318,64 @@ export default function AICitations({
             const isLinked = partSources.some(
               (source) => source.id === hoveredSource
             );
+            // The claim a chip supports lights up while it's previewed.
+            const claim = cn(
+              "rounded-[3px] decoration-1 underline-offset-4 transition-[background-color,text-decoration-color] duration-150",
+              isActive || isLinked
+                ? "bg-sky-100/80 underline decoration-sky-400/70 dark:bg-sky-400/15 dark:decoration-sky-400/50"
+                : "bg-transparent underline decoration-transparent"
+            );
+            // The last word rides with the chip, so a chip never starts a
+            // line on its own.
+            const tail = part.text.match(LAST_WORD)?.[0].trimEnd() ?? "";
+            const head = part.text.slice(0, part.text.length - tail.length);
             return (
               // biome-ignore lint/suspicious/noArrayIndexKey: parts are an ordered, static answer
               <span key={index}>
-                {/* The claim a chip supports lights up while it's previewed. */}
-                <span
-                  className={cn(
-                    "rounded-[3px] decoration-1 underline-offset-4 transition-[background-color,text-decoration-color] duration-150",
-                    isActive || isLinked
-                      ? "bg-sky-100/80 underline decoration-sky-400/70 dark:bg-sky-400/15 dark:decoration-sky-400/50"
-                      : "bg-transparent underline decoration-transparent"
-                  )}
-                >
-                  {part.text}
-                </span>{" "}
-                <button
-                  aria-describedby={isActive ? previewId : undefined}
-                  aria-label={`Sources: ${partSources.map(siteOf).join(", ")}`}
-                  className={cn(
-                    "inline-flex h-5 translate-y-[-1px] items-center gap-1 rounded-full py-0 pr-1.5 pl-0.5 align-middle font-medium text-[11px] outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-sky-500/50",
-                    isActive || isLinked
-                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/15"
-                  )}
-                  data-citation-chip=""
-                  onBlur={() => hide(true)}
-                  // Focus already opened it for mouse and keyboard; a tap
-                  // on touch opens it here. Blur or Escape closes it.
-                  onClick={(event) =>
-                    show(place(index, event.currentTarget), true)
-                  }
-                  onFocus={(event) =>
-                    show(place(index, event.currentTarget), true)
-                  }
-                  onPointerEnter={(event) => {
-                    if (event.pointerType === "mouse") {
-                      show(place(index, event.currentTarget));
+                {head && <span className={claim}>{head}</span>}
+                <span className="whitespace-nowrap">
+                  {tail && <span className={claim}>{tail}</span>}
+                  {"\u00a0"}
+                  <button
+                    aria-describedby={isActive ? previewId : undefined}
+                    aria-label={`Sources: ${partSources.map(siteOf).join(", ")}`}
+                    className={cn(
+                      "inline-flex h-5 translate-y-[-1px] items-center gap-1 rounded-full py-0 pr-1.5 pl-0.5 align-middle font-medium text-[11px] outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-sky-500/50",
+                      isActive || isLinked
+                        ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                        : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/15"
+                    )}
+                    data-citation-chip=""
+                    onBlur={() => hide(true)}
+                    // Focus already opened it for mouse and keyboard; a tap
+                    // on touch opens it here. Blur or Escape closes it.
+                    onClick={(event) =>
+                      show(place(index, event.currentTarget), true)
                     }
-                  }}
-                  onPointerLeave={(event) => {
-                    if (event.pointerType === "mouse") {
-                      hide();
+                    onFocus={(event) =>
+                      show(place(index, event.currentTarget), true)
                     }
-                  }}
-                  type="button"
-                >
-                  <Monogram className="size-4 rounded-full" source={first} />
-                  {siteOf(first)}
-                  {partSources.length > 1 && (
-                    <span className="opacity-60">
-                      +{partSources.length - 1}
-                    </span>
-                  )}
-                </button>
+                    onPointerEnter={(event) => {
+                      if (event.pointerType === "mouse") {
+                        show(place(index, event.currentTarget));
+                      }
+                    }}
+                    onPointerLeave={(event) => {
+                      if (event.pointerType === "mouse") {
+                        hide();
+                      }
+                    }}
+                    type="button"
+                  >
+                    <Monogram className="size-4 rounded-full" source={first} />
+                    {siteOf(first)}
+                    {partSources.length > 1 && (
+                      <span className="opacity-60">
+                        +{partSources.length - 1}
+                      </span>
+                    )}
+                  </button>
+                </span>
               </span>
             );
           })}
@@ -366,8 +398,9 @@ export default function AICitations({
               initial={{ opacity: 0, scale: 0.97, x: preview.x, y: preview.y }}
               role="tooltip"
               style={{
-                // The card hangs above this box, so its top edge is the
-                // card's bottom: grow from there, toward the chip.
+                // This box's top edge is the side facing the chip: the
+                // card's bottom when it hangs above, its top when below.
+                // Either way it grows from there, toward the chip.
                 transformOrigin: "50% 0%",
                 width: Math.min(
                   CARD_WIDTH,
@@ -381,7 +414,13 @@ export default function AICitations({
                 y: warm ? { duration: 0.22, ease: EASE_OUT } : { duration: 0 },
               }}
             >
-              <div className="origin-bottom -translate-y-full rounded-xl bg-white p-1 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.2)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10">
+              <div
+                className={cn(
+                  "rounded-xl bg-white p-1 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.2)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10",
+                  !preview.below && "-translate-y-full"
+                )}
+                ref={cardRef}
+              >
                 <AnimatePresence initial={false} mode="popLayout">
                   <motion.div
                     animate={{ opacity: 1, filter: "blur(0px)" }}

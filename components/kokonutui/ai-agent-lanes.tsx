@@ -196,19 +196,42 @@ export default function AIAgentLanes({
   );
   const nowRef = useRef(0);
   nowRef.current = now;
+  const rootRef = useRef<HTMLDivElement>(null);
+  // The run plays only while the card is on screen: it starts the first time
+  // it scrolls into view and holds its place while scrolled away.
+  const [visible, setVisible] = useState(false);
+  const [seen, setSeen] = useState(false);
 
-  // Start once on mount; reduced motion shows the finished run.
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) {
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      setVisible(entry.isIntersecting);
+      if (entry.isIntersecting) {
+        setSeen(true);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Start once it's first seen; reduced motion shows the finished run.
   useEffect(() => {
     if (reduceMotion) {
       setNow(total);
       return;
     }
+    if (!seen) {
+      return;
+    }
     const id = setTimeout(() => setPlaying(true), 500);
     return () => clearTimeout(id);
-  }, [reduceMotion, total]);
+  }, [reduceMotion, total, seen]);
 
   useEffect(() => {
-    if (!playing) {
+    if (!(playing && visible)) {
       return;
     }
     let frame = 0;
@@ -225,7 +248,7 @@ export default function AIAgentLanes({
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [playing, total]);
+  }, [playing, visible, total]);
 
   const done = now >= total;
   const lead = lanes[0];
@@ -251,6 +274,7 @@ export default function AIAgentLanes({
         "w-full max-w-2xl rounded-2xl bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
         className
       )}
+      ref={rootRef}
     >
       <header className="flex items-start justify-between gap-4 border-black/[0.06] border-b px-4 py-3 dark:border-white/[0.08]">
         <div className="min-w-0">
@@ -311,11 +335,17 @@ export default function AIAgentLanes({
                 ))}
               </div>
             ))}
+            {/* Moved with translate, not left, so the playhead skips layout
+                on every frame. The full-width layer makes its % the track's,
+                and the clip keeps it from widening the page. */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 w-px bg-zinc-900/70 dark:bg-white/70"
-              style={{ left: x(now) }}
-            />
+              className="pointer-events-none absolute inset-y-0 -right-px left-0 overflow-hidden"
+            >
+              <div className="h-full" style={{ translate: `${x(now)} 0` }}>
+                <div className="h-full w-px bg-zinc-900/70 dark:bg-white/70" />
+              </div>
+            </div>
             <AnimatePresence>
               {/* A bar scrubbed out of existence never fires pointerleave. */}
               {hoverStep && hover && now > hoverStep.start && (
@@ -481,11 +511,11 @@ function StepBar({
       type="button"
     >
       <span
-        className={cn(
-          "block h-full origin-left rounded-[3px]",
-          TOOL_STYLE[step.tool]
-        )}
-        style={{ width: `${progress * 100}%` }}
+        className={cn("block h-full rounded-[3px]", TOOL_STYLE[step.tool])}
+        // A clip, not a width, keeps the fill off layout and its corners round.
+        style={{
+          clipPath: `inset(0 ${(1 - progress) * 100}% 0 0 round 3px)`,
+        }}
       />
     </button>
   );
