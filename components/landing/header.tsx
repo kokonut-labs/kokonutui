@@ -1,7 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
-import { LogoMark } from "@/components/landing/halloween/fright";
 import { PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
 import { ThemeToggle } from "@/lib/theme-toggle";
 import { HeaderPro } from "./header-pro";
@@ -66,7 +66,7 @@ export function Header() {
             <div className="relative z-10 mx-auto flex w-full max-w-[1400px] items-center justify-between gap-2">
               <div className="flex items-center gap-3 sm:gap-6">
                 <Link className="flex shrink-0 items-center gap-2" href="/">
-                  <LogoMark />
+                  <Image alt="logo" height={28} src="/logo.svg" width={28} />
                   <span className="hidden font-semibold text-lg sm:block">
                     Kokonut UI
                   </span>

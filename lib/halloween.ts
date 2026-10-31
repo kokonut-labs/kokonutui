@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
  * and 31 in the visitor's own time zone and is gone on November 1, so nothing
  * needs to be reverted after.
  *
- * - fright: the homepage headline, accent and logo.
+ * - fright: the homepage headline and the pumpkin accent.
  * - ghost: a ghost haunting a few component pages in the docs.
  *
  * Preview any day with `?halloween=fright`, `?halloween=ghost` or
