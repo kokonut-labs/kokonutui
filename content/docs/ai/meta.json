@@ -19,6 +19,11 @@
     "ai-redact",
     "ai-memory",
     "ai-autocomplete",
+    "ai-checkpoints",
+    "ai-compare",
+    "ai-routine",
+    "ai-translate",
+    "ai-summary-depth",
     "slash-command-menu",
     "image-generation-card"
   ]
