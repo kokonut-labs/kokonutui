@@ -33,17 +33,31 @@ if [[ "${VERCEL_ENV:-}" == "preview" && -z "${VERCEL_GIT_PULL_REQUEST_ID:-}" ]];
   skip "preview for ${VERCEL_GIT_COMMIT_REF:-unknown branch} has no pull request"
 fi
 
+# Compare against the last commit this project deployed on this branch, so a
+# push of several commits is judged on all of them, not only the newest (a
+# batch ending in a README edit used to skip the whole batch). Vercel clones
+# about 10 commits deep; if that commit isn't in the clone, or the branch has
+# never deployed, fall back to the parent commit.
+base="${VERCEL_GIT_PREVIOUS_SHA:-}"
+if [[ -z "$base" ]] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+  base="HEAD^"
+fi
+echo "Comparing against $base"
+
 # Shallow clones may not have the parent commit; build to be safe.
-changed="$(git diff --name-only HEAD^ HEAD 2>/dev/null)" ||
-  build "could not diff against the parent commit"
+changed="$(git diff --name-only "$base" HEAD 2>/dev/null)" ||
+  build "could not diff against $base"
 
 if [[ -z "$changed" ]]; then
   build "empty diff"
 fi
 
+# Judged on the bot commit alone: it lands while the merge build is still
+# running, so the last deployed commit is still the one before the merge.
 author="$(git log -1 --format=%an 2>/dev/null)"
 if [[ "$author" == "github-actions[bot]" ]] &&
-  ! grep -qvE '^(registry\.json|public/r/|public/\.well-known/agent-skills/)' <<<"$changed"; then
+  bot_changed="$(git diff --name-only HEAD^ HEAD 2>/dev/null)" &&
+  ! grep -qvE '^(registry\.json|public/r/|public/\.well-known/agent-skills/)' <<<"$bot_changed"; then
   skip "registry bot commit; the merge build already generated these files"
 fi
 
