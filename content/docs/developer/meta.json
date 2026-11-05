@@ -2,9 +2,9 @@
   "title": "Developer",
   "pages": [
     "cron-schedule",
+    "domain-propagation",
+    "traffic-split",
     "log-stream",
-    "env-editor",
-    "json-inspector",
-    "regex-tester"
+    "env-editor"
   ]
 }

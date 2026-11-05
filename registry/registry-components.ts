@@ -1260,23 +1260,23 @@ export const component: Registry = [
     ],
   },
   {
-    name: "json-inspector",
+    name: "domain-propagation",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/json-inspector.tsx",
+        path: "components/kokonutui/domain-propagation.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "regex-tester",
+    name: "traffic-split",
     type: "registry:component",
     dependencies: ["motion"],
     files: [
       {
-        path: "components/kokonutui/regex-tester.tsx",
+        path: "components/kokonutui/traffic-split.tsx",
         type: "registry:component",
       },
     ],
