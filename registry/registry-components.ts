@@ -908,6 +908,61 @@ export const component: Registry = [
     ],
   },
   {
+    name: "ai-schedule",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-schedule.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-attachment",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-attachment.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-code-run",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-code-run.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-order-status",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-order-status.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-handoff",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-handoff.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "ai-branches",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
