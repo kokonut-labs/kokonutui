@@ -1,0 +1,10 @@
+{
+  "title": "Developer",
+  "pages": [
+    "cron-schedule",
+    "log-stream",
+    "env-editor",
+    "json-inspector",
+    "regex-tester"
+  ]
+}

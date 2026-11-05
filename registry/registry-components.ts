@@ -1226,4 +1226,59 @@ export const component: Registry = [
       },
     ],
   },
+  {
+    name: "cron-schedule",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/cron-schedule.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "log-stream",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/log-stream.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "env-editor",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/env-editor.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "json-inspector",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/json-inspector.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "regex-tester",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/regex-tester.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
 ];
