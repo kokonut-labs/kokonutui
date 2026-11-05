@@ -44,6 +44,9 @@ interface Row {
   saved: EnvVar | null;
   removed: boolean;
   revealed: boolean;
+  /** Delays in ms before the key or value decodes in; unset once shown. */
+  decodeKey?: number;
+  decodeValue?: number;
 }
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -53,6 +56,12 @@ const LINE = /^\s*(?:export\s+)?([\w.-]+)\s*=\s*(.*)\s*$/;
 const QUOTED = /^(["'])(.*)\1$/;
 const NEWLINE = /\r?\n/;
 const MASK = "••••••••••••";
+const DECODE_BOX =
+  "flex h-8 w-full min-w-0 items-center overflow-hidden whitespace-nowrap rounded-md border border-transparent bg-zinc-50 px-2 font-mono text-[12.5px] dark:bg-zinc-900";
+const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-:/.=";
+const DECODE_MS = 420;
+// Pasted rows decode in this many ms apart.
+const STAGGER = 90;
 
 const DEMO: EnvVar[] = [
   {
@@ -124,7 +133,8 @@ export default function EnvEditor({
   const [rows, setRows] = useState<Row[]>(() =>
     defaultVariables.map((v) => makeRow(v, true))
   );
-  const [flash, setFlash] = useState<number[]>([]);
+  const [dropping, setDropping] = useState(false);
+  const card = useRef<HTMLDivElement>(null);
   const [savedAt, setSavedAt] = useState(0);
   /** A field to focus once it renders: a new row's key, a revealed value. */
   const focusNext = useRef<string | null>(null);
@@ -138,19 +148,12 @@ export default function EnvEditor({
   };
 
   useEffect(() => {
-    if (focusNext.current !== null) {
-      inputs.current.get(focusNext.current)?.focus();
+    const el = focusNext.current && inputs.current.get(focusNext.current);
+    if (el) {
+      el.focus();
       focusNext.current = null;
     }
   });
-
-  useEffect(() => {
-    if (!flash.length) {
-      return;
-    }
-    const clear = setTimeout(() => setFlash([]), 1200);
-    return () => clearTimeout(clear);
-  }, [flash]);
 
   useEffect(() => {
     if (!savedAt) {
@@ -203,36 +206,84 @@ export default function EnvEditor({
     }
   };
 
-  // A pasted .env file becomes rows: existing keys take the new value, the
-  // rest are added, and every row it touched flashes.
-  const onPaste = (row: Row, event: ClipboardEvent<HTMLInputElement>) => {
-    const text = event.clipboardData.getData("text");
+  // A pasted or dropped .env file becomes rows: existing keys take the new
+  // value, the rest are added, and each decodes in a beat after the last.
+  const importText = (text: string, into?: Row) => {
     const parsed = text.includes("=") ? parseEnv(text) : [];
     if (parsed.length === 0) {
-      return;
+      return false;
     }
-    event.preventDefault();
-    const touched: number[] = [];
     // The empty row pasted into gives way to the pasted ones.
     let next = rows.filter(
-      (r) => !(r.id === row.id && !r.saved && !r.key && !r.value)
+      (r) => !(r.id === into?.id && !r.saved && !r.key && !r.value)
     );
-    for (const variable of parsed) {
+    parsed.forEach((variable, n) => {
+      const delay = n * STAGGER;
       const existing = next.find((r) => r.key === variable.key && !r.removed);
       if (existing) {
-        touched.push(existing.id);
         next = next.map((r) =>
-          r.id === existing.id ? { ...r, value: variable.value } : r
+          r.id === existing.id
+            ? { ...r, value: variable.value, decodeValue: delay }
+            : r
         );
       } else {
-        const added = makeRow(variable, false);
-        touched.push(added.id);
-        next = [...next, added];
+        next = [
+          ...next,
+          {
+            ...makeRow(variable, false),
+            decodeKey: delay,
+            decodeValue: delay,
+          },
+        ];
       }
-    }
+    });
     setRows(next);
-    setFlash(touched);
+    return true;
   };
+
+  const onPaste = (row: Row, event: ClipboardEvent<HTMLInputElement>) => {
+    if (importText(event.clipboardData.getData("text"), row)) {
+      event.preventDefault();
+    }
+  };
+
+  // A .env file dropped anywhere on the card imports the same way.
+  const importRef = useRef(importText);
+  importRef.current = importText;
+  useEffect(() => {
+    const el = card.current;
+    if (!el) {
+      return;
+    }
+    const over = (event: DragEvent) => {
+      if (event.dataTransfer?.types.includes("Files")) {
+        event.preventDefault();
+        setDropping(true);
+      }
+    };
+    const leave = (event: DragEvent) => {
+      if (!el.contains(event.relatedTarget as globalThis.Node | null)) {
+        setDropping(false);
+      }
+    };
+    const drop = async (event: DragEvent) => {
+      const file = event.dataTransfer?.files[0];
+      if (!file) {
+        return;
+      }
+      event.preventDefault();
+      setDropping(false);
+      importRef.current(await file.text());
+    };
+    el.addEventListener("dragover", over);
+    el.addEventListener("dragleave", leave);
+    el.addEventListener("drop", drop);
+    return () => {
+      el.removeEventListener("dragover", over);
+      el.removeEventListener("dragleave", leave);
+      el.removeEventListener("drop", drop);
+    };
+  }, []);
 
   const discard = () =>
     setRows((rs) =>
@@ -258,10 +309,24 @@ export default function EnvEditor({
     <MotionConfig reducedMotion="user">
       <div
         className={cn(
-          "w-full max-w-xl overflow-hidden rounded-xl border border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100",
+          "relative w-full max-w-xl overflow-hidden rounded-xl border border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100",
           className
         )}
+        ref={card}
       >
+        <AnimatePresence>
+          {dropping && (
+            <motion.div
+              animate={{ opacity: 1 }}
+              className="pointer-events-none absolute inset-1.5 z-10 flex items-center justify-center rounded-lg border border-zinc-400 border-dashed bg-white/85 text-[13px] text-zinc-600 backdrop-blur-[2px] dark:border-zinc-600 dark:bg-zinc-950/85 dark:text-zinc-300"
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              Drop to import variables
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="flex items-center gap-2 px-4 pt-3.5 pb-1">
           <h3 className="font-medium text-[13px]">{title}</h3>
           <span className="font-mono text-[11.5px] text-zinc-400 tabular-nums dark:text-zinc-500">
@@ -269,7 +334,7 @@ export default function EnvEditor({
           </span>
         </div>
         <p className="px-4 text-[12px] text-zinc-500 dark:text-zinc-400">
-          Paste a .env file into any field to add many at once.
+          Paste or drop a .env file to add many at once.
         </p>
 
         <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_3.5rem] gap-x-2 px-4 pb-1.5 text-[11px] text-zinc-400 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_3.5rem] dark:text-zinc-500">
@@ -281,14 +346,13 @@ export default function EnvEditor({
           <AnimatePresence initial={false}>
             {rows.map((row) => (
               <VarRow
-                flashing={flash.includes(row.id)}
                 key={row.id}
                 onPaste={(e) => onPaste(row, e)}
                 onRemove={() => remove(row)}
                 onReveal={() => {
                   // Revealing a secret moves focus straight into it.
                   focusNext.current = `value-${row.id}`;
-                  update(row.id, { revealed: true });
+                  update(row.id, { revealed: true, decodeValue: 0 });
                 }}
                 onUpdate={(patch) => update(row.id, patch)}
                 problem={problemOf(row)}
@@ -376,7 +440,6 @@ interface VarRowProps {
   row: Row;
   problem: string | null;
   problemId: string;
-  flashing: boolean;
   register: (name: string) => (el: HTMLInputElement | null) => void;
   onUpdate: (patch: Partial<Row>) => void;
   onPaste: (event: ClipboardEvent<HTMLInputElement>) => void;
@@ -388,7 +451,6 @@ function VarRow({
   row,
   problem,
   problemId,
-  flashing,
   register,
   onUpdate,
   onPaste,
@@ -404,12 +466,16 @@ function VarRow({
       className="relative overflow-hidden"
       exit={{ height: 0, opacity: 0 }}
       initial={{ height: 0, opacity: 0 }}
-      transition={{ duration: 0.25, ease: EASE_OUT }}
+      // Pasted rows open one after another, in step with their decoding.
+      transition={{
+        duration: 0.25,
+        ease: EASE_OUT,
+        delay: (row.decodeKey ?? 0) / 1000,
+      }}
     >
       <div
         className={cn(
-          "relative grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_3.5rem] items-center gap-x-2 rounded-lg py-1 pr-1 pl-2 transition-colors duration-500 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_3.5rem]",
-          flashing && "bg-emerald-500/[0.07] duration-0"
+          "relative grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_3.5rem] items-center gap-x-2 rounded-lg py-1 pr-1 pl-2 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_3.5rem]"
         )}
       >
         <span
@@ -419,64 +485,60 @@ function VarRow({
             change ? GUTTER[change] : "opacity-0"
           )}
         />
-        <input
-          aria-describedby={problem ? problemId : undefined}
-          aria-invalid={problem ? true : undefined}
-          aria-label="Key"
-          autoComplete="off"
-          className={cn(
-            "h-8 w-full min-w-0 rounded-md border border-transparent bg-zinc-50 px-2 font-mono text-[12.5px] outline-hidden transition-colors duration-150 placeholder:text-zinc-400 hover:border-zinc-200 focus:border-zinc-300 focus:bg-white dark:bg-zinc-900 dark:focus:border-zinc-700 dark:focus:bg-zinc-950 dark:hover:border-zinc-800 dark:placeholder:text-zinc-600",
-            row.removed && "text-zinc-400 line-through dark:text-zinc-600",
-            problem &&
-              "border-red-300 text-red-600 hover:border-red-300 focus:border-red-400 dark:border-red-500/50 dark:text-red-400"
-          )}
-          disabled={row.removed}
-          onChange={(e) =>
-            onUpdate({
-              key: e.target.value.toUpperCase().replace(" ", "_"),
-            })
-          }
-          onPaste={onPaste}
-          placeholder="NEW_KEY"
-          ref={register(`key-${row.id}`)}
-          spellCheck={false}
-          value={row.key}
-        />
+        {row.decodeKey === undefined ? (
+          <input
+            aria-describedby={problem ? problemId : undefined}
+            aria-invalid={problem ? true : undefined}
+            aria-label="Key"
+            autoComplete="off"
+            className={cn(
+              "h-8 w-full min-w-0 rounded-md border border-transparent bg-zinc-50 px-2 font-mono text-[12.5px] outline-hidden transition-colors duration-150 placeholder:text-zinc-400 hover:border-zinc-200 focus:border-zinc-300 focus:bg-white dark:bg-zinc-900 dark:focus:border-zinc-700 dark:focus:bg-zinc-950 dark:hover:border-zinc-800 dark:placeholder:text-zinc-600",
+              row.removed && "text-zinc-400 line-through dark:text-zinc-600",
+              problem &&
+                "border-red-300 text-red-600 hover:border-red-300 focus:border-red-400 dark:border-red-500/50 dark:text-red-400"
+            )}
+            disabled={row.removed}
+            onChange={(e) =>
+              onUpdate({
+                key: e.target.value.toUpperCase().replace(" ", "_"),
+              })
+            }
+            onPaste={onPaste}
+            placeholder="NEW_KEY"
+            ref={register(`key-${row.id}`)}
+            spellCheck={false}
+            value={row.key}
+          />
+        ) : (
+          <Decode
+            className={DECODE_BOX}
+            delay={row.decodeKey}
+            onDone={() => onUpdate({ decodeKey: undefined })}
+            text={row.key}
+          />
+        )}
         <div className="relative min-w-0">
-          {masked ? (
-            <button
-              aria-label={`Show and edit ${row.key || "value"}`}
-              className="flex h-8 w-full items-center rounded-md border border-transparent bg-zinc-50 px-2 text-left font-mono text-[12.5px] text-zinc-400 tracking-wider outline-hidden transition-colors duration-150 hover:border-zinc-200 hover:text-zinc-600 focus-visible:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-500 dark:hover:border-zinc-800 dark:hover:text-zinc-300"
-              disabled={row.removed}
-              onClick={onReveal}
-              type="button"
-            >
-              <span className={cn(row.removed && "line-through")}>{MASK}</span>
-            </button>
-          ) : (
-            <input
-              aria-label={`Value of ${row.key || "new key"}`}
-              autoComplete="off"
-              className={cn(
-                "h-8 w-full min-w-0 rounded-md border border-transparent bg-zinc-50 px-2 font-mono text-[12.5px] outline-hidden transition-colors duration-150 placeholder:text-zinc-400 hover:border-zinc-200 focus:border-zinc-300 focus:bg-white dark:bg-zinc-900 dark:focus:border-zinc-700 dark:focus:bg-zinc-950 dark:hover:border-zinc-800 dark:placeholder:text-zinc-600",
-                row.removed && "text-zinc-400 line-through dark:text-zinc-600"
-              )}
-              disabled={row.removed}
-              onBlur={() => secret && onUpdate({ revealed: false })}
-              onChange={(e) => onUpdate({ value: e.target.value })}
-              onPaste={onPaste}
-              placeholder="value"
-              ref={register(`value-${row.id}`)}
-              spellCheck={false}
-              value={row.value}
-            />
-          )}
+          <ValueCell
+            masked={masked}
+            onPaste={onPaste}
+            onReveal={onReveal}
+            onUpdate={onUpdate}
+            register={register}
+            row={row}
+            secret={secret}
+          />
         </div>
         <div className="flex items-center justify-end">
           {secret && !row.removed && (
             <IconButton
               label={row.revealed ? "Hide value" : "Show value"}
-              onClick={() => onUpdate({ revealed: !row.revealed })}
+              onClick={() =>
+                onUpdate(
+                  row.revealed
+                    ? { revealed: false }
+                    : { revealed: true, decodeValue: 0 }
+                )
+              }
             >
               {row.revealed ? (
                 <EyeOff className="size-3.5" />
@@ -511,6 +573,66 @@ function VarRow({
   );
 }
 
+function ValueCell({
+  row,
+  masked,
+  secret,
+  register,
+  onUpdate,
+  onPaste,
+  onReveal,
+}: {
+  row: Row;
+  masked: boolean;
+  secret: boolean;
+  register: VarRowProps["register"];
+  onUpdate: VarRowProps["onUpdate"];
+  onPaste: VarRowProps["onPaste"];
+  onReveal: () => void;
+}) {
+  if (masked) {
+    return (
+      <button
+        aria-label={`Show and edit ${row.key || "value"}`}
+        className="flex h-8 w-full items-center rounded-md border border-transparent bg-zinc-50 px-2 text-left font-mono text-[12.5px] text-zinc-400 tracking-wider outline-hidden transition-colors duration-150 hover:border-zinc-200 hover:text-zinc-600 focus-visible:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-500 dark:hover:border-zinc-800 dark:hover:text-zinc-300"
+        disabled={row.removed}
+        onClick={onReveal}
+        type="button"
+      >
+        <span className={cn(row.removed && "line-through")}>{MASK}</span>
+      </button>
+    );
+  }
+  if (row.decodeValue !== undefined) {
+    return (
+      <Decode
+        className={DECODE_BOX}
+        delay={row.decodeValue}
+        onDone={() => onUpdate({ decodeValue: undefined })}
+        text={row.value}
+      />
+    );
+  }
+  return (
+    <input
+      aria-label={`Value of ${row.key || "new key"}`}
+      autoComplete="off"
+      className={cn(
+        "h-8 w-full min-w-0 rounded-md border border-transparent bg-zinc-50 px-2 font-mono text-[12.5px] outline-hidden transition-colors duration-150 placeholder:text-zinc-400 hover:border-zinc-200 focus:border-zinc-300 focus:bg-white dark:bg-zinc-900 dark:focus:border-zinc-700 dark:focus:bg-zinc-950 dark:hover:border-zinc-800 dark:placeholder:text-zinc-600",
+        row.removed && "text-zinc-400 line-through dark:text-zinc-600"
+      )}
+      disabled={row.removed}
+      onBlur={() => secret && onUpdate({ revealed: false })}
+      onChange={(e) => onUpdate({ value: e.target.value })}
+      onPaste={onPaste}
+      placeholder="value"
+      ref={register(`value-${row.id}`)}
+      spellCheck={false}
+      value={row.value}
+    />
+  );
+}
+
 function IconButton({
   label,
   onClick,
@@ -530,5 +652,61 @@ function IconButton({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * Text that resolves left to right out of scrambled glyphs, then hands back to
+ * the field it stands in for.
+ */
+function Decode({
+  text,
+  delay,
+  className,
+  onDone,
+}: {
+  text: string;
+  delay: number;
+  className: string;
+  onDone: () => void;
+}) {
+  const [state, setState] = useState({ settled: 0, noise: "" });
+  const done = useRef(onDone);
+  done.current = onDone;
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      done.current();
+      return;
+    }
+    let frame = 0;
+    const start = performance.now() + delay;
+    const tick = (now: number) => {
+      const t = (now - start) / DECODE_MS;
+      if (t >= 1) {
+        done.current();
+        return;
+      }
+      const settled = Math.max(0, Math.floor(t * text.length));
+      // Before its turn a row shows only a few glyphs, then fills out.
+      const width = t < 0 ? Math.min(3, text.length) : text.length - settled;
+      let noise = "";
+      for (let i = 0; i < width; i++) {
+        noise += GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      }
+      setState({ settled, noise });
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [text, delay]);
+
+  return (
+    <span aria-label={text} className={className} role="img">
+      <span className="text-zinc-800 dark:text-zinc-200">
+        {text.slice(0, state.settled)}
+      </span>
+      <span className="text-zinc-400 dark:text-zinc-600">{state.noise}</span>
+    </span>
   );
 }

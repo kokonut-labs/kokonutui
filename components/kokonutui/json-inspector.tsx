@@ -45,6 +45,8 @@ interface Node {
   ancestors: string[];
   isContainer: boolean;
   isLast: boolean;
+  /** The object or array holding this value. */
+  parent: Json | null;
 }
 
 const ROW = 24;
@@ -55,7 +57,7 @@ const DEMO: Json = {
   id: "ord_8Kq2xT",
   object: "order",
   status: "paid",
-  created: 1_762_354_020,
+  created: 1_793_889_120,
   livemode: false,
   customer: {
     id: "cus_Q1w9Lr",
@@ -119,10 +121,20 @@ function flatten(root: Json, expanded: Set<string>) {
     label: Node["label"],
     depth: number,
     ancestors: string[],
-    isLast: boolean
+    isLast: boolean,
+    parent: Json | null
   ) => {
     const isContainer = typeof value === "object" && value !== null;
-    rows.push({ path, label, value, depth, ancestors, isContainer, isLast });
+    rows.push({
+      path,
+      label,
+      value,
+      depth,
+      ancestors,
+      isContainer,
+      isLast,
+      parent,
+    });
     if (isContainer && expanded.has(path)) {
       const entries = entriesOf(value);
       entries.forEach(([key, child], i) => {
@@ -132,12 +144,13 @@ function flatten(root: Json, expanded: Set<string>) {
           key,
           depth + 1,
           [...ancestors, path],
-          i === entries.length - 1
+          i === entries.length - 1,
+          value
         );
       });
     }
   };
-  walk(root, "", null, 0, [], true);
+  walk(root, "", null, 0, [], true, null);
   return rows;
 }
 
@@ -160,6 +173,65 @@ const sizeOf = (data: Json) => {
   return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
 };
 
+type Token = string | number | "*";
+
+const QUERY_TOKEN = /\.([^.[\]]*)|\[(\d*|\*|"[^"]*")\]/g;
+
+/** `.items[].price` → ["items", "*", "price"]; null when it isn't a path. */
+function parseQuery(query: string): Token[] | null {
+  if (!(query.startsWith(".") || query.startsWith("["))) {
+    return null;
+  }
+  const tokens: Token[] = [];
+  for (const m of query.matchAll(QUERY_TOKEN)) {
+    if (m[1] !== undefined) {
+      tokens.push(m[1] === "*" ? "*" : m[1]);
+    } else if (m[2] === "" || m[2] === "*") {
+      tokens.push("*");
+    } else {
+      tokens.push(m[2].startsWith('"') ? m[2].slice(1, -1) : Number(m[2]));
+    }
+  }
+  // A lone "." asks for the root.
+  return tokens.length === 1 && tokens[0] === "" ? [] : tokens;
+}
+
+/** A node's own path as tokens: its ancestors' labels, then its own. */
+const tokensOf = (node: Node, byPath: Map<string, Node>): Token[] =>
+  [...node.ancestors.slice(1), node.path].map(
+    (path) => byPath.get(path)?.label ?? ""
+  );
+
+/**
+ * Whether a node answers the query. Paths match token by token, with `[]`
+ * for any index and the last key matching as you type it; anything else
+ * searches keys and values.
+ */
+function answers(node: Node, query: string, all: Map<string, Node>) {
+  const tokens = parseQuery(query);
+  if (!tokens) {
+    const q = query.toLowerCase();
+    const key = typeof node.label === "string" ? node.label.toLowerCase() : "";
+    const value =
+      typeof node.value === "object" ? "" : String(node.value).toLowerCase();
+    return key.includes(q) || value.includes(q);
+  }
+  const own = tokensOf(node, all);
+  if (own.length !== tokens.length || node.path === "") {
+    return tokens.length === 0 && node.path === "";
+  }
+  return tokens.every((token, i) => {
+    if (token === "*") {
+      return typeof own[i] === "number";
+    }
+    const last = i === tokens.length - 1;
+    if (last && typeof token === "string" && typeof own[i] === "string") {
+      return (own[i] as string).startsWith(token);
+    }
+    return own[i] === token;
+  });
+}
+
 export default function JsonInspector({
   data = DEMO,
   request = "GET /v1/orders/ord_8Kq2xT",
@@ -174,20 +246,54 @@ export default function JsonInspector({
   const [selected, setSelected] = useState(".items[0].price");
   const [hovered, setHovered] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  /** What's typed in the path bar; null while it just shows the path. */
+  const [query, setQuery] = useState<string | null>(null);
 
-  const rows = useMemo(() => flatten(data, expanded), [data, expanded]);
+  const containers = useMemo(() => allContainers(data), [data]);
+  const everything = useMemo(
+    () => flatten(data, new Set(containers)),
+    [data, containers]
+  );
+  const allByPath = useMemo(
+    () => new Map(everything.map((node) => [node.path, node])),
+    [everything]
+  );
+  const matches = useMemo(() => {
+    if (!query?.trim()) {
+      return [];
+    }
+    return everything
+      .filter((node) => answers(node, query.trim(), allByPath))
+      .map((node) => node.path);
+  }, [query, everything, allByPath]);
+  const matchSet = useMemo(() => new Set(matches), [matches]);
+
+  // While querying, every match's containers open so it can be seen.
+  const open = useMemo(() => {
+    if (!matches.length) {
+      return expanded;
+    }
+    const next = new Set(expanded);
+    for (const path of matches) {
+      for (const a of allByPath.get(path)?.ancestors ?? []) {
+        next.add(a);
+      }
+    }
+    return next;
+  }, [expanded, matches, allByPath]);
+
+  const rows = useMemo(() => flatten(data, open), [data, open]);
   const byPath = useMemo(
     () => new Map(rows.map((row) => [row.path, row])),
     [rows]
   );
-  const containers = useMemo(() => allContainers(data), [data]);
   const selectedRow = byPath.get(selected) ?? rows[0];
   const shownPath = hovered ?? selectedRow.path;
 
   // The scope whose guide lights up: the selected container, or the one
   // holding the selected value.
   const scope =
-    selectedRow.isContainer && expanded.has(selectedRow.path)
+    selectedRow.isContainer && open.has(selectedRow.path)
       ? selectedRow.path
       : selectedRow.ancestors.at(-1);
 
@@ -206,11 +312,10 @@ export default function JsonInspector({
     if (!el || index < 0) {
       return;
     }
+    // Off screen, the row comes to the middle rather than the edge.
     const top = index * ROW;
-    if (top < el.scrollTop) {
-      el.scrollTop = top;
-    } else if (top + ROW > el.scrollTop + el.clientHeight) {
-      el.scrollTop = top + ROW - el.clientHeight;
+    if (top < el.scrollTop || top + ROW > el.scrollTop + el.clientHeight) {
+      el.scrollTop = top - el.clientHeight / 2 + ROW / 2;
     }
   }, [rows, selectedRow.path]);
 
@@ -241,6 +346,39 @@ export default function JsonInspector({
       setCopied(true);
     } catch {
       setCopied(false);
+    }
+  };
+
+  // Typing moves the selection to the first match, which scrolls it in.
+  useEffect(() => {
+    if (matches.length && !matches.includes(selected)) {
+      setSelected(matches[0]);
+    }
+  }, [matches, selected]);
+
+  const startQuery = () => setQuery(selectedRow.path || ".");
+  // Leaving the bar keeps what the query opened, so the pick stays in view.
+  const endQuery = () => {
+    setExpanded(open);
+    setQuery(null);
+  };
+  const jump = (step: number) => {
+    if (!matches.length) {
+      return;
+    }
+    const at = matches.indexOf(selectedRow.path);
+    const next = at < 0 ? 0 : (at + step + matches.length) % matches.length;
+    setSelected(matches[next]);
+  };
+  const onQueryKey = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" || event.key === "ArrowDown") {
+      event.preventDefault();
+      jump(event.shiftKey ? -1 : 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      jump(-1);
+    } else if (event.key === "Escape") {
+      event.currentTarget.blur();
     }
   };
 
@@ -292,17 +430,6 @@ export default function JsonInspector({
     }
   };
 
-  const crumbs = useMemo(() => {
-    const row = byPath.get(shownPath);
-    if (!row) {
-      return [];
-    }
-    return [...row.ancestors.slice(1), row.path].map((path) => ({
-      path,
-      label: byPath.get(path)?.label,
-    }));
-  }, [byPath, shownPath]);
-
   return (
     <MotionConfig reducedMotion="user">
       <div
@@ -324,35 +451,39 @@ export default function JsonInspector({
         </div>
 
         <div className="flex h-9 items-center gap-1 border-zinc-100 border-b pr-1.5 pl-3.5 dark:border-zinc-800/70">
-          <nav
-            aria-label="Path"
-            className="flex min-w-0 flex-1 items-center overflow-hidden font-mono text-[12px]"
-          >
-            <button
-              className="shrink-0 text-zinc-400 outline-hidden hover:text-zinc-900 focus-visible:underline dark:text-zinc-500 dark:hover:text-zinc-100"
-              onClick={() => setSelected("")}
-              type="button"
-            >
-              .
-            </button>
-            {crumbs.map((crumb, i) => (
-              <button
-                className={cn(
-                  "shrink-0 truncate outline-hidden transition-colors duration-150 focus-visible:underline",
-                  i === crumbs.length - 1
-                    ? "text-zinc-900 dark:text-zinc-100"
-                    : "text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-100"
-                )}
-                key={crumb.path}
-                onClick={() => setSelected(crumb.path)}
-                type="button"
+          <input
+            aria-label="Path, type to filter"
+            className={cn(
+              "h-full min-w-0 flex-1 bg-transparent font-mono text-[12px] outline-hidden placeholder:text-zinc-400",
+              query === null
+                ? "text-zinc-900 dark:text-zinc-100"
+                : "text-sky-700 dark:text-sky-300"
+            )}
+            onBlur={endQuery}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={(e) => {
+              startQuery();
+              requestAnimationFrame(() => e.target.select());
+            }}
+            onKeyDown={onQueryKey}
+            placeholder=".items[].price"
+            spellCheck={false}
+            value={query ?? (shownPath || ".")}
+          />
+          <AnimatePresence initial={false}>
+            {query?.trim() && (
+              <motion.span
+                animate={{ opacity: 1 }}
+                className="shrink-0 pr-1 text-[11.5px] text-zinc-500 tabular-nums dark:text-zinc-400"
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
               >
-                {typeof crumb.label === "number"
-                  ? `[${crumb.label}]`
-                  : `${i === 0 ? "" : "."}${crumb.label}`}
-              </button>
-            ))}
-          </nav>
+                {matches.length === 0
+                  ? "No match"
+                  : `${Math.max(matches.indexOf(selectedRow.path) + 1, 1)} of ${matches.length}`}
+              </motion.span>
+            )}
+          </AnimatePresence>
           <button
             aria-label={copied ? "Path copied" : "Copy path"}
             className="flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-[12px] text-zinc-500 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
@@ -394,9 +525,10 @@ export default function JsonInspector({
         >
           {rows.map((row, i) => (
             <TreeRow
-              expanded={expanded.has(row.path)}
+              expanded={open.has(row.path)}
               id={`${id}-${i}`}
               key={row.path || "root"}
+              matched={matchSet.has(row.path)}
               onHover={() => setHovered(row.path)}
               onSelect={(deep) => {
                 setSelected(row.path);
@@ -414,7 +546,7 @@ export default function JsonInspector({
         <div className="flex h-8 items-center gap-3 border-zinc-100 border-t px-3.5 text-[11px] text-zinc-400 dark:border-zinc-800/70 dark:text-zinc-500">
           <span>↑↓ move</span>
           <span>←→ fold</span>
-          <span>⌥ click to open all inside</span>
+          <span>type a path like .items[].price to find it</span>
         </div>
       </div>
     </MotionConfig>
@@ -424,6 +556,7 @@ export default function JsonInspector({
 function TreeRow({
   row,
   id,
+  matched,
   expanded,
   selected,
   scope,
@@ -432,6 +565,7 @@ function TreeRow({
 }: {
   row: Node;
   id: string;
+  matched: boolean;
   expanded: boolean;
   selected: boolean;
   scope: string | undefined;
@@ -450,9 +584,13 @@ function TreeRow({
       aria-selected={selected}
       className={cn(
         "relative flex cursor-default items-center whitespace-nowrap pr-3 transition-colors duration-100",
-        selected
-          ? "bg-zinc-100 dark:bg-zinc-800/70"
-          : "hover:bg-zinc-50 dark:hover:bg-zinc-900"
+        "hover:bg-zinc-50 dark:hover:bg-zinc-900",
+        matched &&
+          "bg-sky-500/[0.07] hover:bg-sky-500/10 dark:hover:bg-sky-500/10",
+        selected && "bg-zinc-100 hover:bg-zinc-100 dark:bg-zinc-800/70",
+        selected &&
+          matched &&
+          "bg-sky-500/15 hover:bg-sky-500/15 dark:bg-sky-500/20"
       )}
       id={id}
       onClick={(e) => onSelect(e.altKey)}
@@ -490,7 +628,8 @@ function TreeRow({
             "shrink-0 pl-0.5",
             typeof row.label === "number"
               ? "text-zinc-400 dark:text-zinc-500"
-              : "text-zinc-800 dark:text-zinc-200"
+              : "text-zinc-800 dark:text-zinc-200",
+            matched && "text-sky-700 dark:text-sky-300"
           )}
         >
           {row.label}
@@ -509,7 +648,10 @@ function TreeRow({
             {!open && (isArray ? "]" : "}")}
           </span>
         ) : (
-          <Value value={row.value} />
+          <>
+            <Value value={row.value} />
+            <Lens row={row} />
+          </>
         )}
       </span>
     </div>
@@ -533,4 +675,70 @@ function Value({ value }: { value: Json }) {
     );
   }
   return <span className="text-zinc-400 italic dark:text-zinc-500">null</span>;
+}
+
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+const TIME_KEY = /^(created|updated|deleted|expires)$|_at$|time/i;
+const CURRENCY = /^[a-z]{3}$/i;
+const REGION = /^[A-Z]{2}$/;
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** Plain-language reading of a raw value, when its key says what it is. */
+function lensFor(row: Node): string | null {
+  const key = typeof row.label === "string" ? row.label : "";
+  const { value, parent } = row;
+  if (
+    typeof value === "number" &&
+    TIME_KEY.test(key) &&
+    value > 1e9 &&
+    value < 1e10
+  ) {
+    // Spelled out by hand in UTC so server and browser agree.
+    const d = new Date(value * 1000);
+    return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()} · ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())} UTC`;
+  }
+  const currency =
+    parent && typeof parent === "object" && !Array.isArray(parent)
+      ? parent.currency
+      : undefined;
+  if (
+    typeof value === "number" &&
+    key === "amount" &&
+    typeof currency === "string" &&
+    CURRENCY.test(currency)
+  ) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+    }).format(value / 100);
+  }
+  if (typeof value === "string" && key === "country" && REGION.test(value)) {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(value) ?? null;
+  }
+  return null;
+}
+
+function Lens({ row }: { row: Node }) {
+  const text = lensFor(row);
+  if (!text) {
+    return null;
+  }
+  return (
+    <span className="ml-2.5 font-sans text-[11px] text-zinc-400 dark:text-zinc-500">
+      {text}
+    </span>
+  );
 }

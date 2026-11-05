@@ -14,6 +14,8 @@ import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import {
   type ClipboardEvent,
   type KeyboardEvent,
+  type PointerEvent,
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -88,7 +90,9 @@ const DAY_MS = 86_400_000;
 const DAYS_SHOWN = 7;
 // Above this many runs a day, ticks merge into a band.
 const TICK_LIMIT = 96;
-const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const FIRST_RENDER = "2026-11-05T14:47:00Z";
+// The dial's handle moves in steps of this many minutes.
+const SNAP = 5;
 const SPACES = /\s+/;
 const STEP = /^(.+)\/(\d+)$/;
 const RANGE = /^(\w+)-(\w+)$/;
@@ -322,7 +326,7 @@ export interface CronScheduleProps {
   defaultValue?: string;
   /** Called with the expression whenever it is valid. */
   onChange?: (expression: string) => void;
-  /** The moment "next run" counts from. Fixed by default so the demo is stable. */
+  /** The moment "next run" counts from. Defaults to the live clock. */
   now?: Date | string;
   className?: string;
 }
@@ -330,7 +334,7 @@ export interface CronScheduleProps {
 export default function CronSchedule({
   defaultValue = "30 9 * * 1-5",
   onChange,
-  now = "2026-11-05T14:47:00Z",
+  now,
   className,
 }: CronScheduleProps) {
   const id = useId();
@@ -341,7 +345,19 @@ export default function CronSchedule({
   const [active, setActive] = useState<Field | null>(null);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const nowMs = new Date(now).getTime();
+  // A fixed moment for the server render; the live clock takes over on mount.
+  const [clockMs, setClockMs] = useState(() =>
+    new Date(FIRST_RENDER).getTime()
+  );
+  useEffect(() => {
+    if (now) {
+      return;
+    }
+    setClockMs(Date.now());
+    const tick = setInterval(() => setClockMs(Date.now()), 30_000);
+    return () => clearInterval(tick);
+  }, [now]);
+  const nowMs = now ? new Date(now).getTime() : clockMs;
   const today = Math.floor(nowMs / DAY_MS) * DAY_MS;
   const nowMinute = Math.floor((nowMs - today) / MINUTE_MS);
 
@@ -428,6 +444,18 @@ export default function CronSchedule({
     }
   };
 
+  // One time of day (e.g. "30 9") is what the dial's handle can drag.
+  const singleTime =
+    sets && sets.minute.values.size === 1 && sets.hour.values.size === 1
+      ? [...sets.hour.values][0] * 60 + [...sets.minute.values][0]
+      : null;
+  const setTime = (minute: number) =>
+    commit([
+      String(minute % 60),
+      String(Math.floor(minute / 60)),
+      ...parts.slice(2),
+    ]);
+
   const expression = parts.join(" ");
   // Dim the sentence only when the hovered field has words of its own.
   const focusField = phrases.some((p) => active && p.fields.includes(active))
@@ -438,194 +466,141 @@ export default function CronSchedule({
     <MotionConfig reducedMotion="user">
       <div
         className={cn(
-          "w-full max-w-md rounded-xl border border-zinc-200 bg-white p-4 text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100",
+          "flex w-full max-w-[40rem] flex-col items-center gap-5 rounded-xl border border-zinc-200 bg-white p-4 text-zinc-900 sm:flex-row sm:items-start dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100",
           className
         )}
       >
-        <div className="flex items-center justify-between">
-          <label className="font-medium text-[13px]" htmlFor={`${id}-0`}>
-            Schedule
-          </label>
-          <span className="font-mono text-[11px] text-zinc-400 dark:text-zinc-500">
-            UTC
-          </span>
-        </div>
-
-        <div className="mt-2.5 grid grid-cols-5 gap-1.5">
-          {FIELDS.map((field, i) => (
-            <div className="flex flex-col items-center gap-1" key={field.key}>
-              <input
-                aria-describedby={`${id}-sentence`}
-                aria-invalid={errorIndex === i || undefined}
-                aria-label={`${field.label} field`}
-                autoComplete="off"
-                className={cn(
-                  "h-9 w-full min-w-0 rounded-md border bg-zinc-50 text-center font-mono text-[14px] outline-hidden transition-colors duration-150 dark:bg-zinc-900",
-                  errorIndex === i
-                    ? "border-red-400 text-red-600 dark:border-red-500/70 dark:text-red-400"
-                    : "border-zinc-200 focus:border-zinc-400 dark:border-zinc-800 dark:focus:border-zinc-600",
-                  active === field.key &&
-                    errorIndex !== i &&
-                    "border-zinc-400 dark:border-zinc-600"
-                )}
-                id={`${id}-${i}`}
-                onBlur={() => setActive(null)}
-                onChange={(e) => setPart(i, e.target.value)}
-                onFocus={(e) => {
-                  setActive(field.key);
-                  e.target.select();
-                }}
-                onKeyDown={(e) => onKeyDown(i, e)}
-                onPaste={(e) => onPaste(i, e)}
-                onPointerEnter={() => setActive(field.key)}
-                onPointerLeave={(e) => {
-                  if (document.activeElement !== e.currentTarget) {
-                    setActive(null);
-                  }
-                }}
-                ref={(el) => {
-                  inputs.current[i] = el;
-                }}
-                spellCheck={false}
-                value={parts[i]}
-              />
-              <span
-                className={cn(
-                  "text-[10.5px] transition-colors duration-150",
-                  active === field.key
-                    ? "text-zinc-700 dark:text-zinc-300"
-                    : "text-zinc-400 dark:text-zinc-500"
-                )}
-              >
-                {field.label}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <p
-          aria-live="polite"
-          className="mt-3 min-h-[2.75rem] text-[14px] leading-snug"
-          id={`${id}-sentence`}
-        >
-          {error ? (
-            <span className="text-red-600 dark:text-red-400">
-              {error.error}
+        <Dial
+          days={days}
+          next={next}
+          nowMinute={nowMinute}
+          onTime={setTime}
+          relativeNext={
+            next
+              ? relative(
+                  today + next.day * DAY_MS + next.minute * MINUTE_MS - nowMs
+                )
+              : null
+          }
+          time={singleTime}
+          today={today}
+        />
+        <div className="w-full min-w-0 flex-1">
+          <div className="flex items-center justify-between">
+            <label className="font-medium text-[13px]" htmlFor={`${id}-0`}>
+              Schedule
+            </label>
+            <span className="font-mono text-[11px] text-zinc-400 dark:text-zinc-500">
+              UTC
             </span>
-          ) : (
-            phrases.map((phrase, i) => {
-              const lit =
-                focusField !== null && phrase.fields.includes(focusField);
-              return (
-                <span key={`${phrase.fields.join()}-${phrase.text}`}>
-                  {i > 0 && (phrase.text.startsWith("or ") ? " " : ", ")}
-                  <span
-                    className={cn(
-                      "rounded-[3px] decoration-1 underline-offset-[3px] transition-colors duration-150",
-                      "text-zinc-800 dark:text-zinc-200",
-                      focusField && "text-zinc-400 dark:text-zinc-500",
-                      lit &&
-                        "bg-emerald-500/10 text-emerald-700 underline decoration-emerald-500/50 dark:text-emerald-300"
-                    )}
-                  >
-                    {phrase.text}
-                  </span>
-                  {i === phrases.length - 1 && "."}
-                </span>
-              );
-            })
-          )}
-        </p>
-
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {PRESETS.map((preset) => {
-            const on = preset.expr === expression;
-            return (
-              <button
-                aria-pressed={on}
-                className={cn(
-                  "h-7 rounded-full border px-2.5 text-[12px] outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-zinc-400/50",
-                  on
-                    ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                    : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-100"
-                )}
-                key={preset.expr}
-                onClick={() => commit(preset.expr.split(" "))}
-                type="button"
-              >
-                {preset.label}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 border-zinc-100 border-t pt-3 dark:border-zinc-800/80">
-          <div className="flex items-baseline justify-between text-[12px]">
-            <span className="text-zinc-500 dark:text-zinc-400">
-              Next 7 days
-            </span>
-            <AnimatePresence initial={false} mode="popLayout">
-              <motion.span
-                animate={{ opacity: 1, y: 0 }}
-                className="font-mono text-[11.5px] text-zinc-500 tabular-nums dark:text-zinc-400"
-                exit={{ opacity: 0, y: -4 }}
-                initial={{ opacity: 0, y: 4 }}
-                key={next ? `${next.day}-${next.minute}` : "none"}
-                transition={{ duration: 0.2, ease: EASE_OUT }}
-              >
-                {next ? (
-                  <>
-                    <span className="text-zinc-900 dark:text-zinc-100">
-                      {formatRun(today, next.day, next.minute)}
-                    </span>{" "}
-                    {relative(
-                      today +
-                        next.day * DAY_MS +
-                        next.minute * MINUTE_MS -
-                        nowMs
-                    )}
-                  </>
-                ) : (
-                  "No runs this week"
-                )}
-              </motion.span>
-            </AnimatePresence>
           </div>
 
-          <div className="mt-2.5 flex flex-col gap-1">
-            {Array.from({ length: DAYS_SHOWN }, (_, d) => {
-              const date = new Date(today + d * DAY_MS);
-              const runs = days[d] ?? [];
-              return (
-                <div
-                  className="flex items-center gap-2.5"
-                  key={date.toISOString()}
+          <div className="mt-2.5 grid grid-cols-5 gap-1.5">
+            {FIELDS.map((field, i) => (
+              <div className="flex flex-col items-center gap-1" key={field.key}>
+                <input
+                  aria-describedby={`${id}-sentence`}
+                  aria-invalid={errorIndex === i || undefined}
+                  aria-label={`${field.label} field`}
+                  autoComplete="off"
+                  className={cn(
+                    "h-9 w-full min-w-0 rounded-md border bg-zinc-50 text-center font-mono text-[14px] outline-hidden transition-colors duration-150 dark:bg-zinc-900",
+                    errorIndex === i
+                      ? "border-red-400 text-red-600 dark:border-red-500/70 dark:text-red-400"
+                      : "border-zinc-200 focus:border-zinc-400 dark:border-zinc-800 dark:focus:border-zinc-600",
+                    active === field.key &&
+                      errorIndex !== i &&
+                      "border-zinc-400 dark:border-zinc-600"
+                  )}
+                  id={`${id}-${i}`}
+                  onBlur={() => setActive(null)}
+                  onChange={(e) => setPart(i, e.target.value)}
+                  onFocus={(e) => {
+                    setActive(field.key);
+                    e.target.select();
+                  }}
+                  onKeyDown={(e) => onKeyDown(i, e)}
+                  onPaste={(e) => onPaste(i, e)}
+                  onPointerEnter={() => setActive(field.key)}
+                  onPointerLeave={(e) => {
+                    if (document.activeElement !== e.currentTarget) {
+                      setActive(null);
+                    }
+                  }}
+                  ref={(el) => {
+                    inputs.current[i] = el;
+                  }}
+                  spellCheck={false}
+                  value={parts[i]}
+                />
+                <span
+                  className={cn(
+                    "text-[10.5px] transition-colors duration-150",
+                    active === field.key
+                      ? "text-zinc-700 dark:text-zinc-300"
+                      : "text-zinc-400 dark:text-zinc-500"
+                  )}
                 >
-                  <span
-                    className={cn(
-                      "w-11 shrink-0 font-mono text-[10.5px] tabular-nums",
-                      d === 0
-                        ? "text-zinc-900 dark:text-zinc-100"
-                        : "text-zinc-400 dark:text-zinc-500"
-                    )}
-                  >
-                    {WEEKDAYS[date.getUTCDay()].slice(0, 3)} {date.getUTCDate()}
+                  {field.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p
+            aria-live="polite"
+            className="mt-3 min-h-[2.75rem] text-[14px] leading-snug"
+            id={`${id}-sentence`}
+          >
+            {error ? (
+              <span className="text-red-600 dark:text-red-400">
+                {error.error}
+              </span>
+            ) : (
+              phrases.map((phrase, i) => {
+                const lit =
+                  focusField !== null && phrase.fields.includes(focusField);
+                return (
+                  <span key={`${phrase.fields.join()}-${phrase.text}`}>
+                    {i > 0 && (phrase.text.startsWith("or ") ? " " : ", ")}
+                    <span
+                      className={cn(
+                        "rounded-[3px] decoration-1 underline-offset-[3px] transition-colors duration-150",
+                        "text-zinc-800 dark:text-zinc-200",
+                        focusField && "text-zinc-400 dark:text-zinc-500",
+                        lit &&
+                          "bg-emerald-500/10 text-emerald-700 underline decoration-emerald-500/50 dark:text-emerald-300"
+                      )}
+                    >
+                      {phrase.text}
+                    </span>
+                    {i === phrases.length - 1 && "."}
                   </span>
-                  <DayTrack
-                    nextMinute={next?.day === d ? next.minute : null}
-                    nowMinute={d === 0 ? nowMinute : null}
-                    runs={runs}
-                  />
-                </div>
+                );
+              })
+            )}
+          </p>
+
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {PRESETS.map((preset) => {
+              const on = preset.expr === expression;
+              return (
+                <button
+                  aria-pressed={on}
+                  className={cn(
+                    "h-7 rounded-full border px-2.5 text-[12px] outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-zinc-400/50",
+                    on
+                      ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                      : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-100"
+                  )}
+                  key={preset.expr}
+                  onClick={() => commit(preset.expr.split(" "))}
+                  type="button"
+                >
+                  {preset.label}
+                </button>
               );
             })}
-          </div>
-          <div className="mt-1 ml-[3.375rem] flex justify-between font-mono text-[9.5px] text-zinc-400 tabular-nums dark:text-zinc-600">
-            <span>00</span>
-            <span>06</span>
-            <span>12</span>
-            <span>18</span>
-            <span>24</span>
           </div>
         </div>
       </div>
@@ -633,86 +608,299 @@ export default function CronSchedule({
   );
 }
 
-function formatRun(today: number, day: number, minute: number) {
+function formatRun(today: number, day: number, minute: number, short = false) {
   const date = new Date(today + day * DAY_MS);
-  const label =
-    ["Today", "Tomorrow"][day] ?? WEEKDAYS[date.getUTCDay()].slice(0, 3);
+  const weekday = WEEKDAYS[date.getUTCDay()].slice(0, 3);
+  const label = short ? weekday : (["Today", "Tomorrow"][day] ?? weekday);
   return `${label} ${pad(Math.floor(minute / 60))}:${pad(minute % 60)}`;
 }
 
-function DayTrack({
-  runs,
+const SIZE = 244;
+const C = SIZE / 2;
+const OUTER = 98;
+const RING_GAP = 9;
+const TICK = 3.5;
+const HOURS = Array.from({ length: 24 }, (_, h) => h);
+
+const point = (minute: number, r: number) => {
+  const a = (minute / 1440) * Math.PI * 2 - Math.PI / 2;
+  // Rounded, so the server and the browser print the same numbers.
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return { x: round(C + r * Math.cos(a)), y: round(C + r * Math.sin(a)) };
+};
+
+/** An arc along ring `r` from one minute of the day to another. */
+function arc(from: number, to: number, r: number) {
+  const a = point(from, r);
+  const b = point(Math.min(to, 1439.9), r);
+  const large = to - from > 720 ? 1 : 0;
+  return `M${a.x} ${a.y}A${r} ${r} 0 ${large} 1 ${b.x} ${b.y}`;
+}
+
+const clockTime = (minute: number) =>
+  `${pad(Math.floor(minute / 60))}:${pad(minute % 60)}`;
+
+/**
+ * The week as rings on a 24-hour dial: today outside, six more days inward.
+ * Every run is a tick where it falls in its day; when the schedule has one
+ * time of day, a handle on the dial drags it.
+ */
+function Dial({
+  days,
+  today,
   nowMinute,
-  nextMinute,
+  next,
+  relativeNext,
+  time,
+  onTime,
 }: {
-  runs: number[];
-  nowMinute: number | null;
-  nextMinute: number | null;
+  days: number[][];
+  today: number;
+  nowMinute: number;
+  next: { day: number; minute: number } | null;
+  relativeNext: string | null;
+  time: number | null;
+  onTime: (minute: number) => void;
 }) {
-  const at = (minute: number) => `${(minute / 1440) * 100}%`;
-  const dense = runs.length > TICK_LIMIT;
+  const svg = useRef<SVGSVGElement>(null);
+  const [hoverDay, setHoverDay] = useState<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const minuteAt = (event: PointerEvent) => {
+    const box = svg.current?.getBoundingClientRect();
+    if (!box) {
+      return 0;
+    }
+    const x = ((event.clientX - box.left) / box.width) * SIZE - C;
+    const y = ((event.clientY - box.top) / box.height) * SIZE - C;
+    const turn = (Math.atan2(y, x) + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
+    const minute = Math.round(((turn / (Math.PI * 2)) * 1440) / SNAP) * SNAP;
+    return minute % 1440;
+  };
+
+  const onKey = (event: KeyboardEvent<SVGGElement>) => {
+    if (time === null) {
+      return;
+    }
+    const step = event.shiftKey ? 60 : SNAP;
+    const delta: Record<string, number> = {
+      ArrowRight: step,
+      ArrowUp: step,
+      ArrowLeft: -step,
+      ArrowDown: -step,
+    };
+    if (delta[event.key] !== undefined) {
+      event.preventDefault();
+      onTime((time + delta[event.key] + 1440) % 1440);
+    }
+  };
+
+  const shownDay = hoverDay ?? next?.day ?? null;
+  const shownDate =
+    shownDay === null ? null : new Date(today + shownDay * DAY_MS);
+  const hoverRuns = hoverDay === null ? [] : (days[hoverDay] ?? []);
+  const handle = time === null ? null : point(time, OUTER);
 
   return (
-    <div className="relative h-4 flex-1 rounded-[3px] bg-zinc-50 dark:bg-zinc-900">
-      {[6, 12, 18].map((h) => (
-        <span
-          aria-hidden="true"
-          className="absolute bottom-0 h-1 w-px bg-zinc-300/80 dark:bg-zinc-700"
-          key={h}
-          style={{ left: at(h * 60) }}
-        />
-      ))}
-      {nowMinute !== null && (
-        <span
-          aria-hidden="true"
-          className="absolute inset-y-0 left-0 rounded-l-[3px] bg-zinc-200/50 dark:bg-zinc-800/60"
-          style={{ width: at(nowMinute) }}
-        />
-      )}
-      {dense ? (
-        <span
-          aria-hidden="true"
-          className="absolute inset-y-1 rounded-[2px] bg-zinc-300 dark:bg-zinc-700"
-          style={{
-            left: at(runs[0]),
-            width: at(last(runs) - runs[0] + 1),
-          }}
-        />
-      ) : (
-        <AnimatePresence initial={false}>
-          {runs.map((minute) => {
-            const past = nowMinute !== null && minute <= nowMinute;
-            const isNext = minute === nextMinute;
-            return (
-              <motion.span
-                animate={{ opacity: 1, scaleY: 1 }}
-                aria-hidden="true"
-                className={cn(
-                  "absolute top-0.5 bottom-0.5 w-0.5 origin-bottom -translate-x-1/2 rounded-full",
-                  "bg-zinc-500 dark:bg-zinc-400",
-                  past && "bg-zinc-300 dark:bg-zinc-700",
-                  isNext && "bg-emerald-500"
-                )}
-                exit={{ opacity: 0, scaleY: 0 }}
-                initial={{ opacity: 0, scaleY: 0 }}
-                key={minute}
-                style={{ left: at(minute) }}
-                transition={{ duration: 0.25, ease: EASE_OUT }}
+    <div className="relative w-[244px] max-w-full shrink-0">
+      <svg
+        aria-label="Runs over the next seven days"
+        className="block h-auto w-full touch-none select-none"
+        onPointerLeave={() => setHoverDay(null)}
+        ref={svg}
+        role="img"
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
+      >
+        {[0, 360, 720, 1080].map((m) => {
+          const at = point(m, OUTER + 14);
+          return (
+            <text
+              className="fill-zinc-400 font-mono text-[9px] dark:fill-zinc-500"
+              dominantBaseline="central"
+              key={m}
+              textAnchor="middle"
+              x={at.x}
+              y={at.y}
+            >
+              {pad(m / 60)}
+            </text>
+          );
+        })}
+        {HOURS.map((h) => {
+          const a = point(h * 60, OUTER + 6);
+          const b = point(h * 60, OUTER + (h % 6 === 0 ? 9 : 7.5));
+          return (
+            <line
+              className="stroke-zinc-300 dark:stroke-zinc-700"
+              key={h}
+              x1={a.x}
+              x2={b.x}
+              y1={a.y}
+              y2={b.y}
+            />
+          );
+        })}
+
+        {days.map((runs, d) => {
+          const r = OUTER - d * RING_GAP;
+          const dense = runs.length > TICK_LIMIT;
+          const lit = hoverDay === d;
+          return (
+            <g
+              className={cn(
+                "transition-opacity duration-150",
+                hoverDay !== null && !lit && "opacity-35"
+              )}
+              // Days are fixed positions on the dial.
+              // biome-ignore lint/suspicious/noArrayIndexKey: see above
+              key={d}
+              onPointerEnter={() => setHoverDay(d)}
+            >
+              <circle
+                className="fill-none stroke-zinc-100 dark:stroke-zinc-800/80"
+                cx={C}
+                cy={C}
+                r={r}
+                strokeWidth={RING_GAP - 3}
               />
-            );
-          })}
+              {d === 0 && nowMinute > 0 && (
+                <path
+                  className="stroke-zinc-300 dark:stroke-zinc-700"
+                  d={arc(0, nowMinute, r)}
+                  fill="none"
+                  strokeWidth={1.5}
+                />
+              )}
+              {dense && runs.length > 0 ? (
+                <path
+                  className="stroke-zinc-500 dark:stroke-zinc-400"
+                  d={arc(runs[0], last(runs) + 1, r)}
+                  fill="none"
+                  strokeWidth={3}
+                />
+              ) : (
+                runs.map((m, k) => (
+                  <line
+                    className={cn(
+                      "stroke-zinc-800 transition-transform duration-300 ease-out dark:stroke-zinc-200",
+                      d === 0 &&
+                        m <= nowMinute &&
+                        "stroke-zinc-300 dark:stroke-zinc-600"
+                    )}
+                    // Ticks keep their order, so a new time sweeps them round.
+                    // biome-ignore lint/suspicious/noArrayIndexKey: see above
+                    key={k}
+                    strokeLinecap="round"
+                    strokeWidth={2}
+                    style={{
+                      transform: `rotate(${m / 4}deg)`,
+                      transformOrigin: `${C}px ${C}px`,
+                      transitionDuration: dragging ? "0ms" : undefined,
+                    }}
+                    x1={C}
+                    x2={C}
+                    y1={C - r - TICK}
+                    y2={C - r + TICK}
+                  />
+                ))
+              )}
+            </g>
+          );
+        })}
+
+        {next && (
+          <circle
+            className="fill-emerald-500 stroke-white transition-all duration-300 dark:stroke-zinc-950"
+            cx={point(next.minute, OUTER - next.day * RING_GAP).x}
+            cy={point(next.minute, OUTER - next.day * RING_GAP).y}
+            r={3.5}
+            strokeWidth={1.5}
+          />
+        )}
+
+        {handle && (
+          <g
+            aria-label="Time of day"
+            aria-valuemax={1435}
+            aria-valuemin={0}
+            aria-valuenow={time ?? 0}
+            aria-valuetext={clockTime(time ?? 0)}
+            className="cursor-grab outline-hidden active:cursor-grabbing [&:focus-visible>circle]:stroke-zinc-400"
+            onKeyDown={onKey}
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              setDragging(true);
+            }}
+            onPointerMove={(e) => {
+              if (dragging) {
+                onTime(minuteAt(e));
+              }
+            }}
+            onPointerUp={() => setDragging(false)}
+            role="slider"
+            tabIndex={0}
+          >
+            <circle cx={handle.x} cy={handle.y} fill="transparent" r={16} />
+            <circle
+              className="fill-white stroke-zinc-900 dark:fill-zinc-950 dark:stroke-zinc-100"
+              cx={handle.x}
+              cy={handle.y}
+              r={dragging ? 7.5 : 6.5}
+              strokeWidth={2}
+            />
+          </g>
+        )}
+      </svg>
+
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.div
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+            className="flex flex-col items-center"
+            exit={{ opacity: 0, filter: "blur(2px)" }}
+            initial={{ opacity: 0, filter: "blur(2px)" }}
+            key={`${hoverDay}-${dragging ? time : next?.minute}-${next?.day}`}
+            transition={{ duration: 0.15 }}
+          >
+            {dragging && time !== null && (
+              <span className="font-mono text-[18px] tabular-nums">
+                {clockTime(time)}
+              </span>
+            )}
+            {!dragging && hoverDay !== null && shownDate && (
+              <>
+                <span className="text-[10.5px] text-zinc-400 dark:text-zinc-500">
+                  {WEEKDAYS[shownDate.getUTCDay()].slice(0, 3)}{" "}
+                  {shownDate.getUTCDate()}
+                </span>
+                <span className="font-mono text-[13px] tabular-nums">
+                  {hoverRuns.length === 0 && "No runs"}
+                  {hoverRuns.length === 1 && clockTime(hoverRuns[0])}
+                  {hoverRuns.length > 1 && `${hoverRuns.length} runs`}
+                </span>
+              </>
+            )}
+            {!dragging && hoverDay === null && next && (
+              <>
+                <span className="text-[10.5px] text-zinc-400 dark:text-zinc-500">
+                  Next run
+                </span>
+                <span className="font-mono text-[13px] tabular-nums">
+                  {formatRun(today, next.day, next.minute, true)}
+                </span>
+                <span className="text-[10.5px] text-emerald-600 tabular-nums dark:text-emerald-400">
+                  {relativeNext}
+                </span>
+              </>
+            )}
+            {!dragging && hoverDay === null && !next && (
+              <span className="text-[12px] text-zinc-400 dark:text-zinc-500">
+                No runs this week
+              </span>
+            )}
+          </motion.div>
         </AnimatePresence>
-      )}
-      {nextMinute !== null && (
-        <motion.span
-          animate={{ opacity: 1 }}
-          aria-hidden="true"
-          className="absolute -top-0.5 size-1.5 -translate-x-1/2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-950"
-          initial={{ opacity: 0 }}
-          key={nextMinute}
-          style={{ left: at(nextMinute) }}
-        />
-      )}
+      </div>
     </div>
   );
 }

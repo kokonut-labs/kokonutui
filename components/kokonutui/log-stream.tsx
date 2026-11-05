@@ -12,7 +12,15 @@
 
 import { ArrowDown, Check, ChevronRight, RotateCcw } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  type PointerEvent,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export type LogLevel = "info" | "warn" | "error";
@@ -40,8 +48,6 @@ export interface LogStreamProps {
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 // How close to the bottom still counts as following, in px.
 const STICK = 24;
-// A finished step folds away after this long, in ms.
-const FOLD_AFTER = 500;
 const DEFAULT_DELAY = 140;
 const CHECK_MARK = /^✓ /;
 
@@ -58,6 +64,9 @@ const DEMO_STEPS: LogStep[] = [
       { text: "+ react-dom@19.2.0", delay: 60 },
       { text: "+ stripe@19.1.0", delay: 60 },
       { text: "+ zod@4.1.12", delay: 60 },
+      { text: "+ @tanstack/react-query@5.90.2", delay: 60 },
+      { text: "+ tailwindcss@4.1.14", delay: 60 },
+      { text: "+ typescript@5.9.3", delay: 60 },
       { text: "412 packages installed [2.31s]", delay: 260 },
     ],
   },
@@ -75,6 +84,7 @@ const DEMO_STEPS: LogStep[] = [
         delay: 700,
       },
       { text: "Collecting page data ...", delay: 400 },
+      { text: "Collecting build traces ...", delay: 300 },
       { text: "✓ Generating static pages (42/42)", delay: 800 },
       { text: "Route (app)                 Size   First Load JS", delay: 300 },
       { text: "○ /                         5.2 kB        112 kB", delay: 50 },
@@ -89,6 +99,9 @@ const DEMO_STEPS: LogStep[] = [
       { text: "$ vitest run", delay: 300 },
       { text: "✓ lib/cart.test.ts (12 tests) 41ms", delay: 500 },
       { text: "✓ lib/price.test.ts (8 tests) 12ms", delay: 220 },
+      { text: "✓ lib/inventory.test.ts (14 tests) 63ms", delay: 200 },
+      { text: "✓ lib/coupons.test.ts (11 tests) 29ms", delay: 180 },
+      { text: "✓ app/cart/actions.test.ts (7 tests) 141ms", delay: 260 },
       { text: "✓ app/checkout/actions.test.ts (5 tests) 188ms", delay: 380 },
       {
         text: "lib/tax.test.ts > rounds EU VAT  took 1204ms, over the 1000ms budget",
@@ -96,8 +109,8 @@ const DEMO_STEPS: LogStep[] = [
         delay: 600,
       },
       { text: "✓ lib/tax.test.ts (9 tests) 1204ms", delay: 120 },
-      { text: "Test Files  4 passed (4)", delay: 240 },
-      { text: "Tests      34 passed (34)" },
+      { text: "Test Files  7 passed (7)", delay: 240 },
+      { text: "Tests      66 passed (66)" },
     ],
   },
   {
@@ -105,6 +118,11 @@ const DEMO_STEPS: LogStep[] = [
     lines: [
       { text: "Uploading build outputs (142 files)", delay: 400 },
       { text: "Deploying to iad1, fra1, hnd1", delay: 900 },
+      {
+        text: "fra1: cold start 1.9s on /checkout, above the 1.5s target",
+        level: "warn",
+        delay: 600,
+      },
       { text: "Assigning domain acme-shop-git-main.example.app", delay: 700 },
       { text: "✓ Ready in 41s", delay: 500 },
     ],
@@ -184,21 +202,6 @@ export default function LogStream({
     return () => clearInterval(tick);
   }, [finished]);
 
-  // Finished steps fold away a beat after they end.
-  const [folded, setFolded] = useState<number[]>([]);
-  useEffect(() => {
-    // The last step stays open, so a finished build ends on its result.
-    if (stepIndex === 0 || stepIndex >= steps.length) {
-      return;
-    }
-    const last = stepIndex - 1;
-    const fold = setTimeout(
-      () => setFolded((f) => (f.includes(last) ? f : [...f, last])),
-      FOLD_AFTER
-    );
-    return () => clearTimeout(fold);
-  }, [stepIndex, steps.length]);
-
   const toBottom = useCallback(() => {
     const el = scroller.current;
     if (el) {
@@ -255,7 +258,6 @@ export default function LogStream({
     setShown(steps.map(() => 0));
     setStepIndex(0);
     setOpen({});
-    setFolded([]);
     setDurations([]);
     setElapsed(0);
     startedAt.current = null;
@@ -263,8 +265,7 @@ export default function LogStream({
     follow(true);
   };
 
-  const isOpen = (i: number) =>
-    open[i] ?? (i <= stepIndex && !folded.includes(i));
+  const isOpen = (i: number) => open[i] ?? i <= stepIndex;
   const warnings = steps.reduce(
     (sum, step, i) =>
       sum +
@@ -344,7 +345,9 @@ export default function LogStream({
                     <button
                       aria-controls={panel}
                       aria-expanded={isOpen(i)}
-                      className="flex h-7 w-full items-center gap-2 px-3 text-left font-sans text-[12.5px] outline-hidden transition-colors duration-150 hover:bg-zinc-50 focus-visible:bg-zinc-50 dark:focus-visible:bg-zinc-900 dark:hover:bg-zinc-900"
+                      className="flex h-7 w-full items-center gap-2 pr-14 pl-3 text-left font-sans text-[12.5px] outline-hidden transition-colors duration-150 hover:bg-zinc-50 focus-visible:bg-zinc-50 dark:focus-visible:bg-zinc-900 dark:hover:bg-zinc-900"
+                      data-label={step.name}
+                      data-mini="header"
                       onClick={() =>
                         setOpen((o) => ({ ...o, [i]: !isOpen(i) }))
                       }
@@ -419,6 +422,8 @@ export default function LogStream({
             </div>
           </section>
 
+          <Minimap content={content} scroller={scroller} />
+
           <AnimatePresence>
             {!isFollowing && (
               <motion.button
@@ -456,13 +461,15 @@ function Line({ line, number }: { line: LogLine; number: number }) {
     <motion.li
       animate={{ opacity: 1 }}
       className={cn(
-        "flex gap-3 border-l-2 pr-3 pl-[calc(0.75rem-2px)]",
+        "flex gap-3 border-l-2 pr-14 pl-[calc(0.75rem-2px)]",
         line.level === "warn"
           ? "border-orange-500 bg-orange-500/[0.06] text-orange-700 dark:text-orange-300"
           : "border-transparent text-zinc-700 dark:text-zinc-300",
         line.level === "error" &&
           "border-red-500 bg-red-500/[0.06] text-red-700 dark:text-red-300"
       )}
+      data-mini={line.level ?? "info"}
+      data-number={number}
       initial={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
     >
@@ -512,5 +519,175 @@ function Spinner() {
         strokeWidth="1.5"
       />
     </motion.svg>
+  );
+}
+
+interface MiniItem {
+  top: number;
+  height: number;
+  kind: string;
+  number?: string;
+  text: string;
+}
+
+// Characters that fill the rail's width, for sizing each line's bar.
+const MINI_CHARS = 64;
+const LEADING_NUMBER = /^\d+/;
+
+/**
+ * The whole log in miniature down the right edge: a bar per line sized to its
+ * text, warnings in orange and a window for what's on screen. Drag or click it
+ * to move through the log; hover a bar to read its line.
+ */
+function Minimap({
+  scroller,
+  content,
+}: {
+  scroller: RefObject<HTMLElement | null>;
+  content: RefObject<HTMLDivElement | null>;
+}) {
+  const rail = useRef<HTMLDivElement>(null);
+  const [items, setItems] = useState<MiniItem[]>([]);
+  const [view, setView] = useState({ top: 0, height: 1, total: 1 });
+  const [hover, setHover] = useState<MiniItem | null>(null);
+  const dragging = useRef(false);
+
+  useEffect(() => {
+    const sc = scroller.current;
+    const c = content.current;
+    if (!(sc && c)) {
+      return;
+    }
+    const measure = () => {
+      const origin = sc.getBoundingClientRect().top - sc.scrollTop;
+      setItems(
+        [...c.querySelectorAll<HTMLElement>("[data-mini]")].map((el) => {
+          const box = el.getBoundingClientRect();
+          return {
+            top: box.top - origin,
+            height: box.height,
+            kind: el.dataset.mini ?? "info",
+            number: el.dataset.number,
+            text:
+              el.dataset.label ??
+              el.textContent?.replace(LEADING_NUMBER, "").trim() ??
+              "",
+          };
+        })
+      );
+    };
+    const sync = () =>
+      setView({
+        top: sc.scrollTop,
+        height: sc.clientHeight,
+        total: Math.max(sc.scrollHeight, sc.clientHeight),
+      });
+    const observer = new ResizeObserver(() => {
+      measure();
+      sync();
+    });
+    observer.observe(c);
+    sc.addEventListener("scroll", sync, { passive: true });
+    measure();
+    sync();
+    return () => {
+      observer.disconnect();
+      sc.removeEventListener("scroll", sync);
+    };
+  }, [scroller, content]);
+
+  const railHeight = rail.current?.clientHeight ?? 1;
+  const scale = railHeight / view.total;
+
+  const yOf = (event: PointerEvent) =>
+    event.clientY - (rail.current?.getBoundingClientRect().top ?? 0);
+
+  // Centers the window on the pointer.
+  const scrollTo = (event: PointerEvent) => {
+    const sc = scroller.current;
+    if (sc) {
+      sc.scrollTop = yOf(event) / scale - sc.clientHeight / 2;
+    }
+  };
+
+  const onMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (dragging.current) {
+      scrollTo(event);
+      return;
+    }
+    const at = yOf(event) / scale;
+    setHover(
+      items.find(
+        (item) => at >= item.top - 2 && at <= item.top + item.height + 2
+      ) ?? null
+    );
+  };
+
+  return (
+    <div
+      aria-hidden="true"
+      className="absolute top-1.5 right-1.5 bottom-1.5 w-10 cursor-pointer touch-none"
+      onPointerDown={(e) => {
+        dragging.current = true;
+        setHover(null);
+        e.currentTarget.setPointerCapture(e.pointerId);
+        scrollTo(e);
+      }}
+      onPointerLeave={() => setHover(null)}
+      onPointerMove={onMove}
+      onPointerUp={() => {
+        dragging.current = false;
+      }}
+      ref={rail}
+    >
+      {items.map((item) => (
+        <span
+          className={cn(
+            "absolute left-1 rounded-full transition-[top] duration-200",
+            item.kind === "header" && "bg-zinc-400 dark:bg-zinc-500",
+            item.kind === "info" && "bg-zinc-300 dark:bg-zinc-700",
+            item.kind === "warn" && "bg-orange-500",
+            item.kind === "error" && "bg-red-500"
+          )}
+          key={`${item.kind}-${item.number ?? item.text}`}
+          style={{
+            top: (item.top + item.height / 2) * scale - 1,
+            height: item.kind === "warn" ? 3 : 2,
+            width:
+              item.kind === "header"
+                ? 12
+                : Math.max(
+                    4,
+                    (Math.min(item.text.length, MINI_CHARS) / MINI_CHARS) * 32
+                  ),
+          }}
+        />
+      ))}
+      <span
+        className="absolute inset-x-0 rounded-[3px] border border-zinc-300 bg-zinc-900/[0.04] transition-[height] duration-150 dark:border-zinc-700 dark:bg-white/[0.05]"
+        style={{
+          top: view.top * scale,
+          height: Math.max(10, view.height * scale),
+        }}
+      />
+      {hover && (
+        <span
+          className={cn(
+            "pointer-events-none absolute right-full mr-2 flex max-w-[22rem] -translate-y-1/2 items-center gap-2 whitespace-nowrap rounded-md border border-zinc-200 bg-white px-2 py-1 font-mono text-[11px] shadow-sm dark:border-zinc-800 dark:bg-zinc-900",
+            hover.kind === "warn"
+              ? "text-orange-700 dark:text-orange-300"
+              : "text-zinc-700 dark:text-zinc-300"
+          )}
+          style={{ top: (hover.top + hover.height / 2) * scale }}
+        >
+          {hover.number && (
+            <span className="text-zinc-400 dark:text-zinc-500">
+              {hover.number}
+            </span>
+          )}
+          <span className="truncate">{hover.text}</span>
+        </span>
+      )}
+    </div>
   );
 }
