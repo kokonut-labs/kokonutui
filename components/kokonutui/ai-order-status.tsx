@@ -10,7 +10,7 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { Bike, Home, MessageCircle, Store } from "lucide-react";
+import { Bike, Check, Home, MessageCircle, Store } from "lucide-react";
 import {
   AnimatePresence,
   animate,
@@ -20,7 +20,13 @@ import {
   useMotionValueEvent,
   useReducedMotion,
 } from "motion/react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export interface DeliveryOrder {
@@ -94,7 +100,7 @@ export default function AIOrderStatus({
   };
   useMotionValueEvent(progress, "change", place);
   // biome-ignore lint/correctness/useExhaustiveDependencies: places once on mount
-  useEffect(() => place(progress.get()), []);
+  useLayoutEffect(() => place(progress.get()), []);
 
   // Counts the ETA down, and moves the courier with it.
   useEffect(() => {
@@ -216,7 +222,27 @@ export default function AIOrderStatus({
                   <Store height={11} width={11} x={-5.5} y={-5.5} />
                 </Pin>
                 <Pin done={arrived} x={END.x} y={END.y}>
-                  <Home height={11} width={11} x={-5.5} y={-5.5} />
+                  <AnimatePresence initial={false} mode="popLayout">
+                    <motion.g
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      initial={{ opacity: 0 }}
+                      key={arrived ? "check" : "home"}
+                      transition={{ duration: 0.2, delay: arrived ? 0.15 : 0 }}
+                    >
+                      {arrived ? (
+                        <Check
+                          height={12}
+                          strokeWidth={3}
+                          width={12}
+                          x={-6}
+                          y={-6}
+                        />
+                      ) : (
+                        <Home height={11} width={11} x={-5.5} y={-5.5} />
+                      )}
+                    </motion.g>
+                  </AnimatePresence>
                 </Pin>
                 <AnimatePresence>
                   {!arrived && (
@@ -251,7 +277,7 @@ export default function AIOrderStatus({
                 </span>
               </span>
               <button
-                className="flex h-8 items-center gap-1.5 rounded-full px-3 font-medium text-[12.5px] text-zinc-700 outline-hidden ring-1 ring-black/[0.08] transition-colors duration-150 hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:text-zinc-200 dark:ring-white/10 dark:hover:bg-white/[0.05]"
+                className="flex h-8 items-center gap-1.5 rounded-full px-3 font-medium text-[12.5px] text-zinc-700 outline-hidden ring-1 ring-black/[0.08] transition-colors duration-150 hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-blue-500/50 active:bg-zinc-100 dark:text-zinc-200 dark:ring-white/10 dark:active:bg-white/[0.08] dark:hover:bg-white/[0.05]"
                 onClick={onMessage}
                 type="button"
               >

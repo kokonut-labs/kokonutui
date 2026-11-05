@@ -36,6 +36,8 @@ export interface AICodeRunProps {
 }
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
+const LINE_HEIGHT = 20;
 /** Comments, strings, keywords, numbers and calls, in that order. */
 const TOKEN =
   /(#.*$)|(f?"[^"]*"|f?'[^']*')|\b(import|from|as|def|return|for|in|if|else|with|lambda|None|True|False)\b|(\b\d[\d_]*(?:\.\d+)?\b)|([A-Za-z_]\w*)(?=\()/g;
@@ -172,7 +174,7 @@ export default function AICodeRun({
                       <span className="relative flex size-1.5">
                         <motion.span
                           animate={{ opacity: [1, 0.3, 1] }}
-                          className="size-1.5 rounded-full bg-blue-500"
+                          className="size-1.5 rounded-full bg-violet-500"
                           transition={{
                             duration: 1,
                             repeat: Number.POSITIVE_INFINITY,
@@ -186,7 +188,7 @@ export default function AICodeRun({
               </AnimatePresence>
               <button
                 aria-label="Run again"
-                className="flex size-6 items-center justify-center rounded-md text-zinc-500 outline-hidden transition-colors duration-150 hover:bg-black/[0.05] hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:pointer-events-none disabled:opacity-0 dark:text-zinc-400 dark:hover:bg-white/[0.08] dark:hover:text-zinc-100"
+                className="flex size-6 items-center justify-center rounded-md text-zinc-500 outline-hidden transition-[color,background-color,opacity] duration-150 hover:bg-black/[0.05] hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-black/[0.08] disabled:pointer-events-none disabled:opacity-0 dark:text-zinc-400 dark:active:bg-white/[0.12] dark:hover:bg-white/[0.08] dark:hover:text-zinc-100"
                 disabled={!finished}
                 onClick={again}
                 type="button"
@@ -198,7 +200,18 @@ export default function AICodeRun({
 
           <div className="overflow-hidden rounded-[18px] bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/[0.06] dark:bg-zinc-900 dark:ring-white/[0.08]">
             <pre className="relative overflow-x-auto py-2.5 font-mono text-[11.5px] leading-[20px]">
-              <code className="block min-w-max">
+              {/* One marker that slides between lines, on transform only. */}
+              <motion.span
+                animate={{
+                  y: Math.max(current, 0) * LINE_HEIGHT,
+                  opacity: finished ? 0 : 1,
+                }}
+                aria-hidden="true"
+                className="absolute inset-x-0 top-2.5 h-5 border-violet-500 border-l-2 bg-violet-500/[0.07] dark:border-violet-400 dark:bg-violet-400/10"
+                initial={false}
+                transition={{ duration: 0.18, ease: EASE_OUT }}
+              />
+              <code className="relative block min-w-max">
                 {lines.map((line, i) => {
                   const ran =
                     finished || (steps.includes(i) && steps.indexOf(i) < step);
@@ -208,19 +221,11 @@ export default function AICodeRun({
                       // biome-ignore lint/suspicious/noArrayIndexKey: lines are a fixed, ordered list
                       key={i}
                     >
-                      {i === current && (
-                        <motion.span
-                          aria-hidden="true"
-                          className="absolute inset-0 border-blue-500 border-l-2 bg-blue-500/[0.07] dark:bg-blue-400/10"
-                          layoutId={`${outputId}-line`}
-                          transition={{ duration: 0.2, ease: EASE_OUT }}
-                        />
-                      )}
                       <span
                         className={cn(
                           "relative w-8 shrink-0 select-none pr-3 text-right tabular-nums transition-colors duration-200",
                           i === current
-                            ? "text-blue-600 dark:text-blue-400"
+                            ? "text-violet-600 dark:text-violet-400"
                             : "text-zinc-300 dark:text-zinc-600"
                         )}
                       >
@@ -244,13 +249,13 @@ export default function AICodeRun({
             <AnimatePresence initial={false}>
               {printed && (
                 <motion.div
-                  animate={{ height: "auto", opacity: 1 }}
-                  className="overflow-hidden border-black/[0.06] border-t dark:border-white/[0.08]"
-                  exit={{ height: 0, opacity: 0 }}
+                  animate={{ opacity: 1, filter: "blur(0px)" }}
+                  className="border-black/[0.06] border-t dark:border-white/[0.08]"
+                  exit={{ opacity: 0, filter: "blur(2px)" }}
                   id={outputId}
-                  initial={{ height: 0, opacity: 0 }}
+                  initial={{ opacity: 0, filter: "blur(2px)" }}
                   key={`out-${run}`}
-                  transition={{ duration: 0.35, ease: EASE_OUT }}
+                  transition={{ duration: 0.25, ease: EASE_OUT }}
                 >
                   <p className="flex items-center gap-2 px-3.5 pt-3 font-mono text-[11.5px] text-zinc-700 dark:text-zinc-300">
                     <span className="select-none text-zinc-300 dark:text-zinc-600">
@@ -312,17 +317,17 @@ function Chart({ bars, max }: { bars: CodeRunBar[]; max: number }) {
               </motion.span>
             )}
             <motion.div
-              animate={{ scaleY: 1 }}
+              animate={{ clipPath: "inset(0% 0 0 0)" }}
               className={cn(
-                "origin-bottom rounded-t-[4px] rounded-b-[2px]",
+                "rounded-t-[4px] rounded-b-[2px]",
                 i === last
-                  ? "bg-blue-500 dark:bg-blue-400"
+                  ? "bg-violet-500 dark:bg-violet-400"
                   : "bg-zinc-200 dark:bg-zinc-700"
               )}
-              initial={{ scaleY: 0 }}
+              initial={{ clipPath: "inset(100% 0 0 0)" }}
               style={{ height: `${(bar.value / max) * 82}%` }}
               title={`${bar.label}: ${bar.value}`}
-              transition={{ duration: 0.5, ease: EASE_OUT, delay: i * 0.06 }}
+              transition={{ duration: 0.45, ease: EASE_OUT, delay: i * 0.05 }}
             />
           </div>
         ))}
@@ -367,7 +372,7 @@ function AutoHeight({
       animate={{ height }}
       className={cn("overflow-hidden", className)}
       initial={false}
-      transition={{ duration: 0.4, ease: EASE_OUT }}
+      transition={{ duration: 0.3, ease: EASE_DRAWER }}
     >
       <div className="p-1" ref={innerRef}>
         {children}

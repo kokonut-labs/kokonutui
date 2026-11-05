@@ -12,7 +12,7 @@
 
 import { Globe, Video } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /** A span of hours in the day, e.g. [9.5, 11] for 9:30 to 11:00. */
@@ -155,7 +155,7 @@ export default function AISchedule({
           {message}
         </p>
 
-        <AutoHeight className="rounded-[22px] bg-black/[0.04] dark:bg-white/[0.06]">
+        <div className="rounded-[22px] bg-black/[0.04] p-1 dark:bg-white/[0.06]">
           <div className="flex h-8 items-center justify-between px-3 text-[12px] text-zinc-500 dark:text-zinc-400">
             <span className="truncate">
               <span className="font-medium text-zinc-700 dark:text-zinc-300">
@@ -235,7 +235,7 @@ export default function AISchedule({
               />
             )}
           </div>
-        </AutoHeight>
+        </div>
 
         <AnimatePresence>
           {status === "booked" && (
@@ -307,9 +307,10 @@ function SlotRow({
         <span className="min-w-0 flex-1">
           <AnimatePresence initial={false} mode="popLayout">
             <motion.span
-              animate={{ opacity: 1, y: 0 }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               className="block truncate font-medium text-[13.5px] text-zinc-900 dark:text-zinc-100"
-              initial={{ opacity: 0, y: 4 }}
+              exit={{ opacity: 0, y: -4, filter: "blur(2px)" }}
+              initial={{ opacity: 0, y: 4, filter: "blur(2px)" }}
               key={booked ? "title" : "time"}
               transition={{ duration: 0.25, ease: EASE_OUT }}
             >
@@ -349,7 +350,7 @@ function SlotRow({
               transition={{ duration: 0.15 }}
             >
               <motion.span
-                animate={{ scale: checked ? 1 : 0 }}
+                animate={{ scale: checked ? 1 : 0.5, opacity: checked ? 1 : 0 }}
                 className="size-1.5 rounded-full bg-white dark:bg-zinc-900"
                 initial={false}
                 transition={{ duration: 0.15, ease: EASE_OUT }}
@@ -365,7 +366,7 @@ function SlotRow({
             className="block overflow-hidden"
             exit={{ height: 0, opacity: 0 }}
             initial={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: EASE_OUT }}
+            transition={{ duration: 0.25, ease: EASE_OUT }}
           >
             <DayLanes guest={guest} slot={slot} />
           </motion.span>
@@ -490,17 +491,17 @@ function BookButton({
 }) {
   return (
     <button
-      className="flex h-9 min-w-[96px] items-center justify-center rounded-full bg-zinc-900 px-4 font-medium text-[13px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 disabled:cursor-default dark:bg-white dark:text-zinc-900 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-zinc-200"
+      className="flex h-9 min-w-[96px] items-center justify-center rounded-full bg-zinc-900 px-4 font-medium text-[13px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 active:bg-zinc-700 disabled:cursor-default dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-zinc-200"
       disabled={busy}
       onClick={onClick}
       type="button"
     >
       <AnimatePresence initial={false} mode="popLayout">
         <motion.span
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           className="flex items-center"
-          exit={{ opacity: 0, y: -6 }}
-          initial={{ opacity: 0, y: 6 }}
+          exit={{ opacity: 0, y: -6, filter: "blur(2px)" }}
+          initial={{ opacity: 0, y: 6, filter: "blur(2px)" }}
           key={busy ? "busy" : label}
           transition={{ duration: 0.18, ease: EASE_OUT }}
         >
@@ -519,7 +520,7 @@ function Spinner() {
       className="size-4"
       fill="none"
       transition={{
-        duration: 0.8,
+        duration: 0.6,
         ease: "linear",
         repeat: Number.POSITIVE_INFINITY,
       }}
@@ -540,40 +541,5 @@ function Spinner() {
         strokeWidth="1.75"
       />
     </motion.svg>
-  );
-}
-
-/** Eases the card to its content's height when the content swaps. */
-function AutoHeight({
-  className,
-  children,
-}: {
-  className?: string;
-  children: ReactNode;
-}) {
-  const innerRef = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState<number | "auto">("auto");
-
-  useEffect(() => {
-    const inner = innerRef.current;
-    if (!inner) {
-      return;
-    }
-    const observer = new ResizeObserver(() => setHeight(inner.offsetHeight));
-    observer.observe(inner);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <motion.div
-      animate={{ height }}
-      className={cn("overflow-hidden", className)}
-      initial={false}
-      transition={{ duration: 0.4, ease: EASE_OUT }}
-    >
-      <div className="p-1" ref={innerRef}>
-        {children}
-      </div>
-    </motion.div>
   );
 }

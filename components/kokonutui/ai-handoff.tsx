@@ -43,9 +43,13 @@ export interface AIHandoffProps {
 type Status = "waiting" | "picking" | "joined" | "stayed";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
+const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
 const TYPING_MS = 1600;
 /** How long the picked agent is shown before they join. */
 const PICK_MS = 900;
+/** How long the agent avatar takes to fly into the joined line, in s. */
+const FLIGHT_S = 0.5;
 
 const DEMO_AGENTS: HandoffAgent[] = [
   {
@@ -95,6 +99,7 @@ export default function AIHandoff({
   const [status, setStatus] = useState<Status>("waiting");
   const [line, setLine] = useState(position);
   const [typing, setTyping] = useState(true);
+  const [landed, setLanded] = useState(false);
   const agent = agents[0];
   const picking = status === "picking";
   const open = status === "waiting" || picking;
@@ -128,8 +133,12 @@ export default function AIHandoff({
     if (status !== "joined") {
       return;
     }
+    const land = setTimeout(() => setLanded(true), FLIGHT_S * 1000 + 50);
     const t = setTimeout(() => setTyping(false), TYPING_MS);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(land);
+      clearTimeout(t);
+    };
   }, [status]);
 
   const stay = () => {
@@ -200,7 +209,10 @@ export default function AIHandoff({
                         <motion.span
                           animate={{ opacity: picking && i > 0 ? 0.25 : 1 }}
                           className={cn(
-                            "-ml-1 flex size-6 items-center justify-center rounded-full font-semibold text-[10px] ring-2 ring-white first:ml-0 dark:ring-zinc-900",
+                            "-ml-1 flex size-6 items-center justify-center rounded-full font-semibold text-[10px] ring-2 transition-[box-shadow] duration-200 first:ml-0",
+                            picking && i === 0
+                              ? "ring-zinc-900 dark:ring-zinc-100"
+                              : "ring-white dark:ring-zinc-900",
                             a.tone
                           )}
                           initial={false}
@@ -224,7 +236,7 @@ export default function AIHandoff({
 
                 <div className="flex justify-end px-1 pt-1">
                   <button
-                    className="h-8 rounded-full px-3 font-medium text-[12.5px] text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-black/[0.04] hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-white/[0.06] dark:hover:text-zinc-100"
+                    className="h-8 rounded-full px-3 font-medium text-[12.5px] text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-black/[0.04] hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-black/[0.07] disabled:opacity-50 dark:text-zinc-400 dark:active:bg-white/[0.1] dark:hover:bg-white/[0.06] dark:hover:text-zinc-100"
                     disabled={picking}
                     onClick={stay}
                     type="button"
@@ -269,8 +281,10 @@ export default function AIHandoff({
                       "flex size-5 items-center justify-center rounded-full font-semibold text-[9px]",
                       agent.tone
                     )}
-                    layoutId={`${id}-agent`}
-                    transition={{ duration: 0.45, ease: EASE_OUT }}
+                    // Shared only for the flight in; once landed it stays put
+                    // while the messages below it change height.
+                    layoutId={landed ? undefined : `${id}-agent`}
+                    transition={{ duration: FLIGHT_S, ease: EASE_IN_OUT }}
                   >
                     {agent.initials}
                   </motion.span>
@@ -298,42 +312,42 @@ export default function AIHandoff({
                 >
                   {agent.initials}
                 </span>
-                <div className="min-w-0 max-w-[85%] rounded-2xl rounded-bl-md bg-white px-3.5 py-2 ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10">
-                  <AnimatePresence initial={false} mode="popLayout">
-                    {typing ? (
-                      <motion.span
-                        className="flex h-5 items-center gap-1"
-                        exit={{ opacity: 0 }}
-                        key="typing"
-                        transition={{ duration: 0.15 }}
-                      >
-                        <span className="sr-only">{agent.name} is typing</span>
-                        {[0, 1, 2].map((d) => (
-                          <motion.span
-                            animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
-                            className="size-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500"
-                            key={d}
-                            transition={{
-                              duration: 0.9,
-                              delay: d * 0.15,
-                              repeat: Number.POSITIVE_INFINITY,
-                            }}
-                          />
-                        ))}
-                      </motion.span>
-                    ) : (
-                      <motion.p
-                        animate={{ opacity: 1, filter: "blur(0px)" }}
-                        className="text-[14px] text-zinc-800 leading-6 dark:text-zinc-200"
-                        initial={{ opacity: 0, filter: "blur(3px)" }}
-                        key="reply"
-                        transition={{ duration: 0.3, ease: EASE_OUT }}
-                      >
-                        {reply}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
+                {/* Typing dots and the reply are two bubbles that crossfade,
+                    so the bubble never stretches its text mid-way. */}
+                <AnimatePresence initial={false} mode="popLayout">
+                  {typing ? (
+                    <motion.span
+                      className="flex h-9 items-center gap-1 rounded-2xl rounded-bl-md bg-white px-3.5 ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10"
+                      exit={{ opacity: 0, filter: "blur(2px)" }}
+                      key="typing"
+                      transition={{ duration: 0.15 }}
+                    >
+                      <span className="sr-only">{agent.name} is typing</span>
+                      {[0, 1, 2].map((d) => (
+                        <motion.span
+                          animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
+                          className="size-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500"
+                          key={d}
+                          transition={{
+                            duration: 0.9,
+                            delay: d * 0.15,
+                            repeat: Number.POSITIVE_INFINITY,
+                          }}
+                        />
+                      ))}
+                    </motion.span>
+                  ) : (
+                    <motion.p
+                      animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                      className="min-w-0 max-w-[85%] rounded-2xl rounded-bl-md bg-white px-3.5 py-2 text-[14px] text-zinc-800 leading-6 ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:text-zinc-200 dark:ring-white/10"
+                      initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
+                      key="reply"
+                      transition={{ duration: 0.3, ease: EASE_OUT }}
+                    >
+                      {reply}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </motion.div>
             </motion.div>
           )}
@@ -410,7 +424,7 @@ function AutoHeight({
       animate={{ height }}
       className={cn("overflow-hidden", className)}
       initial={false}
-      transition={{ duration: 0.4, ease: EASE_OUT }}
+      transition={{ duration: 0.3, ease: EASE_DRAWER }}
     >
       <div className="p-1" ref={innerRef}>
         {children}
