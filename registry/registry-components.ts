@@ -1227,56 +1227,56 @@ export const component: Registry = [
     ],
   },
   {
-    name: "cron-schedule",
+    name: "thermostat",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/thermostat.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "room-lights",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/room-lights.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "energy-flow",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/energy-flow.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "window-blinds",
     type: "registry:component",
     dependencies: ["motion"],
     files: [
       {
-        path: "components/kokonutui/cron-schedule.tsx",
+        path: "components/kokonutui/window-blinds.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "log-stream",
+    name: "door-lock",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/log-stream.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "env-editor",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/env-editor.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "domain-propagation",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/domain-propagation.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "traffic-split",
-    type: "registry:component",
-    dependencies: ["motion"],
-    files: [
-      {
-        path: "components/kokonutui/traffic-split.tsx",
+        path: "components/kokonutui/door-lock.tsx",
         type: "registry:component",
       },
     ],

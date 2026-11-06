@@ -1,0 +1,10 @@
+{
+  "title": "Smart Home",
+  "pages": [
+    "room-lights",
+    "thermostat",
+    "energy-flow",
+    "window-blinds",
+    "door-lock"
+  ]
+}

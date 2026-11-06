@@ -37,7 +37,6 @@ const CATEGORY_PICKS: Record<string, [name: string, w: number, h: number]> = {
   buttons: ["pay-button", 620, 297],
   cards: ["onboarding-checklist", 640, 485],
   components: ["security-bento", 640, 337],
-  developer: ["slash-command-menu", 640, 443],
   inputs: ["natural-date-input", 500, 250],
   media: ["audio-player-card", 640, 339],
   navigation: ["docs-search", 433, 333],
