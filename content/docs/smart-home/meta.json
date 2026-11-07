@@ -1,10 +1,10 @@
 {
   "title": "Smart Home",
   "pages": [
-    "room-lights",
-    "thermostat",
-    "energy-flow",
-    "window-blinds",
-    "door-lock"
+    "light-dimmer",
+    "climate-dial",
+    "energy-aurora",
+    "window-shade",
+    "smart-lock"
   ]
 }

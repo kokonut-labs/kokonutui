@@ -1227,56 +1227,56 @@ export const component: Registry = [
     ],
   },
   {
-    name: "thermostat",
+    name: "light-dimmer",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/thermostat.tsx",
+        path: "components/kokonutui/light-dimmer.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "room-lights",
+    name: "climate-dial",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/room-lights.tsx",
+        path: "components/kokonutui/climate-dial.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "energy-flow",
+    name: "energy-aurora",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/energy-flow.tsx",
+        path: "components/kokonutui/energy-aurora.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "window-blinds",
+    name: "window-shade",
     type: "registry:component",
     dependencies: ["motion"],
     files: [
       {
-        path: "components/kokonutui/window-blinds.tsx",
+        path: "components/kokonutui/window-shade.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "door-lock",
+    name: "smart-lock",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/door-lock.tsx",
+        path: "components/kokonutui/smart-lock.tsx",
         type: "registry:component",
       },
     ],
