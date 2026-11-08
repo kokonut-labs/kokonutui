@@ -60,7 +60,7 @@ const DEMO_MOMENTS: EnergyMoment[] = [
     usage: 1.1,
     battery: 100,
     mix: { solar: 100, battery: 0, grid: 0 },
-    sky: ["#fb923c", "#f472b6", "#fdba74"],
+    sky: ["#f97316", "#ec4899", "#fb7185"],
   },
   {
     label: "Evening",
@@ -104,13 +104,26 @@ const SOURCES = [
 ] as const;
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
+// Half the space between two slices of the bar, in percent.
+const GAP = 0.6;
 
-// Where each light drifts, as a share of the sky.
-const DRIFT = [
-  { x: ["-10%", "25%", "-10%"], y: ["-20%", "10%", "-20%"], d: 11 },
-  { x: ["40%", "5%", "40%"], y: ["10%", "-15%", "10%"], d: 13 },
-  { x: ["10%", "45%", "10%"], y: ["35%", "15%", "35%"], d: 9 },
-];
+/** One soft sweep of the moment's colors, painted once. Only its opacity animates. */
+const skyFor = ([a, b, c]: [string, string, string]) =>
+  `linear-gradient(to top, rgba(0,0,0,0.22), transparent 60%), radial-gradient(90% 80% at 100% 0%, ${b}, transparent 70%), linear-gradient(150deg, ${a}, ${c})`;
+
+/** Where each source's slice of the bar starts and ends, in percent. */
+const slices = (mix: EnergyMoment["mix"]) => {
+  let start = 0;
+  return SOURCES.map((source) => {
+    const end = start + mix[source.key];
+    const left = start > 0 ? start + GAP : 0;
+    const right = end < 100 ? 100 - end + GAP : 0;
+    const clip = `inset(0% ${Math.min(right, 100)}% 0% ${Math.min(left, 100)}% round 999px)`;
+    start = end;
+    return { key: source.key, clip };
+  });
+};
 
 export default function EnergyAurora({
   moments = DEMO_MOMENTS,
@@ -144,31 +157,16 @@ export default function EnergyAurora({
         ref={rootRef}
       >
         <div className="relative isolate h-60 overflow-hidden rounded-[22px] bg-zinc-950 text-white">
-          {DRIFT.map((drift, i) => (
+          {/* Each moment's sky fades over the last. */}
+          {moments.map((m, i) => (
             <motion.div
-              animate={{
-                x: drift.x,
-                y: drift.y,
-                backgroundColor: moment.sky[i],
-              }}
+              animate={{ opacity: i === index ? 1 : 0 }}
               aria-hidden="true"
-              className="absolute size-56 rounded-full opacity-80 blur-3xl"
+              className="absolute inset-0"
               initial={false}
-              // biome-ignore lint/suspicious/noArrayIndexKey: three fixed lights
-              key={i}
-              transition={{
-                x: {
-                  duration: drift.d,
-                  ease: "easeInOut",
-                  repeat: Number.POSITIVE_INFINITY,
-                },
-                y: {
-                  duration: drift.d * 1.3,
-                  ease: "easeInOut",
-                  repeat: Number.POSITIVE_INFINITY,
-                },
-                backgroundColor: { duration: 1.4, ease: EASE_OUT },
-              }}
+              key={m.label}
+              style={{ background: skyFor(m.sky) }}
+              transition={{ duration: 0.8, ease: EASE_IN_OUT }}
             />
           ))}
           {/* Fine grain keeps the colors from banding. */}
@@ -212,15 +210,16 @@ export default function EnergyAurora({
         </div>
 
         <div className="px-3 pt-4">
-          <div className="flex h-2.5 gap-1 overflow-hidden rounded-full">
-            {SOURCES.map((source) => (
+          {/* Each slice is clipped out of a full-width bar, so nothing reflows. */}
+          <div className="relative h-2.5">
+            {slices(moment.mix).map((slice, i) => (
               <motion.div
-                animate={{ flexGrow: Math.max(moment.mix[source.key], 0.001) }}
-                className="h-full min-w-0 basis-0 rounded-full"
+                animate={{ clipPath: slice.clip }}
+                className="absolute inset-0"
                 initial={false}
-                key={source.key}
-                style={{ background: source.gradient }}
-                transition={{ duration: 0.8, ease: EASE_OUT }}
+                key={slice.key}
+                style={{ background: SOURCES[i].gradient }}
+                transition={{ duration: 0.5, ease: EASE_OUT }}
               />
             ))}
           </div>
@@ -308,7 +307,7 @@ function Count({ value, decimals = 1 }: { value: number; decimals?: number }) {
   const text = useTransform(motionValue, (v) => v.toFixed(decimals));
   useEffect(() => {
     const controls = animate(motionValue, value, {
-      duration: 0.8,
+      duration: 0.5,
       ease: EASE_OUT,
     });
     return () => controls.stop();

@@ -191,12 +191,6 @@ export default function ClimateDial({
           role="slider"
           tabIndex={0}
         >
-          {/* Warmth spills out behind the dial in the target's color. */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-6 -z-10 rounded-full opacity-50 blur-3xl transition-[background-color] duration-700"
-            style={{ backgroundColor: tone }}
-          />
           <div
             aria-hidden="true"
             className="absolute inset-0 rounded-full opacity-90"
@@ -216,7 +210,7 @@ export default function ClimateDial({
             initial={false}
             transition={{ duration: 0.5, ease: EASE_OUT }}
           >
-            <span className="absolute top-[5px] left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-white/90" />
+            <span className="absolute top-[5px] left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-white" />
           </motion.div>
 
           <motion.div
@@ -230,37 +224,22 @@ export default function ClimateDial({
                 : { type: "spring", stiffness: 300, damping: 28 }
             }
           >
-            <span className="absolute -top-[3px] left-1/2 size-[22px] -translate-x-1/2 rounded-full border-[3px] border-white bg-white shadow-[0_2px_10px_rgba(0,0,0,0.25)]" />
+            <span
+              className="absolute -top-[3px] left-1/2 size-[22px] -translate-x-1/2 rounded-full border-[3px] border-white shadow-[0_1px_4px_rgba(0,0,0,0.2)]"
+              style={{ backgroundColor: tone }}
+            />
           </motion.div>
 
-          <div
-            className="absolute inset-[30px] overflow-hidden rounded-full transition-[background-color] duration-500"
-            style={{ backgroundColor: tone }}
-          >
-            {/* Slow swirl, so the air looks like it moves. */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              aria-hidden="true"
-              className="absolute -inset-1/4 opacity-60"
-              style={{
-                background:
-                  "conic-gradient(from 0deg, rgba(255,255,255,0.45), transparent 30%, rgba(0,0,0,0.12) 55%, transparent 75%, rgba(255,255,255,0.45))",
-              }}
-              transition={{
-                duration: mode === "hold" ? 30 : 9,
-                ease: "linear",
-                repeat: Number.POSITIVE_INFINITY,
-              }}
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-              <span className="text-[12px] opacity-85">{MODE_TEXT[mode]}</span>
-              <span className="mt-0.5 flex items-start font-semibold text-[50px] leading-none tracking-tight">
-                <Rolling value={target.toFixed(1)} />
-                <span className="mt-1.5 ml-0.5 font-medium text-[18px] opacity-80">
-                  {unit}
-                </span>
+          <div className="absolute inset-[30px] flex flex-col items-center justify-center rounded-full bg-zinc-50 dark:bg-zinc-900">
+            <span className="text-[12px] text-zinc-500 dark:text-zinc-400">
+              {MODE_TEXT[mode]}
+            </span>
+            <span className="mt-0.5 flex items-start font-semibold text-[50px] leading-none tracking-tight">
+              <Rolling value={target.toFixed(1)} />
+              <span className="mt-1.5 ml-0.5 font-medium text-[18px] text-zinc-400 dark:text-zinc-500">
+                {unit}
               </span>
-            </div>
+            </span>
           </div>
         </div>
 
@@ -329,7 +308,7 @@ function Rolling({ value }: { value: string }) {
               exit={{ y: up ? "-60%" : "60%", opacity: 0 }}
               initial={{ y: up ? "60%" : "-60%", opacity: 0 }}
               key={char}
-              transition={{ duration: 0.28, ease: EASE_OUT }}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
             >
               {char}
             </motion.span>

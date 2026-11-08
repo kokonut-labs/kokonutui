@@ -83,7 +83,7 @@ const DEMO_MOMENTS: SkyMoment[] = [
   },
 ];
 
-const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
 const SPRING = { type: "spring", stiffness: 170, damping: 24 } as const;
 const STARS = [
   [12, 18],
@@ -112,9 +112,14 @@ export default function WindowShade({
   const [follow, setFollow] = useState(followMs > 0);
   const [dragging, setDragging] = useState(false);
   const shade = useMotionValue(defaultShade);
-  const [shown, setShown] = useState(defaultShade);
-  const shadeHeight = useTransform(shade, (v) => `${Math.max(v, 0.04) * 100}%`);
-  useMotionValueEvent(shade, "change", (v) => setShown(v));
+  // Whole percent, so the text only re-renders when the number changes.
+  const [shown, setShown] = useState(Math.round(defaultShade * 100));
+  // The fabric slides down as one piece; a sliver always shows at the top.
+  const shadeY = useTransform(
+    shade,
+    (v) => `${(Math.max(v, 0.04) - 1) * 100}%`
+  );
+  useMotionValueEvent(shade, "change", (v) => setShown(Math.round(v * 100)));
 
   const moment = moments[index];
 
@@ -176,8 +181,8 @@ export default function WindowShade({
           aria-label={`${room} shade`}
           aria-valuemax={100}
           aria-valuemin={0}
-          aria-valuenow={Math.round(shown * 100)}
-          aria-valuetext={`${Math.round(shown * 100)}% closed`}
+          aria-valuenow={shown}
+          aria-valuetext={`${shown}% closed`}
           className={cn(
             "relative isolate h-72 touch-none select-none overflow-hidden rounded-[22px] outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-400/60",
             dragging ? "cursor-grabbing" : "cursor-ns-resize"
@@ -211,7 +216,7 @@ export default function WindowShade({
               style={{
                 background: `linear-gradient(180deg, ${m.sky[0]}, ${m.sky[1]})`,
               }}
-              transition={{ duration: 1.2, ease: "easeInOut" }}
+              transition={{ duration: 0.8, ease: EASE_IN_OUT }}
             />
           ))}
 
@@ -220,38 +225,38 @@ export default function WindowShade({
             aria-hidden="true"
             className="absolute inset-0"
             initial={false}
-            transition={{ duration: 1.2 }}
+            transition={{ duration: 0.8, ease: EASE_IN_OUT }}
           >
             {STARS.map(([x, y], i) => (
-              <motion.span
-                animate={{ opacity: [0.3, 1, 0.3] }}
+              <span
                 className="absolute size-[3px] rounded-full bg-white"
                 key={`${x}-${y}`}
-                style={{ left: `${x}%`, top: `${y}%` }}
-                transition={{
-                  duration: 2.4,
-                  delay: i * 0.3,
-                  repeat: Number.POSITIVE_INFINITY,
+                style={{
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  opacity: 0.5 + (i % 3) * 0.25,
                 }}
               />
             ))}
           </motion.div>
 
+          {/* A full-size layer, so its x and y move the sun across the window. */}
           <motion.div
-            animate={{ left: `${bodyX}%`, top: `${bodyY}%` }}
+            animate={{ x: `${bodyX}%`, y: `${bodyY}%` }}
             aria-hidden="true"
-            className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            className="absolute inset-0"
             initial={false}
-            style={{
-              background: moment.night
-                ? "radial-gradient(circle at 35% 35%, #ffffff, #cbd5ff)"
-                : "radial-gradient(circle at 35% 35%, #fff7e0, #ffb057)",
-              boxShadow: moment.night
-                ? "0 0 40px 8px rgba(203,213,255,0.35)"
-                : "0 0 60px 16px rgba(255,176,87,0.55)",
-            }}
-            transition={{ duration: 1.4, ease: EASE_OUT }}
-          />
+            transition={{ duration: 0.8, ease: EASE_IN_OUT }}
+          >
+            <div
+              className="absolute top-0 left-0 size-12 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              style={{
+                background: moment.night
+                  ? "radial-gradient(circle at 35% 35%, #ffffff, #cbd5ff)"
+                  : "radial-gradient(circle at 35% 35%, #fff7e0, #ffb057)",
+              }}
+            />
+          </motion.div>
 
           {/* Hills, tinted by the sky. */}
           <svg
@@ -283,11 +288,11 @@ export default function WindowShade({
           {/* The shade: pleated fabric that rolls down from the top. */}
           <motion.div
             aria-hidden="true"
-            className="absolute inset-x-0 top-0 shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
-            style={{ height: shadeHeight }}
+            className="absolute inset-0 shadow-[0_6px_16px_rgba(0,0,0,0.16)]"
+            style={{ y: shadeY }}
           >
             <div
-              className="absolute inset-0 backdrop-blur-[2px]"
+              className="absolute inset-0"
               style={{
                 background:
                   "repeating-linear-gradient(180deg, rgba(255,255,255,0.86) 0px, rgba(255,255,255,0.86) 10px, rgba(236,233,228,0.9) 12px, rgba(255,255,255,0.86) 14px), linear-gradient(180deg, transparent, rgba(0,0,0,0.06))",
@@ -302,7 +307,7 @@ export default function WindowShade({
             className={cn(
               "pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-4 transition-colors duration-300",
               // Over the fabric the text turns dark so it stays readable.
-              shown > 0.82 ? "text-zinc-800" : "text-white"
+              shown > 82 ? "text-zinc-800" : "text-white"
             )}
           >
             <div>
@@ -310,7 +315,7 @@ export default function WindowShade({
                 {room} · {moment.time}
               </p>
               <p className="font-semibold text-[28px] tabular-nums leading-tight tracking-tight">
-                {shown < 0.05 ? "Open" : `${Math.round(shown * 100)}% closed`}
+                {shown < 5 ? "Open" : `${shown}% closed`}
               </p>
             </div>
           </div>
@@ -357,19 +362,17 @@ export default function WindowShade({
           <span
             className={cn(
               "relative h-6 w-10 rounded-full transition-colors duration-200",
-              follow ? "" : "bg-zinc-200 dark:bg-zinc-800"
-            )}
-            style={
               follow
-                ? {
-                    background: `linear-gradient(90deg, ${moment.sky[0]}, ${moment.sky[1]})`,
-                  }
-                : undefined
-            }
+                ? "bg-zinc-900 dark:bg-zinc-100"
+                : "bg-zinc-200 dark:bg-zinc-800"
+            )}
           >
             <motion.span
               animate={{ x: follow ? 18 : 2 }}
-              className="absolute top-0.5 left-0 size-5 rounded-full bg-white shadow-sm"
+              className={cn(
+                "absolute top-0.5 left-0 size-5 rounded-full bg-white shadow-sm",
+                follow ? "dark:bg-zinc-900" : "dark:bg-zinc-400"
+              )}
               initial={false}
               transition={{ type: "spring", stiffness: 600, damping: 34 }}
             />

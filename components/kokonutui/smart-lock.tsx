@@ -97,22 +97,10 @@ export default function SmartLock({
     <MotionConfig reducedMotion="user">
       <div
         className={cn(
-          "relative isolate w-full max-w-sm overflow-hidden rounded-[28px] border border-zinc-200 bg-white p-5 text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100",
+          "relative w-full max-w-sm overflow-hidden rounded-[28px] border border-zinc-200 bg-white p-5 text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100",
           className
         )}
       >
-        <motion.div
-          animate={{ opacity: open ? 0.55 : 0 }}
-          aria-hidden="true"
-          className="absolute inset-x-0 top-10 -z-10 mx-auto size-64 rounded-full blur-3xl"
-          initial={false}
-          style={{
-            background:
-              "conic-gradient(from 90deg, #34d399, #22d3ee, #a78bfa, #34d399)",
-          }}
-          transition={{ duration: 0.6 }}
-        />
-
         <div className="flex items-center justify-between text-[13px]">
           <span className="font-medium">{door}</span>
           <span className="flex items-center gap-1.5 text-zinc-500 tabular-nums dark:text-zinc-400">
@@ -184,12 +172,12 @@ export default function SmartLock({
             <AnimatePresence>
               {open && (
                 <motion.span
-                  animate={{ scale: 1.5, opacity: 0 }}
+                  animate={{ scale: 1.25, opacity: 0 }}
                   aria-hidden="true"
                   className="absolute inset-4 rounded-full border-2 border-emerald-400"
                   exit={{ opacity: 0 }}
-                  initial={{ scale: 1, opacity: 0.7 }}
-                  transition={{ duration: 0.9, ease: EASE_OUT }}
+                  initial={{ scale: 1, opacity: 0.6 }}
+                  transition={{ duration: 0.6, ease: EASE_OUT }}
                 />
               )}
             </AnimatePresence>
@@ -204,24 +192,8 @@ export default function SmartLock({
                   background:
                     "linear-gradient(140deg, #34d399, #22d3ee 55%, #a78bfa)",
                 }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: 0.3, ease: EASE_OUT }}
               />
-              {open && (
-                <motion.span
-                  animate={{ rotate: 360 }}
-                  aria-hidden="true"
-                  className="absolute -inset-1/4 opacity-50 mix-blend-soft-light"
-                  style={{
-                    background:
-                      "conic-gradient(from 0deg, white, transparent 35%, transparent 65%, white)",
-                  }}
-                  transition={{
-                    duration: 6,
-                    ease: "linear",
-                    repeat: Number.POSITIVE_INFINITY,
-                  }}
-                />
-              )}
               <span className="absolute inset-0 flex items-center justify-center">
                 <LockGlyph open={open} />
               </span>
@@ -291,7 +263,7 @@ function LockGlyph({ open }: { open: boolean }) {
     <svg
       aria-hidden="true"
       className={cn(
-        "size-16 transition-colors duration-300",
+        "size-16 transition-colors duration-200",
         open ? "text-white" : "text-white dark:text-zinc-900"
       )}
       fill="none"
@@ -305,7 +277,7 @@ function LockGlyph({ open }: { open: boolean }) {
         strokeLinecap="round"
         strokeWidth={3.5}
         style={{ transformBox: "view-box", transformOrigin: "16px 22px" }}
-        transition={{ type: "spring", stiffness: 320, damping: 18 }}
+        transition={{ type: "spring", stiffness: 420, damping: 30 }}
       />
       <rect fill="currentColor" height={19} rx={5} width={28} x={10} y={22} />
       <motion.circle
