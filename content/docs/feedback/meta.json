@@ -1,0 +1,10 @@
+{
+  "title": "Feedback",
+  "pages": [
+    "promise-toast",
+    "inline-alert",
+    "save-status",
+    "empty-state",
+    "helpful-rating"
+  ]
+}

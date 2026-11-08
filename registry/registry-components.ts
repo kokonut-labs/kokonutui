@@ -1227,56 +1227,56 @@ export const component: Registry = [
     ],
   },
   {
-    name: "light-dimmer",
+    name: "promise-toast",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/light-dimmer.tsx",
+        path: "components/kokonutui/promise-toast.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "climate-dial",
+    name: "inline-alert",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/climate-dial.tsx",
+        path: "components/kokonutui/inline-alert.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "energy-aurora",
+    name: "save-status",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
     files: [
       {
-        path: "components/kokonutui/energy-aurora.tsx",
+        path: "components/kokonutui/save-status.tsx",
         type: "registry:component",
       },
     ],
   },
   {
-    name: "window-shade",
+    name: "empty-state",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/empty-state.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "helpful-rating",
     type: "registry:component",
     dependencies: ["motion"],
     files: [
       {
-        path: "components/kokonutui/window-shade.tsx",
-        type: "registry:component",
-      },
-    ],
-  },
-  {
-    name: "smart-lock",
-    type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
-    files: [
-      {
-        path: "components/kokonutui/smart-lock.tsx",
+        path: "components/kokonutui/helpful-rating.tsx",
         type: "registry:component",
       },
     ],
