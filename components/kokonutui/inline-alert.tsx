@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export interface AlertCheck {
@@ -46,27 +46,18 @@ const DEMO_CHECKS: AlertCheck[] = [
   { name: "Type check", detail: "2 errors in billing.ts", ok: false },
 ];
 
-type Phase = "failed" | "retrying" | "passed" | "deployed";
-
-const TONE: Record<Phase, string> = {
-  failed:
-    "border-rose-200 bg-rose-50 text-rose-950 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-50",
-  retrying:
-    "border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-50",
-  passed:
-    "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-50",
-  deployed:
-    "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-50",
-};
+type Phase = "failed" | "retrying" | "passed" | "deploying" | "deployed";
 
 const ICON_TONE: Record<Phase, string> = {
   failed: "bg-rose-500",
   retrying: "bg-sky-500",
   passed: "bg-emerald-500",
+  deploying: "bg-emerald-500",
   deployed: "bg-emerald-500",
 };
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const DEPLOY_MS = 1400;
 
 export default function InlineAlert({
   checks: initialChecks = DEMO_CHECKS,
@@ -75,11 +66,10 @@ export default function InlineAlert({
   onDeploy,
   className,
 }: InlineAlertProps) {
+  const allPass = initialChecks.every((c) => c.ok);
   const [checks, setChecks] = useState(initialChecks);
   const [running, setRunning] = useState<string | null>(null);
-  const [phase, setPhase] = useState<Phase>(
-    initialChecks.every((c) => c.ok) ? "passed" : "failed"
-  );
+  const [phase, setPhase] = useState<Phase>(allPass ? "passed" : "failed");
   const [open, setOpen] = useState(true);
   const [visible, setVisible] = useState(true);
   const timer = useRef<number>(undefined);
@@ -87,6 +77,7 @@ export default function InlineAlert({
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const failed = checks.filter((c) => !c.ok);
+  const passedShare = (checks.length - failed.length) / checks.length;
 
   // Re-run the failed checks one after another; each one passes this time.
   const retry = () => {
@@ -112,9 +103,20 @@ export default function InlineAlert({
     step(0);
   };
 
+  const deploy = () => {
+    setPhase("deploying");
+    timer.current = window.setTimeout(() => {
+      setPhase("deployed");
+      setOpen(false);
+      onDeploy?.();
+    }, DEPLOY_MS);
+  };
+
   const reset = () => {
+    window.clearTimeout(timer.current);
     setChecks(initialChecks);
-    setPhase(initialChecks.every((c) => c.ok) ? "passed" : "failed");
+    setRunning(null);
+    setPhase(allPass ? "passed" : "failed");
     setOpen(true);
     setVisible(true);
   };
@@ -124,15 +126,20 @@ export default function InlineAlert({
       "Deploy blocked",
       `${failed.length} of ${checks.length} checks failed on ${target}`,
     ],
-    retrying: [
-      "Running checks again",
-      `${failed.length} left to pass on ${target}`,
-    ],
+    retrying: ["Running checks again", `${failed.length} left on ${target}`],
     passed: ["Ready to deploy", `All ${checks.length} checks passed`],
+    deploying: ["Deploying", "Uploading to production"],
     deployed: ["Deployed", "Live on production · just now"],
   };
   const [title, message] = copy[phase];
-  const showDetails = phase !== "deployed";
+  // Green wipes in as checks pass; it stays put once they all have.
+  let green = 0;
+  if (phase === "retrying") {
+    green = passedShare;
+  } else if (phase !== "failed") {
+    green = 1;
+  }
+  const showChecks = phase !== "deployed";
 
   return (
     <MotionConfig reducedMotion="user">
@@ -140,18 +147,32 @@ export default function InlineAlert({
         <AnimatePresence initial={false} mode="popLayout">
           {visible ? (
             <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              className={cn(
-                "rounded-2xl border p-4 transition-colors duration-300",
-                TONE[phase]
-              )}
-              exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }}
-              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="relative overflow-hidden rounded-2xl text-zinc-900 dark:text-zinc-50"
+              exit={{
+                opacity: 0,
+                y: -4,
+                scale: 0.98,
+                transition: { duration: 0.15 },
+              }}
+              initial={{ opacity: 0, y: 6, scale: 0.98 }}
               key="alert"
               role={phase === "failed" ? "alert" : "status"}
               transition={{ duration: 0.25, ease: EASE_OUT }}
             >
-              <div className="flex gap-3">
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 rounded-2xl border border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/40"
+              />
+              <motion.div
+                animate={{ clipPath: `inset(0% ${(1 - green) * 100}% 0% 0%)` }}
+                aria-hidden="true"
+                className="absolute inset-0 rounded-2xl border border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/40"
+                initial={false}
+                transition={{ duration: 0.6, ease: EASE_OUT }}
+              />
+
+              <div className="relative flex gap-3 p-4">
                 <span
                   className={cn(
                     "relative flex size-7 shrink-0 items-center justify-center rounded-full text-white transition-colors duration-300",
@@ -160,10 +181,10 @@ export default function InlineAlert({
                 >
                   <AnimatePresence initial={false} mode="popLayout">
                     <motion.span
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      key={phase}
+                      animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, scale: 0.8, filter: "blur(2px)" }}
+                      initial={{ opacity: 0, scale: 0.8, filter: "blur(2px)" }}
+                      key={phase === "deploying" ? "passed" : phase}
                       transition={{ duration: 0.2, ease: EASE_OUT }}
                     >
                       <PhaseIcon phase={phase} />
@@ -173,17 +194,27 @@ export default function InlineAlert({
 
                 <div className="min-w-0 flex-1 pt-0.5">
                   <div className="flex items-start justify-between gap-3">
-                    <div aria-live="polite" className="min-w-0">
-                      <p className="font-semibold text-[14.5px] leading-5">
-                        {title}
-                      </p>
-                      <p className="mt-0.5 text-[13px] tabular-nums opacity-70">
-                        {message}
-                      </p>
+                    <div aria-live="polite" className="relative min-w-0">
+                      <AnimatePresence initial={false} mode="popLayout">
+                        <motion.div
+                          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                          exit={{ opacity: 0, y: -4, filter: "blur(2px)" }}
+                          initial={{ opacity: 0, y: 4, filter: "blur(2px)" }}
+                          key={`${title}${message}`}
+                          transition={{ duration: 0.2, ease: EASE_OUT }}
+                        >
+                          <p className="font-semibold text-[14.5px] leading-5">
+                            {title}
+                          </p>
+                          <p className="mt-0.5 text-[13px] text-zinc-600 tabular-nums dark:text-zinc-400">
+                            {message}
+                          </p>
+                        </motion.div>
+                      </AnimatePresence>
                     </div>
                     <button
                       aria-label="Dismiss"
-                      className="-mt-1 -mr-1 flex size-7 shrink-0 items-center justify-center rounded-full opacity-50 outline-hidden transition-opacity duration-150 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-current/30"
+                      className="-mt-1 -mr-1 flex size-7 shrink-0 items-center justify-center rounded-full text-zinc-500 outline-hidden transition-colors duration-150 hover:bg-black/5 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
                       onClick={() => setVisible(false)}
                       type="button"
                     >
@@ -191,63 +222,96 @@ export default function InlineAlert({
                     </button>
                   </div>
 
-                  {showDetails && (
-                    <AnimatePresence initial={false}>
-                      {open && (
-                        <motion.ul
-                          animate={{ height: "auto", opacity: 1 }}
-                          className="overflow-hidden"
-                          exit={{ height: 0, opacity: 0 }}
-                          initial={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.25, ease: EASE_OUT }}
-                        >
-                          {checks.map((check) => (
-                            <CheckRow
-                              check={check}
-                              key={check.name}
-                              running={running === check.name}
-                            />
-                          ))}
-                        </motion.ul>
-                      )}
-                    </AnimatePresence>
-                  )}
-
-                  <div className="mt-3 flex items-center gap-2">
-                    {phase === "failed" && (
-                      <AlertButton onClick={retry} primary>
-                        Retry failed
-                      </AlertButton>
-                    )}
-                    {phase === "passed" && (
-                      <AlertButton
-                        onClick={() => {
-                          setPhase("deployed");
-                          onDeploy?.();
+                  <AnimatePresence initial={false}>
+                    {showChecks && open && (
+                      <motion.ul
+                        animate={{
+                          height: "auto",
+                          opacity: 1,
+                          transition: {
+                            height: { duration: 0.3, ease: EASE_OUT },
+                            opacity: { duration: 0.2, delay: 0.08 },
+                          },
                         }}
-                        primary
+                        className="overflow-hidden"
+                        exit={{
+                          height: 0,
+                          opacity: 0,
+                          transition: {
+                            height: { duration: 0.25, ease: EASE_OUT },
+                            opacity: { duration: 0.12 },
+                          },
+                        }}
+                        initial={{ height: 0, opacity: 0 }}
                       >
-                        Deploy
-                      </AlertButton>
+                        {checks.map((check) => (
+                          <CheckRow
+                            check={check}
+                            key={check.name}
+                            running={running === check.name}
+                          />
+                        ))}
+                      </motion.ul>
                     )}
-                    {showDetails && (
-                      <AlertButton
-                        ariaExpanded={open}
-                        onClick={() => setOpen(!open)}
+                  </AnimatePresence>
+
+                  <AnimatePresence initial={false}>
+                    {phase !== "deploying" && phase !== "deployed" && (
+                      <motion.div
+                        animate={{ height: "auto", opacity: 1 }}
+                        className="overflow-hidden"
+                        exit={{ height: 0, opacity: 0 }}
+                        initial={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: EASE_OUT }}
                       >
-                        {open ? "Hide checks" : "Show checks"}
-                        <ChevronDown
-                          aria-hidden="true"
-                          className={cn(
-                            "size-3.5 transition-transform duration-200",
-                            open && "rotate-180"
+                        <div className="flex items-center gap-2 pt-3">
+                          {phase === "failed" && (
+                            <AlertButton onClick={retry} primary>
+                              Retry {failed.length} failed
+                            </AlertButton>
                           )}
-                        />
-                      </AlertButton>
+                          {phase === "passed" && (
+                            <AlertButton onClick={deploy} primary>
+                              <Rocket aria-hidden="true" className="size-3.5" />
+                              Deploy
+                            </AlertButton>
+                          )}
+                          <AlertButton
+                            ariaExpanded={open}
+                            onClick={() => setOpen(!open)}
+                          >
+                            {open ? "Hide checks" : "Show checks"}
+                            <ChevronDown
+                              aria-hidden="true"
+                              className={cn(
+                                "size-3.5 transition-transform duration-200",
+                                open && "rotate-180"
+                              )}
+                            />
+                          </AlertButton>
+                        </div>
+                      </motion.div>
                     )}
-                  </div>
+                  </AnimatePresence>
                 </div>
               </div>
+
+              {/* Deploy progress runs along the bottom edge. */}
+              <AnimatePresence>
+                {phase === "deploying" && (
+                  <motion.span
+                    animate={{ scaleX: 1 }}
+                    aria-hidden="true"
+                    className="absolute inset-x-0 bottom-0 h-[3px] origin-left bg-emerald-500"
+                    exit={{ opacity: 0, transition: { duration: 0.3 } }}
+                    initial={{ scaleX: 0 }}
+                    transition={{
+                      duration: DEPLOY_MS / 1000,
+                      ease: [0.33, 0.6, 0.4, 1],
+                    }}
+                  />
+                )}
+              </AnimatePresence>
             </motion.div>
           ) : (
             <motion.button
@@ -256,7 +320,7 @@ export default function InlineAlert({
               initial={{ opacity: 0 }}
               key="restore"
               onClick={reset}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.2, delay: 0.1 }}
               type="button"
             >
               Bring the alert back
@@ -275,7 +339,7 @@ function PhaseIcon({ phase }: { phase: Phase }) {
   if (phase === "deployed") {
     return <Rocket aria-hidden="true" className="size-4" />;
   }
-  if (phase === "passed") {
+  if (phase === "passed" || phase === "deploying") {
     return <CircleCheck aria-hidden="true" className="size-4" />;
   }
   return <CircleAlert aria-hidden="true" className="size-4" />;
@@ -293,10 +357,10 @@ function CheckRow({ check, running }: { check: AlertCheck; running: boolean }) {
       <span className="relative mt-0.5 flex size-4 shrink-0 items-center justify-center">
         <AnimatePresence initial={false} mode="popLayout">
           <motion.span
-            animate={{ opacity: 1, scale: 1 }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             className="flex"
-            exit={{ opacity: 0, scale: 0.8 }}
-            initial={{ opacity: 0, scale: 0.8 }}
+            exit={{ opacity: 0, scale: 0.8, filter: "blur(2px)" }}
+            initial={{ opacity: 0, scale: 0.8, filter: "blur(2px)" }}
             key={status}
             transition={{ duration: 0.18, ease: EASE_OUT }}
           >
@@ -307,17 +371,44 @@ function CheckRow({ check, running }: { check: AlertCheck; running: boolean }) {
       <span className="min-w-0 flex-1 text-[13px]">
         <span className="flex items-center justify-between gap-2">
           <span className="font-medium">{check.name}</span>
-          <span className="text-[12px] opacity-60">{status}</span>
+          <span className="relative text-[12px] text-zinc-500 dark:text-zinc-400">
+            <AnimatePresence initial={false} mode="popLayout">
+              <motion.span
+                animate={{ opacity: 1, y: 0 }}
+                className="block"
+                exit={{ opacity: 0, y: -4 }}
+                initial={{ opacity: 0, y: 4 }}
+                key={status}
+                transition={{ duration: 0.18, ease: EASE_OUT }}
+              >
+                {status}
+              </motion.span>
+            </AnimatePresence>
+          </span>
         </span>
         <AnimatePresence initial={false}>
-          {check.detail && !running && (
+          {check.detail && (
             <motion.span
-              animate={{ opacity: 0.7 }}
-              className="block font-mono text-[11.5px]"
-              exit={{ opacity: 0 }}
-              initial={{ opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              className="block overflow-hidden"
+              exit={{
+                height: 0,
+                opacity: 0,
+                transition: {
+                  height: { duration: 0.25, ease: EASE_OUT },
+                  opacity: { duration: 0.12 },
+                },
+              }}
+              initial={{ height: 0, opacity: 0 }}
             >
-              {check.detail}
+              <span
+                className={cn(
+                  "block font-mono text-[11.5px] text-zinc-600 transition-opacity duration-200 dark:text-zinc-400",
+                  running && "opacity-50"
+                )}
+              >
+                {check.detail}
+              </span>
             </motion.span>
           )}
         </AnimatePresence>
@@ -352,7 +443,7 @@ function CheckGlyph({ status }: { status: string }) {
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={1.8}
-          transition={{ duration: 0.25, ease: EASE_OUT }}
+          transition={{ duration: 0.25, delay: 0.05, ease: EASE_OUT }}
         />
       </svg>
     );
@@ -384,13 +475,13 @@ function AlertButton({
   onClick: () => void;
   primary?: boolean;
   ariaExpanded?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <button
       aria-expanded={ariaExpanded}
       className={cn(
-        "flex h-8 items-center gap-1 rounded-full px-3 font-medium text-[12.5px] outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-current/30",
+        "flex h-8 items-center gap-1.5 rounded-full px-3 font-medium text-[12.5px] outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-zinc-400/50",
         primary
           ? "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
           : "bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15"
