@@ -194,16 +194,23 @@ export default function AIToolCalls({
                 </motion.span>
               )}
             </AnimatePresence>
-            <span
-              className={cn(
-                "font-medium",
-                finished
-                  ? "text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100"
-                  : "text-zinc-900 dark:text-zinc-100"
-              )}
-            >
-              {finished ? `Used ${calls.length} tools` : "Working"}
-            </span>
+            <AnimatePresence initial={false} mode="popLayout">
+              <motion.span
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                className={cn(
+                  "font-medium transition-colors duration-150",
+                  finished
+                    ? "text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100"
+                    : "text-zinc-900 dark:text-zinc-100"
+                )}
+                exit={{ opacity: 0, y: -4, filter: "blur(2px)" }}
+                initial={{ opacity: 0, y: 4, filter: "blur(2px)" }}
+                key={finished ? "used" : "working"}
+                transition={{ duration: 0.2, ease: EASE_OUT }}
+              >
+                {finished ? `Used ${calls.length} tools` : "Working"}
+              </motion.span>
+            </AnimatePresence>
             <span className="font-mono text-[11.5px] text-zinc-400 tabular-nums dark:text-zinc-500">
               {seconds(finished ? total : before + elapsed)}
             </span>
@@ -303,14 +310,15 @@ function CallRow({
         <span className="ml-auto shrink-0 pl-2 text-[12px] tabular-nums">
           <AnimatePresence initial={false} mode="popLayout">
             <motion.span
-              animate={{ opacity: 1, y: 0 }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               className={cn(
                 "block",
                 running
                   ? "font-mono text-[11.5px] text-zinc-400 dark:text-zinc-500"
                   : "text-zinc-600 dark:text-zinc-300"
               )}
-              initial={{ opacity: 0, y: 4 }}
+              exit={{ opacity: 0, y: -4, filter: "blur(2px)" }}
+              initial={{ opacity: 0, y: 4, filter: "blur(2px)" }}
               key={running ? "time" : "result"}
               transition={{ duration: 0.18, ease: EASE_OUT }}
             >
@@ -331,7 +339,7 @@ function Spinner() {
       className="size-3.5 text-zinc-900 dark:text-zinc-100"
       fill="none"
       transition={{
-        duration: 0.8,
+        duration: 0.6,
         ease: "linear",
         repeat: Number.POSITIVE_INFINITY,
       }}

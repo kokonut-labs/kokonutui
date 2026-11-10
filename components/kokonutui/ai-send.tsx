@@ -44,6 +44,7 @@ export interface AISendProps {
 type Status = "draft" | "pending" | "sent";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
 const RING = 2 * Math.PI * 8;
 
 const DEMO_DRAFT: DraftEmail = {
@@ -187,7 +188,7 @@ export default function AISend({
                       {status === "pending" && (
                         <motion.button
                           animate={{ opacity: 1, x: 0 }}
-                          className="h-8 rounded-lg px-3 font-medium text-[13px] text-zinc-900 outline-hidden transition-colors duration-100 hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:text-zinc-100 dark:hover:bg-white/[0.07]"
+                          className="h-8 rounded-lg px-3 font-medium text-[13px] text-zinc-900 outline-hidden transition-colors duration-100 hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-zinc-200 dark:text-zinc-100 dark:active:bg-white/[0.11] dark:hover:bg-white/[0.07]"
                           exit={{ opacity: 0, x: 6 }}
                           initial={{ opacity: 0, x: 6 }}
                           onClick={undo}
@@ -355,7 +356,7 @@ function AutoHeight({
       animate={{ height }}
       className={cn("overflow-hidden", className)}
       initial={false}
-      transition={{ duration: 0.4, ease: EASE_OUT }}
+      transition={{ duration: 0.3, ease: EASE_DRAWER }}
     >
       <div ref={innerRef}>{children}</div>
     </motion.div>

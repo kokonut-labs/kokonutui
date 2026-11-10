@@ -190,7 +190,7 @@ export default function SaveStatus({
               className={cn(
                 "flex size-8 items-center justify-center rounded-full outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-zinc-400/50",
                 online
-                  ? "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+                  ? "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 active:bg-zinc-200 dark:text-zinc-400 dark:active:bg-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
                   : "bg-orange-500/10 text-orange-600 dark:text-orange-400"
               )}
               onClick={toggle}

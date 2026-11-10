@@ -214,7 +214,7 @@ export default function InlineAlert({
                     </div>
                     <button
                       aria-label="Dismiss"
-                      className="-mt-1 -mr-1 flex size-7 shrink-0 items-center justify-center rounded-full text-zinc-500 outline-hidden transition-colors duration-150 hover:bg-black/5 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
+                      className="-mt-1 -mr-1 flex size-7 shrink-0 items-center justify-center rounded-full text-zinc-500 outline-hidden transition-colors duration-150 hover:bg-black/5 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:bg-black/10 dark:text-zinc-400 dark:active:bg-white/20 dark:hover:bg-white/10 dark:hover:text-zinc-100"
                       onClick={() => setVisible(false)}
                       type="button"
                     >
@@ -483,8 +483,8 @@ function AlertButton({
       className={cn(
         "flex h-8 items-center gap-1.5 rounded-full px-3 font-medium text-[12.5px] outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-zinc-400/50",
         primary
-          ? "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-          : "bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15"
+          ? "bg-zinc-900 text-white hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
+          : "bg-black/5 hover:bg-black/10 active:bg-black/15 dark:bg-white/10 dark:active:bg-white/20 dark:hover:bg-white/15"
       )}
       onClick={onClick}
       type="button"

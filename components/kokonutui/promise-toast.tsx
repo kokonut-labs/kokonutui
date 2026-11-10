@@ -193,7 +193,7 @@ export default function PromiseToast({ className }: PromiseToastProps) {
           <div className="mt-3 flex flex-col gap-2">
             {(Object.keys(TASKS) as TaskKey[]).map((key) => (
               <button
-                className="flex h-11 items-center gap-3 rounded-2xl bg-zinc-100 px-3.5 text-left text-[14px] outline-hidden transition-colors duration-150 hover:bg-zinc-200 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                className="flex h-11 items-center gap-3 rounded-2xl bg-zinc-100 px-3.5 text-left text-[14px] outline-hidden transition-colors duration-150 hover:bg-zinc-200 focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:bg-zinc-300 dark:bg-zinc-900 dark:active:bg-zinc-700 dark:hover:bg-zinc-800"
                 key={key}
                 onClick={() => start(key)}
                 type="button"
@@ -489,7 +489,7 @@ function ActionButton({
   return (
     <motion.button
       animate={{ opacity: 1, filter: "blur(0px)" }}
-      className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-zinc-100 px-3 font-medium text-[12.5px] outline-hidden transition-colors duration-150 hover:bg-zinc-200 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+      className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-zinc-100 px-3 font-medium text-[12.5px] outline-hidden transition-colors duration-150 hover:bg-zinc-200 focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:bg-zinc-300 dark:bg-zinc-800 dark:active:bg-zinc-600 dark:hover:bg-zinc-700"
       exit={{ opacity: 0, filter: "blur(2px)", transition: { duration: 0.12 } }}
       initial={{ opacity: 0, filter: "blur(2px)" }}
       onClick={onClick}

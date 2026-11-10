@@ -185,7 +185,7 @@ export default function HelpfulRating({
                         "relative flex h-10 items-center justify-center rounded-xl bg-zinc-100 outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:bg-zinc-900",
                         selected
                           ? "text-white"
-                          : "text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                          : "text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 active:bg-zinc-300 dark:text-zinc-400 dark:active:bg-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                       )}
                       key={l.label}
                       onBlur={() => setPreview(null)}
@@ -273,7 +273,7 @@ export default function HelpfulRating({
                       value={note}
                     />
                     <button
-                      className="mt-3 h-10 w-full rounded-xl bg-zinc-900 font-medium text-[14px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                      className="mt-3 h-10 w-full rounded-xl bg-zinc-900 font-medium text-[14px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
                       onClick={() => {
                         setPreview(null);
                         setSent(true);

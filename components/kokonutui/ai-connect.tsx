@@ -62,6 +62,7 @@ type Step =
 type Link = "idle" | "waiting" | "linked";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
 
 function GitHubMark({ className }: { className?: string }) {
   return (
@@ -392,7 +393,7 @@ function AccessCard({
 
       <button
         aria-busy={waiting}
-        className="mt-4 flex h-10 w-full items-center justify-center rounded-xl font-medium text-[14px] text-white outline-hidden transition-[filter,background-color] duration-300 hover:brightness-125 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-2 disabled:pointer-events-none dark:ring-1 dark:ring-white/15 dark:focus-visible:ring-offset-zinc-900"
+        className="mt-4 flex h-10 w-full items-center justify-center rounded-xl font-medium text-[14px] text-white outline-hidden transition-[filter,background-color] duration-300 hover:brightness-125 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-2 active:brightness-110 disabled:pointer-events-none dark:ring-1 dark:ring-white/15 dark:focus-visible:ring-offset-zinc-900"
         disabled={step !== "blocked"}
         onClick={onConnect}
         style={{ backgroundColor: linked ? "#059669" : appColor }}
@@ -587,7 +588,7 @@ function Spinner() {
       className="size-3.5"
       fill="none"
       transition={{
-        duration: 0.8,
+        duration: 0.6,
         ease: "linear",
         repeat: Number.POSITIVE_INFINITY,
       }}
@@ -637,7 +638,7 @@ function AutoHeight({
       animate={{ height }}
       className={cn("overflow-hidden", className)}
       initial={false}
-      transition={{ duration: 0.45, ease: EASE_OUT }}
+      transition={{ duration: 0.3, ease: EASE_DRAWER }}
     >
       <div ref={innerRef}>{children}</div>
     </motion.div>

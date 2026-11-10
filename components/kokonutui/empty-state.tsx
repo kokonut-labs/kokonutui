@@ -104,7 +104,7 @@ export default function EmptyState({
               {!empty && (
                 <motion.button
                   animate={{ opacity: 1, filter: "blur(0px)" }}
-                  className="flex h-8 items-center gap-1.5 rounded-full bg-zinc-900 px-3 font-medium text-[12.5px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  className="flex h-8 items-center gap-1.5 rounded-full bg-zinc-900 px-3 font-medium text-[12.5px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
                   exit={{
                     opacity: 0,
                     filter: "blur(2px)",
@@ -148,7 +148,7 @@ export default function EmptyState({
                     variants={REVEAL}
                   >
                     <button
-                      className="flex h-9 items-center gap-1.5 rounded-full bg-zinc-900 px-4 font-medium text-[13px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                      className="flex h-9 items-center gap-1.5 rounded-full bg-zinc-900 px-4 font-medium text-[13px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
                       onBlur={() => setPrimed(false)}
                       onClick={() => add("new")}
                       onFocus={() => setPrimed(true)}
@@ -164,7 +164,7 @@ export default function EmptyState({
                       New project
                     </button>
                     <button
-                      className="flex h-9 items-center gap-1.5 rounded-full bg-zinc-100 px-4 font-medium text-[13px] outline-hidden transition-colors duration-150 hover:bg-zinc-200 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                      className="flex h-9 items-center gap-1.5 rounded-full bg-zinc-100 px-4 font-medium text-[13px] outline-hidden transition-colors duration-150 hover:bg-zinc-200 focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:bg-zinc-300 dark:bg-zinc-900 dark:active:bg-zinc-700 dark:hover:bg-zinc-800"
                       onClick={() => add("github")}
                       type="button"
                     >
@@ -291,7 +291,7 @@ function Row({
   return (
     <motion.li
       animate={{ opacity: 1, scale: 1 }}
-      className="group relative flex h-14 items-center gap-3 overflow-hidden px-2 hover:bg-zinc-50 dark:hover:bg-zinc-900/60"
+      className="group relative flex h-14 items-center gap-3 overflow-hidden px-2 hover:bg-zinc-50 active:bg-zinc-100 dark:hover:bg-zinc-900/60"
       exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15 } }}
       initial={layoutId ? false : { opacity: 0, scale: 0.97 }}
       layout

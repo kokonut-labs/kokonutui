@@ -34,7 +34,7 @@ export interface CheckoutDetails {
   currency?: string;
   /** Last four digits of the saved card. */
   cardLast4: string;
-  /** e.g. "Arrives Tue, Nov 4". */
+  /** e.g. "Arrives in 2 days". */
   delivery: string;
 }
 
@@ -56,6 +56,20 @@ export interface AICheckoutProps {
 type Status = "review" | "paying" | "paid" | "receipt";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
+const NON_NUMBER = /[^0-9.]/g;
+const ROLL = {
+  enter: (dir: number) => ({
+    y: `${60 * dir}%`,
+    opacity: 0,
+    filter: "blur(2px)",
+  }),
+  exit: (dir: number) => ({
+    y: `${-60 * dir}%`,
+    opacity: 0,
+    filter: "blur(2px)",
+  }),
+};
 const MORPH = { type: "spring", stiffness: 420, damping: 36 } as const;
 
 const DEMO: CheckoutDetails = {
@@ -69,7 +83,7 @@ const DEMO: CheckoutDetails = {
   },
   taxRate: 0.08,
   cardLast4: "4242",
-  delivery: "Arrives Tue, Nov 4",
+  delivery: "Arrives in 2 days",
 };
 
 const demoPay = () =>
@@ -250,8 +264,15 @@ function Line({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Text that rolls up when it changes, for prices and counts. */
+/** Text that rolls when it changes: up when the number grows, down when it shrinks. */
 function Rolling({ value, className }: { value: string; className?: string }) {
+  const amount = Number.parseFloat(value.replace(NON_NUMBER, "")) || 0;
+  const last = useRef(amount);
+  const dir = amount < last.current ? -1 : 1;
+  useEffect(() => {
+    last.current = amount;
+  }, [amount]);
+
   return (
     <span
       className={cn(
@@ -259,13 +280,15 @@ function Rolling({ value, className }: { value: string; className?: string }) {
         className
       )}
     >
-      <AnimatePresence initial={false} mode="popLayout">
+      <AnimatePresence custom={dir} initial={false} mode="popLayout">
         <motion.span
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: "-60%", opacity: 0 }}
-          initial={{ y: "60%", opacity: 0 }}
+          animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+          custom={dir}
+          exit="exit"
+          initial="enter"
           key={value}
           transition={{ duration: 0.22, ease: EASE_OUT }}
+          variants={ROLL}
         >
           {value}
         </motion.span>
@@ -286,7 +309,7 @@ function Stepper({
   onChange: (n: number) => void;
 }) {
   const button =
-    "flex size-7 items-center justify-center rounded-full text-zinc-600 outline-hidden transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 disabled:pointer-events-none disabled:opacity-30 dark:text-zinc-300 dark:hover:bg-white/[0.08] dark:hover:text-white";
+    "flex size-7 items-center justify-center rounded-full text-zinc-600 outline-hidden transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 disabled:pointer-events-none disabled:opacity-30 dark:text-zinc-300 dark:hover:bg-white/[0.08] dark:hover:text-white active:bg-zinc-200 dark:active:bg-white/[0.13]";
   return (
     <div className="flex items-center rounded-full p-0.5 ring-1 ring-black/[0.08] dark:ring-white/10">
       <button
@@ -358,7 +381,7 @@ function PayButton({
         round ? "w-10" : "px-4",
         paid
           ? "bg-emerald-600 text-white dark:bg-emerald-500"
-          : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          : "bg-zinc-900 text-white hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
       )}
       disabled={round}
       layout
@@ -392,7 +415,7 @@ function PayButton({
             transition={{
               opacity: { duration: 0.15, delay: 0.12 },
               rotate: {
-                duration: 0.9,
+                duration: 0.6,
                 ease: "linear",
                 repeat: Number.POSITIVE_INFINITY,
               },
@@ -501,7 +524,7 @@ function AutoHeight({
       animate={{ height }}
       className={cn("overflow-hidden", className)}
       initial={false}
-      transition={{ duration: 0.45, ease: EASE_OUT }}
+      transition={{ duration: 0.3, ease: EASE_DRAWER }}
     >
       <div className="p-1" ref={innerRef}>
         {children}
