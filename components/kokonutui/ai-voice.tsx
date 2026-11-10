@@ -246,6 +246,7 @@ export default function AI_Voice({
   const shouldReduceMotion = useReducedMotion();
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLButtonElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLSpanElement>(null);
   const playedRef = useRef<HTMLDivElement>(null);
@@ -433,6 +434,9 @@ export default function AI_Voice({
     if (!notify) {
       return;
     }
+    // Send and Discard leave with the review row, so focus goes back to the
+    // record button instead of dropping to the page.
+    mainRef.current?.focus();
     if (sent) {
       onSend?.(duration);
     } else {
@@ -531,6 +535,7 @@ export default function AI_Voice({
                 : "bg-black/5 dark:bg-white/5"
             )}
             onClick={handleMainClick}
+            ref={mainRef}
             type="button"
           >
             <ButtonFaces visible={faces} />

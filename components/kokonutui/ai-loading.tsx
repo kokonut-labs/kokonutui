@@ -492,7 +492,9 @@ export default function AILoadingState({
   if (failed) {
     title = `Stopped at: ${failed.label}`;
   } else if (isDone) {
-    title = `Worked for ${formatDuration(seconds)}`;
+    // A run that was already done when it mounted (an older message) was
+    // never timed here, so it doesn't claim "Worked for 0s".
+    title = seconds > 0 ? `Worked for ${formatDuration(seconds)}` : "Done";
   } else if (running) {
     title = running.label;
   }

@@ -198,6 +198,8 @@ export default function AITokenAlternatives({
   const [shown, setShown] = useState(0);
   const [open, setOpen] = useState<Open | null>(null);
   const [heat, setHeat] = useState(false);
+  // Only a rewrite the user asked for is announced, not the first answer.
+  const [edited, setEdited] = useState(false);
   const answerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLParagraphElement>(null);
   /** Holds the height while a rewrite streams, so the card does not jump. */
@@ -239,6 +241,7 @@ export default function AITokenAlternatives({
         return;
       }
       setMinHeight(textRef.current?.offsetHeight);
+      setEdited(true);
       setChoice((c) => ({ ...c, [slotId]: text }));
       // Keep everything up to the new word, then write the rest again.
       setShown(index + 1);
@@ -368,8 +371,21 @@ export default function AITokenAlternatives({
                     (t) => t.slot && edits.some((s) => s.id === t.slot)
                   );
                   setMinHeight(textRef.current?.offsetHeight);
+                  setEdited(true);
                   setChoice(defaults(slots));
-                  setShown(Math.max(0, first));
+                  // Like a pick: the word itself lands at once, the rest
+                  // is written again.
+                  setShown(first + 1);
+                  // Reset leaves with the chips; focus goes to the first
+                  // word that changed back.
+                  const slot = tokens[first]?.slot;
+                  requestAnimationFrame(() => {
+                    if (slot) {
+                      tokenRefs.current
+                        .get(slot)
+                        ?.focus({ preventScroll: true });
+                    }
+                  });
                 }}
                 onRevert={(slot) => pick(slot.id, slot.options[0].text)}
               />
@@ -377,7 +393,7 @@ export default function AITokenAlternatives({
           </div>
         </footer>
         <p aria-live="polite" className="sr-only">
-          {streaming ? "" : "Answer updated"}
+          {edited && !streaming ? "Answer updated" : ""}
         </p>
       </div>
     </MotionConfig>
@@ -535,7 +551,7 @@ function Alternatives({
                     : "bg-zinc-400 dark:bg-zinc-500"
                 )}
                 initial={{ scaleX: 0 }}
-                transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.05 }}
+                transition={{ duration: 0.25, ease: EASE_OUT }}
               />
             </span>
             <span className="w-8 shrink-0 text-right font-mono text-[11px] text-zinc-500 tabular-nums dark:text-zinc-400">

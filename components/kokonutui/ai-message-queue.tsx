@@ -300,9 +300,22 @@ export default function AIMessageQueue({
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter that confirms an IME candidate must not send.
+    if (event.nativeEvent.isComposing) {
+      return;
+    }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       submit(event.metaKey || event.ctrlKey);
+    }
+  };
+
+  // Remove, Clear and Send now take their row (or the whole list) away, so
+  // focus goes to the composer instead of dropping to the page.
+  // Only from the keyboard: a tap shouldn't pop the on-screen keyboard.
+  const toComposer = () => {
+    if (document.activeElement?.matches(":focus-visible")) {
+      inputRef.current?.focus({ preventScroll: true });
     }
   };
 
@@ -369,7 +382,10 @@ export default function AIMessageQueue({
         <div className="p-2 pt-0">
           <div className="rounded-xl bg-zinc-50 ring-1 ring-black/[0.07] dark:bg-zinc-800/60 dark:ring-white/[0.08]">
             <QueueList
-              onClear={() => setQueue([])}
+              onClear={() => {
+                setQueue([]);
+                toComposer();
+              }}
               onEdit={(id, text) =>
                 setQueue((q) =>
                   q.map((m) => (m.id === id ? { ...m, text } : m))
@@ -378,12 +394,16 @@ export default function AIMessageQueue({
               onMoved={(text, position) =>
                 setAnnouncement(`Moved "${text}" to position ${position}`)
               }
-              onRemove={(id) => setQueue((q) => q.filter((m) => m.id !== id))}
+              onRemove={(id) => {
+                setQueue((q) => q.filter((m) => m.id !== id));
+                toComposer();
+              }}
               onReorder={setQueue}
               onResume={() => setPaused(false)}
               onSendNow={(m) => {
                 setQueue((q) => q.filter((x) => x.id !== m.id));
                 sendNow(m.text);
+                toComposer();
               }}
               paused={paused && !running}
               progress={
@@ -399,7 +419,7 @@ export default function AIMessageQueue({
             <div className="flex items-end gap-2 p-2">
               <textarea
                 aria-label="Message the agent"
-                className="max-h-28 min-h-8 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-[13px] text-zinc-900 leading-5 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                className="max-h-28 min-h-8 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-[13px] text-zinc-900 leading-5 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder={
@@ -752,10 +772,13 @@ function QueueRow({
       {editing ? (
         <input
           aria-label="Edit queued message"
-          className="h-6 min-w-0 flex-1 rounded-md bg-zinc-100 px-1.5 text-[12px] text-zinc-900 outline-hidden dark:bg-zinc-800 dark:text-zinc-100"
+          className="h-6 min-w-0 flex-1 rounded-md bg-zinc-100 px-1.5 text-[12px] text-zinc-900 outline-hidden dark:bg-zinc-800 dark:text-zinc-100 [@media(pointer:coarse)]:text-base"
           onBlur={() => finish(true, false)}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) {
+              return;
+            }
             if (event.key === "Enter") {
               event.preventDefault();
               finish(true, true);

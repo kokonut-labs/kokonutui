@@ -1,7 +1,6 @@
 import { type ReactNode, Suspense } from "react";
 import Loader from "@/components/kokonutui/loader";
 import { CELL, LINE, META } from "@/components/landing/home/styles";
-import { HauntedNote, HauntedSurface } from "@/components/mdx/haunted";
 import { cn } from "@/lib/utils";
 import { InstallBar } from "./install-bar";
 
@@ -89,10 +88,8 @@ export function Preview({
           )}
         >
           <Suspense fallback={<Loader />}>{children}</Suspense>
-          <HauntedSurface name={name} />
         </div>
       )}
-      <HauntedNote name={name} />
     </figure>
   );
 }

@@ -322,7 +322,12 @@ function HoldToAllow({ onConfirm }: { onConfirm: () => void }) {
         }
       }}
       onPointerCancel={stop}
-      onPointerDown={start}
+      onPointerDown={(event) => {
+        // A right click or a pen's barrel button is not a hold.
+        if (event.button === 0) {
+          start();
+        }
+      }}
       onPointerLeave={stop}
       onPointerUp={stop}
       type="button"
@@ -637,6 +642,17 @@ export default function AIToolApproval({
     onRespond?.(id, approved, always);
   };
 
+  // Calls already decided when the list mounts (an older turn) sit still;
+  // only ones decided from here on unfold into the trace.
+  const [mountedIds] = useState(
+    () =>
+      new Set(
+        calls
+          .filter((call) => call.state !== "approval-requested")
+          .map((call) => call.id)
+      )
+  );
+
   const pending = calls.filter((call) => call.state === "approval-requested");
   const decided = calls.filter((call) => call.state !== "approval-requested");
   const current = pending[0];
@@ -672,7 +688,9 @@ export default function AIToolApproval({
               {decided.map((call) => (
                 <motion.div
                   animate={{ opacity: 1, height: "auto" }}
-                  initial={{ opacity: 0, height: 0 }}
+                  initial={
+                    mountedIds.has(call.id) ? false : { opacity: 0, height: 0 }
+                  }
                   key={call.id}
                   transition={{ duration: 0.24, ease: EASE_OUT }}
                 >

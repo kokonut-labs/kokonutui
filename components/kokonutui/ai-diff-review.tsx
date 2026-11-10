@@ -500,6 +500,7 @@ function FileRow({
               <button
                 aria-label={`Undo for ${file.path}`}
                 className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+                data-undo=""
                 onClick={() => decideFrom("pending")}
                 ref={takeFocus("undo")}
                 type="button"
@@ -535,6 +536,10 @@ export default function AIDiffReview({
   const writing = filesProp === undefined && demo.writing;
   const [decisions, setDecisions] = useState<Record<string, FileDecision>>({});
   const [opened, setOpened] = useState<Record<string, boolean>>({});
+  // Accept all and Reject all leave with the review buttons; focus moves to
+  // Replay (demo) or the first file's Undo instead of dropping to the page.
+  const bulkFocus = useRef(false);
+  const replayRef = useRef<HTMLButtonElement>(null);
 
   const decide = (path: string, decision: FileDecision) => {
     setDecisions((current) => ({ ...current, [path]: decision }));
@@ -562,6 +567,24 @@ export default function AIDiffReview({
     writingPath === undefined
       ? (opened[path] ?? path === restingPath)
       : path === writingPath;
+  const decideAll = (decision: FileDecision) => {
+    bulkFocus.current = Boolean(
+      rootRef.current?.contains(document.activeElement)
+    );
+    for (const file of pending) {
+      decide(file.path, decision);
+    }
+  };
+  useEffect(() => {
+    if (!(allDecided && bulkFocus.current)) {
+      return;
+    }
+    bulkFocus.current = false;
+    (
+      replayRef.current ??
+      rootRef.current?.querySelector<HTMLButtonElement>("[data-undo]")
+    )?.focus();
+  }, [allDecided]);
   let actions: "review" | "replay" | null = null;
   if (allDecided && filesProp === undefined) {
     actions = "replay";
@@ -634,22 +657,14 @@ export default function AIDiffReview({
                   >
                     <button
                       className="h-7 rounded-md px-2 text-xs text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-black/5 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
-                      onClick={() => {
-                        for (const file of pending) {
-                          decide(file.path, "rejected");
-                        }
-                      }}
+                      onClick={() => decideAll("rejected")}
                       type="button"
                     >
                       Reject all
                     </button>
                     <button
                       className="h-7 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/60 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-                      onClick={() => {
-                        for (const file of pending) {
-                          decide(file.path, "accepted");
-                        }
-                      }}
+                      onClick={() => decideAll("accepted")}
                       type="button"
                     >
                       Accept all
@@ -677,6 +692,7 @@ export default function AIDiffReview({
                       setOpened({});
                       demo.replay();
                     }}
+                    ref={replayRef}
                     type="button"
                   >
                     Replay

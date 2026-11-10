@@ -176,11 +176,12 @@ const formatTokens = (tokens: number) =>
     : `${Math.round(tokens)}`;
 
 function levelColor(share: number, compactAt: number) {
+  // Dark enough to read at 12px on the light bar (amber-500 was 2:1).
   if (share >= compactAt + (1 - compactAt) / 2) {
-    return "text-red-500";
+    return "text-red-600 dark:text-red-400";
   }
   if (share >= compactAt - 0.1) {
-    return "text-amber-500";
+    return "text-orange-700 dark:text-orange-400";
   }
   return "text-zinc-900 dark:text-zinc-100";
 }
@@ -399,27 +400,6 @@ export default function AIContextMeter({
     <MotionConfig reducedMotion="user">
       <div className={cn("w-full max-w-sm", className)} ref={rootRef}>
         <div className="relative flex h-11 items-center justify-between rounded-xl bg-black/5 pr-1.5 pl-3 dark:bg-white/5">
-          <AnimatePresence>
-            {open && (
-              <motion.div
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="absolute right-0 bottom-full z-10 mb-2 origin-bottom-right rounded-xl bg-white shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
-                exit={{ opacity: 0, scale: 0.97, y: 4 }}
-                id={panelId}
-                initial={{ opacity: 0, scale: 0.97, y: 4 }}
-                transition={{ duration: 0.16, ease: EASE_OUT }}
-              >
-                <Breakdown
-                  colors={colors}
-                  compactAt={compactAt}
-                  limit={limit}
-                  onCompact={handleCompact}
-                  segments={segments}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           <span className="text-xs text-zinc-600 dark:text-zinc-300">
             {model}
           </span>
@@ -441,6 +421,28 @@ export default function AIContextMeter({
               {Math.round(shownShare * 100)}%
             </span>
           </button>
+          {/* After the trigger in the DOM, so Tab moves from it into the
+            panel, which still opens above. */}
+          <AnimatePresence>
+            {open && (
+              <motion.div
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="absolute right-0 bottom-full z-10 mb-2 origin-bottom-right rounded-xl bg-white shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
+                exit={{ opacity: 0, scale: 0.97, y: 4 }}
+                id={panelId}
+                initial={{ opacity: 0, scale: 0.97, y: 4 }}
+                transition={{ duration: 0.16, ease: EASE_OUT }}
+              >
+                <Breakdown
+                  colors={colors}
+                  compactAt={compactAt}
+                  limit={limit}
+                  onCompact={handleCompact}
+                  segments={segments}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </MotionConfig>
