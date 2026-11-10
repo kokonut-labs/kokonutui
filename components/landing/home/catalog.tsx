@@ -43,6 +43,7 @@ import {
 } from "./data";
 import { Fit, LIVE, LiveFallback, useNearViewport } from "./live";
 import type { Part } from "./parts";
+import { ProductHuntBadge } from "./product-hunt";
 import {
   CELL,
   EASE_COLORS,
@@ -190,6 +191,7 @@ function Cover({
               install it with one command or one prompt.
             </p>
             <HeroActions count={count} />
+            <ProductHuntBadge />
           </div>
         </div>
         <div className={cn("grid grid-cols-1 lg:col-span-4", GRID)}>
