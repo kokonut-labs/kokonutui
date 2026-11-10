@@ -1158,6 +1158,150 @@
       ]
     },
     {
+      "name": "ai-tool-calls",
+      "type": "registry:component",
+      "title": "AI Tool Calls",
+      "description": "Tool calls inside a chat reply. Each call streams in as one row with a live timer, then they fold into a single line once the answer is ready.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-tool-calls.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-checkout",
+      "type": "registry:component",
+      "title": "AI Checkout",
+      "description": "An order the assistant puts together, paid without leaving the chat. The button fills while the charge runs, then the card folds into a one-line receipt.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-checkout.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-connect",
+      "type": "registry:component",
+      "title": "AI Connect",
+      "description": "A tool call that stops because an app is not connected. Connect it right in the message, and the call picks up where it stopped.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-connect.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-send",
+      "type": "registry:component",
+      "title": "AI Send",
+      "description": "An email the assistant drafted, editable in place. Send starts a short countdown you can undo before anything goes out.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-send.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-schedule",
+      "type": "registry:component",
+      "title": "AI Schedule",
+      "description": "Meeting times the assistant found, each with a strip of both calendars so you can see why it is free. Booking folds the list into the event.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-schedule.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-attachment",
+      "type": "registry:component",
+      "title": "AI Attachment",
+      "description": "A file dropped into the chat uploads, then the assistant reads it page by page. Page citations in the answer light up the page they point at.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-attachment.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-code-run",
+      "type": "registry:component",
+      "title": "AI Code Run",
+      "description": "The assistant runs a short Python script in the reply. A marker steps down the lines, the output prints, and the chart it draws grows in.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-code-run.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-order-status",
+      "type": "registry:component",
+      "title": "AI Order Status",
+      "description": "A live delivery card in the reply. The courier moves along the route while the ETA counts down, and the route turns green on arrival.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-order-status.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "ai-handoff",
+      "type": "registry:component",
+      "title": "AI Handoff",
+      "description": "The assistant hands the chat to a person, with what they will see so you don't repeat yourself. The queue counts down and the agent joins the thread.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-handoff.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "ai-branches",
       "type": "registry:component",
       "title": "AI Conversation Branches",
@@ -1521,6 +1665,85 @@
       "files": [
         {
           "path": "components/kokonutui/contact-sheet.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "promise-toast",
+      "type": "registry:component",
+      "title": "Promise Toast",
+      "description": "\"A toast that follows a task: the ring spins while it works, closes into a check or a warning when it lands, and offers Undo or Retry. Toasts stack, fan out on hover and swipe away.\"",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/promise-toast.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "inline-alert",
+      "type": "registry:component",
+      "title": "Inline Alert",
+      "description": "\"An alert that does something about the problem: it lists the failed checks, re-runs them one by one, and turns from red to green when they pass.\"",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/inline-alert.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "save-status",
+      "type": "registry:component",
+      "title": "Save Status",
+      "description": "\"An autosave pill for editors that says Editing, Saving or Saved, counts changes while offline, and syncs them when the connection comes back.\"",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/save-status.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "empty-state",
+      "type": "registry:component",
+      "title": "Empty State",
+      "description": "\"An empty list that shows what is missing and turns into it: the card in the drawing becomes your first project, ready to rename.\"",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/empty-state.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "helpful-rating",
+      "type": "registry:component",
+      "title": "Helpful Rating",
+      "description": "\"A page rating whose face changes with each answer, then asks what went wrong or what helped, with quick reasons and an optional note.\"",
+      "dependencies": [
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/helpful-rating.tsx",
           "type": "registry:component"
         }
       ]
