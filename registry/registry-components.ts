@@ -864,6 +864,105 @@ export const component: Registry = [
     ],
   },
   {
+    name: "ai-tool-calls",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-tool-calls.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-checkout",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-checkout.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-connect",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-connect.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-send",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-send.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-schedule",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-schedule.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-attachment",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-attachment.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-code-run",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-code-run.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-order-status",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-order-status.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "ai-handoff",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-handoff.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "ai-branches",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],
@@ -1123,6 +1222,61 @@ export const component: Registry = [
     files: [
       {
         path: "components/kokonutui/contact-sheet.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "promise-toast",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/promise-toast.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "inline-alert",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/inline-alert.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "save-status",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/save-status.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "empty-state",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/empty-state.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "helpful-rating",
+    type: "registry:component",
+    dependencies: ["motion"],
+    files: [
+      {
+        path: "components/kokonutui/helpful-rating.tsx",
         type: "registry:component",
       },
     ],
