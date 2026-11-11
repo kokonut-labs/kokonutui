@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchContext } from "fumadocs-ui/contexts/search";
-import { ArrowRightIcon, ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
+import { ArrowRightIcon, ArrowUpRightIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type ComponentType, type ReactNode, Suspense, useState } from "react";
@@ -62,17 +62,31 @@ import { VideoCard } from "./video";
 
 /** The newest release, shown under Vercel in the cover. */
 const LATEST = RELEASES[0];
-const FEATURED = "apple-activity-card";
-/** Sits under the featured part: the other half of a checkout screen. */
-const FEATURED_ACTION = "slide-to-confirm";
-/** The featured part, asked for the way you'd ask a colleague. */
-const AGENT_PROMPT = "Add @kokonutui/apple-activity-card to my dashboard";
+/**
+ * One agent turn told in three live parts, left to right: ask, approve the
+ * tool call, review the change.
+ */
+const FLOW = [
+  { name: "ai-input-search", label: "Ask" },
+  { name: "ai-tool-approval", label: "Approve" },
+  { name: "ai-diff-review", label: "Review" },
+];
+/** The middle step of the cover, asked for the way you'd ask a colleague. */
+const AGENT_PROMPT = "Add @kokonutui/ai-tool-approval to my agent's chat";
+const AI_PLATES = [
+  "ai-tool-calls",
+  "ai-checkout",
+  "ai-prompt",
+  "ai-model-selector",
+  "ai-loading",
+  "ai-context-meter",
+];
 // The wide background comes after four plates, so it starts a row at both
 // two and three columns.
 const PLATES = [
-  "ai-prompt",
+  "apple-activity-card",
   "detent-dial",
-  "ai-loading",
+  "slide-to-confirm",
   "tear-button",
   "drape-background",
   "wheel-picker",
@@ -91,11 +105,14 @@ export function Catalog({
   className?: string;
 }) {
   const byName = new Map(parts.map((p) => [p.name, p]));
-  const featured = byName.get(FEATURED);
-  const action = byName.get(FEATURED_ACTION);
-  const plates = PLATES.map((name) => byName.get(name)).filter((p): p is Part =>
-    Boolean(p && LIVE[p.name])
-  );
+  const pick = (names: string[]) =>
+    names
+      .map((name) => byName.get(name))
+      .filter((p): p is Part => Boolean(p && LIVE[p.name]));
+  const steps = FLOW.flatMap((step) => {
+    const part = byName.get(step.name);
+    return part && LIVE[part.name] ? [{ ...step, part }] : [];
+  });
 
   return (
     <div
@@ -105,12 +122,24 @@ export function Catalog({
       )}
     >
       <Cover
-        action={action && LIVE[action.name] ? action : undefined}
         count={parts.length}
-        featured={featured}
         latest={LATEST.added.flatMap((e) => byName.get(e.name) ?? [])}
+        steps={steps}
       />
-      <Plates plates={plates} />
+      <Plates
+        aside="The parts of an AI product people touch: tool calls in a reply, a checkout in the chat, the model picker. Live demos, not screenshots."
+        id="ai"
+        number="01"
+        plates={pick(AI_PLATES)}
+        title="AI components"
+      />
+      <Plates
+        aside="Inputs, cards, buttons and text for the screens around the chat. Each component installs as a single file you own."
+        id="featured"
+        number="02"
+        plates={pick(PLATES)}
+        title="The rest of the app"
+      />
       <Index parts={parts} />
       <Ordering />
       <References />
@@ -121,14 +150,17 @@ export function Catalog({
 
 /* Cover ---------------------------------------------------------------- */
 
+interface FlowStep {
+  label: string;
+  part: Part;
+}
+
 function Cover({
-  featured,
-  action,
+  steps,
   latest,
   count,
 }: {
-  featured?: Part;
-  action?: Part;
+  steps: FlowStep[];
   latest: Part[];
   count: number;
 }) {
@@ -140,7 +172,7 @@ function Cover({
       <div className={cn("grid grid-cols-2 md:grid-cols-4", GRID)}>
         {[
           "Kokonut UI",
-          "Component catalog",
+          "Components for AI apps",
           "React, Tailwind CSS, Motion",
           "Free and open source",
         ].map((label, i) => (
@@ -160,44 +192,60 @@ function Cover({
         ))}
       </div>
 
+      {/* Headline, then the pitch, then the two ways in. From lg up the pitch
+          stands beside both, at the foot of its own column. */}
       <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
-        <div
-          className={cn(
-            "flex flex-col justify-between gap-10 p-5 sm:p-8 lg:col-span-8 lg:p-10",
-            CELL
-          )}
-        >
+        <div className={cn("p-5 sm:p-8 lg:col-span-8 lg:p-10", CELL)}>
           <h1
             className={cn(
-              "home-enter font-semibold text-[clamp(40px,13vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,9vw,124px)]",
+              "home-enter font-semibold text-[clamp(40px,12.5vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,8vw,112px)]",
               INK
             )}
             style={enter(0)}
           >
             {/* The space keeps the words apart for crawlers and screen readers. */}
-            Components <br />
+            AI components <br />
             that feel right.
           </h1>
-          <div className="flex flex-col gap-8">
-            <p
-              className={cn(
-                "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
-                SOFT
-              )}
-              style={enter(1)}
-            >
-              Open-source React components built with Tailwind CSS, Motion and
-              shadcn/ui. Every component on this page is live: try it, then
-              install it with one command or one prompt.
-            </p>
-            <HeroActions count={count} />
-            <ProductHuntBadge />
-          </div>
         </div>
-        <div className={cn("grid grid-cols-1 lg:col-span-4", GRID)}>
-          {featured ? <FeaturedPlate part={featured} /> : null}
-          {action ? <ActionPlate part={action} /> : null}
+        <div
+          className={cn(
+            "flex items-end p-5 sm:p-8 lg:col-span-4 lg:row-span-2 lg:p-10",
+            CELL
+          )}
+        >
+          <p
+            className={cn(
+              "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
+              SOFT
+            )}
+            style={enter(1)}
+          >
+            Open-source React components for AI apps: the prompt box, the tool
+            call that needs a yes, the diff to review, and the inputs and cards
+            around them. All live on this page. Install any of them with one
+            command or one prompt.
+          </p>
         </div>
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-x-6 gap-y-4 p-5 sm:px-8 lg:col-span-8 lg:px-10",
+            CELL
+          )}
+        >
+          <HeroActions count={count} />
+          <ProductHuntBadge />
+        </div>
+      </div>
+
+      <div className={cn("grid grid-cols-1 lg:grid-cols-3", GRID)}>
+        {steps.map((step, i) => (
+          <FlowPlate
+            key={step.part.name}
+            label={`${i + 1}. ${step.label}`}
+            part={step.part}
+          />
+        ))}
       </div>
 
       <div className={cn("grid grid-cols-1 md:grid-cols-12", GRID)}>
@@ -274,56 +322,22 @@ function HeroActions({ count }: { count: number }) {
   );
 }
 
-function FeaturedPlate({ part }: { part: Part }) {
-  const { Component: Demo, hint } = LIVE[part.name];
-  // The rings only fill on mount, so the cover offers a way to see it again.
-  const [run, setRun] = useState(0);
-  return (
-    <figure
-      className={cn("home-enter flex min-h-[360px] flex-col", CELL)}
-      style={enter(1)}
-    >
-      <div className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
-        <span className={cn(MONO, "shrink-0 font-medium text-[12px]", LEAF)}>
-          {part.code}
-        </span>
-        <span className="flex min-w-0 items-baseline gap-3">
-          <span className={cn(META, "truncate")}>{hint}</span>
-          <button
-            className={cn(
-              META,
-              "inline-flex shrink-0 items-center gap-1.5 hover:text-black dark:hover:text-white",
-              EASE_COLORS,
-              FOCUS
-            )}
-            onClick={() => setRun((r) => r + 1)}
-            type="button"
-          >
-            Replay
-            <RotateCcwIcon aria-hidden className="size-3" />
-          </button>
-        </span>
-      </div>
-      <div className="relative min-h-[260px] flex-1">
-        <Fit className="p-6">
-          <Suspense fallback={<LiveFallback />}>
-            <Demo key={run} />
-          </Suspense>
-        </Fit>
-      </div>
-      <PlateFoot part={part} />
-    </figure>
-  );
-}
-
-/** A short plate under the featured part, for a control rather than a card. */
-function ActionPlate({ part }: { part: Part }) {
+/** One step of the cover's agent turn: a live part under its step name. */
+function FlowPlate({ part, label }: { part: Part; label: string }) {
   const { Component: Demo, hint } = LIVE[part.name];
   return (
     <figure className={cn("home-enter flex flex-col", CELL)} style={enter(1)}>
-      <PlateHead code={part.code} note={hint} />
-      <div className="relative h-[120px]">
-        <Fit className="px-6 py-4">
+      <div className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
+        <span className="flex shrink-0 items-baseline gap-2">
+          <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>
+            {part.code}
+          </span>
+          <span className={cn(MONO, "text-[12px]", INK)}>{label}</span>
+        </span>
+        <span className={cn(META, "truncate")}>{hint}</span>
+      </div>
+      <div className="relative min-h-[340px] flex-1">
+        <Fit className="px-5 py-4">
           <Suspense fallback={<LiveFallback />}>
             <Demo />
           </Suspense>
@@ -437,15 +451,22 @@ function ConnectEditor() {
 
 /* Plates --------------------------------------------------------------- */
 
-function Plates({ plates }: { plates: Part[] }) {
+function Plates({
+  plates,
+  id,
+  number,
+  title,
+  aside,
+}: {
+  plates: Part[];
+  id: string;
+  number: string;
+  title: string;
+  aside: string;
+}) {
   return (
-    <section aria-labelledby="featured" className="pt-24 md:pt-32">
-      <SectionHead
-        aside="Live demos, not screenshots. Each component installs as a single file you own."
-        id="featured"
-        number="01"
-        title="Animated React components"
-      />
+    <section aria-labelledby={id} className="pt-24 md:pt-32">
+      <SectionHead aside={aside} id={id} number={number} title={title} />
       <div
         className={cn(
           "grid grid-cols-1 border sm:grid-cols-2 lg:grid-cols-3",
@@ -635,7 +656,7 @@ function Index({ parts }: { parts: Part[] }) {
       <SectionHead
         aside="Every Kokonut UI component by category, from AI chat inputs to text effects. Each name opens its docs page."
         id="all-components-title"
-        number="02"
+        number="03"
         title="All components"
       />
       <div
@@ -738,7 +759,7 @@ function Ordering() {
       <SectionHead
         aside="Kokonut UI is a shadcn/ui registry, so every component arrives as source in your repo, with its dependencies installed."
         id="ordering"
-        number="03"
+        number="04"
         title="How to install"
       />
       <ol className={cn("grid grid-cols-1 border md:grid-cols-3", GRID, LINE)}>
@@ -816,7 +837,7 @@ function References() {
       <SectionHead
         aside="What developers said when they found it, including the person behind shadcn/ui."
         id="references"
-        number="04"
+        number="05"
         title="What developers say"
       />
       <div
@@ -927,7 +948,7 @@ function Supplement() {
       <SectionHead
         aside="The paid half of the catalog: heroes, app screens, pricing, AI parts and full website templates, on the same stack and installed the same way."
         id="supplement"
-        number="05"
+        number="06"
         title="Kokonut UI Pro"
       />
       <div className={cn("grid grid-cols-1 border", GRID, LINE)}>

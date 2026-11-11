@@ -23,18 +23,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: `${siteConfig.name}: Free Open-Source React & Tailwind Components`,
+  title: `${siteConfig.name}: Open-Source AI Components for React`,
   description: siteConfig.description,
   metadataBase: new URL(siteConfig.url),
   applicationName: siteConfig.name,
   keywords: [
-    "ui",
-    "components",
+    "AI components",
+    "React components",
+    "AI chat UI",
+    "shadcn registry",
     "Tailwind CSS",
     "Next.js",
-    "shadcn",
-    "motion",
-    "react design",
+    "Motion",
   ],
   robots: "index, follow",
   alternates: {
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Dorian Baffier", url: "https://x.com/dorianbaffier" }],
   creator: "Dorian Baffier",
   openGraph: {
-    title: `${siteConfig.name}: Components that feel right`,
+    title: `${siteConfig.name}: AI components that feel right`,
     description: siteConfig.description,
     url: siteConfig.url,
     siteName: siteConfig.name,
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     creator: "@dorianbaffier",
-    title: `${siteConfig.name}: Components that feel right`,
+    title: `${siteConfig.name}: AI components that feel right`,
     description: siteConfig.description,
   },
 };

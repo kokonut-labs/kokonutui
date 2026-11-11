@@ -101,7 +101,7 @@ export function Brand({ theme }: { theme: Theme }) {
 }
 
 export const SITE_META = [
-  "Component catalog",
+  "Components for AI apps",
   "React, Tailwind CSS, Motion",
   "Free and open source",
 ];
@@ -130,16 +130,19 @@ function Headline({ className }: { className?: string }) {
         "leading-[0.9]"
       )}
     >
-      Components
+      AI components
       <br />
       that feel right.
     </h1>
   );
 }
 
+/** The cover's agent turn, one step per part, in order. */
+const STEPS = ["Ask", "Approve", "Review"];
+
 /**
- * The homepage's link preview: the tagline beside six live parts from
- * different shelves, so it shows the range rather than one card.
+ * The homepage's link preview: the cover's first screen at preview size. The
+ * tagline, then one agent turn in three live parts.
  */
 export function CoverFrame({
   theme,
@@ -157,7 +160,7 @@ export function CoverFrame({
 }) {
   return (
     <Canvas theme={theme}>
-      <div className={cn("grid grid-rows-[54px_1fr_68px]", GRID)}>
+      <div className={cn("grid grid-rows-[54px_1fr_252px_60px]", GRID)}>
         <MetaRow
           cells={[
             <Brand key="brand" theme={theme} />,
@@ -169,46 +172,42 @@ export function CoverFrame({
           ]}
         />
         <div className={cn("grid grid-cols-12", GRID)}>
-          <div
-            className={cn(
-              "col-span-5 flex flex-col justify-between px-9 pt-10 pb-9",
-              CELL
-            )}
-          >
-            <Headline className="text-[66px]" />
-            <p className={cn("text-pretty text-[20px] leading-[1.45]", SOFT)}>
-              Open-source React components built with Tailwind CSS, Motion and
-              shadcn/ui.
+          <div className={cn("col-span-8 flex items-center px-9", CELL)}>
+            <Headline className="text-[78px]" />
+          </div>
+          <div className={cn("col-span-4 flex items-end px-7 pb-7", CELL)}>
+            <p className={cn("text-pretty text-[19px] leading-[1.4]", SOFT)}>
+              Open-source React components for AI apps, built with Tailwind CSS,
+              Motion and shadcn/ui.
             </p>
           </div>
-          <div className={cn("col-span-7 grid grid-cols-3 grid-rows-2", GRID)}>
-            {parts.map((part) => (
-              <figure className={cn("flex flex-col", CELL)} key={part.name}>
-                <span
-                  className={cn(
-                    MONO,
-                    "px-4 pt-3 font-medium text-[13px]",
-                    LEAF
-                  )}
-                >
+        </div>
+        <div className={cn("grid grid-cols-3", GRID)}>
+          {parts.map((part, i) => (
+            <figure className={cn("flex flex-col", CELL)} key={part.name}>
+              <span className="flex items-baseline gap-2.5 px-4 pt-3">
+                <span className={cn(MONO, "font-medium text-[13px]", LEAF)}>
                   {part.code}
                 </span>
-                <div className="relative flex-1">
-                  <Fit className="p-3">
-                    <Live name={part.name} />
-                  </Fit>
-                </div>
-                <figcaption className="truncate px-4 pb-3 font-medium text-[14px]">
-                  {part.title}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+                <span className={cn(MONO, "text-[13px]", INK)}>
+                  {i + 1}. {STEPS[i]}
+                </span>
+              </span>
+              <div className="relative flex-1">
+                <Fit className="px-5 py-2">
+                  <Live name={part.name} />
+                </Fit>
+              </div>
+              <figcaption className="truncate px-4 pb-3 font-medium text-[14px]">
+                {part.title}
+              </figcaption>
+            </figure>
+          ))}
         </div>
         <div className={cn("grid grid-cols-12", GRID)}>
           <p
             className={cn(
-              "col-span-5 flex items-center gap-2 px-9 text-[18px]",
+              "col-span-4 flex items-center gap-2 px-9 text-[17px]",
               CELL
             )}
           >
@@ -217,7 +216,7 @@ export function CoverFrame({
           </p>
           <p
             className={cn(
-              "col-span-7 flex items-center gap-3 px-5 text-[18px]",
+              "col-span-8 flex items-center gap-3 px-5 text-[17px]",
               MONO,
               CELL
             )}

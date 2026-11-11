@@ -120,6 +120,46 @@ export const LIVE: Record<string, LiveEntry> = {
     ({ default: C }) => <C />,
     "Drag sideways to slosh it"
   ),
+  "ai-input-search": live(
+    () => import("@/components/kokonutui/ai-input-search"),
+    // Its toolbar needs the width, so in a third of the cover it's laid out
+    // wide and Fit reduces it. Stacked, below lg, it takes the cell's width.
+    ({ default: C }) => (
+      <C className="w-full max-w-[480px] lg:w-[480px] lg:max-w-none" />
+    ),
+    "Pick a tool with /, then ask"
+  ),
+  "ai-tool-approval": live(
+    () => import("@/components/kokonutui/ai-tool-approval"),
+    ({ default: C }) => <C className="w-full max-w-[440px]" />,
+    "Allow it, or hold for risky ones"
+  ),
+  "ai-diff-review": live(
+    () => import("@/components/kokonutui/ai-diff-review"),
+    // A fixed width keeps its header on one line; Fit reduces it to fit.
+    ({ default: C }) => <C className="w-[380px] max-w-none" />,
+    "Accept or reject each file"
+  ),
+  "ai-tool-calls": live(
+    () => import("@/components/kokonutui/ai-tool-calls"),
+    ({ default: C }) => <C />,
+    "Calls stream in, then fold away"
+  ),
+  "ai-checkout": live(
+    () => import("@/components/kokonutui/ai-checkout"),
+    ({ default: C }) => <C />,
+    "Pay without leaving the chat"
+  ),
+  "ai-model-selector": live(
+    () => import("@/components/kokonutui/ai-model-selector"),
+    ({ default: C }) => <C className="w-full max-w-[300px]" />,
+    "Pick a model, then the effort"
+  ),
+  "ai-context-meter": live(
+    () => import("@/components/kokonutui/ai-context-meter"),
+    ({ default: C }) => <C className="w-full max-w-[300px]" />,
+    "Compact before the window fills"
+  ),
 };
 
 /**
