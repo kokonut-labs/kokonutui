@@ -18,6 +18,15 @@
   <a href="https://kokonutui.pro">Pro</a>
 </p>
 
+<p align="center">
+  <a href="https://www.producthunt.com/products/kokonutui?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-kokonut-ui-2">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1300330&amp;theme=dark">
+      <img alt="Kokonut UI - Open-source UI components for your AI agent | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1300330&amp;theme=light">
+    </picture>
+  </a>
+</p>
+
 ## Quick start
 
 Kokonut UI is a [shadcn/ui registry](https://ui.shadcn.com/docs/registry). Add the namespace to your `components.json`:
