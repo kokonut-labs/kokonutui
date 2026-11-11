@@ -1,5 +1,6 @@
 import { ArrowUpRight, PartyPopper } from "lucide-react";
 import Link from "next/link";
+import { PRO_BANNER_LINE } from "@/lib/pro-showcase";
 import { ConfettiOutline } from "../icons/conffeti";
 
 export function HeaderPro() {
@@ -17,9 +18,8 @@ export function HeaderPro() {
           <span className="hidden items-center gap-3 md:flex">
             <ConfettiOutline className="h-5 w-5 text-white" />
             <span className="text-md text-white tracking-tighter">
-              <span className="font-bold">Kokonut UI Pro</span> - 100+
-              components to build websites faster, works with Claude Code,
-              Cursor and more
+              <span className="font-bold">Kokonut UI Pro</span> -{" "}
+              {PRO_BANNER_LINE}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <ArrowUpRight className="h-3.5 w-3.5 text-white transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -30,8 +30,7 @@ export function HeaderPro() {
           <span className="flex items-center gap-2.5 md:hidden">
             <PartyPopper className="h-5 w-5 flex-shrink-0 text-white" />
             <span className="font-medium text-white text-xs leading-tight tracking-tight">
-              Kokonut UI Pro - 100+ components to build websites faster, works
-              with Claude Code, Cursor and more
+              Kokonut UI Pro - {PRO_BANNER_LINE}
             </span>
             <ArrowUpRight className="h-3.5 w-3.5 flex-shrink-0 text-white transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </span>

@@ -11,11 +11,12 @@ import {
   MONO,
   SOFT,
 } from "@/components/landing/home/styles";
+import { PRO_TAGLINE } from "@/lib/pro-showcase";
 import { proPickFor, proPickStill, proPickUrl } from "@/lib/pro-siblings";
 import { cn } from "@/lib/utils";
 
 const FEATURES = [
-  "100+ components to build websites faster",
+  PRO_TAGLINE,
   "Works with Claude Code, Cursor and more",
   "One command installation with shadcn/cli",
 ] as const;
