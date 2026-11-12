@@ -1,27 +1,12 @@
 "use server";
 
-import { promises as fs } from "node:fs";
-import path from "node:path";
-import { cache } from "react";
+import { readComponentSource } from "@/lib/get-llm-text";
 
-// Create a cached version of the file reading operation
-const readFileCache = cache(
-  async (filePath: string) => await fs.readFile(filePath, "utf-8")
-);
-
-// Improve caching for the entire component getter
-export const getComponent = async (fileName: string | null, folder: string) => {
-  const baseDir = path.join(process.cwd(), "components/kokonutui");
-  if (!fileName || fileName === "undefined") {
-    const fullPath = path.join(baseDir, `${folder}.tsx`);
-    // console.log("fullPath", fullPath);
-    return await readFileCache(fullPath);
-  }
-
-  const fullPath = path.join(baseDir, folder, `${fileName}.tsx`);
-
-  return await readFileCache(fullPath);
-};
+/**
+ * A component's file name. The name comes from the browser and ends up in a
+ * file path, so anything that could leave `components/kokonutui` is refused.
+ */
+const COMPONENT_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export interface CopyComponentState {
   error: string;
@@ -33,37 +18,25 @@ export const copyComponent = async (
   _prevState: CopyComponentState,
   formData: FormData
 ) => {
+  const name = formData.get("folder");
+
+  if (typeof name !== "string" || !COMPONENT_NAME_RE.test(name)) {
+    return {
+      error: "Component not found",
+      content: "",
+      success: false,
+    };
+  }
+
   try {
-    const folder = formData.get("folder");
-    const fileName = formData.get("fileName");
-
-    if (!(folder || fileName)) {
-      return {
-        error: "Folder or file name not found",
-        content: "",
-        success: false,
-      };
-    }
-
-    const content = await getComponent(fileName as string, folder as string);
-
-    if (!content) {
-      return {
-        error: "Component not found",
-        content: "",
-        success: false,
-      };
-    }
-
     return {
       error: "",
-      content,
+      content: await readComponentSource(name),
       success: true,
     };
-  } catch (error) {
-    console.error(error);
+  } catch {
     return {
-      error: "Failed to copy component",
+      error: "Component not found",
       content: "",
       success: false,
     };

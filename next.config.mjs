@@ -1,14 +1,68 @@
+import { readdirSync } from "node:fs";
 import { createMDX } from "fumadocs-mdx/next";
 
 const withMDX = createMDX();
+
+const MDX_EXTENSION = /\.mdx$/;
+
+/**
+ * Every component used to live at /docs/components/<name>, and those links
+ * are still out there (old posts, registries that build the URL from the
+ * name). This sends each one to the page with that name in whichever
+ * category it sits in now, read from content/docs, so a new component never
+ * needs a redirect written by hand. The hand-written ones above it win.
+ */
+function legacyComponentRedirects() {
+  const redirects = [];
+  for (const category of readdirSync("content/docs", { withFileTypes: true })) {
+    if (!category.isDirectory()) {
+      continue;
+    }
+    for (const file of readdirSync(`content/docs/${category.name}`)) {
+      const name = file.replace(MDX_EXTENSION, "");
+      if (name === file || name === "index") {
+        continue;
+      }
+      redirects.push({
+        source: `/docs/components/${name}`,
+        destination: `/docs/${category.name}/${name}`,
+        permanent: true,
+      });
+    }
+  }
+  return redirects;
+}
+
+// Old sections that have no page any more. Temporary, so a search engine
+// doesn't treat the docs index as the new home of a removed page.
+const RETIRED_DOCS_PATHS = [
+  "/docs/components",
+  "/docs/components/:path*",
+  "/docs/blocks",
+  "/docs/blocks/:path*",
+  "/docs/getting-started",
+  "/docs/getting-started/:path*",
+  "/docs/installation",
+  "/docs/setup",
+];
 
 const nextConfig = {
   pageExtensions: ["ts", "tsx", "js", "jsx", "md", "mdx"],
   outputFileTracingIncludes: {
     "/**": ["components/kokonutui/**/*"],
   },
+  poweredByHeader: false,
   async headers() {
     return [
+      {
+        // No sniffing a response into another type. Framing stays allowed:
+        // other sites may embed these pages.
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
       {
         // Point agents at the machine-readable entrypoints (RFC 8288). These
         // ride on the homepage because that is where discovery starts.
@@ -382,6 +436,12 @@ const nextConfig = {
         destination: "/r/:path.json",
         permanent: true,
       },
+      ...legacyComponentRedirects(),
+      ...RETIRED_DOCS_PATHS.map((source) => ({
+        source,
+        destination: "/docs",
+        permanent: false,
+      })),
     ];
   },
   images: {

@@ -152,7 +152,12 @@ export function CopyFile({
   return (
     <div className={cn("grid grid-cols-1", GRID)}>
       <div className={cn("flex items-stretch justify-between", CELL)}>
-        <span className={cn(TAB, "pointer-events-none text-black/50")}>
+        <span
+          className={cn(
+            TAB,
+            "pointer-events-none text-black/55 dark:text-white/50"
+          )}
+        >
           {file}
         </span>
         <button

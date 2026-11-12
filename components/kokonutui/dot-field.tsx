@@ -733,9 +733,9 @@ export default function DotField({
 function DefaultContent() {
   return (
     <div className="relative flex max-w-xl flex-col items-center gap-4 px-6 text-center">
-      <h1 className="font-semibold text-4xl tracking-tight sm:text-5xl">
+      <h2 className="font-semibold text-4xl tracking-tight sm:text-5xl">
         Leave a mark
-      </h1>
+      </h2>
       <p className="max-w-sm text-base text-zinc-500 dark:text-zinc-400">
         A halftone membrane. Swipe fast to leave a wake, click to send a
         shockwave through it.

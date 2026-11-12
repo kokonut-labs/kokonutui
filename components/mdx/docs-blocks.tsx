@@ -133,7 +133,7 @@ export function McpSetup() {
         content={setup.config}
         file={
           <>
-            <span className="text-black/40 dark:text-white/40">
+            <span className="text-black/55 dark:text-white/50">
               Or by hand in
             </span>
             {setup.file}
@@ -176,7 +176,7 @@ export function SetupChoice({
           <span
             className={cn(
               MONO,
-              "flex items-center gap-1.5 text-[11.5px] text-black/50 group-hover:text-black dark:text-white/50 dark:group-hover:text-white",
+              "flex items-center gap-1.5 text-[11.5px] text-black/55 group-hover:text-black dark:text-white/50 dark:group-hover:text-white",
               EASE_COLORS
             )}
           >

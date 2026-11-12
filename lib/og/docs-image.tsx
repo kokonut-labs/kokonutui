@@ -60,6 +60,7 @@ async function readFonts() {
 }
 
 const NBSP = "\u00a0";
+const COMMAND_KEY_RE = /\u2318\s?/g;
 
 /** For one-line labels: spaces that next/og keeps even. */
 const oneLine = (text: string) => text.replaceAll(" ", NBSP);
@@ -92,16 +93,24 @@ export interface DocsImageInput {
   theme?: Theme;
 }
 
+/**
+ * The bundled Geist files have no key symbols, and a missing glyph is drawn
+ * as an empty box, so the Command key is spelled out.
+ */
+const spellKeys = (text: string) => text.replace(COMMAND_KEY_RE, "Cmd+");
+
 /** A docs page's link preview, drawn like the catalog. */
 export async function docsImage({
-  title,
-  description,
+  title: rawTitle,
+  description: rawDescription,
   url,
   part,
   pro = false,
   count,
   theme = "light",
 }: DocsImageInput) {
+  const title = spellKeys(rawTitle);
+  const description = rawDescription && spellKeys(rawDescription);
   const c = PALETTE[theme];
   const { fonts, regular, semibold } = await loadFonts();
   const mono = { fontFamily: "Geist Mono" };

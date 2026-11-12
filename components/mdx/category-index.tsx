@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { HoverLink } from "@/components/hover-link";
 import { getParts } from "@/components/landing/home/parts";
 import {
   CELL,
@@ -25,7 +25,7 @@ export function CategoryIndex({ category }: { category: string }) {
     <ul className={cn("not-prose my-8 grid grid-cols-1 border", GRID, LINE)}>
       {parts.map((part) => (
         <li className={CELL} key={part.name}>
-          <Link
+          <HoverLink
             className={cn(
               "group flex gap-4 px-4 py-3.5 hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
               EASE_COLORS,
@@ -64,7 +64,7 @@ export function CategoryIndex({ category }: { category: string }) {
                 </span>
               ) : null}
             </span>
-          </Link>
+          </HoverLink>
         </li>
       ))}
     </ul>

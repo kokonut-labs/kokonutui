@@ -1,7 +1,12 @@
 "use client";
 
 import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
-import type { ComponentProps, MouseEvent, ReactNode } from "react";
+import {
+  type ComponentProps,
+  isValidElement,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { announceCopy } from "@/components/copy-toast";
 import { cn } from "@/lib/utils";
 
@@ -15,14 +20,46 @@ export function DocsPre(props: ComponentProps<"pre">) {
     <CodeBlock
       {...props}
       Actions={CopyActions}
+      // The scroll area is a focusable region, and a page has several. Each
+      // is named after its file, else its first line, so they can be told
+      // apart in a list of landmarks.
       className={cn(
         "docs-code my-6 rounded-none border-black/[0.13] bg-white shadow-none dark:border-white/[0.14] dark:bg-black",
         props.className
       )}
+      viewportProps={{ "aria-label": codeLabel(props) }}
     >
       <Pre>{props.children}</Pre>
     </CodeBlock>
   );
+}
+
+const LABEL_LENGTH = 60;
+
+function textOf(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(textOf).join("");
+  }
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return textOf(node.props.children);
+  }
+  return "";
+}
+
+function codeLabel({ title, children }: ComponentProps<"pre">) {
+  if (title) {
+    return `Code: ${title}`;
+  }
+  const firstLine = textOf(children).trim().split("\n", 1)[0].trim();
+  if (!firstLine) {
+    return "Code";
+  }
+  return firstLine.length > LABEL_LENGTH
+    ? `Code: ${firstLine.slice(0, LABEL_LENGTH)}…`
+    : `Code: ${firstLine}`;
 }
 
 /**

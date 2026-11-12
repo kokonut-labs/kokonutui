@@ -378,12 +378,12 @@ function ApprovalCard({
         <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
           <ToolIcon call={call} />
         </span>
-        <h3
+        <h2
           className="font-medium text-sm text-zinc-900 dark:text-zinc-100"
           id={titleId}
         >
           {call.title}
-        </h3>
+        </h2>
         <span className="font-mono text-xs text-zinc-400 dark:text-zinc-500">
           {call.tool}
         </span>
