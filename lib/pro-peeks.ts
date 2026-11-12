@@ -54,7 +54,7 @@ export const PRO_PEEKS: ProPeek[] = [
   },
   {
     name: "image-generation-card",
-    proPage: "/docs/components/card#image-generation-card",
+    proPage: "/docs/components/ai#image-generation-card",
     features: [
       "Generate resolves the image from coarse pixels to sharp",
       "A step counter runs while it develops",

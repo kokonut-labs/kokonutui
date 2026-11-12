@@ -152,7 +152,7 @@ export const PRO_SHOWCASE: ShowcaseGroup[] = [
       {
         name: "docs-search",
         title: "Docs Search",
-        proPage: "/docs/components/action-search-bar#docs-search",
+        proPage: "/docs/components/ai#docs-search",
         line: "Hits grouped by page, and an answer that cites each source.",
       },
       {
@@ -176,7 +176,7 @@ export const PRO_SHOWCASE: ShowcaseGroup[] = [
       {
         name: "image-generation-card",
         title: "Image Generation Card",
-        proPage: "/docs/components/card#image-generation-card",
+        proPage: "/docs/components/ai#image-generation-card",
         line: "The image resolves from coarse pixels to sharp, then four variations land.",
       },
       {
