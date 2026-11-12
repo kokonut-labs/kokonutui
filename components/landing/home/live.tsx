@@ -48,8 +48,8 @@ function live<M extends { default: unknown }>(
 export const LIVE: Record<string, LiveEntry> = {
   "apple-activity-card": live(
     () => import("@/components/kokonutui/apple-activity-card"),
-    // The cover tile is narrower than the card's side-by-side breakpoint, so
-    // the card is laid out at that width with its title hidden (the plate
+    // The cover's corner is narrower than the card's side-by-side breakpoint,
+    // so the card is laid out at that width with its title hidden (the plate
     // names it), and the wrapper hands Fit only the rings and legend.
     ({ default: C }) => (
       <div className="flex w-[384px] justify-center">
@@ -57,6 +57,17 @@ export const LIVE: Record<string, LiveEntry> = {
       </div>
     ),
     "Rings fill as it mounts"
+  ),
+  "hold-button": live(
+    () => import("@/components/kokonutui/hold-button"),
+    ({ default: C }) => (
+      <div className="flex flex-col items-center gap-3">
+        <C />
+        <C variant="green" />
+        <C holdDuration={2000} variant="grey" />
+      </div>
+    ),
+    "Press and hold to confirm"
   ),
   "slide-to-confirm": live(
     () => import("@/components/kokonutui/slide-to-confirm"),
@@ -150,11 +161,6 @@ export const LIVE: Record<string, LiveEntry> = {
     () => import("@/components/kokonutui/ai-autocomplete"),
     ({ default: C }) => <C />,
     "Type, then Tab to take the suggestion"
-  ),
-  "ai-voice": live(
-    () => import("@/components/kokonutui/ai-voice"),
-    ({ default: C }) => <C />,
-    "Record, then play it back or send"
   ),
   "ai-model-selector": live(
     () => import("@/components/kokonutui/ai-model-selector"),

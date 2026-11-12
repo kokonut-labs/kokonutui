@@ -72,7 +72,7 @@ const FLOW = [
   { name: "ai-order-status", label: "Track", room: "min-h-[460px]" },
 ];
 /** The live part in the cover's corner, above the pitch. */
-const CORNER = "ai-voice";
+const CORNER = "apple-activity-card";
 /** The middle step of the cover, asked for the way you'd ask a colleague. */
 const AGENT_PROMPT = "Add @kokonutui/ai-checkout to my agent's chat";
 const AI_PLATES = [
@@ -86,7 +86,7 @@ const AI_PLATES = [
 // The wide background comes after four plates, so it starts a row at both
 // two and three columns.
 const PLATES = [
-  "apple-activity-card",
+  "hold-button",
   "detent-dial",
   "slide-to-confirm",
   "tear-button",
@@ -383,8 +383,8 @@ function CornerPlate({ part }: { part: Part }) {
         </span>
         <span className={cn(META, "truncate")}>{hint}</span>
       </figcaption>
-      <div className="relative min-h-[216px] flex-1">
-        <Fit className="px-5 py-2">
+      <div className="relative min-h-[236px] flex-1">
+        <Fit className="px-3 py-4">
           <Suspense fallback={<LiveFallback />}>
             <Demo />
           </Suspense>
