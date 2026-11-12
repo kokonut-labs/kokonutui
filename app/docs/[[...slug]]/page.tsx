@@ -168,9 +168,6 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
     <DocsPage
       breadcrumb={{ enabled: !(part || proCategory) }}
       full={page.data.full}
-      // Fumadocs draws the page as an article and no main, so screen readers
-      // had no landmark to jump to past the sidebar.
-      role="main"
       tableOfContent={tableOfContent}
       tableOfContentPopover={{ enabled: hasHeadings }}
       toc={page.data.toc}
