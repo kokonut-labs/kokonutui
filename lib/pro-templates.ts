@@ -81,6 +81,6 @@ export const PRO_TEMPLATE_LIST: ProTemplate[] = [
   },
 ];
 
-/** The template's entry on the Pro templates page, tagged as coming from here. */
+/** The Pro homepage, tagged with the template that sent the visitor. */
 export const proTemplateUrl = (slug: string, medium = "docs-templates") =>
-  `https://kokonutui.pro/templates?utm_source=kokonutui.com&utm_medium=${medium}#${slug}`;
+  `https://kokonutui.pro/?utm_source=kokonutui.com&utm_medium=${medium}&utm_content=${slug}`;

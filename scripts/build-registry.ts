@@ -336,7 +336,7 @@ ${proPreviews.map((page) => `- ${link(page)}`).join("\n")}
 ## Templates (Kokonut UI Pro)
 
 Full website templates are part of Kokonut UI Pro.
-https://kokonutui.pro/templates
+https://kokonutui.pro
 
 ## Links
 

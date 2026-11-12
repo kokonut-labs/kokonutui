@@ -6,8 +6,6 @@
 export interface ProPeek {
   /** The page's name here, and the component's name in the Pro registry. */
   name: string;
-  /** The Pro docs page and heading that hold the live component. */
-  proPage: string;
   /** What the component does that the still can't show. */
   features: string[];
   still: {
@@ -24,7 +22,6 @@ const PRO_URL = "https://kokonutui.pro";
 export const PRO_PEEKS: ProPeek[] = [
   {
     name: "onboarding-checklist",
-    proPage: "/docs/components/card#onboarding-checklist",
     features: [
       "The ring fills as steps are checked",
       "Done steps collapse, the next one opens",
@@ -34,7 +31,6 @@ export const PRO_PEEKS: ProPeek[] = [
   },
   {
     name: "pay-button",
-    proPage: "/docs/components/button#pay-button",
     features: [
       "Digits roll when the seats or the period change",
       "Press shows Processing, then Paid",
@@ -44,7 +40,6 @@ export const PRO_PEEKS: ProPeek[] = [
   },
   {
     name: "slash-command-menu",
-    proPage: "/docs/components/action-search-bar#slash-command-menu",
     features: [
       "Type / to pick a command",
       "A hint bar fills in each argument as you type",
@@ -54,7 +49,6 @@ export const PRO_PEEKS: ProPeek[] = [
   },
   {
     name: "image-generation-card",
-    proPage: "/docs/components/ai#image-generation-card",
     features: [
       "Generate resolves the image from coarse pixels to sharp",
       "A step counter runs while it develops",
@@ -64,7 +58,6 @@ export const PRO_PEEKS: ProPeek[] = [
   },
   {
     name: "swatch-fan",
-    proPage: "/docs/components/input#swatch-fan",
     features: [
       "Drag the deck open like a paint fan",
       "Pick a hue, then a shade on its blade",
@@ -74,7 +67,6 @@ export const PRO_PEEKS: ProPeek[] = [
   },
   {
     name: "price-range",
-    proPage: "/docs/components/input#price-range",
     features: [
       "Two handles over a histogram of the results",
       "Bars inside the range fill in as you drag",
@@ -84,7 +76,6 @@ export const PRO_PEEKS: ProPeek[] = [
   },
   {
     name: "audio-player-card",
-    proPage: "/docs/components/card#audio-player-card",
     features: [
       "Scrub anywhere on the waveform",
       "Chapter names show as you pass them",
@@ -94,7 +85,6 @@ export const PRO_PEEKS: ProPeek[] = [
   },
   {
     name: "rhythm-hero",
-    proPage: "/docs/components/heroes#rhythm-hero",
     features: [
       "Hairline rings breathe a 4-7-8 cycle",
       "A week of sleep-stage bars below the fold",
@@ -104,7 +94,6 @@ export const PRO_PEEKS: ProPeek[] = [
   },
   {
     name: "dither-reveal-hero",
-    proPage: "/docs/components/heroes#dither-reveal-hero",
     features: [
       "The prompt types itself in",
       "The scene resolves from coarse dither to full detail",
@@ -114,7 +103,6 @@ export const PRO_PEEKS: ProPeek[] = [
   },
   {
     name: "kinetic-type-hero",
-    proPage: "/docs/components/heroes#kinetic-type-hero",
     features: [
       "The edge-to-edge headline sets itself in",
       "Letters lean away from the cursor",
@@ -132,12 +120,11 @@ export const getProPeek = (name: string) => BY_NAME.get(name);
 export const isProPeekUrl = (url: string) =>
   BY_NAME.has(url.split("/").at(-1) ?? "");
 
-export const proPeekUrl = (peek: ProPeek, medium = "docs-peek") => {
-  const [path, hash] = peek.proPage.split("#");
-  return `${PRO_URL}${path}?utm_source=kokonutui.com&utm_medium=${medium}&utm_content=${peek.name}${hash ? `#${hash}` : ""}`;
-};
+/** Every way out to Pro lands on its homepage, tagged with where it came from. */
+export const proPeekUrl = (peek: ProPeek, medium = "docs-peek") =>
+  `${PRO_URL}/?utm_source=kokonutui.com&utm_medium=${medium}&utm_content=${peek.name}`;
 
-export const PRO_PRICING_URL = `${PRO_URL}/?utm_source=kokonutui.com&utm_medium=docs-peek#pricing`;
+export const PRO_LANDING_URL = `${PRO_URL}/?utm_source=kokonutui.com&utm_medium=docs-peek`;
 
 export const peekStill = (name: string, theme: "light" | "dark") =>
   `/pro-peeks/${name}-${theme}.webp`;

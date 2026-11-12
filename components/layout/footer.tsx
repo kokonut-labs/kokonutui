@@ -70,8 +70,8 @@ function getColumns(): FooterColumn[] {
         { label: "Pro components", href: PRO_SHOWCASE_PAGE },
         { label: "Website templates", href: PRO_TEMPLATES_PAGE },
         {
-          label: "Pricing",
-          href: `https://kokonutui.pro/?${PRO_UTM}#pricing`,
+          label: "Get Pro",
+          href: `https://kokonutui.pro/?${PRO_UTM}`,
           external: true,
         },
       ],

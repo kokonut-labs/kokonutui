@@ -11,7 +11,7 @@ import {
 } from "@/components/landing/home/styles";
 import {
   getProPeek,
-  PRO_PRICING_URL,
+  PRO_LANDING_URL,
   peekStill,
   proPeekUrl,
 } from "@/lib/pro-peeks";
@@ -147,7 +147,7 @@ export function ProPeek({ name }: { name: string }) {
         <div className={cn("flex border-t", LINE)}>
           <a
             className={cn(ACTION, PRO_RED, "hover:bg-[#FF2D55]/[0.06]")}
-            href={PRO_PRICING_URL}
+            href={PRO_LANDING_URL}
             rel="noopener"
             target="_blank"
           >

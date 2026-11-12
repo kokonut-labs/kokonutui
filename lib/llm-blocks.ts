@@ -15,7 +15,7 @@ import { RELEASES } from "@/lib/changelog";
 import { getProPeek, proPeekUrl } from "@/lib/pro-peeks";
 import {
   getShowcaseGroup,
-  PRO_SHOWCASE_PRICING_URL,
+  PRO_SHOWCASE_LANDING_URL,
   PRO_STATS,
   showcaseUrl,
 } from "@/lib/pro-showcase";
@@ -163,7 +163,7 @@ const proShowcaseIntro: Renderer = () =>
   [
     PRO_STATS.map((stat) => `${stat.value} ${stat.label}`).join(" · "),
     "",
-    `Get Kokonut UI Pro: ${PRO_SHOWCASE_PRICING_URL}`,
+    `Get Kokonut UI Pro: ${PRO_SHOWCASE_LANDING_URL}`,
     "",
   ].join("\n");
 
