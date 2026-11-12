@@ -2,6 +2,7 @@
   "name": "helpful-rating",
   "type": "registry:component",
   "dependencies": [
+    "lucide-react",
     "motion"
   ],
   "files": [
