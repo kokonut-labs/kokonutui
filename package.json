@@ -10,6 +10,7 @@
     "postinstall": "fumadocs-mdx",
     "og": "bun run ./scripts/build-og.ts",
     "knip": "knip",
+    "check:registry": "bun run ./scripts/check-registry.ts",
     "check:changed": "bun run ./scripts/check-changed.ts"
   },
   "dependencies": {

@@ -4,6 +4,7 @@ import path from "node:path";
 import { glob } from "glob";
 import type { z } from "zod";
 import type { registryItemFileSchema } from "@/registry/schema";
+import { PRO_PEEKS } from "../lib/pro-peeks";
 import { registry } from "../registry/index";
 
 const REGISTRY_BASE_PATH = process.cwd();
@@ -33,6 +34,7 @@ const AGENT_SKILLS = [
 const BACKSLASH_REGEX = /\\/g;
 const DOCS_PREFIX_REGEX = /^content\/docs\//;
 const MDX_EXTENSION_REGEX = /\.mdx$/;
+const INDEX_SUFFIX_REGEX = /\/index$/;
 
 // Console colors and symbols
 const colors = {
@@ -137,6 +139,11 @@ const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---/;
 const TITLE_RE = /title:\s*(.+)/;
 const DESCRIPTION_RE = /description:\s*(.+)/;
 
+const QUOTED_RE = /^(["'])(.*)\1$/;
+
+/** A frontmatter value, without the quotes YAML needs around a colon. */
+const unquote = (value?: string) => value?.trim().replace(QUOTED_RE, "$2");
+
 const extractFrontmatter = (
   content: string
 ): { title?: string; description?: string } => {
@@ -150,8 +157,8 @@ const extractFrontmatter = (
   const descriptionMatch = frontmatter.match(DESCRIPTION_RE);
 
   return {
-    title: titleMatch?.[1]?.trim(),
-    description: descriptionMatch?.[1]?.trim(),
+    title: unquote(titleMatch?.[1]),
+    description: unquote(descriptionMatch?.[1]),
   };
 };
 
@@ -173,10 +180,12 @@ const getComponentsInfo = async (): Promise<ComponentInfo[]> => {
 
         if (frontmatter.title && frontmatter.description) {
           const name = path.basename(mdxFile, ".mdx");
+          // A category's index.mdx is served at the folder's own URL.
           const route = `/docs/${mdxFile
             .replace(BACKSLASH_REGEX, "/")
             .replace(DOCS_PREFIX_REGEX, "")
-            .replace(MDX_EXTENSION_REGEX, "")}`;
+            .replace(MDX_EXTENSION_REGEX, "")
+            .replace(INDEX_SUFFIX_REGEX, "")}`;
           components.push({
             name,
             title: frontmatter.title,
@@ -256,7 +265,32 @@ const generateRegistryIndex = async (
   await writeFileRecursive(`${PUBLIC_FOLDER_BASE_PATH}/registry.json`, index);
 };
 
-const generateLLMsFile = async (components: ComponentInfo[]): Promise<void> => {
+/**
+ * Writes `/r/llms.txt`, the registry's index for agents. Only what the
+ * registry really serves gets an install command: docs pages that aren't
+ * registry items (category pages, the changelog) and the Pro previews are
+ * listed apart, so an agent never runs `shadcn add` on a name that 404s.
+ */
+const generateLLMsFile = async (docs: ComponentInfo[]): Promise<void> => {
+  const installable = new Map(
+    registry
+      .filter((entry) => entry.type === "registry:component")
+      .map((entry) => [entry.name, entry])
+  );
+  const proNames = new Set(PRO_PEEKS.map((peek) => peek.name));
+
+  const components = docs.filter(
+    (page) => installable.has(page.name) && !proNames.has(page.name)
+  );
+  const categories = docs.filter((page) => page.name === "index");
+  const proPreviews = docs.filter((page) => proNames.has(page.name));
+  const extras = registry.filter(
+    (entry) => entry.type !== "registry:component" && entry.description
+  );
+
+  const link = (page: ComponentInfo) =>
+    `[${page.title}](${SITE_URL}${page.route}.md): ${page.description}`;
+
   const llmsContent = `# KokonutUI - Component Registry Index
 
 Collection of ${components.length} UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
@@ -265,28 +299,44 @@ Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
 Agents can also browse and install components through the shadcn MCP server
 (npx shadcn@latest mcp) once the @kokonutui registry is configured in
-components.json. Setup guide: https://kokonutui.com/docs/agents
+components.json. Setup guide: ${SITE_URL}/docs/agents
 
-The documentation index for LLMs lives at https://kokonutui.com/llms.txt
+The documentation index for LLMs lives at ${SITE_URL}/llms.txt
 
 ## Components
 
 ${components
   .map(
-    (component) =>
-      `- [${component.title}](https://kokonutui.com${component.route}.md): ${component.description} Install: \`npx shadcn@latest add @kokonutui/${component.name}\``
+    (page) =>
+      `- ${link(page)} Install: \`npx shadcn@latest add @kokonutui/${page.name}\``
   )
   .join("\n")}
 
-## Templates and Premium Components (Kokonut UI Pro)
+## Hooks and utilities
 
-Templates and premium components are available on the premium version of Kokonut UI.
+${extras
+  .map(
+    (entry) =>
+      `- ${entry.name}: ${entry.description} Install: \`npx shadcn@latest add @kokonutui/${entry.name}\``
+  )
+  .join("\n")}
+
+## Categories
+
+${categories.map((page) => `- ${link(page)}`).join("\n")}
+
+## Kokonut UI Pro previews
+
+These pages preview paid components. They are not in this registry, so
+\`@kokonutui/<name>\` does not install them. They ship with Kokonut UI Pro:
+https://kokonutui.pro
+
+${proPreviews.map((page) => `- ${link(page)}`).join("\n")}
+
+## Templates (Kokonut UI Pro)
+
+Full website templates are part of Kokonut UI Pro.
 https://kokonutui.pro/templates
-
-## Premium Components (Kokonut UI Pro)
-
-Premium components are available on the premium version of Kokonut UI.
-https://kokonutui.pro/components
 
 ## Links
 
@@ -384,6 +434,28 @@ const getComponentFiles = async (files: File[], registryType: string) => {
   return filesArray;
 };
 
+/**
+ * Deletes the JSON of items that left the registry. Without this a removed
+ * component kept installing its last, unmaintained version forever.
+ */
+const removeStaleItems = async () => {
+  const kept = new Set([
+    "registry.json",
+    ...registry.map((entry) => `${entry.name}.json`),
+  ]);
+  const existing = await glob("*.json", {
+    cwd: path.join(REGISTRY_BASE_PATH, PUBLIC_FOLDER_BASE_PATH),
+  });
+  for (const file of existing) {
+    if (!kept.has(file)) {
+      await fs.rm(path.join(REGISTRY_BASE_PATH, PUBLIC_FOLDER_BASE_PATH, file));
+      console.log(
+        `  ${colors.yellow}${symbols.dot}${colors.reset} Removed ${colors.cyan}${file}${colors.reset} (no longer in the registry)`
+      );
+    }
+  }
+};
+
 const main = async () => {
   console.log(`\n${colors.cyan}Registry Build Process${colors.reset}`);
   printDivider();
@@ -413,6 +485,8 @@ const main = async () => {
       console.log(); // Add space between components
     }
   }
+
+  await removeStaleItems();
 
   printDivider();
 

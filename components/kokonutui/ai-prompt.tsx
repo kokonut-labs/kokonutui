@@ -1052,8 +1052,9 @@ export default function AI_Prompt({
               menuOpen ? `${menuId}-${matches[activeIndex].id}` : undefined
             }
             aria-autocomplete="list"
+            // No aria-expanded: a textbox does not support it. The menu is
+            // announced through aria-controls and the active option.
             aria-controls={menuOpen ? menuId : undefined}
-            aria-expanded={menuOpen}
             // shadow-none and md:text-[15px] beat the shadow-xs and
             // md:text-sm of the current shadcn Textarea. Touch screens get 16px so
             // iOS does not zoom into the field on focus.
