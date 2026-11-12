@@ -60,7 +60,7 @@ export function ProPeek({ name }: { name: string }) {
           <span
             className={cn(
               MONO,
-              "truncate text-[12px] text-black/45 dark:text-white/45"
+              "truncate text-[12px] text-black/55 dark:text-white/50"
             )}
           >
             npx shadcn@latest add @kokonutui-pro/{peek.name}

@@ -296,9 +296,9 @@ export default function AIBranches({
         )}
       >
         <header className="flex items-center justify-between border-black/[0.06] border-b px-4 py-3 dark:border-white/[0.08]">
-          <h3 className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
+          <h2 className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
             {title}
-          </h3>
+          </h2>
           <p className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
             {leaves} {leaves === 1 ? "branch" : "branches"}
           </p>

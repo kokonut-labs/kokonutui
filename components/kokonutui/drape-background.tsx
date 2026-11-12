@@ -678,9 +678,9 @@ export default function DrapeBackground({
 function DefaultContent() {
   return (
     <div className="pointer-events-none relative flex max-w-xl flex-col items-center gap-4 px-6 text-center">
-      <h1 className="font-semibold text-4xl tracking-tight sm:text-5xl">
+      <h2 className="font-semibold text-4xl tracking-tight sm:text-5xl">
         Behind the curtain
-      </h1>
+      </h2>
       <p className="max-w-sm text-base text-zinc-500 dark:text-zinc-400">
         A pleated curtain in a light breeze. Sweep the cursor through it, or
         grab a fold and pull.

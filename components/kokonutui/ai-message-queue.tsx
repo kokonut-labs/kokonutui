@@ -336,9 +336,9 @@ export default function AIMessageQueue({
         )}
       >
         <header className="flex items-center gap-2 border-black/[0.06] border-b px-4 py-3 dark:border-white/[0.08]">
-          <h3 className="min-w-0 flex-1 truncate font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
+          <h2 className="min-w-0 flex-1 truncate font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
             {title}
-          </h3>
+          </h2>
           <span
             className={cn(
               "text-[12px] tabular-nums",

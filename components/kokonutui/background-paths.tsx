@@ -360,9 +360,9 @@ export default function BackgroundPaths({
 function DefaultContent() {
   return (
     <div className="relative flex max-w-xl flex-col items-center gap-4 px-6 text-center">
-      <h1 className="font-semibold text-4xl tracking-tight sm:text-5xl">
+      <h2 className="font-semibold text-4xl tracking-tight sm:text-5xl">
         Calm by default
-      </h1>
+      </h2>
       <p className="max-w-sm text-base text-zinc-500 dark:text-zinc-400">
         A ribbon of lines that keeps flowing in one color, at any size. Move the
         cursor through it and the lines part around you.
