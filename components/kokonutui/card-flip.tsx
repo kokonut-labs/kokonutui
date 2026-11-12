@@ -600,9 +600,9 @@ function TicketFront() {
         <p className="font-medium text-orange-600 text-xs tabular-nums dark:text-orange-400">
           {TICKET.edition}
         </p>
-        <h3 className="mt-1 font-semibold text-[26px] leading-[1.05] tracking-tight">
+        <h2 className="mt-1 font-semibold text-[26px] leading-[1.05] tracking-tight">
           {TICKET.event}
-        </h3>
+        </h2>
       </div>
 
       <dl className="mt-auto grid grid-cols-2 gap-x-4 gap-y-3">

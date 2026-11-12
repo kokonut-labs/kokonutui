@@ -921,7 +921,7 @@ export const component: Registry = [
   {
     name: "ai-attachment",
     type: "registry:component",
-    dependencies: ["lucide-react", "motion"],
+    dependencies: ["motion"],
     files: [
       {
         path: "components/kokonutui/ai-attachment.tsx",
@@ -1273,7 +1273,7 @@ export const component: Registry = [
   {
     name: "helpful-rating",
     type: "registry:component",
-    dependencies: ["motion"],
+    dependencies: ["lucide-react", "motion"],
     files: [
       {
         path: "components/kokonutui/helpful-rating.tsx",

@@ -1134,9 +1134,9 @@ export function NowPlaying({
               Now playing
             </span>
           </div>
-          <h3 className="mt-2 truncate font-semibold text-base text-zinc-900 dark:text-zinc-50">
+          <h2 className="mt-2 truncate font-semibold text-base text-zinc-900 dark:text-zinc-50">
             {track.title}
-          </h3>
+          </h2>
           <p className="truncate text-sm text-zinc-500 dark:text-zinc-400">
             {track.artist}
           </p>

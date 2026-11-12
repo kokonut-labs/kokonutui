@@ -2,7 +2,6 @@
   "name": "ai-attachment",
   "type": "registry:component",
   "dependencies": [
-    "lucide-react",
     "motion"
   ],
   "files": [

@@ -6,6 +6,7 @@
  *   biome.jsonc).
  * - The typecheck, when any TypeScript or MDX changed.
  * - knip, which is quick and catches files and packages nothing uses.
+ * - The registry check, when a registry entry or a file it ships changed.
  *
  * "Changed" means against the merge base with origin/main, plus uncommitted
  * and untracked files.
@@ -15,6 +16,8 @@ import { existsSync } from "node:fs";
 
 const LINTABLE_RE = /\.(tsx?|jsx?|mjs|json|jsonc|css)$/;
 const TYPED_RE = /\.(tsx?|mdx)$/;
+const REGISTRY_RE =
+  /^(registry|components\/kokonutui|components\/ui|hooks|lib)\//;
 
 const git = (...args: string[]) =>
   spawnSync("git", args, { encoding: "utf8" }).stdout.trim();
@@ -67,5 +70,11 @@ if (changed.some((file) => TYPED_RE.test(file))) {
 }
 
 results.push(run("knip", "bunx", ["knip", "--no-progress"]));
+
+if (changed.some((file) => REGISTRY_RE.test(file))) {
+  results.push(
+    run("Registry dependencies", "bun", ["run", "./scripts/check-registry.ts"])
+  );
+}
 
 process.exit(results.every(Boolean) ? 0 : 1);

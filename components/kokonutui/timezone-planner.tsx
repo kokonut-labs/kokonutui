@@ -785,9 +785,9 @@ export default function TimezonePlanner({
     >
       <header className="flex items-center gap-3">
         <div className="min-w-0">
-          <h3 className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
+          <h2 className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
             Find a time
-          </h3>
+          </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             {day ? day.label : " "} · {people.length} people
           </p>

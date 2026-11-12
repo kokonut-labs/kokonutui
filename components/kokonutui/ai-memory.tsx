@@ -376,9 +376,9 @@ export default function AIMemory({
             className="flex min-w-0 flex-col border-black/[0.06] @xl:border-r border-b @xl:border-b-0 dark:border-white/[0.08]"
           >
             <header className="flex h-11 items-center border-black/[0.06] border-b px-4 dark:border-white/[0.08]">
-              <h3 className="font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
+              <h2 className="font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
                 {title}
-              </h3>
+              </h2>
             </header>
             <div
               className="h-80 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 [scrollbar-width:thin]"
@@ -510,9 +510,9 @@ export default function AIMemory({
             ref={memoryRef}
           >
             <header className="flex h-11 items-center gap-2 border-black/[0.06] border-b px-4 dark:border-white/[0.08]">
-              <h3 className="font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
+              <h2 className="font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
                 Memory
-              </h3>
+              </h2>
               <span className="text-[12px] text-zinc-400 tabular-nums dark:text-zinc-500">
                 {live.length}
               </span>

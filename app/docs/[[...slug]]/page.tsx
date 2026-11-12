@@ -154,9 +154,13 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         // Keep the TOC enabled either way — it owns the column the banner sits
         // in — but hide the "On this page" heading and its empty state when
         // there is nothing to list.
-        container: hasHeadings
-          ? undefined
-          : { className: "toc-headings-empty" },
+        // The column is a landmark of its own, so its links and the Pro
+        // card are not loose content beside the page.
+        container: {
+          "aria-label": hasHeadings ? "On this page" : "Kokonut UI Pro",
+          className: hasHeadings ? undefined : "toc-headings-empty",
+          role: "complementary",
+        },
         footer: <TocProBanner category={params.slug?.[0]} />,
       };
 

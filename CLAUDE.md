@@ -15,6 +15,7 @@ bun run build          # Production build
 bun run check:changed  # Biome, typecheck and knip on what this branch changed. Run before every push.
 bun run lint           # Biome on the whole repo (CI runs `biome ci`)
 bun run knip           # Unused files and packages (CI runs it too)
+bun run check:registry # Registry entries against the imports of the files they ship (CI runs it too)
 bun x ultracite fix    # Format and auto-fix lint issues
 
 bun run ./scripts/build-registry.ts  # Rebuild public/r/*.json, registry.json and public/llms.txt
@@ -48,7 +49,7 @@ bun run ./scripts/build-registry.ts  # Rebuild public/r/*.json, registry.json an
 
 ### Registry System
 
-Each component has an entry in `registry/registry-components.ts` (name, dependencies, registryDependencies, files). Dependencies are written by hand, so every npm import in a component must be listed there. The build script embeds the source files into `public/r/{name}.json`.
+Each component has an entry in `registry/registry-components.ts` (name, dependencies, registryDependencies, files). Dependencies are written by hand, so every npm import in a component must be listed there; `bun run check:registry` fails when one is missing or unused. The build script embeds the source files into `public/r/{name}.json`.
 
 ## Tech Stack
 

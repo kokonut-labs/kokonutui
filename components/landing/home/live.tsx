@@ -204,7 +204,7 @@ export function useNearViewport<T extends HTMLElement>() {
 /** Shown for the moment a component's chunk is loading. */
 export function LiveFallback() {
   return (
-    <span className="text-[12px] text-black/35 dark:text-white/35">
+    <span className="text-[12px] text-black/55 dark:text-white/50">
       Loading…
     </span>
   );

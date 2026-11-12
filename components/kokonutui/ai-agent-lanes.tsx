@@ -281,9 +281,9 @@ export default function AIAgentLanes({
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
             {statusLine(done, running, now, total)}
           </p>
-          <h3 className="mt-0.5 font-medium text-sm text-zinc-900 leading-snug dark:text-zinc-100">
+          <h2 className="mt-0.5 font-medium text-sm text-zinc-900 leading-snug dark:text-zinc-100">
             {task}
-          </h3>
+          </h2>
         </div>
         <button
           aria-label={playButtonLabel(done, playing)}

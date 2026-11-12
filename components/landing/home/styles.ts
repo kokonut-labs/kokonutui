@@ -9,11 +9,14 @@ export const MONO = "home-mono";
 export const LINE = "border-black/[0.13] dark:border-white/[0.14]";
 export const GRID = "gap-px bg-black/[0.13] dark:bg-white/[0.14]";
 export const CELL = "bg-white dark:bg-black";
-export const META = cn(MONO, "text-[11.5px] text-black/50 dark:text-white/50");
+export const META = cn(MONO, "text-[11.5px] text-black/55 dark:text-white/50");
 export const INK = "text-black dark:text-white";
 export const SOFT = "text-black/60 dark:text-white/60";
-/** The one color in the catalog: Kokonut's leaf, for the codes. */
-export const LEAF = "text-[#1FA834] dark:text-[#3BB44B]";
+/**
+ * The one color in the catalog: Kokonut's leaf, for the codes. On white it is
+ * a shade deeper than the logo's green, which was 3.1:1 at this size.
+ */
+export const LEAF = "text-[#15852A] dark:text-[#3BB44B]";
 
 /** Hover and press read through color alone; nothing on the page scales. */
 export const EASE_COLORS =

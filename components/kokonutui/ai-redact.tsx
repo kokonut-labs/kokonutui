@@ -339,9 +339,9 @@ export default function AIRedact({
             aria-hidden="true"
             className="size-3.5 text-zinc-400 dark:text-zinc-500"
           />
-          <h3 className="min-w-0 flex-1 truncate font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
+          <h2 className="min-w-0 flex-1 truncate font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
             {title}
-          </h3>
+          </h2>
           <ViewSwitch model={modelView} onChange={setModelView} />
         </header>
 
