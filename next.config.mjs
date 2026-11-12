@@ -55,12 +55,11 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // No sniffing a response into another type, and no other site
-        // framing these pages (the docs frame their own previews).
+        // No sniffing a response into another type. Framing stays allowed:
+        // other sites may embed these pages.
         source: "/:path*",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         ],
       },
