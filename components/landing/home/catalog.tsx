@@ -17,7 +17,6 @@ import {
 } from "@/lib/changelog";
 import {
   PRO_SHOWCASE,
-  PRO_SHOWCASE_COUNT,
   PRO_SHOWCASE_PAGE,
   PRO_STATS,
   showcaseStill,
@@ -1153,7 +1152,7 @@ function ProOffer() {
           )}
           href={PRO_SHOWCASE_PAGE}
         >
-          See {PRO_SHOWCASE_COUNT} Pro components in the docs
+          See Pro components in the docs
         </Link>
       </div>
     </div>
