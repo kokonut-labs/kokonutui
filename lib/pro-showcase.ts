@@ -30,10 +30,13 @@ export const PRO_SHOWCASE_PAGE = "/docs/pro";
  * How many components Pro has, rounded down: 154 in its registry on
  * 2026-11-12. Every mention of Pro on this site reads it from here.
  */
-export const PRO_COMPONENT_COUNT = "150+";
+const PRO_COMPONENT_COUNT = "150+";
+
+/** Pro in one line, for the Pro card beside the docs. */
+export const PRO_TAGLINE = `${PRO_COMPONENT_COUNT} components and templates for AI products`;
 
 /** The one-line pitch on the banner above the header and under the sidebar. */
-export const PRO_PITCH = `${PRO_COMPONENT_COUNT} components to build websites faster, works with Claude Code, Cursor and more`;
+export const PRO_PITCH = `${PRO_TAGLINE}, works with Claude Code, Cursor and more`;
 
 /** Categories counted from Pro's docs on 2026-10-17, templates on 2026-10-23. */
 export const PRO_STATS = [
@@ -152,7 +155,7 @@ export const PRO_SHOWCASE: ShowcaseGroup[] = [
       {
         name: "docs-search",
         title: "Docs Search",
-        proPage: "/docs/components/action-search-bar#docs-search",
+        proPage: "/docs/components/ai#docs-search",
         line: "Hits grouped by page, and an answer that cites each source.",
       },
       {
@@ -176,7 +179,7 @@ export const PRO_SHOWCASE: ShowcaseGroup[] = [
       {
         name: "image-generation-card",
         title: "Image Generation Card",
-        proPage: "/docs/components/card#image-generation-card",
+        proPage: "/docs/components/ai#image-generation-card",
         line: "The image resolves from coarse pixels to sharp, then four variations land.",
       },
       {

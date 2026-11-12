@@ -66,14 +66,14 @@ npx shadcn@latest add kokonut-labs/kokonutui/ai-tool-approval
 | Category | Examples |
 | --- | --- |
 | [AI](https://kokonutui.com/docs/ai) | Tool Calls, Tool Approval, Checkout, Diff Review, Model Selector, Inline Citations, Voice |
-| [Buttons](https://kokonutui.com/docs/buttons) | Slide to Confirm, Hold Button, Pay Button, Undo Button, Magnet Button |
+| [Buttons](https://kokonutui.com/docs/buttons) | Slide to Confirm, Hold Button, Undo Button, Magnet Button, Tear Button |
 | [Cards](https://kokonutui.com/docs/cards) | Apple Activity Card, Boarding Pass, Currency Transfer, Uptime Card, Receipt Printer |
 | [Inputs](https://kokonutui.com/docs/inputs) | Seat Map, Wheel Picker, Signature Pad, Time Zone Planner, Amount Pad |
 | [Navigation](https://kokonutui.com/docs/navigation) | Command Palette, Marking Menu, Smooth Drawer, Swipe Tabs, Status Island |
 | [Media](https://kokonutui.com/docs/media) | Clip Trimmer, Synced Transcript, Photo Straighten, Focal Point Picker |
 | [Feedback](https://kokonutui.com/docs/feedback) | Promise Toast, Inline Alert, Save Status, Empty State, Helpful Rating |
 | [Text](https://kokonutui.com/docs/texts) | Split Flap Text, Spoiler Text, Typing Text, Marker Text |
-| [Backgrounds](https://kokonutui.com/docs/backgrounds) | Dither Reveal Hero, Caustics, Halftone, Topo, Rain Glass |
+| [Backgrounds](https://kokonutui.com/docs/backgrounds) | Caustics, Halftone, Topo, Rain Glass, Drape |
 
 Every component has a live demo, its source, and the packages it installs on its docs page. New ones land in the [changelog](https://kokonutui.com/docs/changelog).
 
