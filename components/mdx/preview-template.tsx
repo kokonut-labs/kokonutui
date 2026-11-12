@@ -22,6 +22,7 @@ export default function PreviewTemplate({
         <Link
           className="group not-prose relative hidden items-center gap-2 rounded-lg border bg-zinc-900 px-2 py-1.5 text-sm text-white transition-colors hover:bg-zinc-700 md:inline-flex dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           href={previewLink}
+          rel="noopener"
           target="_blank"
         >
           Live Preview
@@ -30,6 +31,7 @@ export default function PreviewTemplate({
         <Link
           className="group not-prose relative hidden items-center gap-2 rounded-lg border border-orange-500 px-2 py-1.5 text-orange-500 text-sm transition-colors hover:bg-orange-100 md:inline-flex dark:border-orange-400 dark:text-orange-400 dark:hover:bg-orange-950"
           href={buyLink}
+          rel="noopener"
           target="_blank"
         >
           Buy Now

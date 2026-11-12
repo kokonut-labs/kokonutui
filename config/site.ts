@@ -11,7 +11,8 @@ export const siteConfig = {
 
 export type SiteConfig = typeof siteConfig;
 
+// The browser bar takes the page's own background, white or black.
 export const META_THEME_COLORS = {
-  light: "#44DCEA",
-  dark: "#44DCEA",
+  light: "#ffffff",
+  dark: "#000000",
 };

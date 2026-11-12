@@ -26,9 +26,18 @@ const PRO_URL = "https://kokonutui.pro";
 
 export const PRO_SHOWCASE_PAGE = "/docs/pro";
 
-/** Counted from Pro's docs on 2026-10-17 (templates on 2026-10-23); round down as it grows. */
+/**
+ * How many components Pro has, rounded down: 154 in its registry on
+ * 2026-11-12. Every mention of Pro on this site reads it from here.
+ */
+export const PRO_COMPONENT_COUNT = "150+";
+
+/** The one-line pitch on the banner above the header and under the sidebar. */
+export const PRO_PITCH = `${PRO_COMPONENT_COUNT} components to build websites faster, works with Claude Code, Cursor and more`;
+
+/** Categories counted from Pro's docs on 2026-10-17, templates on 2026-10-23. */
 export const PRO_STATS = [
-  { value: "120+", label: "components" },
+  { value: PRO_COMPONENT_COUNT, label: "components" },
   { value: "20+", label: "categories" },
   { value: "6", label: "templates" },
 ];
