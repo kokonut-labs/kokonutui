@@ -9,6 +9,7 @@ import { CopyToast } from "@/components/copy-toast";
 import LazySearchDialog, {
   SearchIntent,
 } from "@/components/search-dialog-lazy";
+import { TrackClicks } from "@/components/track-clicks";
 import { META_THEME_COLORS, siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
@@ -130,6 +131,7 @@ export default function RootLayout({
         <SearchIntent />
         <CopyToast />
         <Analytics />
+        <TrackClicks />
         <SpeedInsights />
       </body>
     </html>

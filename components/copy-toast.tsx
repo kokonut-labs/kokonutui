@@ -8,6 +8,7 @@ import {
 } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { MONO } from "@/components/landing/home/styles";
+import { trackCopy } from "@/lib/track";
 import { cn } from "@/lib/utils";
 
 const VISIBLE_MS = 2000;
@@ -41,12 +42,14 @@ function emit(copied: Copied) {
  * was copied (a command, a file); only its first line is shown. Pass the
  * write as `pending` when it has to wait on the network: a quick one goes
  * straight to Copied, a slow one shows Copying with a spinner until it lands.
+ * A copy that lands is also counted in analytics, by kind and component.
  */
 export function announceCopy(detail?: string, pending?: Promise<unknown>) {
   lastId += 1;
   const copied = { id: lastId, detail: firstLine(detail) };
   if (!pending) {
     emit(copied);
+    trackCopy(detail);
     return;
   }
   const slow = window.setTimeout(
@@ -57,6 +60,7 @@ export function announceCopy(detail?: string, pending?: Promise<unknown>) {
     () => {
       window.clearTimeout(slow);
       emit(copied);
+      trackCopy(detail);
     },
     () => {
       window.clearTimeout(slow);
