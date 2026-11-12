@@ -27,7 +27,7 @@ export default function HeaderProSmall() {
         EASE_COLORS,
         FOCUS
       )}
-      href="https://kokonutui.pro?utm_source=kokonutui.com&utm_medium=header"
+      href="https://kokonutui.pro/?utm_source=kokonutui.com&utm_medium=header"
       rel="noopener"
       target="_blank"
     >

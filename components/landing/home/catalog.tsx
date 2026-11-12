@@ -33,8 +33,8 @@ import {
   mcpCommand,
   POSTS,
   PRO_INCLUDED,
+  PRO_LANDING_URL,
   PRO_PRICE,
-  PRO_PRICING_URL,
   PRO_STILLS,
   REGISTRY_ENTRY,
   V0_THREAD,
@@ -1232,7 +1232,7 @@ function ProOffer() {
             EASE_COLORS,
             FOCUS
           )}
-          href={PRO_PRICING_URL}
+          href={PRO_LANDING_URL}
           rel="noopener"
           target="_blank"
         >

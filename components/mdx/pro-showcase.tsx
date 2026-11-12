@@ -14,7 +14,7 @@ import {
 import {
   getShowcaseGroup,
   PRO_SHOWCASE_COUNT,
-  PRO_SHOWCASE_PRICING_URL,
+  PRO_SHOWCASE_LANDING_URL,
   PRO_STATS,
   showcaseStill,
   showcaseUrl,
@@ -71,7 +71,7 @@ export function ProShowcaseIntro() {
             EASE_COLORS,
             FOCUS_INSET
           )}
-          href={PRO_SHOWCASE_PRICING_URL}
+          href={PRO_SHOWCASE_LANDING_URL}
           rel="noopener"
           target="_blank"
         >
@@ -84,8 +84,8 @@ export function ProShowcaseIntro() {
 }
 
 /**
- * One Pro category as a grid of stills. Each cell opens the component's
- * section in Pro's docs, where it runs; here it's a picture and a line.
+ * One Pro category as a grid of stills. Each cell opens the Pro homepage;
+ * here it's a picture and a line.
  */
 export function ProShowcase({ group }: { group: string }) {
   const found = getShowcaseGroup(group);

@@ -11,7 +11,7 @@ export function HeaderPro() {
       <div className="w-full px-4 py-2.5">
         <Link
           className="group flex items-center justify-center gap-2.5 tracking-tighter transition-opacity duration-200 md:gap-3"
-          href="https://kokonutui.pro?utm_source=kokonutui.com&utm_medium=header"
+          href="https://kokonutui.pro/?utm_source=kokonutui.com&utm_medium=header"
           rel="noopener"
           target="_blank"
         >

@@ -120,8 +120,8 @@ export const VIDEO_ID = "2Fj3WewGRow";
 // The offer as kokonutui.pro shows it (Pro's config/pricing.ts and
 // INCLUDED); change both together.
 export const PRO_PRICE = { list: 159, code: "PRO25", percent: 25, off: 40 };
-export const PRO_PRICING_URL =
-  "https://kokonutui.pro/?utm_source=kokonutui.com&utm_medium=landing#pricing";
+export const PRO_LANDING_URL =
+  "https://kokonutui.pro/?utm_source=kokonutui.com&utm_medium=landing";
 export const PRO_INCLUDED = [
   "Every component and section, as source you own",
   "Every website template, current and future",
