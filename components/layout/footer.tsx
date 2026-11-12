@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { HoverLink } from "@/components/hover-link";
 import { getCategories } from "@/components/landing/home/get-categories";
 import { CELL, GRID, INK, LINE, META } from "@/components/landing/home/styles";
 import { siteConfig } from "@/config/site";
@@ -169,9 +170,9 @@ export function Footer() {
                           {link.label}
                         </a>
                       ) : (
-                        <Link className={LINK} href={link.href}>
+                        <HoverLink className={LINK} href={link.href}>
                           {link.label}
-                        </Link>
+                        </HoverLink>
                       )}
                     </li>
                   ))}

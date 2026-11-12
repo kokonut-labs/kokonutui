@@ -5,6 +5,7 @@ import { ArrowRightIcon, ArrowUpRightIcon, RotateCcwIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type ComponentType, type ReactNode, Suspense, useState } from "react";
+import { HoverLink } from "@/components/hover-link";
 import CommandButton from "@/components/kokonutui/command-button";
 import SlideTextButton from "@/components/kokonutui/slide-text-button";
 import { componentPrompt } from "@/lib/agents";
@@ -262,12 +263,15 @@ function HeroActions({ count }: { count: number }) {
         href="/docs"
         text={`Browse ${count} components`}
       />
-      <CommandButton
-        className="rounded-full border-black/[0.13] bg-white pl-4 text-black/70 hover:border-black/30 hover:bg-white hover:text-black dark:border-white/[0.14] dark:bg-black dark:text-white/70 dark:hover:border-white/35 dark:hover:bg-black dark:hover:text-white"
-        onClick={() => setOpenSearch(true)}
-      >
-        Search
-      </CommandButton>
+      {/* data-search-intent: pointing at it starts loading the search code. */}
+      <span className="contents" data-search-intent>
+        <CommandButton
+          className="rounded-full border-black/[0.13] bg-white pl-4 text-black/70 hover:border-black/30 hover:bg-white hover:text-black dark:border-white/[0.14] dark:bg-black dark:text-white/70 dark:hover:border-white/35 dark:hover:bg-black dark:hover:text-white"
+          onClick={() => setOpenSearch(true)}
+        >
+          Search
+        </CommandButton>
+      </span>
     </div>
   );
 }
@@ -507,7 +511,7 @@ function PlateFoot({ part }: { part: Part }) {
   return (
     <figcaption className="flex items-end justify-between gap-4 px-4 pb-3.5">
       <span className="flex min-w-0 flex-col gap-0.5">
-        <Link
+        <HoverLink
           className={cn(
             "w-fit rounded-sm font-medium text-[15px] tracking-[-0.01em] underline-offset-4 hover:underline",
             INK,
@@ -516,7 +520,7 @@ function PlateFoot({ part }: { part: Part }) {
           href={part.url}
         >
           {part.title}
-        </Link>
+        </HoverLink>
         <span className={cn(META, "truncate")}>{spec}</span>
       </span>
       <span className="flex shrink-0 gap-1.5">
@@ -651,7 +655,7 @@ function Index({ parts }: { parts: Part[] }) {
                 INK
               )}
             >
-              <Link
+              <HoverLink
                 className={cn(
                   "underline-offset-4 hover:underline",
                   FOCUS_INSET
@@ -659,13 +663,13 @@ function Index({ parts }: { parts: Part[] }) {
                 href={`/docs/${items[0]?.categorySlug}`}
               >
                 {category}
-              </Link>
+              </HoverLink>
               <span className={META}>{items[0]?.code.slice(0, 2)}</span>
             </h3>
             <ul className="flex flex-col">
               {items.map((p) => (
                 <li key={p.name}>
-                  <Link
+                  <HoverLink
                     className={cn(
                       "group/row -mx-2 flex items-baseline gap-3 rounded-sm px-2 py-[5px] text-[14px] text-black/70 hover:bg-black/[0.03] hover:text-black dark:text-white/70 dark:hover:bg-white/[0.05] dark:hover:text-white",
                       EASE_COLORS,
@@ -676,7 +680,7 @@ function Index({ parts }: { parts: Part[] }) {
                     <span
                       className={cn(
                         MONO,
-                        "w-[5ch] shrink-0 text-[11.5px] text-black/35 transition-colors duration-150 ease-out group-hover/row:text-[#1FA834] dark:text-white/35 dark:group-hover/row:text-[#3BB44B]"
+                        "w-[5ch] shrink-0 text-[11.5px] text-black/55 transition-colors duration-150 ease-out group-hover/row:text-[#15852A] dark:text-white/50 dark:group-hover/row:text-[#3BB44B]"
                       )}
                     >
                       {p.code}
@@ -693,7 +697,7 @@ function Index({ parts }: { parts: Part[] }) {
                         {p.isNew ? "New" : "Updated"}
                       </span>
                     ) : null}
-                  </Link>
+                  </HoverLink>
                 </li>
               ))}
             </ul>

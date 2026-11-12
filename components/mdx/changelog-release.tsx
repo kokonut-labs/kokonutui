@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { HoverLink } from "@/components/hover-link";
 import { getParts, type Part } from "@/components/landing/home/parts";
 import {
   EASE_COLORS,
@@ -119,7 +119,7 @@ function Row({
       </span>
       <span className="flex min-w-0 flex-col gap-1">
         <span className="flex flex-wrap items-baseline gap-x-3">
-          <Link
+          <HoverLink
             className={cn(
               "rounded-sm font-medium text-[15px] tracking-[-0.01em] underline-offset-4 hover:underline",
               INK,
@@ -128,7 +128,7 @@ function Row({
             href={part.url}
           >
             {part.title}
-          </Link>
+          </HoverLink>
           <span className={META}>{part.category}</span>
         </span>
         {text ? (
