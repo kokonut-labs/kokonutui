@@ -139,7 +139,7 @@ export function Catalog({
         id="featured"
         number="02"
         plates={pick(PLATES)}
-        title="The rest of the app"
+        title="UI components"
       />
       <Index parts={parts} />
       <Ordering />
