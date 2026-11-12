@@ -72,11 +72,13 @@ const FLOW = [
   { name: "ai-checkout", label: "Pay", room: "min-h-[460px]" },
   { name: "ai-order-status", label: "Track", room: "min-h-[460px]" },
 ];
+/** The live part in the cover's corner, above the pitch. */
+const CORNER = "ai-voice";
 /** The middle step of the cover, asked for the way you'd ask a colleague. */
 const AGENT_PROMPT = "Add @kokonutui/ai-checkout to my agent's chat";
 const AI_PLATES = [
   "ai-tool-calls",
-  "ai-voice",
+  "ai-autocomplete",
   "ai-prompt",
   "ai-model-selector",
   "ai-loading",
@@ -123,12 +125,13 @@ export function Catalog({
       )}
     >
       <Cover
+        corner={pick([CORNER])[0]}
         count={parts.length}
         latest={LATEST.added.flatMap((e) => byName.get(e.name) ?? [])}
         steps={steps}
       />
       <Plates
-        aside="The parts of an AI product people touch: tool calls in a reply, voice input, the model picker. Live demos, not screenshots."
+        aside="The parts of an AI product people touch: tool calls in a reply, autocomplete as you type, the model picker. Live demos, not screenshots."
         id="ai"
         number="01"
         plates={pick(AI_PLATES)}
@@ -162,10 +165,12 @@ interface FlowStep {
 }
 
 function Cover({
+  corner,
   steps,
   latest,
   count,
 }: {
+  corner?: Part;
   steps: FlowStep[];
   latest: Part[];
   count: number;
@@ -198,10 +203,20 @@ function Cover({
         ))}
       </div>
 
-      {/* Headline, then the pitch, then the two ways in. From lg up the pitch
-          stands beside both, at the foot of its own column. */}
-      <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
-        <div className={cn("p-5 sm:p-8 lg:col-span-8 lg:p-10", CELL)}>
+      {/* Headline, then the pitch, then the two ways in, then a live part.
+          From lg up the part and the pitch share a column beside the rest. */}
+      <div
+        className={cn(
+          "grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-[1fr_auto]",
+          GRID
+        )}
+      >
+        <div
+          className={cn(
+            "order-1 flex items-center p-5 sm:p-8 lg:col-span-8 lg:p-10",
+            CELL
+          )}
+        >
           <h1
             className={cn(
               "home-enter font-semibold text-[clamp(40px,12.5vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,8vw,112px)]",
@@ -216,26 +231,33 @@ function Cover({
         </div>
         <div
           className={cn(
-            "flex items-end p-5 sm:p-8 lg:col-span-4 lg:row-span-2 lg:p-10",
-            CELL
+            "contents lg:order-2 lg:col-span-4 lg:row-span-2 lg:grid lg:grid-rows-[1fr_auto]",
+            GRID
           )}
         >
-          <p
+          {corner ? <CornerPlate part={corner} /> : null}
+          <div
             className={cn(
-              "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
-              SOFT
+              "order-2 flex items-end p-5 sm:p-8 lg:px-10 lg:py-7",
+              CELL
             )}
-            style={enter(1)}
           >
-            Open-source React components for AI apps: the prompt box, the
-            checkout inside a reply, the order you can follow, and the inputs
-            and cards around them. All live on this page. Install any of them
-            with one command or one prompt.
-          </p>
+            <p
+              className={cn(
+                "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
+                SOFT
+              )}
+              style={enter(1)}
+            >
+              Open-source React components for AI apps, and the inputs and cards
+              around them. All live on this page. Install any of them with one
+              command or one prompt.
+            </p>
+          </div>
         </div>
         <div
           className={cn(
-            "flex flex-wrap items-center gap-x-6 gap-y-4 p-5 sm:px-8 lg:col-span-8 lg:px-10",
+            "order-3 flex flex-wrap items-center gap-x-6 gap-y-4 p-5 sm:px-8 lg:col-span-8 lg:px-10",
             CELL
           )}
         >
@@ -329,6 +351,47 @@ function HeroActions({ count }: { count: number }) {
         </CommandButton>
       </span>
     </div>
+  );
+}
+
+/**
+ * The live part beside the headline. Stacked, it comes after the buttons, so
+ * the pitch and the two ways in stay together.
+ */
+function CornerPlate({ part }: { part: Part }) {
+  const { Component: Demo, hint } = LIVE[part.name];
+  return (
+    <figure
+      className={cn("home-enter order-4 flex flex-col lg:order-1", CELL)}
+      style={enter(1)}
+    >
+      <figcaption className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
+        <span className="flex shrink-0 items-baseline gap-2">
+          <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>
+            {part.code}
+          </span>
+          <HoverLink
+            className={cn(
+              MONO,
+              "rounded-sm text-[12px] underline-offset-4 hover:underline",
+              INK,
+              FOCUS
+            )}
+            href={part.url}
+          >
+            {part.title}
+          </HoverLink>
+        </span>
+        <span className={cn(META, "truncate")}>{hint}</span>
+      </figcaption>
+      <div className="relative min-h-[216px] flex-1">
+        <Fit className="px-5 py-2">
+          <Suspense fallback={<LiveFallback />}>
+            <Demo />
+          </Suspense>
+        </Fit>
+      </div>
+    </figure>
   );
 }
 

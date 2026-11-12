@@ -146,6 +146,11 @@ export const LIVE: Record<string, LiveEntry> = {
     ({ default: C }) => <C minuteMs={2400} />,
     "Watch the courier arrive"
   ),
+  "ai-autocomplete": live(
+    () => import("@/components/kokonutui/ai-autocomplete"),
+    ({ default: C }) => <C />,
+    "Type, then Tab to take the suggestion"
+  ),
   "ai-voice": live(
     () => import("@/components/kokonutui/ai-voice"),
     ({ default: C }) => <C />,
