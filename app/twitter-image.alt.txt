@@ -1,1 +1,1 @@
-Kokonut UI: Components that feel right. Open-source React components built with Tailwind CSS, Motion and shadcn/ui, beside six of them live: Pull Cord, Apple Activity Card, Wheel Picker, Detent Dial, Bell Button and Liquid Gauge.
+Kokonut UI: AI components that feel right. Open-source React components for AI apps, built with Tailwind CSS, Motion and shadcn/ui, above one order in three live parts: AI Input Search, AI Checkout and AI Order Status.

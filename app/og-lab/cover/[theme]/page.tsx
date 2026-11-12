@@ -6,17 +6,10 @@ import { CoverFrame, type Theme } from "@/components/og/frames";
 export const metadata: Metadata = { robots: "noindex, nofollow" };
 
 const THEMES: Theme[] = ["light", "dark"];
-/** The parts on the cover: one or two from each of several shelves. */
-const FEATURED = [
-  "pull-cord",
-  "apple-activity-card",
-  "wheel-picker",
-  "detent-dial",
-  "bell-button",
-  "liquid-gauge",
-];
+/** The cover's order: ask for it, pay in the chat, follow the delivery. */
+const FEATURED = ["ai-input-search", "ai-checkout", "ai-order-status"];
 /** The part the install line names. */
-const INSTALL = "slide-to-confirm";
+const INSTALL = "ai-checkout";
 
 export function generateStaticParams() {
   return THEMES.map((theme) => ({ theme }));

@@ -1,14 +1,14 @@
 <p align="center">
   <a href="https://kokonutui.com">
-    <img alt="Kokonut UI: components that feel right" src="app/opengraph-image.png" width="800">
+    <img alt="Kokonut UI: AI components that feel right" src="app/opengraph-image.png" width="800">
   </a>
 </p>
 
 <h1 align="center">Kokonut UI</h1>
 
 <p align="center">
-  100+ open-source React components built with Tailwind CSS, Motion and shadcn/ui.<br>
-  Install them with the shadcn CLI and they live in your codebase.
+  Open-source React components for AI apps, and the inputs, cards and buttons around them.<br>
+  100+ components built with Tailwind CSS, Motion and shadcn/ui. Your agent or the shadcn CLI installs them, and they live in your codebase.
 </p>
 
 <p align="center">
@@ -16,6 +16,15 @@
   <a href="https://kokonutui.com/docs/changelog">Changelog</a> ·
   <a href="https://kokonutui.com/docs/agents">Agents</a> ·
   <a href="https://kokonutui.pro">Pro</a>
+</p>
+
+<p align="center">
+  <a href="https://www.producthunt.com/products/kokonutui?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-kokonut-ui-2">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1300330&amp;theme=dark">
+      <img alt="Kokonut UI - Open-source UI components for your AI agent | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1300330&amp;theme=light">
+    </picture>
+  </a>
 </p>
 
 ## Quick start
@@ -33,14 +42,14 @@ Kokonut UI is a [shadcn/ui registry](https://ui.shadcn.com/docs/registry). Add t
 Then add any component by name:
 
 ```bash
-npx shadcn@latest add @kokonutui/slide-to-confirm
+npx shadcn@latest add @kokonutui/ai-tool-approval
 ```
 
 ```tsx
-import SlideToConfirm from "@/components/kokonutui/slide-to-confirm";
+import AIToolApproval from "@/components/kokonutui/ai-tool-approval";
 
 export default function Page() {
-  return <SlideToConfirm />;
+  return <AIToolApproval />;
 }
 ```
 
@@ -49,19 +58,20 @@ The CLI writes the source to `components/kokonutui/` and installs its dependenci
 You can also install straight from this repo, with no `components.json` changes:
 
 ```bash
-npx shadcn@latest add kokonut-labs/kokonutui/slide-to-confirm
+npx shadcn@latest add kokonut-labs/kokonutui/ai-tool-approval
 ```
 
 ## Components
 
 | Category | Examples |
 | --- | --- |
-| [AI](https://kokonutui.com/docs/ai) | Tool Approval, Diff Review, Context Meter, Inline Citations, Model Selector, Voice |
+| [AI](https://kokonutui.com/docs/ai) | Tool Calls, Tool Approval, Checkout, Diff Review, Model Selector, Inline Citations, Voice |
 | [Buttons](https://kokonutui.com/docs/buttons) | Slide to Confirm, Hold Button, Undo Button, Magnet Button, Tear Button |
 | [Cards](https://kokonutui.com/docs/cards) | Apple Activity Card, Boarding Pass, Currency Transfer, Uptime Card, Receipt Printer |
 | [Inputs](https://kokonutui.com/docs/inputs) | Seat Map, Wheel Picker, Signature Pad, Time Zone Planner, Amount Pad |
 | [Navigation](https://kokonutui.com/docs/navigation) | Command Palette, Marking Menu, Smooth Drawer, Swipe Tabs, Status Island |
 | [Media](https://kokonutui.com/docs/media) | Clip Trimmer, Synced Transcript, Photo Straighten, Focal Point Picker |
+| [Feedback](https://kokonutui.com/docs/feedback) | Promise Toast, Inline Alert, Save Status, Empty State, Helpful Rating |
 | [Text](https://kokonutui.com/docs/texts) | Split Flap Text, Spoiler Text, Typing Text, Marker Text |
 | [Backgrounds](https://kokonutui.com/docs/backgrounds) | Caustics, Halftone, Topo, Rain Glass, Drape |
 

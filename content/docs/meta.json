@@ -1,6 +1,6 @@
 {
   "title": "KokonutUI",
-  "description": "Collection of 100+ stunning UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.",
+  "description": "Open-source React components for AI apps, built with Tailwind CSS, Motion and shadcn/ui.",
   "root": true,
   "pages": [
     "index",
@@ -8,11 +8,11 @@
     "changelog",
     "templates",
     "pro",
+    "ai",
     "backgrounds",
     "cards",
     "navigation",
     "inputs",
-    "ai",
     "media",
     "feedback",
     "texts",

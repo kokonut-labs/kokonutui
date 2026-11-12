@@ -48,8 +48,8 @@ function live<M extends { default: unknown }>(
 export const LIVE: Record<string, LiveEntry> = {
   "apple-activity-card": live(
     () => import("@/components/kokonutui/apple-activity-card"),
-    // The cover tile is narrower than the card's side-by-side breakpoint, so
-    // the card is laid out at that width with its title hidden (the plate
+    // The cover's corner is narrower than the card's side-by-side breakpoint,
+    // so the card is laid out at that width with its title hidden (the plate
     // names it), and the wrapper hands Fit only the rings and legend.
     ({ default: C }) => (
       <div className="flex w-[384px] justify-center">
@@ -57,6 +57,17 @@ export const LIVE: Record<string, LiveEntry> = {
       </div>
     ),
     "Rings fill as it mounts"
+  ),
+  "hold-button": live(
+    () => import("@/components/kokonutui/hold-button"),
+    ({ default: C }) => (
+      <div className="flex flex-col items-center gap-3">
+        <C />
+        <C variant="green" />
+        <C holdDuration={2000} variant="grey" />
+      </div>
+    ),
+    "Press and hold to confirm"
   ),
   "slide-to-confirm": live(
     () => import("@/components/kokonutui/slide-to-confirm"),
@@ -119,6 +130,47 @@ export const LIVE: Record<string, LiveEntry> = {
     () => import("@/components/kokonutui/liquid-gauge"),
     ({ default: C }) => <C />,
     "Drag sideways to slosh it"
+  ),
+  "ai-input-search": live(
+    () => import("@/components/kokonutui/ai-input-search"),
+    // Its toolbar needs the width, so in a third of the cover it's laid out
+    // wide and Fit reduces it. Stacked, below lg, it takes the cell's width.
+    ({ default: C }) => (
+      <C className="w-full max-w-[480px] lg:w-[480px] lg:max-w-none" />
+    ),
+    "Pick a tool with /, then ask"
+  ),
+  "ai-tool-calls": live(
+    () => import("@/components/kokonutui/ai-tool-calls"),
+    ({ default: C }) => <C />,
+    "Calls stream in, then fold away"
+  ),
+  "ai-checkout": live(
+    () => import("@/components/kokonutui/ai-checkout"),
+    ({ default: C }) => <C />,
+    "Pay without leaving the chat"
+  ),
+  "ai-order-status": live(
+    () => import("@/components/kokonutui/ai-order-status"),
+    // Slower than the docs demo, so the courier is still on the road once
+    // you've read the headline.
+    ({ default: C }) => <C minuteMs={2400} />,
+    "Watch the courier arrive"
+  ),
+  "ai-autocomplete": live(
+    () => import("@/components/kokonutui/ai-autocomplete"),
+    ({ default: C }) => <C />,
+    "Type, then Tab to take the suggestion"
+  ),
+  "ai-model-selector": live(
+    () => import("@/components/kokonutui/ai-model-selector"),
+    ({ default: C }) => <C className="w-full max-w-[300px]" />,
+    "Pick a model, then the effort"
+  ),
+  "ai-context-meter": live(
+    () => import("@/components/kokonutui/ai-context-meter"),
+    ({ default: C }) => <C className="w-full max-w-[300px]" />,
+    "Compact before the window fills"
   ),
 };
 

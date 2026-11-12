@@ -93,6 +93,18 @@ export function Header() {
                   </Link>
                   <Link
                     className="flex items-center gap-1 rounded-lg px-3 py-1 font-medium text-[15px] text-black/80 tracking-tighter transition-colors duration-200 hover:bg-black/5 dark:text-white/80 dark:hover:bg-white/5"
+                    href="/docs/ai"
+                  >
+                    AI
+                  </Link>
+                  <Link
+                    className="flex items-center gap-1 rounded-lg px-3 py-1 font-medium text-[15px] text-black/80 tracking-tighter transition-colors duration-200 hover:bg-black/5 dark:text-white/80 dark:hover:bg-white/5"
+                    href="/docs/agents"
+                  >
+                    Agents
+                  </Link>
+                  <Link
+                    className="flex items-center gap-1 rounded-lg px-3 py-1 font-medium text-[15px] text-black/80 tracking-tighter transition-colors duration-200 hover:bg-black/5 dark:text-white/80 dark:hover:bg-white/5"
                     href="/docs/changelog"
                   >
                     Changelog
@@ -102,12 +114,6 @@ export function Header() {
                     href={PRO_TEMPLATES_PAGE}
                   >
                     Templates
-                  </Link>
-                  <Link
-                    className="flex items-center gap-1 rounded-lg px-3 py-1 font-medium text-[15px] text-black/80 tracking-tighter transition-colors duration-200 hover:bg-black/5 dark:text-white/80 dark:hover:bg-white/5"
-                    href="/#testimonials"
-                  >
-                    Testimonials
                   </Link>
                 </nav>
               </div>
