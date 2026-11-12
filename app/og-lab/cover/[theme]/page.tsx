@@ -6,10 +6,10 @@ import { CoverFrame, type Theme } from "@/components/og/frames";
 export const metadata: Metadata = { robots: "noindex, nofollow" };
 
 const THEMES: Theme[] = ["light", "dark"];
-/** The cover's agent turn: ask, approve the tool call, review the change. */
-const FEATURED = ["ai-input-search", "ai-tool-approval", "ai-diff-review"];
+/** The cover's order: ask for it, pay in the chat, follow the delivery. */
+const FEATURED = ["ai-input-search", "ai-checkout", "ai-order-status"];
 /** The part the install line names. */
-const INSTALL = "ai-tool-approval";
+const INSTALL = "ai-checkout";
 
 export function generateStaticParams() {
   return THEMES.map((theme) => ({ theme }));

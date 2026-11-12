@@ -129,17 +129,6 @@ export const LIVE: Record<string, LiveEntry> = {
     ),
     "Pick a tool with /, then ask"
   ),
-  "ai-tool-approval": live(
-    () => import("@/components/kokonutui/ai-tool-approval"),
-    ({ default: C }) => <C className="w-full max-w-[440px]" />,
-    "Allow it, or hold for risky ones"
-  ),
-  "ai-diff-review": live(
-    () => import("@/components/kokonutui/ai-diff-review"),
-    // A fixed width keeps its header on one line; Fit reduces it to fit.
-    ({ default: C }) => <C className="w-[380px] max-w-none" />,
-    "Accept or reject each file"
-  ),
   "ai-tool-calls": live(
     () => import("@/components/kokonutui/ai-tool-calls"),
     ({ default: C }) => <C />,
@@ -149,6 +138,18 @@ export const LIVE: Record<string, LiveEntry> = {
     () => import("@/components/kokonutui/ai-checkout"),
     ({ default: C }) => <C />,
     "Pay without leaving the chat"
+  ),
+  "ai-order-status": live(
+    () => import("@/components/kokonutui/ai-order-status"),
+    // Slower than the docs demo, so the courier is still on the road once
+    // you've read the headline.
+    ({ default: C }) => <C minuteMs={2400} />,
+    "Watch the courier arrive"
+  ),
+  "ai-voice": live(
+    () => import("@/components/kokonutui/ai-voice"),
+    ({ default: C }) => <C />,
+    "Record, then play it back or send"
   ),
   "ai-model-selector": live(
     () => import("@/components/kokonutui/ai-model-selector"),

@@ -20,7 +20,7 @@ const BASE = process.env.OG_URL ?? "http://localhost:3000";
 const FRAME = process.env.OG_PATH ?? "/og-lab/cover/light";
 const OG = path.join(process.cwd(), "app/opengraph-image.png");
 const TWITTER = path.join(process.cwd(), "app/twitter-image.png");
-/** Long enough for the diff to finish streaming in. */
+/** Long enough for the live parts to settle. */
 const SETTLE_MS = 6000;
 
 const browser = await chromium.launch(

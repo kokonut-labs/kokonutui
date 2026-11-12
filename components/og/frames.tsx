@@ -137,12 +137,12 @@ function Headline({ className }: { className?: string }) {
   );
 }
 
-/** The cover's agent turn, one step per part, in order. */
-const STEPS = ["Ask", "Approve", "Review"];
+/** The cover's order, one step per part. */
+const STEPS = ["Ask", "Pay", "Track"];
 
 /**
  * The homepage's link preview: the cover's first screen at preview size. The
- * tagline, then one agent turn in three live parts.
+ * tagline, then one order in three live parts.
  */
 export function CoverFrame({
   theme,
@@ -160,7 +160,7 @@ export function CoverFrame({
 }) {
   return (
     <Canvas theme={theme}>
-      <div className={cn("grid grid-rows-[54px_1fr_252px_60px]", GRID)}>
+      <div className={cn("grid grid-rows-[54px_1fr_296px_56px]", GRID)}>
         <MetaRow
           cells={[
             <Brand key="brand" theme={theme} />,
@@ -173,9 +173,9 @@ export function CoverFrame({
         />
         <div className={cn("grid grid-cols-12", GRID)}>
           <div className={cn("col-span-8 flex items-center px-9", CELL)}>
-            <Headline className="text-[78px]" />
+            <Headline className="text-[70px]" />
           </div>
-          <div className={cn("col-span-4 flex items-end px-7 pb-7", CELL)}>
+          <div className={cn("col-span-4 flex items-end px-7 pb-6", CELL)}>
             <p className={cn("text-pretty text-[19px] leading-[1.4]", SOFT)}>
               Open-source React components for AI apps, built with Tailwind CSS,
               Motion and shadcn/ui.
@@ -194,7 +194,7 @@ export function CoverFrame({
                 </span>
               </span>
               <div className="relative flex-1">
-                <Fit className="px-5 py-2">
+                <Fit className="px-5 py-1">
                   <Live name={part.name} />
                 </Fit>
               </div>

@@ -64,19 +64,19 @@ import { VideoCard } from "./video";
 /** The newest release, shown under Vercel in the cover. */
 const LATEST = RELEASES[0];
 /**
- * One agent turn told in three live parts, left to right: ask, approve the
- * tool call, review the change.
+ * One order told in three live parts, left to right: ask for it, pay in the
+ * chat, follow the delivery.
  */
 const FLOW = [
-  { name: "ai-input-search", label: "Ask" },
-  { name: "ai-tool-approval", label: "Approve" },
-  { name: "ai-diff-review", label: "Review" },
+  { name: "ai-input-search", label: "Ask", room: "min-h-[240px]" },
+  { name: "ai-checkout", label: "Pay", room: "min-h-[460px]" },
+  { name: "ai-order-status", label: "Track", room: "min-h-[460px]" },
 ];
 /** The middle step of the cover, asked for the way you'd ask a colleague. */
-const AGENT_PROMPT = "Add @kokonutui/ai-tool-approval to my agent's chat";
+const AGENT_PROMPT = "Add @kokonutui/ai-checkout to my agent's chat";
 const AI_PLATES = [
   "ai-tool-calls",
-  "ai-checkout",
+  "ai-voice",
   "ai-prompt",
   "ai-model-selector",
   "ai-loading",
@@ -128,7 +128,7 @@ export function Catalog({
         steps={steps}
       />
       <Plates
-        aside="The parts of an AI product people touch: tool calls in a reply, a checkout in the chat, the model picker. Live demos, not screenshots."
+        aside="The parts of an AI product people touch: tool calls in a reply, voice input, the model picker. Live demos, not screenshots."
         id="ai"
         number="01"
         plates={pick(AI_PLATES)}
@@ -154,6 +154,11 @@ export function Catalog({
 interface FlowStep {
   label: string;
   part: Part;
+  /**
+   * Height that shows the part at its own size. Side by side, the row takes
+   * the tallest; stacked, the composer doesn't hold a card's worth of space.
+   */
+  room: string;
 }
 
 function Cover({
@@ -222,10 +227,10 @@ function Cover({
             )}
             style={enter(1)}
           >
-            Open-source React components for AI apps: the prompt box, the tool
-            call that needs a yes, the diff to review, and the inputs and cards
-            around them. All live on this page. Install any of them with one
-            command or one prompt.
+            Open-source React components for AI apps: the prompt box, the
+            checkout inside a reply, the order you can follow, and the inputs
+            and cards around them. All live on this page. Install any of them
+            with one command or one prompt.
           </p>
         </div>
         <div
@@ -245,6 +250,7 @@ function Cover({
             key={step.part.name}
             label={`${i + 1}. ${step.label}`}
             part={step.part}
+            room={step.room}
           />
         ))}
       </div>
@@ -327,7 +333,11 @@ function HeroActions({ count }: { count: number }) {
 }
 
 /** One step of the cover's agent turn: a live part under its step name. */
-function FlowPlate({ part, label }: { part: Part; label: string }) {
+function FlowPlate({
+  part,
+  label,
+  room,
+}: Pick<FlowStep, "part" | "room"> & { label: string }) {
   const { Component: Demo, hint } = LIVE[part.name];
   return (
     <figure className={cn("home-enter flex flex-col", CELL)} style={enter(1)}>
@@ -340,7 +350,7 @@ function FlowPlate({ part, label }: { part: Part; label: string }) {
         </span>
         <span className={cn(META, "truncate")}>{hint}</span>
       </div>
-      <div className="relative min-h-[340px] flex-1">
+      <div className={cn("relative flex-1", room)}>
         <Fit className="px-5 py-4">
           <Suspense fallback={<LiveFallback />}>
             <Demo />
