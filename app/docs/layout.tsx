@@ -106,7 +106,7 @@ function withCodes(tree: PageTree.Root): PageTree.Root {
         <span
           className={cn(
             MONO,
-            "w-[5ch] shrink-0 text-[11px] text-black/40 dark:text-white/40"
+            "w-[5ch] shrink-0 text-[11px] text-black/55 dark:text-white/50"
           )}
           key={code}
         >
@@ -123,7 +123,9 @@ export default function Layout({ children }: LayoutProps<"/docs">) {
   return (
     <DocsLayout
       {...baseOptions()}
-      sidebar={{ footer: <HeaderProSmall /> }}
+      // The sidebar lists every page. Prefetching each row as it scrolled
+      // into view cost about 80 requests per page view, on phones too.
+      sidebar={{ footer: <HeaderProSmall />, prefetch: false }}
       tree={withCodes(source.getPageTree())}
     >
       {children}

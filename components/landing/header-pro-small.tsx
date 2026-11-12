@@ -9,7 +9,7 @@ import {
   MONO,
   SOFT,
 } from "@/components/landing/home/styles";
-import { PRO_BANNER_LINE } from "@/lib/pro-showcase";
+import { PRO_PITCH } from "@/lib/pro-showcase";
 import { cn } from "@/lib/utils";
 
 /**
@@ -28,6 +28,7 @@ export default function HeaderProSmall() {
         FOCUS
       )}
       href="https://kokonutui.pro?utm_source=kokonutui.com&utm_medium=header"
+      rel="noopener"
       target="_blank"
     >
       <span
@@ -50,7 +51,7 @@ export default function HeaderProSmall() {
         />
       </span>
       <span className={cn("text-[12.5px] leading-snug", SOFT)} data-nosnippet>
-        {PRO_BANNER_LINE}
+        {PRO_PITCH}
       </span>
     </Link>
   );

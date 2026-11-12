@@ -770,9 +770,9 @@ export default function AIInlineEdit({
             aria-hidden="true"
             className="size-3.5 text-zinc-400 dark:text-zinc-500"
           />
-          <h3 className="min-w-0 flex-1 truncate font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
+          <h2 className="min-w-0 flex-1 truncate font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
             {title}
-          </h3>
+          </h2>
           <span className="text-[12px] text-zinc-400 dark:text-zinc-500">
             Draft
           </span>

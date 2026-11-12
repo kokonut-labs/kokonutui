@@ -55,3 +55,8 @@ jobs:
       # Files and packages nothing imports. Registry components, hooks and
       # docs pages count as used (see knip.json).
       - run: bunx knip --no-progress
+
+      # Registry dependencies are written by hand. This compares each entry
+      # with what its files import, so a missing package fails here instead
+      # of in someone's project after `shadcn add`.
+      - run: bun run check:registry

@@ -447,8 +447,17 @@ export default function ScrollIndex({
       )}
     >
       <div
-        className={cn(self && "h-full overflow-y-auto overscroll-contain")}
+        className={cn(
+          self &&
+            "h-full overflow-y-auto overscroll-contain outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset"
+        )}
         ref={boxRef}
+        // A box that scrolls has to take focus, or the keyboard can't scroll it.
+        {...(self && {
+          "aria-label": "Article",
+          role: "region",
+          tabIndex: 0,
+        })}
       >
         <div
           className={cn(self && "py-8 pr-16 pl-6 sm:pl-10")}

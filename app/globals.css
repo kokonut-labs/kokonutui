@@ -128,6 +128,8 @@
   --color-fd-popover: #fff;
   --color-fd-border: rgb(0 0 0 / 0.13);
   --color-fd-accent: rgb(0 0 0 / 0.05);
+  /* A step darker than the default, which fell under 4.5:1 on the search box. */
+  --color-fd-muted-foreground: #666;
 }
 
 .dark {
