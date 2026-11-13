@@ -32,7 +32,9 @@ export interface TransferAccount {
 }
 
 export interface CurrencyTransferProps {
+  /** Sending account and amount. */
   from?: TransferAccount;
+  /** Receiving account and amount. Its `name` labels the card. */
   to?: TransferAccount;
   /** Units of `to.currency` per one unit of `from.currency`. */
   rate?: number;

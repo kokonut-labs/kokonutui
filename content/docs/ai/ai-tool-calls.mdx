@@ -7,7 +7,63 @@ full: false
 ---
 
 import AIToolCalls from "@/components/kokonutui/ai-tool-calls";
+import AIToolCallsStream from "@/components/mdx/demos/ai-tool-calls-stream";
 
 <Preview link="ai-tool-calls">
     <AIToolCalls />
 </Preview>
+
+## Usage
+
+With no `calls`, the component plays the demo above, question and answer included. Pass `calls` with a `state` on each and it draws only what you give it: a row per call, a live timer while it runs, then the fold into "Used 3 tools" once every call has ended. The user's bubble and the answer only show when you pass `prompt` and `answer`, since your chat already draws the conversation around it.
+
+The states are the AI SDK's tool part states, so a part maps straight in. A reply that was already finished when it mounts (an older message) starts folded and shows no timer.
+
+```tsx
+"use client";
+
+import { useChat } from "@ai-sdk/react";
+import { getToolName, isToolUIPart, type UIMessage } from "ai";
+import AIToolCalls from "@/components/kokonutui/ai-tool-calls";
+
+const LABELS: Record<string, { running: string; done: string }> = {
+  web_search: { running: "Searching the web", done: "Searched the web" },
+  read_page: { running: "Reading", done: "Read" },
+};
+
+function AssistantMessage({ message }: { message: UIMessage }) {
+  const text = message.parts
+    .map((part) => (part.type === "text" ? part.text : ""))
+    .join("");
+
+  const calls = message.parts.filter(isToolUIPart).map((part) => {
+    const tool = getToolName(part);
+    return {
+      id: part.toolCallId,
+      tool,
+      ...LABELS[tool],
+      state: part.state,
+      detail: (part.input as { query?: string } | undefined)?.query,
+      result: part.state === "output-available" ? "Done" : undefined,
+      error: part.state === "output-error" ? part.errorText : undefined,
+    };
+  });
+
+  return <AIToolCalls answer={text} calls={calls} />;
+}
+
+export function Chat() {
+  const { messages } = useChat();
+  return messages.map((message) =>
+    message.role === "assistant" ? (
+      <AssistantMessage key={message.id} message={message} />
+    ) : null
+  );
+}
+```
+
+Here it is fed by a scripted stream in the same shape. **Play with an error** fails the last call: its row says why, its icon turns red, and the fold reads "Used 3 tools, 1 failed".
+
+<AIToolCallsStream />
+
+Leave every `state` out and your own calls play through one after another on their `duration`, like the demo. The root carries `data-state="running"` or `"done"`, and each row its call's state, for styling with `data-[state=done]:`.

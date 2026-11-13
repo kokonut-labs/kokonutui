@@ -3,6 +3,7 @@ import path from "node:path";
 import { renderPlaceholder } from "fumadocs-core/mdx-plugins/remark-llms.runtime";
 import { cacheLife } from "next/cache";
 import { siteConfig } from "@/config/site";
+import { apiToMarkdown, getComponentApi } from "@/lib/component-api";
 import { BLOCK_RENDERERS } from "@/lib/llm-blocks";
 import type { source } from "@/lib/source";
 
@@ -48,6 +49,11 @@ async function renderPreview({ attributes }: PlaceholderArgs): Promise<string> {
     "```",
     "",
   ];
+
+  const api = await getComponentApi(link).catch(() => undefined);
+  if (api) {
+    parts.push(apiToMarkdown(api));
+  }
 
   try {
     const code = await readComponentSource(link);
