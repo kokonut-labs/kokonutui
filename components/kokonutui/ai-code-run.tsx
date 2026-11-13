@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Code Run
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-11-05
  * @license: MIT
  * @website: https://kokonutui.com
@@ -20,17 +20,39 @@ export interface CodeRunBar {
   value: number;
 }
 
+/**
+ * Where the run is: the model `writing` the code, the code `running`, then
+ * `done` or `error`. Matches a code tool's part going from input-streaming
+ * to input-available to output-available or output-error.
+ */
+export type CodeRunStatus = "writing" | "running" | "done" | "error";
+
 export interface AICodeRunProps {
+  /** The user's message, drawn as a bubble. Only the demo draws one by default. */
   prompt?: string;
+  /** What the assistant says before the code. */
   message?: string;
   filename?: string;
+  /** The script. While `writing`, pass it as it streams in. */
   code?: string;
-  /** What the script prints. */
+  /** What the script prints, or the error when it fails. */
   stdout?: string;
-  /** The chart the script draws. */
+  /** The chart the script draws, shown once it's done. */
   bars?: CodeRunBar[];
-  answer?: string;
-  /** Demo timing: how long each line of code takes, in ms. */
+  /** The reply under the run, shown once it's done. */
+  answer?: ReactNode;
+  /**
+   * Pass it to drive the card from your run; leave it out and the code
+   * plays through line by line on `lineMs`.
+   */
+  status?: CodeRunStatus;
+  /** The line running now, from 1, while `running`. */
+  activeLine?: number;
+  /** How long the run took, in seconds, shown once it's done. */
+  duration?: number;
+  /** Shows Run again once the run is over. The demo replays by itself. */
+  onRunAgain?: () => void;
+  /** Demo only: how long each line takes, in ms. */
   lineMs?: number;
   className?: string;
 }
@@ -95,56 +117,137 @@ const highlight = (line: string): ReactNode[] => {
   return out;
 };
 
-export default function AICodeRun({
-  prompt = "How did signups do over the last six weeks?",
-  message = "I’ll pull them from the export and plot it.",
-  filename = "signups.py",
-  code = DEMO_CODE,
-  stdout = "4,812 signups, +38%",
-  bars = DEMO_BARS,
-  answer = DEMO_ANSWER,
-  lineMs = 320,
-  className,
-}: AICodeRunProps) {
-  const outputId = useId();
-  const lines = code.split("\n");
+const DEMO = {
+  prompt: "How did signups do over the last six weeks?",
+  message: "I’ll pull them from the export and plot it.",
+  filename: "signups.py",
+  stdout: "4,812 signups, +38%",
+};
+
+/** Plays the code line by line, as the demo and for code with no status. */
+function usePlayback(lines: string[], lineMs: number, active: boolean) {
   /** Lines that actually run; blank ones are skipped. */
   const steps = lines.flatMap((l, i) => (l.trim() ? [i] : []));
   const [run, setRun] = useState(0);
   const [step, setStep] = useState(0);
   const finished = step >= steps.length;
-  const current = finished ? -1 : steps[step];
-  /** stdout shows once the print line has run. */
-  const printAt = lines.findIndex((l) => l.trimStart().startsWith("print"));
-  const printed = finished || (printAt >= 0 && current > printAt);
 
-  // Steps through the lines, one after another.
   // biome-ignore lint/correctness/useExhaustiveDependencies: run restarts the effect
   useEffect(() => {
-    if (finished) {
+    if (finished || !active) {
       return;
     }
     const t = setTimeout(() => setStep((s) => s + 1), lineMs);
     return () => clearTimeout(t);
-  }, [step, finished, lineMs, run]);
+  }, [step, finished, lineMs, run, active]);
 
-  const again = () => {
-    setStep(0);
-    setRun((r) => r + 1);
+  /** stdout shows once the print line has run. */
+  const printAt = lines.findIndex((l) => l.trimStart().startsWith("print"));
+  const current = finished ? -1 : steps[step];
+  return {
+    run,
+    status: (finished ? "done" : "running") as CodeRunStatus,
+    current,
+    ranUpTo: (i: number) => steps.includes(i) && steps.indexOf(i) < step,
+    printed: finished || (printAt >= 0 && current > printAt),
+    seconds: (steps.length * lineMs) / 1000,
+    again: () => {
+      setStep(0);
+      setRun((r) => r + 1);
+    },
   };
+}
 
-  const seconds = ((steps.length * lineMs) / 1000).toFixed(1);
-  const max = Math.max(...bars.map((b) => b.value));
+/** What the card shows: the demo's content only when it's the demo. */
+function shownContent(
+  props: Pick<
+    AICodeRunProps,
+    "prompt" | "message" | "filename" | "stdout" | "bars" | "answer"
+  >,
+  isDemo: boolean
+) {
+  if (isDemo) {
+    return {
+      prompt: props.prompt ?? DEMO.prompt,
+      message: props.message ?? DEMO.message,
+      filename: props.filename ?? DEMO.filename,
+      stdout: props.stdout ?? DEMO.stdout,
+      bars: props.bars ?? DEMO_BARS,
+      answer: props.answer ?? DEMO_ANSWER,
+    };
+  }
+  return {
+    ...props,
+    filename: props.filename ?? "script.py",
+    bars: props.bars ?? [],
+  };
+}
+
+/** The card's state from props, in the same shape playback gives. */
+function drivenView(
+  status: CodeRunStatus,
+  activeLine: number | undefined,
+  stdout: string | undefined
+) {
+  // A failed run keeps its marker on the line that failed.
+  const marked = status === "running" || status === "error";
+  const current = marked && activeLine !== undefined ? activeLine - 1 : -1;
+  return {
+    current,
+    ranUpTo: (i: number) => !marked || current < 0 || i < current,
+    printed: Boolean(stdout),
+  };
+}
+
+export default function AICodeRun({
+  prompt,
+  message,
+  filename,
+  code,
+  stdout,
+  bars,
+  answer,
+  status: statusProp,
+  activeLine,
+  duration,
+  onRunAgain,
+  lineMs = 320,
+  className,
+}: AICodeRunProps) {
+  const outputId = useId();
+  const driven = statusProp !== undefined;
+  const isDemo = !driven && code === undefined;
+  const shown = shownContent(
+    { prompt, message, filename, stdout, bars, answer },
+    isDemo
+  );
+  const lines = (code ?? DEMO_CODE).split("\n");
+  const playback = usePlayback(lines, lineMs, !driven);
+  const status = statusProp ?? playback.status;
+  const view = driven ? drivenView(status, activeLine, shown.stdout) : playback;
+  const { current, printed } = view;
+  const finished = status === "done" || status === "error";
+  const run = playback.run;
+  const again = driven ? onRunAgain : playback.again;
+  const seconds = driven ? duration : playback.seconds;
+  const max = Math.max(1, ...shown.bars.map((b) => b.value));
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("flex w-full max-w-md flex-col gap-4", className)}>
-        <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
-          {prompt}
-        </p>
-        <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
-          {message}
-        </p>
+      <div
+        className={cn("flex w-full max-w-md flex-col gap-4", className)}
+        data-state={status}
+      >
+        {shown.prompt ? (
+          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+            {shown.prompt}
+          </p>
+        ) : null}
+        {shown.message ? (
+          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+            {shown.message}
+          </p>
+        ) : null}
 
         <AutoHeight className="rounded-[22px] bg-black/[0.04] dark:bg-white/[0.06]">
           <div className="flex h-8 items-center gap-2 pr-1 pl-3 text-[12px] text-zinc-500 dark:text-zinc-400">
@@ -152,7 +255,7 @@ export default function AICodeRun({
               py
             </span>
             <span className="min-w-0 truncate font-mono text-[11.5px] text-zinc-600 dark:text-zinc-300">
-              {filename}
+              {shown.filename}
             </span>
             <span className="ml-auto flex shrink-0 items-center gap-1.5">
               <AnimatePresence initial={false} mode="popLayout">
@@ -161,35 +264,16 @@ export default function AICodeRun({
                   className="flex items-center gap-1.5"
                   exit={{ opacity: 0, y: -4 }}
                   initial={{ opacity: 0, y: 4 }}
-                  key={finished ? "done" : "running"}
+                  key={status}
                   transition={{ duration: 0.2, ease: EASE_OUT }}
                 >
-                  {finished ? (
-                    <>
-                      <span className="size-1.5 rounded-full bg-emerald-500" />
-                      Ran in {seconds}s
-                    </>
-                  ) : (
-                    <>
-                      <span className="relative flex size-1.5">
-                        <motion.span
-                          animate={{ opacity: [1, 0.3, 1] }}
-                          className="size-1.5 rounded-full bg-violet-500"
-                          transition={{
-                            duration: 1,
-                            repeat: Number.POSITIVE_INFINITY,
-                          }}
-                        />
-                      </span>
-                      Running
-                    </>
-                  )}
+                  <StatusLabel seconds={seconds} status={status} />
                 </motion.span>
               </AnimatePresence>
               <button
                 aria-label="Run again"
                 className="flex size-6 items-center justify-center rounded-md text-zinc-500 outline-hidden transition-[color,background-color,opacity] duration-150 hover:bg-black/[0.05] hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-black/[0.08] disabled:pointer-events-none disabled:opacity-0 dark:text-zinc-400 dark:active:bg-white/[0.12] dark:hover:bg-white/[0.08] dark:hover:text-zinc-100"
-                disabled={!finished}
+                disabled={!(finished && again)}
                 onClick={again}
                 type="button"
               >
@@ -204,17 +288,21 @@ export default function AICodeRun({
               <motion.span
                 animate={{
                   y: Math.max(current, 0) * LINE_HEIGHT,
-                  opacity: finished ? 0 : 1,
+                  opacity: current >= 0 ? 1 : 0,
                 }}
                 aria-hidden="true"
-                className="absolute inset-x-0 top-2.5 h-5 border-violet-500 border-l-2 bg-violet-500/[0.07] dark:border-violet-400 dark:bg-violet-400/10"
+                className={cn(
+                  "absolute inset-x-0 top-2.5 h-5 border-l-2",
+                  status === "error"
+                    ? "border-rose-500 bg-rose-500/[0.07] dark:border-rose-400 dark:bg-rose-400/10"
+                    : "border-violet-500 bg-violet-500/[0.07] dark:border-violet-400 dark:bg-violet-400/10"
+                )}
                 initial={false}
                 transition={{ duration: 0.18, ease: EASE_OUT }}
               />
               <code className="relative block min-w-max">
                 {lines.map((line, i) => {
-                  const ran =
-                    finished || (steps.includes(i) && steps.indexOf(i) < step);
+                  const ran = finished || view.ranUpTo(i);
                   return (
                     <span
                       className="relative flex pr-4"
@@ -224,9 +312,7 @@ export default function AICodeRun({
                       <span
                         className={cn(
                           "relative w-8 shrink-0 select-none pr-3 text-right tabular-nums transition-colors duration-200",
-                          i === current
-                            ? "text-violet-600 dark:text-violet-400"
-                            : "text-zinc-300 dark:text-zinc-600"
+                          lineTone(i === current, status)
                         )}
                       >
                         {i + 1}
@@ -257,14 +343,23 @@ export default function AICodeRun({
                   key={`out-${run}`}
                   transition={{ duration: 0.25, ease: EASE_OUT }}
                 >
-                  <p className="flex items-center gap-2 px-3.5 pt-3 font-mono text-[11.5px] text-zinc-700 dark:text-zinc-300">
+                  <p
+                    className={cn(
+                      "flex items-baseline gap-2 whitespace-pre-wrap px-3.5 pt-3 font-mono text-[11.5px]",
+                      status === "error"
+                        ? "pb-3 text-rose-600 dark:text-rose-400"
+                        : "text-zinc-700 dark:text-zinc-300"
+                    )}
+                  >
                     <span className="select-none text-zinc-300 dark:text-zinc-600">
                       ›
                     </span>
-                    {stdout}
+                    {shown.stdout}
                   </p>
-                  {finished && (
-                    <Chart bars={bars} key={`chart-${run}`} max={max} />
+                  {status === "done" && shown.bars.length > 0 ? (
+                    <Chart bars={shown.bars} key={`chart-${run}`} max={max} />
+                  ) : (
+                    <div className="h-3" />
                   )}
                 </motion.div>
               )}
@@ -273,23 +368,82 @@ export default function AICodeRun({
         </AutoHeight>
 
         <AnimatePresence>
-          {finished && (
-            <motion.p
+          {finished && shown.answer ? (
+            <motion.div
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
               className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               key={`answer-${run}`}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.7 }}
             >
-              {answer}
-            </motion.p>
-          )}
+              {shown.answer}
+            </motion.div>
+          ) : null}
         </AnimatePresence>
         <p aria-live="polite" className="sr-only">
-          {finished ? `Ran in ${seconds} seconds. ${stdout}` : "Running"}
+          {finished
+            ? `${statusText(status, seconds)}. ${shown.stdout ?? ""}`
+            : statusText(status, seconds)}
         </p>
       </div>
     </MotionConfig>
+  );
+}
+
+/** The line number's colour: marked lines take the run's colour. */
+const lineTone = (marked: boolean, status: CodeRunStatus) => {
+  if (!marked) {
+    return "text-zinc-300 dark:text-zinc-600";
+  }
+  return status === "error"
+    ? "text-rose-600 dark:text-rose-400"
+    : "text-violet-600 dark:text-violet-400";
+};
+
+const statusText = (status: CodeRunStatus, seconds?: number) => {
+  if (status === "writing") {
+    return "Writing";
+  }
+  if (status === "running") {
+    return "Running";
+  }
+  if (status === "error") {
+    return "Failed";
+  }
+  return seconds === undefined ? "Ran" : `Ran in ${seconds.toFixed(1)}s`;
+};
+
+function StatusLabel({
+  status,
+  seconds,
+}: {
+  status: CodeRunStatus;
+  seconds?: number;
+}) {
+  const ended = status === "done" || status === "error";
+  return (
+    <>
+      {ended ? (
+        <span
+          className={cn(
+            "size-1.5 rounded-full",
+            status === "done" ? "bg-emerald-500" : "bg-rose-500"
+          )}
+        />
+      ) : (
+        <span className="relative flex size-1.5">
+          <motion.span
+            animate={{ opacity: [1, 0.3, 1] }}
+            className={cn(
+              "size-1.5 rounded-full",
+              status === "writing" ? "bg-zinc-400" : "bg-violet-500"
+            )}
+            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
+          />
+        </span>
+      )}
+      {statusText(status, seconds)}
+    </>
   );
 }
 

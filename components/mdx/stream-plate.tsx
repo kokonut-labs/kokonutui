@@ -18,13 +18,13 @@ type Run = "ok" | "error";
  * on the happy path or the one where something fails.
  */
 export function useScript<T>(
-  scripts: Record<Run, T[]>,
+  scripts: Record<Run, T[]> | T[],
   stepMs = 700
 ): { frame: T; play: (run: Run) => void; run: Run; key: number } {
   const [run, setRun] = useState<Run>("ok");
   const [step, setStep] = useState(0);
   const [key, setKey] = useState(0);
-  const frames = scripts[run];
+  const frames = Array.isArray(scripts) ? scripts : scripts[run];
 
   useEffect(() => {
     if (step >= frames.length - 1) {
@@ -52,11 +52,14 @@ export function StreamPlate({
   run,
   play,
   label = "Driven by a scripted stream",
+  withError = true,
 }: {
   children: ReactNode;
   run: Run;
   play: (run: Run) => void;
   label?: string;
+  /** Offer a second run where something fails. */
+  withError?: boolean;
 }) {
   const button = (target: Run, text: string) => (
     <button
@@ -75,12 +78,15 @@ export function StreamPlate({
   );
 
   return (
-    <figure className={cn("not-prose my-6 w-full border", LINE, CELL)}>
+    <figure
+      className={cn("not-prose my-6 w-full border", LINE, CELL)}
+      data-stream-plate=""
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 pt-3.5">
         <span className={cn(META, "truncate")}>{label}</span>
         <span className="flex gap-1">
-          {button("ok", "Play")}
-          {button("error", "Play with an error")}
+          {button("ok", withError ? "Play" : "Replay")}
+          {withError ? button("error", "Play with an error") : null}
         </span>
       </div>
       <div className="flex min-h-[340px] items-center justify-center p-4 md:p-8">

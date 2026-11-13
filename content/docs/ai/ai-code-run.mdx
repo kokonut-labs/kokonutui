@@ -7,7 +7,54 @@ full: false
 ---
 
 import AICodeRun from "@/components/kokonutui/ai-code-run";
+import AICodeRunStream from "@/components/mdx/demos/ai-code-run-stream";
 
 <Preview link="ai-code-run">
     <AICodeRun />
 </Preview>
+
+## Usage
+
+With no props it plays the demo. Pass `status` to drive it from your code tool: `writing` while the model streams the code in, `running` while it executes (with `activeLine` if your sandbox reports it), then `done` or `error`. `stdout` shows as soon as you pass it, and on `error` it reads as the error. The chart and `answer` show once it's done. The user's bubble and the line above the card only show when you pass `prompt` and `message`.
+
+```tsx
+"use client";
+
+import type { UIMessage } from "ai";
+import AICodeRun, { type CodeRunStatus } from "@/components/kokonutui/ai-code-run";
+
+type RunPythonPart = Extract<UIMessage["parts"][number], { type: `tool-${string}` }>;
+
+const STATUS: Record<RunPythonPart["state"], CodeRunStatus> = {
+  "input-streaming": "writing",
+  "input-available": "running",
+  "approval-requested": "running",
+  "approval-responded": "running",
+  "output-available": "done",
+  "output-error": "error",
+  "output-denied": "error",
+};
+
+export function RunPython({ part, answer }: { part: RunPythonPart; answer?: string }) {
+  const input = part.input as { code?: string } | undefined;
+  const output = part.state === "output-available"
+    ? (part.output as { stdout: string; chart?: { label: string; value: number }[] })
+    : undefined;
+
+  return (
+    <AICodeRun
+      answer={answer}
+      bars={output?.chart}
+      code={input?.code ?? ""}
+      status={STATUS[part.state]}
+      stdout={part.state === "output-error" ? part.errorText : output?.stdout}
+    />
+  );
+}
+```
+
+Here it's fed the way a run streams: the code writes in, the lines run, then the result. **Play with an error** stops on line 4.
+
+<AICodeRunStream />
+
+Leave `status` out with your own `code` and it plays through a line every `lineMs`, like the demo. The root carries `data-state` with the status.
