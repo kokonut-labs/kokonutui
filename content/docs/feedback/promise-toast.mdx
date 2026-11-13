@@ -11,3 +11,60 @@ import PromiseToast from "@/components/kokonutui/promise-toast";
 <Preview link="promise-toast">
     <PromiseToast />
 </Preview>
+
+## Usage
+
+The demo is three buttons and a toaster. In your app, `usePromiseToast` gives you `show`, and `<Toaster>` is where the toasts land. Pass `show` the work as a function, so Retry can run it again, with what to say while it works, when it resolves and when it throws. Add `count` and call `report(done)` from the work to count it up with a filling edge; add `undo` to offer Undo once it lands.
+
+```tsx
+"use client";
+
+import { Toaster, usePromiseToast } from "@/components/kokonutui/promise-toast";
+
+export function PublishButton({ publish }: { publish: () => Promise<{ url: string }> }) {
+  const toaster = usePromiseToast();
+
+  return (
+    <>
+      <button
+        onClick={() =>
+          toaster.show(() => publish(), {
+            loading: "Publishing changes",
+            success: (site) => ["Published", `${site.url} is live`],
+            error: (e) => ["Couldn't publish", e instanceof Error ? e.message : "Try again"],
+            undo: {
+              run: () => fetch("/api/rollback", { method: "POST" }),
+              success: ["Reverted", "The previous version is live again"],
+            },
+          })
+        }
+        type="button"
+      >
+        Publish
+      </button>
+      <Toaster className="fixed right-4 bottom-4 w-80" toaster={toaster} />
+    </>
+  );
+}
+```
+
+Counted work reports as it goes:
+
+```tsx
+toaster.show(
+  async (report) => {
+    for (const [i, page] of pages.entries()) {
+      await build(page);
+      report(i + 1);
+    }
+  },
+  {
+    loading: "Publishing changes",
+    count: { total: pages.length, unit: "pages", verb: "Building" },
+    success: "Published",
+    error: "Build failed",
+  }
+);
+```
+
+To call it from anywhere, create the toaster once in a provider at your root and pass `show` down through context.
