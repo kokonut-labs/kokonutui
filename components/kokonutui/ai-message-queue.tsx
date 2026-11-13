@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Message Queue
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-21
  * @license: MIT
  * @website: https://kokonutui.com
@@ -43,6 +43,12 @@ export interface AgentResponse {
   reply: string;
 }
 
+/**
+ * One update from a live run: a `step` starts a new line of work (the one
+ * before it is done), a `text` adds to the reply.
+ */
+export type AgentUpdate = { step: string } | { text: string };
+
 export interface QueuedMessage {
   id: string;
   text: string;
@@ -50,13 +56,27 @@ export interface QueuedMessage {
 
 export interface AIMessageQueueProps {
   title?: string;
-  /** The message the agent is working on when the component mounts. */
+  /**
+   * The message the agent is working on when the component mounts. The
+   * demo's when `respond` is left out.
+   */
   initialPrompt?: string;
   /** Follow-ups already waiting in the queue. */
   initialQueue?: string[];
-  /** How the agent answers a message. Demo steps and replies when omitted. */
-  respond?: (text: string) => AgentResponse;
-  /** Milliseconds per step of a run. */
+  /**
+   * Runs the agent on a message. Return a stream of updates (steps as they
+   * start, reply text as it comes) and the run follows it, ending when the
+   * stream does. Stop and Send now abort `signal`; a throw ends the run with
+   * the error's message. Or return fixed steps and a reply, played on
+   * `stepMs`. Demo when omitted.
+   */
+  respond?: (
+    text: string,
+    signal: AbortSignal
+  ) => AgentResponse | AsyncIterable<AgentUpdate>;
+  /** Called with the queue whenever it changes, to keep it across reloads. */
+  onQueueChange?: (queue: QueuedMessage[]) => void;
+  /** Milliseconds per step of a run with fixed steps. */
   stepMs?: number;
   className?: string;
 }
@@ -75,6 +95,10 @@ interface AgentEntry {
   step: number;
   status: "running" | "done" | "stopped";
   seconds: number;
+  /** Follows a stream of updates rather than a timer. */
+  live?: boolean;
+  /** Why the run ended early. */
+  error?: string;
 }
 
 type Entry = UserEntry | AgentEntry;
@@ -144,46 +168,68 @@ const useModKey = () => {
   return mod;
 };
 
-const startRun = (text: string, respond: (t: string) => AgentResponse) => {
-  const { steps, reply } = respond(text);
-  const user: UserEntry = { id: uid("u"), role: "user", text };
-  const agent: AgentEntry = {
-    id: uid("a"),
-    role: "agent",
-    steps,
-    reply,
-    step: 0,
-    status: "running",
-    seconds: 0,
-  };
-  return [user, agent] as const;
-};
+type Respond = NonNullable<AIMessageQueueProps["respond"]>;
+
+const isStream = (
+  value: AgentResponse | AsyncIterable<AgentUpdate>
+): value is AsyncIterable<AgentUpdate> => Symbol.asyncIterator in value;
+
+const reasonOf = (error: unknown) =>
+  error instanceof Error && error.message
+    ? error.message
+    : "The run failed. Try again.";
+
+const DEMO_QUEUE = [
+  "Also add a test for expired tokens",
+  "Keep the old cookie name for now",
+];
 
 export default function AIMessageQueue({
   title = "Auth refactor",
-  initialPrompt = "Move session handling onto the new token store",
-  initialQueue = [
-    "Also add a test for expired tokens",
-    "Keep the old cookie name for now",
-  ],
-  respond = demoRespond,
+  initialPrompt,
+  initialQueue,
+  respond: respondProp,
+  onQueueChange,
   stepMs = 1700,
   className,
 }: AIMessageQueueProps) {
-  const [entries, setEntries] = useState<Entry[]>(() => [
-    { id: "u-0", role: "user", text: initialPrompt },
-    {
-      id: "a-0",
-      role: "agent",
-      ...respond(initialPrompt),
-      step: 0,
-      status: "running",
-      seconds: 0,
-    },
-  ]);
-  const [queue, setQueue] = useState<QueuedMessage[]>(() =>
-    initialQueue.map((text, i) => ({ id: `q-${i}`, text }))
+  const isDemo = respondProp === undefined;
+  const respond: Respond = respondProp ?? demoRespond;
+  const firstPrompt = isDemo
+    ? (initialPrompt ?? "Move session handling onto the new token store")
+    : initialPrompt;
+  const [entries, setEntries] = useState<Entry[]>(() =>
+    isDemo && firstPrompt
+      ? [
+          { id: "u-0", role: "user", text: firstPrompt },
+          {
+            id: "a-0",
+            role: "agent",
+            ...demoRespond(firstPrompt),
+            step: 0,
+            status: "running",
+            seconds: 0,
+          },
+        ]
+      : []
   );
+  const [queue, setQueue] = useState<QueuedMessage[]>(() =>
+    (initialQueue ?? (isDemo ? DEMO_QUEUE : [])).map((text, i) => ({
+      id: `q-${i}`,
+      text,
+    }))
+  );
+  // Tells the app about every change after the first render.
+  const onQueueRef = useRef(onQueueChange);
+  onQueueRef.current = onQueueChange;
+  const queueMounted = useRef(false);
+  useEffect(() => {
+    if (queueMounted.current) {
+      onQueueRef.current?.(queue);
+    }
+    queueMounted.current = true;
+  }, [queue]);
+  const controllers = useRef(new Map<string, AbortController>());
   const [paused, setPaused] = useState(false);
   const [draft, setDraft] = useState("");
   const [announcement, setAnnouncement] = useState("");
@@ -194,10 +240,10 @@ export default function AIMessageQueue({
   const last = entries.at(-1);
   const running = last?.role === "agent" && last.status === "running";
 
-  const runId = running ? last.id : null;
+  const runId = running && !last.live ? last.id : null;
   const runStep = running ? last.step : -1;
 
-  // Step the current run along.
+  // Step a run with fixed steps along; a live one follows its stream.
   useEffect(() => {
     if (!runId || runStep < 0) {
       return;
@@ -235,18 +281,97 @@ export default function AIMessageQueue({
     return () => clearInterval(id);
   }, [running]);
 
+  const patch = useCallback(
+    (id: string, change: (e: AgentEntry) => AgentEntry) =>
+      setEntries((list) =>
+        list.map((e) => (e.id === id && e.role === "agent" ? change(e) : e))
+      ),
+    []
+  );
+
+  /** Follows a live run's updates into its entry. */
+  const follow = useCallback(
+    async (
+      id: string,
+      updates: AsyncIterable<AgentUpdate>,
+      signal: AbortSignal
+    ) => {
+      try {
+        for await (const update of updates) {
+          if (signal.aborted) {
+            return;
+          }
+          patch(id, (e) =>
+            "step" in update
+              ? { ...e, steps: [...e.steps, update.step], step: e.steps.length }
+              : { ...e, reply: e.reply + update.text }
+          );
+        }
+        patch(id, (e) =>
+          e.status === "running"
+            ? { ...e, step: e.steps.length, status: "done" }
+            : e
+        );
+      } catch (error) {
+        if (!signal.aborted) {
+          patch(id, (e) => ({
+            ...e,
+            status: "stopped",
+            error: reasonOf(error),
+          }));
+          // A failed run holds the queue, so nothing builds on it.
+          setPaused(true);
+        }
+      } finally {
+        controllers.current.delete(id);
+      }
+    },
+    [patch]
+  );
+
+  /** A user message and the agent's run on it. */
+  const startRun = useCallback(
+    (text: string): Entry[] => {
+      const id = uid("a");
+      const controller = new AbortController();
+      const result = respond(text, controller.signal);
+      const user: UserEntry = { id: uid("u"), role: "user", text };
+      const base = { id, role: "agent" as const, step: 0, seconds: 0 };
+      if (!isStream(result)) {
+        return [user, { ...base, ...result, status: "running" }];
+      }
+      controllers.current.set(id, controller);
+      follow(id, result, controller.signal);
+      return [
+        user,
+        { ...base, steps: [], reply: "", status: "running", live: true },
+      ];
+    },
+    [respond, follow]
+  );
+
+  // Live: the first message's run starts once mounted.
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current || isDemo || !firstPrompt) {
+      return;
+    }
+    started.current = true;
+    setEntries(startRun(firstPrompt));
+  }, [isDemo, firstPrompt, startRun]);
+
   // When a run ends, the next queued message goes in.
   useEffect(() => {
     if (running || paused || queue.length === 0) {
       return;
     }
     const id = setTimeout(() => {
-      const [next, ...rest] = queue;
-      setQueue(rest);
-      setEntries((list) => [...list, ...startRun(next.text, respond)]);
+      const [next] = queue;
+      setQueue((q) => q.slice(1));
+      setEntries((list) => [...list, ...startRun(next.text)]);
     }, 450);
     return () => clearTimeout(id);
-  }, [running, paused, queue, respond]);
+  }, [running, paused, queue, startRun]);
 
   // Keep the newest activity in view.
   const entryCount = entries.length;
@@ -259,6 +384,9 @@ export default function AIMessageQueue({
   }, [entryCount, lastStep]);
 
   const stopCurrent = useCallback(() => {
+    for (const c of controllers.current.values()) {
+      c.abort();
+    }
     setEntries((list) =>
       list.map((e) =>
         e.role === "agent" && e.status === "running"
@@ -271,13 +399,16 @@ export default function AIMessageQueue({
   /** Interrupts the run and sends this message straight away. */
   const sendNow = (text: string) => {
     setPaused(false);
+    for (const c of controllers.current.values()) {
+      c.abort();
+    }
     setEntries((list) => [
       ...list.map((e) =>
         e.role === "agent" && e.status === "running"
           ? { ...e, status: "stopped" as const }
           : e
       ),
-      ...startRun(text, respond),
+      ...startRun(text),
     ]);
   };
 
@@ -296,7 +427,7 @@ export default function AIMessageQueue({
       return;
     }
     setPaused(false);
-    setEntries((list) => [...list, ...startRun(text, respond)]);
+    setEntries((list) => [...list, ...startRun(text)]);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -334,6 +465,7 @@ export default function AIMessageQueue({
           "flex w-full max-w-md flex-col rounded-2xl bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
           className
         )}
+        data-state={running ? "running" : "idle"}
       >
         <header className="flex items-center gap-2 border-black/[0.06] border-b px-4 py-3 dark:border-white/[0.08]">
           <h2 className="min-w-0 flex-1 truncate font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
@@ -407,7 +539,7 @@ export default function AIMessageQueue({
               }}
               paused={paused && !running}
               progress={
-                running && last.steps.length > 0
+                running && !last.live && last.steps.length > 0
                   ? (last.step + 1) / last.steps.length
                   : 0
               }
@@ -464,7 +596,10 @@ export default function AIMessageQueue({
 
 function AgentBlock({ entry }: { entry: AgentEntry }) {
   const working = entry.status === "running";
-  const current = entry.steps[Math.min(entry.step, entry.steps.length - 1)];
+  const current =
+    entry.steps[Math.min(entry.step, entry.steps.length - 1)] ?? "Thinking";
+  const showReply =
+    entry.status === "done" || (entry.live === true && entry.reply !== "");
   return (
     <div className="space-y-1.5">
       <div className="flex h-5 items-center gap-2 text-[12px] text-zinc-500 dark:text-zinc-400">
@@ -486,7 +621,9 @@ function AgentBlock({ entry }: { entry: AgentEntry }) {
               </AnimatePresence>
             </span>
             <span className="shrink-0 text-zinc-400 tabular-nums dark:text-zinc-500">
-              {entry.step + 1}/{entry.steps.length} · {entry.seconds}s
+              {entry.live
+                ? `${entry.seconds}s`
+                : `${entry.step + 1}/${entry.steps.length} · ${entry.seconds}s`}
             </span>
           </>
         ) : (
@@ -496,16 +633,12 @@ function AgentBlock({ entry }: { entry: AgentEntry }) {
             ) : (
               <Square aria-hidden="true" className="size-2.5 fill-current" />
             )}
-            <span>
-              {entry.status === "done"
-                ? `${entry.steps.length} steps · ${entry.seconds}s`
-                : `Stopped after ${entry.step} of ${entry.steps.length} steps`}
-            </span>
+            <EndLine entry={entry} />
           </>
         )}
       </div>
       <AnimatePresence initial={false}>
-        {entry.status === "done" && (
+        {showReply && (
           <motion.p
             animate={{ opacity: 1, filter: "blur(0px)" }}
             className="text-[13px] text-zinc-800 leading-relaxed dark:text-zinc-200"
@@ -517,6 +650,28 @@ function AgentBlock({ entry }: { entry: AgentEntry }) {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function EndLine({ entry }: { entry: AgentEntry }) {
+  if (entry.error) {
+    return (
+      <span className="min-w-0 truncate text-rose-600 dark:text-rose-400">
+        {entry.error}
+      </span>
+    );
+  }
+  if (entry.status === "done") {
+    return (
+      <span>
+        {entry.steps.length} steps · {entry.seconds}s
+      </span>
+    );
+  }
+  return (
+    <span>
+      Stopped after {entry.step} of {entry.steps.length} steps
+    </span>
   );
 }
 
