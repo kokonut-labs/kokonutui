@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Order Status
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-11-05
  * @license: MIT
  * @website: https://kokonutui.com
@@ -34,7 +34,7 @@ export interface DeliveryOrder {
   orderId: string;
   courier: string;
   vehicle: string;
-  /** Minutes left when the card first shows. */
+  /** Minutes left. Live, pass the latest ETA; the demo counts down from it. */
   minutes: number;
   /** How far along the route the courier is, 0 to 1. */
   progress: number;
@@ -42,14 +42,26 @@ export interface DeliveryOrder {
   arriveAt: string;
 }
 
+/** Where the order is, from your delivery provider. */
+export type OrderStatus = "on-the-way" | "delivered";
+
 export interface AIOrderStatusProps {
+  /** The user's message, drawn as a bubble. Only the demo draws one by default. */
   prompt?: string;
+  /** What the assistant says above the card. */
   message?: string;
   order?: DeliveryOrder;
+  /**
+   * Pass it to drive the card from your tracking updates: the courier
+   * glides to each new `progress` and the ETA shows `minutes` as given.
+   * Leave it out and the ETA counts down on `minuteMs`.
+   */
+  status?: OrderStatus;
   /** Shown once it has arrived. */
   delivered?: string;
-  /** Demo timing: real ms per minute of ETA. */
+  /** Demo only: real ms per minute of ETA. */
   minuteMs?: number;
+  /** Shows a Message button for reaching the courier. */
   onMessage?: () => void;
   className?: string;
 }
@@ -71,19 +83,96 @@ const DEMO_ORDER: DeliveryOrder = {
   arriveAt: "2:14 pm",
 };
 
+const DEMO = {
+  prompt: "Where are my flowers?",
+  message: "They’re on the way with Leo. I’ll keep this updated.",
+  delivered:
+    "Delivered. Leo left them with the concierge, and the card is tucked in the front.",
+};
+
+/** The chat text around the card: the demo's only when it's the demo. */
+function shownText(
+  text: Pick<AIOrderStatusProps, "prompt" | "message" | "delivered">,
+  isDemo: boolean
+) {
+  if (!isDemo) {
+    return text;
+  }
+  return {
+    prompt: text.prompt ?? DEMO.prompt,
+    message: text.message ?? DEMO.message,
+    delivered: text.delivered ?? DEMO.delivered,
+  };
+}
+
+/**
+ * The ETA and the courier's place on the route. Live, both follow `order`;
+ * in the demo the ETA counts down and the courier moves with it.
+ */
+function useEta(
+  order: DeliveryOrder,
+  status: OrderStatus | undefined,
+  minuteMs: number,
+  reduce: boolean
+) {
+  const driven = status !== undefined;
+  const [counted, setMinutes] = useState(order.minutes);
+  const minutes = driven ? order.minutes : counted;
+  const arrived = driven ? status === "delivered" : minutes <= 0;
+  const progress = useMotionValue(order.progress);
+  // Live: glides the courier to each new position you report.
+  useEffect(() => {
+    if (!driven) {
+      return;
+    }
+    const controls = animate(progress, arrived ? 1 : order.progress, {
+      duration: reduce ? 0 : 0.8,
+      ease: EASE_OUT,
+    });
+    return () => controls.stop();
+  }, [driven, arrived, order.progress, progress, reduce]);
+
+  // Demo: counts the ETA down, and moves the courier with it.
+  useEffect(() => {
+    if (arrived || driven) {
+      return;
+    }
+    const t = setTimeout(() => {
+      const next = minutes - 1;
+      setMinutes(next);
+      const target =
+        order.progress + (1 - order.progress) * (1 - next / order.minutes);
+      animate(progress, target, {
+        duration: reduce ? 0 : minuteMs / 1000,
+        ease: "linear",
+      });
+    }, minuteMs);
+    return () => clearTimeout(t);
+  }, [minutes, arrived, minuteMs, order, progress, reduce, driven]);
+
+  return { minutes, arrived, progress };
+}
+
 export default function AIOrderStatus({
-  prompt = "Where are my flowers?",
-  message = "They’re on the way with Leo. I’ll keep this updated.",
+  prompt,
+  message,
   order = DEMO_ORDER,
-  delivered = "Delivered. Leo left them with the concierge, and the card is tucked in the front.",
+  status,
+  delivered,
   minuteMs = 700,
   onMessage,
   className,
 }: AIOrderStatusProps) {
   const reduce = useReducedMotion();
-  const [minutes, setMinutes] = useState(order.minutes);
-  const arrived = minutes <= 0;
-  const progress = useMotionValue(order.progress);
+  const driven = status !== undefined;
+  const isDemo = !driven && order === DEMO_ORDER;
+  const shown = shownText({ prompt, message, delivered }, isDemo);
+  const { minutes, arrived, progress } = useEta(
+    order,
+    status,
+    minuteMs,
+    Boolean(reduce)
+  );
   const x = useMotionValue(START.x);
   const y = useMotionValue(START.y);
   const pathRef = useRef<SVGPathElement>(null);
@@ -102,33 +191,22 @@ export default function AIOrderStatus({
   // biome-ignore lint/correctness/useExhaustiveDependencies: places once on mount
   useLayoutEffect(() => place(progress.get()), []);
 
-  // Counts the ETA down, and moves the courier with it.
-  useEffect(() => {
-    if (arrived) {
-      return;
-    }
-    const t = setTimeout(() => {
-      const next = minutes - 1;
-      setMinutes(next);
-      const target =
-        order.progress + (1 - order.progress) * (1 - next / order.minutes);
-      animate(progress, target, {
-        duration: reduce ? 0 : minuteMs / 1000,
-        ease: "linear",
-      });
-    }, minuteMs);
-    return () => clearTimeout(t);
-  }, [minutes, arrived, minuteMs, order, progress, reduce]);
-
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("flex w-full max-w-md flex-col gap-4", className)}>
-        <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
-          {prompt}
-        </p>
-        <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
-          {message}
-        </p>
+      <div
+        className={cn("flex w-full max-w-md flex-col gap-4", className)}
+        data-state={arrived ? "delivered" : "on-the-way"}
+      >
+        {shown.prompt ? (
+          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+            {shown.prompt}
+          </p>
+        ) : null}
+        {shown.message ? (
+          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+            {shown.message}
+          </p>
+        ) : null}
 
         <div className="rounded-[22px] bg-black/[0.04] p-1 dark:bg-white/[0.06]">
           <div className="flex h-8 items-center justify-between px-3 text-[12px] text-zinc-500 dark:text-zinc-400">
@@ -264,47 +342,65 @@ export default function AIOrderStatus({
               </svg>
             </div>
 
-            <div className="flex items-center gap-3 border-black/[0.06] border-t px-4 py-3 dark:border-white/[0.08]">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-100 font-semibold text-[12px] text-sky-800 dark:bg-sky-500/20 dark:text-sky-200">
-                {order.courier.slice(0, 1)}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium text-[13.5px] text-zinc-900 dark:text-zinc-100">
-                  {order.courier}
-                </span>
-                <span className="block truncate text-[12px] text-zinc-500 dark:text-zinc-400">
-                  {order.vehicle}
-                </span>
-              </span>
-              <button
-                className="flex h-8 items-center gap-1.5 rounded-full px-3 font-medium text-[12.5px] text-zinc-700 outline-hidden ring-1 ring-black/[0.08] transition-colors duration-150 hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-blue-500/50 active:bg-zinc-100 dark:text-zinc-200 dark:ring-white/10 dark:active:bg-white/[0.08] dark:hover:bg-white/[0.05]"
-                onClick={onMessage}
-                type="button"
-              >
-                <MessageCircle aria-hidden="true" className="size-3.5" />
-                Message
-              </button>
-            </div>
+            <CourierRow
+              onMessage={onMessage ?? (isDemo ? () => undefined : undefined)}
+              order={order}
+            />
           </div>
         </div>
 
         <AnimatePresence>
-          {arrived && (
+          {arrived && shown.delivered ? (
             <motion.p
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
               className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.5 }}
             >
-              {delivered}
+              {shown.delivered}
             </motion.p>
-          )}
+          ) : null}
         </AnimatePresence>
         <p aria-live="polite" className="sr-only">
           {arrived ? "Delivered" : ""}
         </p>
       </div>
     </MotionConfig>
+  );
+}
+
+/** The courier, with a Message button when you pass `onMessage`. */
+function CourierRow({
+  order,
+  onMessage,
+}: {
+  order: DeliveryOrder;
+  onMessage?: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 border-black/[0.06] border-t px-4 py-3 dark:border-white/[0.08]">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-100 font-semibold text-[12px] text-sky-800 dark:bg-sky-500/20 dark:text-sky-200">
+        {order.courier.slice(0, 1)}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-medium text-[13.5px] text-zinc-900 dark:text-zinc-100">
+          {order.courier}
+        </span>
+        <span className="block truncate text-[12px] text-zinc-500 dark:text-zinc-400">
+          {order.vehicle}
+        </span>
+      </span>
+      {onMessage ? (
+        <button
+          className="flex h-8 items-center gap-1.5 rounded-full px-3 font-medium text-[12.5px] text-zinc-700 outline-hidden ring-1 ring-black/[0.08] transition-colors duration-150 hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-blue-500/50 active:bg-zinc-100 dark:text-zinc-200 dark:ring-white/10 dark:active:bg-white/[0.08] dark:hover:bg-white/[0.05]"
+          onClick={onMessage}
+          type="button"
+        >
+          <MessageCircle aria-hidden="true" className="size-3.5" />
+          Message
+        </button>
+      ) : null}
+    </div>
   );
 }
 
