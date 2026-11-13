@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Memory
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-21
  * @license: MIT
  * @website: https://kokonutui.com
@@ -36,11 +36,28 @@ export interface MemoryChange {
 
 export interface AIMemoryProps {
   title?: string;
+  /** What the assistant opens with. */
+  greeting?: string;
+  /** Your saved memories, read once on mount. */
   initialMemories?: MemoryItem[];
   /** Messages offered as one-tap replies. */
   suggestions?: string[];
-  /** Answers a message and decides what to remember. Demo when omitted. */
-  remember?: (text: string, memories: MemoryItem[]) => MemoryChange;
+  /**
+   * Answers a message and decides what to remember, from the memories in
+   * the panel. Return the change or a Promise of it; the assistant shows it
+   * thinking until it resolves. Throw and the reply shows the error's
+   * message. Demo when omitted.
+   */
+  remember?: (
+    text: string,
+    memories: MemoryItem[]
+  ) => MemoryChange | Promise<MemoryChange>;
+  /** A memory was saved. With `replaced`, it took that one's place. */
+  onSave?: (memory: MemoryItem, replaced?: MemoryItem) => void;
+  /** A memory was edited by hand. */
+  onEdit?: (memory: MemoryItem) => void;
+  /** A memory was forgotten, once its Undo has passed. */
+  onForget?: (memory: MemoryItem) => void;
   className?: string;
 }
 
@@ -54,6 +71,8 @@ interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   text: string;
+  /** The reply failed; text says why. */
+  error?: boolean;
   /** Id of the memory this reply saved. */
   saved?: string;
   savedText?: string;
@@ -137,11 +156,22 @@ const uid = (prefix: string) => {
   return `${prefix}-${counter}`;
 };
 
+const reasonOf = (error: unknown) =>
+  error instanceof Error && error.message
+    ? error.message
+    : "Something went wrong. Try again.";
+
+const toItem = ({ state: _, ...item }: Row): MemoryItem => item;
+
 export default function AIMemory({
   title = "Assistant",
+  greeting = "Hi Samantha. What's new? Tell me anything and I'll keep what matters.",
   initialMemories = DEMO_MEMORIES,
   suggestions = Object.keys(DEMO_REPLIES),
   remember = demoRemember,
+  onSave,
+  onEdit,
+  onForget,
   className,
 }: AIMemoryProps) {
   const reduceMotion = useReducedMotion();
@@ -149,12 +179,10 @@ export default function AIMemory({
     initialMemories.map((m) => ({ ...m, state: "live" }))
   );
   const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "a-0",
-      role: "assistant",
-      text: "Hi Samantha. What's new? Tell me anything and I'll keep what matters.",
-    },
+    { id: "a-0", role: "assistant", text: greeting },
   ]);
+  const handlers = useRef({ onSave, onForget });
+  handlers.current = { onSave, onForget };
   const [used, setUsed] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [shown, setShown] = useState(Number.POSITIVE_INFINITY);
@@ -196,6 +224,9 @@ export default function AIMemory({
     [last]
   );
   const streaming = last?.role === "assistant" && shown < words.length;
+  const [thinking, setThinking] = useState(false);
+  /** A reply is on its way or still landing, so sending waits. */
+  const busy = thinking || streaming || Boolean(pending) || Boolean(incoming);
 
   // Stream the reply, then save what it learned.
   useEffect(() => {
@@ -232,6 +263,7 @@ export default function AIMemory({
           : m
       )
     );
+    handlers.current.onSave?.(toItem(next), old && toItem(old));
   }, [last, pending, shown, words, reduceMotion, enabled, rows]);
 
   // The replacement lands once the strike has had a beat to read.
@@ -296,7 +328,10 @@ export default function AIMemory({
     if (!undo) {
       return;
     }
-    const id = setTimeout(() => setUndo(null), 5000);
+    const id = setTimeout(() => {
+      handlers.current.onForget?.(toItem(undo.row));
+      setUndo(null);
+    }, 5000);
     return () => clearTimeout(id);
   }, [undo]);
 
@@ -309,26 +344,39 @@ export default function AIMemory({
     }
   }, [messageCount, lastSaved]);
 
-  const send = (raw: string) => {
-    const text = raw.trim();
-    if (!text || streaming || pending || incoming) {
-      return;
-    }
-    const change = enabled
-      ? remember(
-          text,
-          rows.filter((r) => r.state !== "replaced")
-        )
-      : { reply: "Memory is off, so I won't save anything from this chat." };
-    setUsed((u) => [...u, text]);
-    setDraft("");
+  const reply = (change: MemoryChange) => {
     setMessages((list) => [
       ...list,
-      { id: uid("u"), role: "user", text },
       { id: uid("a"), role: "assistant", text: change.reply },
     ]);
     setShown(0);
     setPending(change);
+  };
+
+  const send = (raw: string) => {
+    const text = raw.trim();
+    if (!text || busy) {
+      return;
+    }
+    const change = enabled
+      ? remember(text, rows.filter((r) => r.state !== "replaced").map(toItem))
+      : { reply: "Memory is off, so I won't save anything from this chat." };
+    setUsed((u) => [...u, text]);
+    setDraft("");
+    setMessages((list) => [...list, { id: uid("u"), role: "user", text }]);
+    if (!("then" in change)) {
+      reply(change);
+      return;
+    }
+    setThinking(true);
+    change
+      .then(reply, (e: unknown) =>
+        setMessages((list) => [
+          ...list,
+          { id: uid("a"), role: "assistant", text: reasonOf(e), error: true },
+        ])
+      )
+      .finally(() => setThinking(false));
   };
 
   const forget = (row: Row) => {
@@ -337,6 +385,10 @@ export default function AIMemory({
     }
     const index = rows.findIndex((r) => r.id === row.id);
     setRows((list) => list.filter((r) => r.id !== row.id));
+    // A second Forget closes the first one's Undo, so it's gone for good.
+    if (undo) {
+      onForget?.(toItem(undo.row));
+    }
     setUndo({ row, index });
   };
 
@@ -369,6 +421,7 @@ export default function AIMemory({
           "@container w-full max-w-3xl overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
           className
         )}
+        data-state={busy ? "busy" : "idle"}
       >
         <div className="grid @xl:grid-cols-[minmax(0,1fr)_17.5rem]">
           <section
@@ -406,7 +459,15 @@ export default function AIMemory({
                   : message.text;
                 return (
                   <div className="space-y-2" key={message.id}>
-                    <p className="text-[13px] text-zinc-800 leading-relaxed dark:text-zinc-200">
+                    <p
+                      className={cn(
+                        "text-[13px] leading-relaxed",
+                        message.error
+                          ? "text-rose-600 dark:text-rose-400"
+                          : "text-zinc-800 dark:text-zinc-200"
+                      )}
+                      role={message.error ? "alert" : undefined}
+                    >
                       {text}
                     </p>
                     <AnimatePresence>
@@ -438,6 +499,7 @@ export default function AIMemory({
                   </div>
                 );
               })}
+              {thinking ? <Thinking /> : null}
             </div>
             <div className="space-y-2 p-2 pt-0">
               <AnimatePresence initial={false} mode="popLayout">
@@ -445,7 +507,7 @@ export default function AIMemory({
                   <motion.div
                     className={cn(
                       "flex flex-wrap gap-1.5 px-1 transition-opacity duration-150",
-                      (streaming || pending || incoming) && "opacity-40"
+                      busy && "opacity-40"
                     )}
                     exit={{ opacity: 0 }}
                     key="chips"
@@ -455,9 +517,7 @@ export default function AIMemory({
                         <motion.button
                           animate={{ opacity: 1 }}
                           className="h-7 max-w-full truncate rounded-full px-3 text-[12px] text-zinc-600 ring-1 ring-black/[0.08] transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 active:bg-zinc-200/80 dark:text-zinc-300 dark:ring-white/10 dark:active:bg-white/[0.12] dark:hover:bg-white/[0.07] dark:hover:text-white"
-                          disabled={
-                            streaming || Boolean(pending) || Boolean(incoming)
-                          }
+                          disabled={busy}
                           exit={{ opacity: 0, transition: { duration: 0.12 } }}
                           initial={{ opacity: 0 }}
                           key={s}
@@ -490,12 +550,7 @@ export default function AIMemory({
                 <button
                   aria-label="Send"
                   className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
-                  disabled={
-                    !draft.trim() ||
-                    streaming ||
-                    Boolean(pending) ||
-                    Boolean(incoming)
-                  }
+                  disabled={!draft.trim() || busy}
                   type="submit"
                 >
                   <ArrowUp className="size-3.5" />
@@ -537,15 +592,20 @@ export default function AIMemory({
                           <MemoryRow
                             flash={flash === row.id}
                             key={row.id}
-                            onEdit={(text) =>
+                            onEdit={(text) => {
                               setRows((list) =>
                                 list.map((r) =>
                                   r.id === row.id
                                     ? { ...r, text, saved: "Today" }
                                     : r
                                 )
-                              )
-                            }
+                              );
+                              onEdit?.({
+                                ...toItem(row),
+                                text,
+                                saved: "Today",
+                              });
+                            }}
                             onForget={() => forget(row)}
                             row={row}
                           />
@@ -726,6 +786,27 @@ function MemoryRow({
         )}
       </div>
     </motion.li>
+  );
+}
+
+/** The assistant working on a reply that hasn't come back yet. */
+function Thinking() {
+  return (
+    <span className="flex h-5 items-center gap-1">
+      <span className="sr-only">Thinking</span>
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          animate={{ opacity: [0.25, 1, 0.25] }}
+          className="size-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500"
+          key={i}
+          transition={{
+            duration: 1,
+            repeat: Number.POSITIVE_INFINITY,
+            delay: i * 0.15,
+          }}
+        />
+      ))}
+    </span>
   );
 }
 

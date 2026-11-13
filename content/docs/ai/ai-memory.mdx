@@ -7,7 +7,68 @@ full: false
 ---
 
 import AiMemory from "@/components/kokonutui/ai-memory";
+import AIMemoryStream from "@/components/mdx/demos/ai-memory-stream";
 
 <Preview link="ai-memory">
     <AiMemory />
 </Preview>
+
+## Usage
+
+Pass your saved memories as `initialMemories` and a `remember` that asks your model. It gets the message and the memories in the panel, and returns the reply plus, when there's something worth keeping, a `memory` to save (with `replaces` set to an older memory's id to update it). Return it as a Promise and the assistant shows it thinking until it resolves; throw and the reply shows the error's message. `onSave`, `onEdit` and `onForget` tell you what to persist; a forget only fires once its Undo has passed.
+
+```tsx
+"use client";
+
+import AIMemory, { type MemoryChange, type MemoryItem } from "@/components/kokonutui/ai-memory";
+
+export function Assistant({ memories }: { memories: MemoryItem[] }) {
+  return (
+    <AIMemory
+      greeting="Hi. What's new?"
+      initialMemories={memories}
+      onEdit={(memory) => fetch(`/api/memories/${memory.id}`, { method: "PUT", body: JSON.stringify(memory) })}
+      onForget={(memory) => fetch(`/api/memories/${memory.id}`, { method: "DELETE" })}
+      onSave={(memory, replaced) =>
+        fetch("/api/memories", { method: "POST", body: JSON.stringify({ memory, replaces: replaced?.id }) })
+      }
+      remember={async (text, memories) => {
+        const res = await fetch("/api/remember", {
+          method: "POST",
+          body: JSON.stringify({ text, memories }),
+        });
+        if (!res.ok) {
+          throw new Error("Couldn't reach the model. Nothing was saved.");
+        }
+        return (await res.json()) as MemoryChange;
+      }}
+      suggestions={[]}
+    />
+  );
+}
+```
+
+```ts
+// app/api/remember/route.ts
+import { anthropic } from "@ai-sdk/anthropic";
+import { generateObject } from "ai";
+import { z } from "zod";
+
+export async function POST(req: Request) {
+  const { text, memories } = await req.json();
+  const { object } = await generateObject({
+    model: anthropic("claude-sonnet-5-5"),
+    schema: z.object({
+      reply: z.string(),
+      memory: z
+        .object({ text: z.string(), group: z.string(), replaces: z.string().optional() })
+        .optional(),
+    }),
+    system: `Reply briefly. Save a memory only for lasting facts about the user. Known: ${JSON.stringify(memories)}`,
+    prompt: text,
+  });
+  return Response.json(object);
+}
+```
+
+<AIMemoryStream />
