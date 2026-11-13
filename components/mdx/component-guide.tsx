@@ -3,7 +3,7 @@ import path from "node:path";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { cacheLife } from "next/cache";
 import Link from "next/link";
-import { Fragment, type ReactNode } from "react";
+import { type ComponentProps, Fragment, type ReactNode } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { codeToHast } from "shiki/bundle/web";
 import type { Part } from "@/components/landing/home/parts";
@@ -38,9 +38,24 @@ async function Code({ code, lang }: { code: string; lang: string }) {
     jsx,
     jsxs,
     components: {
-      pre: DocsPre,
+      pre: (props: ComponentProps<"pre">) => (
+        <DocsPre {...props} label={codeLabel(code)} />
+      ),
     },
   });
+}
+
+const LABEL_LENGTH = 60;
+
+/** Names the code region after its first line, as the MDX blocks are. */
+function codeLabel(code: string) {
+  const first = code.trim().split("\n", 1)[0].trim();
+  if (!first) {
+    return "Code";
+  }
+  return first.length > LABEL_LENGTH
+    ? `Code: ${first.slice(0, LABEL_LENGTH)}…`
+    : `Code: ${first}`;
 }
 
 /** "a", "a and b", "a, b and c", each item drawn by `render`. */

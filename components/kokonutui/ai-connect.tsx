@@ -597,6 +597,7 @@ function Handshake({ state }: { state: Link }) {
         <motion.line
           animate={{ strokeDashoffset: waiting ? [0, -12] : 0 }}
           className="stroke-zinc-300 dark:stroke-zinc-600"
+          initial={{ strokeDashoffset: 0 }}
           strokeDasharray="3 3"
           strokeLinecap="round"
           strokeWidth="1.5"
