@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Checkout
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-31
  * @license: MIT
  * @website: https://kokonutui.com
@@ -39,17 +39,23 @@ export interface CheckoutDetails {
 }
 
 export interface AICheckoutProps {
+  /** The user's message, drawn as a bubble. Only the demo draws one by default. */
   prompt?: string;
   /** What the assistant says before the order. */
   message?: string;
   /** What it says once paid. */
   confirmation?: string;
+  /** The order, usually a tool's output. Leave it out for the demo. */
   checkout?: CheckoutDetails;
   /**
-   * Charges the card for this many items. Resolve with an order number, or
-   * throw to go back to the order. The demo waits a moment and resolves.
+   * Charges the card for this many items, with the total in cents. Resolve
+   * with an order number for the receipt. Throw and the order comes back with
+   * the error's message under it, so they can try again. The demo waits a
+   * moment and resolves.
    */
   onPay?: (quantity: number, total: number) => Promise<string>;
+  /** Called when they change how many. */
+  onQuantityChange?: (quantity: number) => void;
   className?: string;
 }
 
@@ -89,18 +95,51 @@ const DEMO: CheckoutDetails = {
 const demoPay = () =>
   new Promise<string>((resolve) => setTimeout(() => resolve("7F2K"), 1500));
 
+const DEMO_TEXT = {
+  prompt: "Reorder the coffee beans I got last month",
+  message: "Same as October, two bags of Ethiopia Guji. Want me to place it?",
+  confirmation: "Done. I’ll tell you when it ships.",
+};
+
+/** The chat text around the card: the demo's only when it's the demo. */
+function shownText(
+  text: Pick<AICheckoutProps, "prompt" | "message" | "confirmation">,
+  isDemo: boolean
+) {
+  if (!isDemo) {
+    return text;
+  }
+  return {
+    prompt: text.prompt ?? DEMO_TEXT.prompt,
+    message: text.message ?? DEMO_TEXT.message,
+    confirmation: text.confirmation ?? DEMO_TEXT.confirmation,
+  };
+}
+
+const reason = (error: unknown) =>
+  error instanceof Error && error.message
+    ? error.message
+    : "The payment didn’t go through. Try again.";
+
 export default function AICheckout({
-  prompt = "Reorder the coffee beans I got last month",
-  message = "Same as October, two bags of Ethiopia Guji. Want me to place it?",
-  confirmation = "Done. I’ll tell you when it ships.",
-  checkout = DEMO,
+  prompt,
+  message,
+  confirmation,
+  checkout: checkoutProp,
   onPay = demoPay,
+  onQuantityChange,
   className,
 }: AICheckoutProps) {
+  const checkout = checkoutProp ?? DEMO;
+  const shown = shownText(
+    { prompt, message, confirmation },
+    checkoutProp === undefined
+  );
   const { item } = checkout;
   const [status, setStatus] = useState<Status>("review");
   const [quantity, setQuantity] = useState(item.quantity);
   const [orderId, setOrderId] = useState("");
+  const [error, setError] = useState<string>();
 
   const subtotal = item.unitPrice * quantity;
   const tax = Math.round(subtotal * checkout.taxRate);
@@ -122,25 +161,40 @@ export default function AICheckout({
 
   const pay = async () => {
     setStatus("paying");
+    setError(undefined);
     try {
       setOrderId(await onPay(quantity, total));
       setStatus("paid");
-    } catch {
+    } catch (e) {
+      setError(reason(e));
       setStatus("review");
     }
+  };
+
+  const changeQuantity = (n: number) => {
+    setQuantity(n);
+    setError(undefined);
+    onQuantityChange?.(n);
   };
 
   const locked = status !== "review";
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("flex w-full max-w-md flex-col gap-4", className)}>
-        <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
-          {prompt}
-        </p>
-        <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
-          {message}
-        </p>
+      <div
+        className={cn("flex w-full max-w-md flex-col gap-4", className)}
+        data-state={error && status === "review" ? "error" : status}
+      >
+        {shown.prompt ? (
+          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+            {shown.prompt}
+          </p>
+        ) : null}
+        {shown.message ? (
+          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+            {shown.message}
+          </p>
+        ) : null}
 
         <AutoHeight className="rounded-[22px] bg-black/[0.04] dark:bg-white/[0.06]">
           <AnimatePresence initial={false} mode="popLayout">
@@ -190,7 +244,7 @@ export default function AICheckout({
                     <Stepper
                       disabled={locked}
                       max={item.maxQuantity ?? 9}
-                      onChange={setQuantity}
+                      onChange={changeQuantity}
                       value={quantity}
                     />
                   </div>
@@ -227,26 +281,41 @@ export default function AICheckout({
                     status={status}
                   />
                 </div>
+                <AnimatePresence initial={false}>
+                  {error ? (
+                    <motion.p
+                      animate={{ height: "auto", opacity: 1 }}
+                      className="overflow-hidden px-3 text-[12.5px] text-rose-600 dark:text-rose-400"
+                      exit={{ height: 0, opacity: 0 }}
+                      initial={{ height: 0, opacity: 0 }}
+                      key="error"
+                      transition={{ duration: 0.2, ease: EASE_OUT }}
+                    >
+                      <span className="block pb-2">{error}</span>
+                    </motion.p>
+                  ) : null}
+                </AnimatePresence>
               </motion.div>
             )}
           </AnimatePresence>
         </AutoHeight>
 
         <AnimatePresence>
-          {status === "receipt" && (
+          {status === "receipt" && shown.confirmation ? (
             <motion.p
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
               className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.4 }}
             >
-              {confirmation}
+              {shown.confirmation}
             </motion.p>
-          )}
+          ) : null}
         </AnimatePresence>
         <p aria-live="polite" className="sr-only">
           {status === "paying" ? "Processing payment" : ""}
           {status === "paid" || status === "receipt" ? "Payment complete" : ""}
+          {error ?? ""}
         </p>
       </div>
     </MotionConfig>

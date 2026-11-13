@@ -7,7 +7,51 @@ full: false
 ---
 
 import AICheckout from "@/components/kokonutui/ai-checkout";
+import AICheckoutStream from "@/components/mdx/demos/ai-checkout-stream";
 
 <Preview link="ai-checkout">
     <AICheckout />
 </Preview>
+
+## Usage
+
+With no `checkout` it plays the demo order. Pass `checkout` and it draws only that order: the chat lines show when you pass `message` and `confirmation`. `onPay` gets the quantity and the total in cents and returns a Promise. Resolve with an order number and the card folds into a receipt; throw and the order comes back with your error's message under it.
+
+The model should prepare the order, never pay it: a `prepare_order` tool returns the details, and the person's press on Pay calls your server.
+
+```tsx
+"use client";
+
+import type { UIMessage } from "ai";
+import { isToolUIPart } from "ai";
+import AICheckout, { type CheckoutDetails } from "@/components/kokonutui/ai-checkout";
+import { chargeOrder } from "@/app/actions"; // your server action
+
+export function OrderPart({ part }: { part: UIMessage["parts"][number] }) {
+  if (!isToolUIPart(part) || part.type !== "tool-prepare_order") {
+    return null;
+  }
+  if (part.state !== "output-available") {
+    return null;
+  }
+  const order = part.output as CheckoutDetails & { orderId: string };
+
+  return (
+    <AICheckout
+      checkout={order}
+      confirmation="Done. I'll tell you when it ships."
+      onPay={async (quantity) => {
+        const result = await chargeOrder(order.orderId, quantity);
+        if (!result.ok) {
+          throw new Error(result.message); // "Your card was declined."
+        }
+        return result.receiptNumber;
+      }}
+    />
+  );
+}
+```
+
+Charge on your server from the order id and quantity, not from the total the browser sends.
+
+<AICheckoutStream />
