@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import HeaderProSmall from "@/components/landing/header-pro-small";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, MONO } from "@/components/landing/home/styles";
+import { SidebarIntentPrefetch } from "@/components/sidebar-intent-prefetch";
 import { isProPeekUrl } from "@/lib/pro-peeks";
 import { PRO_SHOWCASE_PAGE } from "@/lib/pro-showcase";
 import { PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
@@ -124,10 +125,12 @@ export default function Layout({ children }: LayoutProps<"/docs">) {
     <DocsLayout
       {...baseOptions()}
       // The sidebar lists every page. Prefetching each row as it scrolled
-      // into view cost about 80 requests per page view, on phones too.
+      // into view cost about 80 requests per page view, on phones too, so
+      // rows prefetch on hover or focus instead (SidebarIntentPrefetch).
       sidebar={{ footer: <HeaderProSmall />, prefetch: false }}
       tree={withCodes(source.getPageTree())}
     >
+      <SidebarIntentPrefetch />
       {children}
     </DocsLayout>
   );

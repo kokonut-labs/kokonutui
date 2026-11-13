@@ -30,6 +30,14 @@ export default function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
+// Only requests that ask for Markdown run the proxy. Without the `has`, every
+// docs page view and every sidebar click paid for a proxy invocation before
+// the prerendered page could be served.
 export const config = {
-  matcher: "/docs/:path*",
+  matcher: [
+    {
+      source: "/docs/:path*",
+      has: [{ type: "header", key: "accept", value: "(.*)text/markdown(.*)" }],
+    },
+  ],
 };
