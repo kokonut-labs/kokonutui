@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Token Alternatives
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-21
  * @license: MIT
  * @website: https://kokonutui.com
@@ -39,15 +39,43 @@ export interface TokenSlot {
   options: TokenOption[];
 }
 
-/** Plain text, or a word the model nearly wrote differently. */
-export type AnswerPiece = string | { slot: string };
+/**
+ * Plain text, plain text with the model's probability for it, or a word the
+ * model nearly wrote differently.
+ */
+export type AnswerPiece =
+  | string
+  | { text: string; p: number }
+  | { slot: string };
+
+/** An answer, with its own slots when they change from one take to the next. */
+export type ComposedAnswer =
+  | AnswerPiece[]
+  | { pieces: AnswerPiece[]; slots: TokenSlot[] };
 
 export interface AITokenAlternativesProps {
+  /** The user's message, drawn as a bubble. Only the demo draws one by default. */
   prompt?: string;
+  /** The words with alternatives. `compose` can return new ones instead. */
   slots?: TokenSlot[];
-  /** Builds the answer from the word picked in each slot. */
-  compose?: (choice: Record<string, string>) => AnswerPiece[];
+  /**
+   * Builds the answer from the word picked in each slot. Return it or a
+   * Promise of it: after a pick, the words up to that one stay and the rest
+   * is written again once it arrives. `signal` aborts when another pick
+   * replaces this one. Throw and the answer shows the error's message.
+   */
+  compose?: (
+    choice: Record<string, string>,
+    signal: AbortSignal
+  ) => ComposedAnswer | Promise<ComposedAnswer>;
   className?: string;
+}
+
+/** One token of an OpenAI-style `logprobs.content` list. */
+export interface LogprobToken {
+  token: string;
+  logprob: number;
+  top_logprobs?: { token: string; logprob: number }[];
 }
 
 interface Token {
@@ -150,6 +178,61 @@ const plainP = (word: string, index: number) => {
   return 0.86 + (h % 13) / 100;
 };
 
+const LEADING_SPACE = /^\s+/;
+const WORDLIKE = /\p{L}/u;
+
+/**
+ * Turns a model's logprobs into an answer: each token where another word was
+ * at least `minAlternative` likely becomes a slot with those words.
+ */
+export function fromLogprobs(
+  content: LogprobToken[],
+  { minAlternative = 0.08, maxOptions = 4 } = {}
+): { pieces: AnswerPiece[]; slots: TokenSlot[] } {
+  const pieces: AnswerPiece[] = [];
+  const slots: TokenSlot[] = [];
+  content.forEach((t, i) => {
+    const p = Math.exp(t.logprob);
+    const lead = t.token.match(LEADING_SPACE)?.[0] ?? "";
+    const word = t.token.slice(lead.length);
+    const others = (t.top_logprobs ?? [])
+      .map((o) => ({ text: o.token.trim(), p: Math.exp(o.logprob) }))
+      .filter((o) => o.text && o.text !== word && o.p >= minAlternative);
+    if (!WORDLIKE.test(word) || others.length === 0) {
+      pieces.push({ text: t.token, p });
+      return;
+    }
+    const id = `t${i}`;
+    if (lead) {
+      pieces.push(lead);
+    }
+    pieces.push({ slot: id });
+    slots.push({
+      id,
+      options: [{ text: word, p }, ...others].slice(0, maxOptions),
+    });
+  });
+  return { pieces, slots };
+}
+
+const normalize = (answer: ComposedAnswer, fallback: TokenSlot[]) =>
+  Array.isArray(answer)
+    ? { pieces: answer, slots: fallback }
+    : { pieces: answer.pieces, slots: answer.slots };
+
+const reasonOf = (error: unknown) =>
+  error instanceof Error && error.message
+    ? error.message
+    : "Couldn’t write the rest. Try another word.";
+
+/** A piece's text and known probability, or null for a slot. */
+const plainText = (piece: AnswerPiece): [string, number?] | null => {
+  if (typeof piece === "string") {
+    return [piece];
+  }
+  return "text" in piece ? [piece.text, piece.p] : null;
+};
+
 const tokenize = (
   pieces: AnswerPiece[],
   choice: Record<string, string>,
@@ -163,22 +246,24 @@ const tokenize = (
     lead = "";
   };
   for (const piece of pieces) {
-    if (typeof piece === "string") {
-      for (const part of piece.match(TOKEN_PATTERN) ?? []) {
+    const plain = plainText(piece);
+    if (plain) {
+      const [text, known] = plain;
+      for (const part of text.match(TOKEN_PATTERN) ?? []) {
         if (SPACE.test(part)) {
           lead += part;
         } else {
-          push(part, plainP(part, tokens.length));
+          push(part, known ?? plainP(part, tokens.length));
         }
       }
       continue;
     }
-    const slot = slots.find((s) => s.id === piece.slot);
+    const id = (piece as { slot: string }).slot;
+    const slot = slots.find((s) => s.id === id);
     const picked =
-      slot?.options.find((o) => o.text === choice[piece.slot]) ??
-      slot?.options[0];
+      slot?.options.find((o) => o.text === choice[id]) ?? slot?.options[0];
     if (picked) {
-      push(picked.text, picked.p, piece.slot);
+      push(picked.text, picked.p, id);
     }
   }
   return tokens;
@@ -187,14 +272,73 @@ const tokenize = (
 const defaults = (slots: TokenSlot[]) =>
   Object.fromEntries(slots.map((s) => [s.id, s.options[0]?.text ?? ""]));
 
+/**
+ * The answer for the current choice. A Promise holds the old answer (cut at
+ * `keep` words by the caller) until the new one lands.
+ */
+function useAnswer(
+  compose: NonNullable<AITokenAlternativesProps["compose"]>,
+  choice: Record<string, string>,
+  fallback: TokenSlot[]
+) {
+  const [answer, setAnswer] = useState<{
+    pieces: AnswerPiece[];
+    slots: TokenSlot[];
+  }>({ pieces: [], slots: fallback });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const composeRef = useRef(compose);
+  composeRef.current = compose;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const result = composeRef.current(choice, controller.signal);
+    setError(undefined);
+    if (!(result instanceof Promise)) {
+      setAnswer(normalize(result, fallback));
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    result.then(
+      (next) => {
+        if (!controller.signal.aborted) {
+          setAnswer(normalize(next, fallback));
+          setLoading(false);
+        }
+      },
+      (e: unknown) => {
+        if (!controller.signal.aborted) {
+          setError(reasonOf(e));
+          setLoading(false);
+        }
+      }
+    );
+    return () => controller.abort();
+  }, [choice, fallback]);
+
+  return { ...answer, loading, error };
+}
+
 export default function AITokenAlternatives({
-  prompt = "Sam wants to push the launch review. Can you draft a quick reply?",
-  slots = DEMO_SLOTS,
-  compose = demoCompose,
+  prompt,
+  slots: slotsProp,
+  compose: composeProp,
   className,
 }: AITokenAlternativesProps) {
+  const isDemo = composeProp === undefined;
+  const compose = composeProp ?? demoCompose;
+  const shownPrompt = isDemo
+    ? (prompt ??
+      "Sam wants to push the launch review. Can you draft a quick reply?")
+    : prompt;
   const reduceMotion = useReducedMotion();
-  const [choice, setChoice] = useState(() => defaults(slots));
+  const [startSlots] = useState(() => slotsProp ?? (isDemo ? DEMO_SLOTS : []));
+  const [choice, setChoice] = useState(() => defaults(startSlots));
+  const answer = useAnswer(compose, choice, startSlots);
+  const { slots } = answer;
+  // Words up to the last pick stay while the rest is being written again.
+  const [keep, setKeep] = useState(0);
   const [shown, setShown] = useState(0);
   const [open, setOpen] = useState<Open | null>(null);
   const [heat, setHeat] = useState(false);
@@ -207,14 +351,18 @@ export default function AITokenAlternatives({
   const tokenRefs = useRef(new Map<string, HTMLButtonElement>());
 
   const tokens = useMemo(
-    () => tokenize(compose(choice), choice, slots),
-    [compose, choice, slots]
+    () => tokenize(answer.pieces, choice, slots),
+    [answer.pieces, choice, slots]
   );
-  const streaming = shown < tokens.length;
+  const waiting = answer.loading;
+  // While the rest is on its way, or failed to come, only the kept words show.
+  const cut = waiting || Boolean(answer.error);
+  const visible = cut ? Math.min(shown, keep) : shown;
+  const streaming = waiting || (!cut && shown < tokens.length);
 
   // Stream the answer in a word at a time.
   useEffect(() => {
-    if (!streaming) {
+    if (!streaming || waiting) {
       return;
     }
     if (reduceMotion) {
@@ -227,7 +375,7 @@ export default function AITokenAlternatives({
       26 + Math.min(40, word.length * 6)
     );
     return () => clearTimeout(id);
-  }, [shown, streaming, tokens, reduceMotion]);
+  }, [shown, streaming, waiting, tokens, reduceMotion]);
 
   const pick = useCallback(
     (slotId: string, text: string) => {
@@ -245,6 +393,7 @@ export default function AITokenAlternatives({
       setChoice((c) => ({ ...c, [slotId]: text }));
       // Keep everything up to the new word, then write the rest again.
       setShown(index + 1);
+      setKeep(index + 1);
     },
     [choice, tokens]
   );
@@ -292,7 +441,9 @@ export default function AITokenAlternatives({
     return () => document.removeEventListener("pointerdown", onDown);
   }, [open]);
 
-  const edits = slots.filter((s) => choice[s.id] !== s.options[0]?.text);
+  const edits = slots.filter(
+    (s) => s.id in choice && choice[s.id] !== s.options[0]?.text
+  );
   const openSlot = slots.find((s) => s.id === open?.slot);
 
   return (
@@ -302,12 +453,15 @@ export default function AITokenAlternatives({
           "w-full max-w-md rounded-2xl bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
           className
         )}
+        data-state={streaming ? "streaming" : "idle"}
       >
-        <div className="flex justify-end px-4 pt-4">
-          <p className="max-w-[85%] rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[13px] text-zinc-700 leading-snug dark:bg-zinc-800 dark:text-zinc-200">
-            {prompt}
-          </p>
-        </div>
+        {shownPrompt ? (
+          <div className="flex justify-end px-4 pt-4">
+            <p className="max-w-[85%] rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[13px] text-zinc-700 leading-snug dark:bg-zinc-800 dark:text-zinc-200">
+              {shownPrompt}
+            </p>
+          </div>
+        ) : null}
 
         <div className="relative px-4 pt-4 pb-5" ref={answerRef}>
           <p
@@ -315,7 +469,7 @@ export default function AITokenAlternatives({
             ref={textRef}
             style={{ minHeight: streaming ? minHeight : undefined }}
           >
-            {tokens.slice(0, shown).map((token) => (
+            {tokens.slice(0, visible).map((token) => (
               <TokenView
                 active={open?.slot === token.slot && Boolean(token.slot)}
                 edited={
@@ -339,6 +493,14 @@ export default function AITokenAlternatives({
               />
             )}
           </p>
+          {answer.error ? (
+            <p
+              className="mt-2 text-[12.5px] text-rose-600 dark:text-rose-400"
+              role="alert"
+            >
+              {answer.error}
+            </p>
+          ) : null}
 
           <AnimatePresence>
             {open && openSlot && (
@@ -376,6 +538,7 @@ export default function AITokenAlternatives({
                   // Like a pick: the word itself lands at once, the rest
                   // is written again.
                   setShown(first + 1);
+                  setKeep(first + 1);
                   // Reset leaves with the chips; focus goes to the first
                   // word that changed back.
                   const slot = tokens[first]?.slot;
