@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Handoff
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-11-05
  * @license: MIT
  * @website: https://kokonutui.com
@@ -22,20 +22,37 @@ export interface HandoffAgent {
   tone: string;
 }
 
+/** Where the handoff is, from your support queue. */
+export type HandoffStatus = "waiting" | "joined";
+
 export interface AIHandoffProps {
+  /** The user's message, drawn as a bubble. Only the demo draws one by default. */
   prompt?: string;
+  /** What the assistant says before handing over. */
   message?: string;
   team?: string;
   /** What the person taking over gets, so nobody asks twice. */
   shared?: string[];
-  /** The team; the first one picks it up. */
+  /** The team. The first one is who picks it up, so put them first. */
   agents?: HandoffAgent[];
-  /** Place in line when the card first shows. */
+  /** Place in line. Live, pass each new place; the demo counts down from it. */
   position?: number;
-  /** The first thing the agent says once they join. */
+  /**
+   * Pass it to drive the card from your queue: `waiting` shows `position`,
+   * `joined` brings the first agent in. Leave it out and the demo plays on
+   * `stepMs`.
+   */
+  status?: HandoffStatus;
+  /**
+   * The agent's first message. Live, they show as typing until you pass it;
+   * the demo types for a moment, then shows it.
+   */
   reply?: string;
-  /** Demo timing: ms per place in line. */
+  /** One line under the team while waiting. */
+  waitHint?: string;
+  /** Demo only: ms per place in line. */
   stepMs?: number;
+  /** Shows "Keep chatting with AI" while waiting. */
   onStay?: () => void;
   className?: string;
 }
@@ -83,30 +100,54 @@ const place = (n: number) => {
   return `${n}${suffix} in line`;
 };
 
-export default function AIHandoff({
-  prompt = "I got charged twice for October",
-  message = "I can see both charges. Refunds need someone on the billing team, so I’m handing you over with the details.",
-  team = "Billing",
-  shared = DEMO_SHARED,
-  agents = DEMO_AGENTS,
-  position = 3,
-  reply = "Hi Mara, Nora here. I can see the duplicate and I’ve refunded $24.00. It’ll be back on your card in 3 to 5 days.",
-  stepMs = 1300,
-  onStay,
-  className,
-}: AIHandoffProps) {
-  const id = useId();
-  const [status, setStatus] = useState<Status>("waiting");
-  const [line, setLine] = useState(position);
-  const [typing, setTyping] = useState(true);
-  const [landed, setLanded] = useState(false);
-  const agent = agents[0];
-  const picking = status === "picking";
-  const open = status === "waiting" || picking;
+const DEMO = {
+  prompt: "I got charged twice for October",
+  message:
+    "I can see both charges. Refunds need someone on the billing team, so I’m handing you over with the details.",
+  reply:
+    "Hi Mara, Nora here. I can see the duplicate and I’ve refunded $24.00. It’ll be back on your card in 3 to 5 days.",
+};
 
-  // Moves up the line, then the first agent joins.
+/** The chat text around the card: the demo's only when it's the demo. */
+function shownText(
+  text: Pick<AIHandoffProps, "prompt" | "message" | "reply">,
+  isDemo: boolean
+) {
+  if (!isDemo) {
+    return text;
+  }
+  return {
+    prompt: text.prompt ?? DEMO.prompt,
+    message: text.message ?? DEMO.message,
+    reply: text.reply ?? DEMO.reply,
+  };
+}
+
+/**
+ * Where the handoff is. Live it follows `status` and `position`; the demo
+ * moves up the line on `stepMs`. Either way the first agent is shown picking
+ * it up for a moment before they join.
+ */
+function useQueue(
+  statusProp: HandoffStatus | undefined,
+  position: number,
+  stepMs: number
+) {
+  const driven = statusProp !== undefined;
+  const [status, setStatus] = useState<Status>("waiting");
+  const [counted, setLine] = useState(position);
+  const line = driven ? position : counted;
+
+  // Live: the queue says they've joined, so they're picked, then join.
   useEffect(() => {
-    if (status !== "waiting") {
+    if (statusProp === "joined" && status === "waiting") {
+      setStatus("picking");
+    }
+  }, [statusProp, status]);
+
+  // Demo: moves up the line, then the first agent joins.
+  useEffect(() => {
+    if (status !== "waiting" || driven) {
       return;
     }
     const t = setTimeout(() => {
@@ -117,7 +158,7 @@ export default function AIHandoff({
       }
     }, stepMs);
     return () => clearTimeout(t);
-  }, [status, line, stepMs]);
+  }, [status, line, stepMs, driven]);
 
   // Holds on who picked it up, then they join.
   useEffect(() => {
@@ -127,6 +168,35 @@ export default function AIHandoff({
     const t = setTimeout(() => setStatus("joined"), PICK_MS);
     return () => clearTimeout(t);
   }, [status]);
+
+  return { status, setStatus, line };
+}
+
+export default function AIHandoff({
+  prompt,
+  message,
+  team = "Billing",
+  shared = DEMO_SHARED,
+  agents = DEMO_AGENTS,
+  position = 3,
+  status: statusProp,
+  reply,
+  waitHint = "Usually replies in about 2 min",
+  stepMs = 1300,
+  onStay,
+  className,
+}: AIHandoffProps) {
+  const id = useId();
+  const driven = statusProp !== undefined;
+  const shown = shownText({ prompt, message, reply }, !driven);
+  const { status, setStatus, line } = useQueue(statusProp, position, stepMs);
+  const [typingDemo, setTyping] = useState(true);
+  // Live, the agent types until you pass their first message.
+  const typing = driven ? shown.reply === undefined : typingDemo;
+  const [landed, setLanded] = useState(false);
+  const agent = agents[0];
+  const picking = status === "picking";
+  const open = status === "waiting" || picking;
 
   // They type for a moment before the first message lands.
   useEffect(() => {
@@ -148,13 +218,20 @@ export default function AIHandoff({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("flex w-full max-w-md flex-col gap-4", className)}>
-        <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
-          {prompt}
-        </p>
-        <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
-          {message}
-        </p>
+      <div
+        className={cn("flex w-full max-w-md flex-col gap-4", className)}
+        data-state={status}
+      >
+        {shown.prompt ? (
+          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+            {shown.prompt}
+          </p>
+        ) : null}
+        {shown.message ? (
+          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+            {shown.message}
+          </p>
+        ) : null}
 
         <AutoHeight className="rounded-[22px] bg-black/[0.04] dark:bg-white/[0.06]">
           <AnimatePresence initial={false} mode="popLayout">
@@ -227,14 +304,17 @@ export default function AIHandoff({
                       ))}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-[12px] text-zinc-500 dark:text-zinc-400">
-                      {picking
-                        ? `${agent.name} picked it up`
-                        : "Usually replies in about 2 min"}
+                      {picking ? `${agent.name} picked it up` : waitHint}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex justify-end px-1 pt-1">
+                <div
+                  className={cn(
+                    "flex justify-end px-1 pt-1",
+                    driven && !onStay && "hidden"
+                  )}
+                >
                   <button
                     className="h-8 rounded-full px-3 font-medium text-[12.5px] text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-black/[0.04] hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-black/[0.07] disabled:opacity-50 dark:text-zinc-400 dark:active:bg-white/[0.1] dark:hover:bg-white/[0.06] dark:hover:text-zinc-100"
                     disabled={picking}
@@ -344,7 +424,7 @@ export default function AIHandoff({
                       key="reply"
                       transition={{ duration: 0.3, ease: EASE_OUT }}
                     >
-                      {reply}
+                      {shown.reply}
                     </motion.p>
                   )}
                 </AnimatePresence>
