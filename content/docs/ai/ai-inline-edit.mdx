@@ -7,7 +7,64 @@ full: false
 ---
 
 import AiInlineEdit from "@/components/kokonutui/ai-inline-edit";
+import AIInlineEditStream from "@/components/mdx/demos/ai-inline-edit-stream";
 
 <Preview link="ai-inline-edit">
     <AiInlineEdit />
 </Preview>
+
+## Usage
+
+Pass your document as `paragraphs` and a `rewrite` that calls your model. It gets the selected text and the instruction, and returns the new text, a Promise of it, or a stream of deltas such as the AI SDK's `textStream`. The bar works until the text is complete, then writes the changes into the sentence. Stop aborts the `signal`, and a throw shows the error's message in the bar. `onChange` gets every paragraph once a rewrite is accepted.
+
+```tsx
+"use client";
+
+import AIInlineEdit from "@/components/kokonutui/ai-inline-edit";
+
+export function Editor({ doc, save }: { doc: string[]; save: (doc: string[]) => void }) {
+  return (
+    <AIInlineEdit
+      onChange={save}
+      paragraphs={doc}
+      rewrite={async function* (text, instruction, attempt, signal) {
+        const res = await fetch("/api/rewrite", {
+          method: "POST",
+          body: JSON.stringify({ text, instruction, attempt }),
+          signal,
+        });
+        if (!(res.ok && res.body)) {
+          throw new Error("Couldn't reach the model. Try again.");
+        }
+        const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) return;
+          yield value;
+        }
+      }}
+      title="Billing launch update"
+    />
+  );
+}
+```
+
+```ts
+// app/api/rewrite/route.ts
+import { anthropic } from "@ai-sdk/anthropic";
+import { streamText } from "ai";
+
+export async function POST(req: Request) {
+  const { text, instruction, attempt } = await req.json();
+  const result = streamText({
+    model: anthropic("claude-sonnet-5-5"),
+    temperature: attempt > 0 ? 1 : 0.3,
+    system: "Rewrite the text as asked. Reply with the new text only.",
+    prompt: `${instruction}:\n\n${text}`,
+    abortSignal: req.signal,
+  });
+  return result.toTextStreamResponse();
+}
+```
+
+<AIInlineEditStream />

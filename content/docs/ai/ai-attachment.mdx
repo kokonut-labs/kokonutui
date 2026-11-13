@@ -7,7 +7,54 @@ full: false
 ---
 
 import AIAttachment from "@/components/kokonutui/ai-attachment";
+import AIAttachmentStream from "@/components/mdx/demos/ai-attachment-stream";
 
 <Preview link="ai-attachment">
     <AIAttachment />
 </Preview>
+
+## Usage
+
+With no props it plays the demo. Pass `status` to drive it from your own upload and parser: `uploading` with `uploaded` from 0 to 1, `reading` with `pagesRead`, then `done` or `error`. The answer shows once it's `done` and can stream in a part at a time; a part is text or `{ page }`, a citation that lights its page when pointed at. The file chip always shows, since it is the upload; the question bubble only shows when you pass `prompt`.
+
+```tsx
+"use client";
+
+import AIAttachment, { type AnswerPart } from "@/components/kokonutui/ai-attachment";
+
+export function UploadedFile({
+  file,
+  upload,
+  parse,
+  answer,
+}: {
+  file: { name: string; size: number; pages: number };
+  /** From your upload, e.g. XMLHttpRequest progress events. */
+  upload: { loaded: number; total: number; done: boolean };
+  /** From your parser, as it works through the pages. */
+  parse: { pagesRead: number; done: boolean; error?: string };
+  answer: AnswerPart[];
+}) {
+  let status: "uploading" | "reading" | "done" | "error" = "uploading";
+  if (parse.error) status = "error";
+  else if (parse.done) status = "done";
+  else if (upload.done) status = "reading";
+
+  return (
+    <AIAttachment
+      answer={answer}
+      error={parse.error}
+      file={file}
+      pagesRead={parse.pagesRead}
+      status={status}
+      uploaded={upload.loaded / upload.total}
+    />
+  );
+}
+```
+
+Here it's fed an upload, a page-by-page read and a streamed answer. **Play with an error** stops on a page with no text.
+
+<AIAttachmentStream />
+
+The root carries `data-state` with the status.

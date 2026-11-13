@@ -15,7 +15,16 @@ import { cn } from "@/lib/utils";
  * the page's own white or black. The title bar and copy button are restyled
  * through `.docs-code` in globals.css, since fumadocs owns that markup.
  */
-export function DocsPre(props: ComponentProps<"pre">) {
+export function DocsPre({
+  label,
+  ...props
+}: ComponentProps<"pre"> & {
+  /**
+   * The region's name, worked out on the server. Children that cross from a
+   * server component carry no text here, so the label would not match.
+   */
+  label?: string;
+}) {
   return (
     <CodeBlock
       {...props}
@@ -27,7 +36,7 @@ export function DocsPre(props: ComponentProps<"pre">) {
         "docs-code my-6 rounded-none border-black/[0.13] bg-white shadow-none dark:border-white/[0.14] dark:bg-black",
         props.className
       )}
-      viewportProps={{ "aria-label": codeLabel(props) }}
+      viewportProps={{ "aria-label": label ?? codeLabel(props) }}
     >
       <Pre>{props.children}</Pre>
     </CodeBlock>

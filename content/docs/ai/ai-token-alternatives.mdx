@@ -7,7 +7,62 @@ full: false
 ---
 
 import AiTokenAlternatives from "@/components/kokonutui/ai-token-alternatives";
+import AITokenAlternativesStream from "@/components/mdx/demos/ai-token-alternatives-stream";
 
 <Preview link="ai-token-alternatives">
     <AiTokenAlternatives />
 </Preview>
+
+## Usage
+
+The alternatives come from your model's logprobs: the other words it nearly wrote at each step. `fromLogprobs` turns an OpenAI-style `logprobs.content` list into the answer, making a slot of every word where another one was at least 8% likely, and keeping the real probability of every other word for the confidence view.
+
+Pass `compose` and it's called with the word picked in each slot. Ask the model again from that point and return the new answer, or a Promise of it: the words up to the pick stay, and the rest is written again once it lands. A throw shows the error's message under the answer.
+
+```tsx
+"use client";
+
+import AITokenAlternatives, { fromLogprobs } from "@/components/kokonutui/ai-token-alternatives";
+
+export function Reply({ question }: { question: string }) {
+  return (
+    <AITokenAlternatives
+      compose={async (choice, signal) => {
+        const res = await fetch("/api/alternatives", {
+          method: "POST",
+          body: JSON.stringify({ question, choice }),
+          signal,
+        });
+        if (!res.ok) {
+          throw new Error("Couldn't reach the model. Try another word.");
+        }
+        const { logprobs } = await res.json();
+        return fromLogprobs(logprobs);
+      }}
+      prompt={question}
+    />
+  );
+}
+```
+
+```ts
+// app/api/alternatives/route.ts
+import { openai } from "@ai-sdk/openai";
+import { generateText } from "ai";
+
+export async function POST(req: Request) {
+  const { question, choice } = await req.json();
+  const { providerMetadata } = await generateText({
+    model: openai("gpt-4.1-mini"),
+    prompt: question,
+    // Your choice of words so far, as a prefix the model continues from.
+    system: Object.keys(choice).length ? `Keep these words: ${Object.values(choice).join(", ")}` : undefined,
+    providerOptions: { openai: { logprobs: 4 } },
+  });
+  return Response.json({ logprobs: providerMetadata?.openai?.logprobs ?? [] });
+}
+```
+
+Slot ids from `fromLogprobs` follow token positions (`t0`, `t1`…), so the words before a pick keep their ids from one take to the next.
+
+<AITokenAlternativesStream />

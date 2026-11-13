@@ -25,6 +25,7 @@ type Theme = "light" | "dark";
 interface SwitchButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: "sm" | "default" | "lg";
+  /** Shows "Light" or "Dark" next to the icon. */
   showLabel?: boolean;
   /**
    * The applied theme, when a theme provider owns it (for next-themes, its
@@ -34,7 +35,7 @@ interface SwitchButtonProps
   theme?: Theme;
   /** Called with the theme to switch to. */
   onThemeChange?: (theme: Theme) => void;
-  /** Spread the new theme from the button as a circle. */
+  /** Spreads the new theme from the button as a circle. `false` switches instantly. */
   reveal?: boolean;
 }
 

@@ -7,7 +7,47 @@ full: false
 ---
 
 import AiRedact from "@/components/kokonutui/ai-redact";
+import AIRedactStream from "@/components/mdx/demos/ai-redact-stream";
 
 <Preview link="ai-redact">
     <AiRedact />
 </Preview>
+
+## Usage
+
+Pass `respond` to answer with your model. It gets the masked message, with placeholders like `PERSON_1` and `EMAIL_1` in place of the real values, and returns the reply, a Promise of it, or a stream of deltas. Placeholders the model writes back stay as chips while the reply streams, then the real values are filled in on this side once it ends. A throw shows the error's message as the reply. Pass `names` from your CRM so people are masked too; emails, phone numbers, cards and API keys are found by pattern.
+
+```tsx
+"use client";
+
+import AIRedact from "@/components/kokonutui/ai-redact";
+
+export function SupportComposer({ contacts }: { contacts: string[] }) {
+  return (
+    <AIRedact
+      defaultValue=""
+      names={contacts}
+      respond={async function* (masked, signal) {
+        const res = await fetch("/api/reply", {
+          method: "POST",
+          body: JSON.stringify({ prompt: masked }),
+          signal,
+        });
+        if (!(res.ok && res.body)) {
+          throw new Error("Couldn't reach the model. Try again.");
+        }
+        const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) return;
+          yield value;
+        }
+      }}
+    />
+  );
+}
+```
+
+On the server, stream with `streamText(...).toTextStreamResponse()` and tell the model to keep placeholders exactly as written. The real values never leave the browser.
+
+<AIRedactStream />

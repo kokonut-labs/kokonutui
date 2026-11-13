@@ -7,7 +7,53 @@ full: false
 ---
 
 import AIHandoff from "@/components/kokonutui/ai-handoff";
+import AIHandoffStream from "@/components/mdx/demos/ai-handoff-stream";
 
 <Preview link="ai-handoff">
     <AIHandoff />
 </Preview>
+
+## Usage
+
+With no props it plays the demo: the line counts down, Nora picks it up and replies. Pass `status` and it follows your support queue instead. While `waiting` it shows `position` as you pass it; `joined` brings the first of `agents` into the thread, and they show as typing until you pass `reply`. "Keep chatting with AI" only shows when you pass `onStay`, and the user's bubble only when you pass `prompt`.
+
+```tsx
+"use client";
+
+import AIHandoff from "@/components/kokonutui/ai-handoff";
+
+/** `ticket` comes from your helpdesk (a webhook, a socket, or polling). */
+export function Handoff({
+  ticket,
+  cancel,
+}: {
+  ticket: {
+    position: number;
+    assignee?: { name: string };
+    firstReply?: string;
+  };
+  cancel: () => void;
+}) {
+  return (
+    <AIHandoff
+      agents={[
+        {
+          name: ticket.assignee?.name ?? "Billing",
+          initials: (ticket.assignee?.name ?? "B")[0],
+          tone: "bg-rose-100 text-rose-800",
+        },
+      ]}
+      message="Refunds need someone on the billing team, so I’m handing you over."
+      onStay={cancel}
+      position={ticket.position}
+      reply={ticket.firstReply}
+      shared={["Two charges of $24.00 on Nov 3", "Invoice INV-2291"]}
+      status={ticket.assignee ? "joined" : "waiting"}
+    />
+  );
+}
+```
+
+With the AI SDK, give the model a `handoff_to_human` tool. Its input is the `shared` summary; once its part reaches `output-available` with your ticket id, draw the card and feed it the queue updates.
+
+<AIHandoffStream />

@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Agent Lanes
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-21
  * @license: MIT
  * @website: https://kokonutui.com
@@ -12,7 +12,13 @@
 
 import { Check, Pause, Play, RotateCcw } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export type ToolKind = "think" | "search" | "read" | "write";
@@ -22,7 +28,8 @@ export interface AgentStep {
   label: string;
   /** Seconds from the start of the run. */
   start: number;
-  end: number;
+  /** Leave it out while the step is still running. */
+  end?: number;
   /** What came back, shown once the step is done. */
   result?: string;
 }
@@ -39,9 +46,36 @@ export interface AIAgentLanesProps {
   task?: string;
   /** The first lane is the lead; the others are sub-agents it starts. */
   lanes?: AgentLane[];
-  /** The lead's final answer, revealed as its last step runs. */
+  /**
+   * The lead's final answer. Played back, it types out as the lead's last
+   * step runs; live, it shows as you pass it, so stream it straight in.
+   */
   answer?: string;
+  /**
+   * Seconds since the run started, from your own clock. Pass it to draw a
+   * run as it happens; leave it out and the lanes play back on their own.
+   */
+  elapsed?: number;
   className?: string;
+}
+
+/** A step with its end filled in: an open step ends just after `now`. */
+type PlacedStep = AgentStep & { end: number };
+type PlacedLane = Omit<AgentLane, "steps"> & { steps: PlacedStep[] };
+
+/** Keeps open steps running: their bar reaches `now`, never past it. */
+const OPEN_MARGIN = 0.001;
+
+function placeLanes(lanes: AgentLane[], elapsed?: number): PlacedLane[] {
+  return lanes.map((lane) => ({
+    ...lane,
+    steps: lane.steps.map((step) => ({
+      ...step,
+      end:
+        step.end ??
+        (elapsed === undefined ? step.start + 1 : elapsed + OPEN_MARGIN),
+    })),
+  }));
 }
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -182,13 +216,24 @@ const formatTime = (s: number) => `${s.toFixed(1)}s`;
 
 export default function AIAgentLanes({
   task = "Where should our 30-person team meet for a May offsite?",
-  lanes = DEMO_LANES,
+  lanes: lanesProp = DEMO_LANES,
   answer = DEMO_ANSWER,
+  elapsed,
   className,
 }: AIAgentLanesProps) {
   const reduceMotion = useReducedMotion();
-  const total = Math.max(...lanes.flatMap((l) => l.steps.map((s) => s.end)));
-  const [now, setNow] = useState(0);
+  const live = elapsed !== undefined;
+  const lanes = useMemo(
+    () => placeLanes(lanesProp, elapsed),
+    [lanesProp, elapsed]
+  );
+  const total = Math.max(
+    OPEN_MARGIN,
+    elapsed ?? 0,
+    ...lanes.flatMap((l) => l.steps.map((s) => s.end))
+  );
+  const [played, setNow] = useState(0);
+  const now = elapsed ?? played;
   const [playing, setPlaying] = useState(false);
   const [selected, setSelected] = useState(lanes[0]?.id ?? "");
   const [hover, setHover] = useState<{ lane: number; step: number } | null>(
@@ -219,6 +264,9 @@ export default function AIAgentLanes({
 
   // Start once it's first seen; reduced motion shows the finished run.
   useEffect(() => {
+    if (live) {
+      return;
+    }
     if (reduceMotion) {
       setNow(total);
       return;
@@ -228,10 +276,10 @@ export default function AIAgentLanes({
     }
     const id = setTimeout(() => setPlaying(true), 500);
     return () => clearTimeout(id);
-  }, [reduceMotion, total, seen]);
+  }, [live, reduceMotion, total, seen]);
 
   useEffect(() => {
-    if (!(playing && visible)) {
+    if (!(playing && visible) || live) {
       return;
     }
     let frame = 0;
@@ -248,9 +296,9 @@ export default function AIAgentLanes({
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [playing, visible, total]);
+  }, [playing, visible, total, live]);
 
-  const done = now >= total;
+  const done = now >= total && lanes.every((l) => now >= laneEnd(l));
   const lead = lanes[0];
   const subs = lanes.slice(1);
   const running = subs.filter(
@@ -285,14 +333,16 @@ export default function AIAgentLanes({
             {task}
           </h2>
         </div>
-        <button
-          aria-label={playButtonLabel(done, playing)}
-          className="flex size-8 shrink-0 items-center justify-center rounded-lg text-zinc-600 ring-1 ring-black/10 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-900/30 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/[0.07] dark:hover:text-white"
-          onClick={toggle}
-          type="button"
-        >
-          <PlayIcon done={done} playing={playing} />
-        </button>
+        {live ? null : (
+          <button
+            aria-label={playButtonLabel(done, playing)}
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-zinc-600 ring-1 ring-black/10 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-900/30 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/[0.07] dark:hover:text-white"
+            onClick={toggle}
+            type="button"
+          >
+            <PlayIcon done={done} playing={playing} />
+          </button>
+        )}
       </header>
 
       <div className="px-4 pt-4">
@@ -361,7 +411,7 @@ export default function AIAgentLanes({
           </div>
         </div>
 
-        <div className="flex items-center">
+        <div className={cn("flex items-center", live && "hidden")}>
           <span className="w-[84px] shrink-0 sm:w-28" />
           <Scrubber
             now={now}
@@ -378,13 +428,14 @@ export default function AIAgentLanes({
         answer={answer}
         lane={lanes.find((l) => l.id === selected) ?? lead}
         lead={selected === lead.id}
+        live={live}
         now={now}
       />
     </div>
   );
 }
 
-const laneEnd = (lane: AgentLane) => lane.steps.at(-1)?.end ?? 0;
+const laneEnd = (lane: PlacedLane) => lane.steps.at(-1)?.end ?? 0;
 
 const statusLine = (
   done: boolean,
@@ -427,7 +478,7 @@ function LaneLabel({
   finished,
   onSelect,
 }: {
-  lane: AgentLane;
+  lane: PlacedLane;
   lead: boolean;
   active: boolean;
   started: boolean;
@@ -486,7 +537,7 @@ function StepBar({
   onHover,
   onSelect,
 }: {
-  step: AgentStep;
+  step: PlacedStep;
   now: number;
   left: string;
   width: string;
@@ -527,7 +578,7 @@ function StepTip({
   top,
   total,
 }: {
-  step: AgentStep;
+  step: PlacedStep;
   now: number;
   top: number;
   total: number;
@@ -570,8 +621,8 @@ function Connectors({
   now,
   total,
 }: {
-  lead: AgentLane;
-  subs: AgentLane[];
+  lead: PlacedLane;
+  subs: PlacedLane[];
   now: number;
   total: number;
 }) {
@@ -710,29 +761,39 @@ function Legend() {
   );
 }
 
+/** How much of the answer shows: all of it live, typed out in playback. */
+function writtenAnswer(
+  answer: string,
+  writing: PlacedStep | undefined,
+  now: number,
+  live: boolean
+) {
+  if (!writing || now < writing.start) {
+    return "";
+  }
+  if (live) {
+    return answer;
+  }
+  const share = clamp01((now - writing.start) / (writing.end - writing.start));
+  return answer.slice(0, Math.round(answer.length * share));
+}
+
 function Transcript({
   lane,
   lead,
   now,
   answer,
+  live,
 }: {
-  lane: AgentLane;
+  lane: PlacedLane;
   lead: boolean;
   now: number;
   answer: string;
+  live: boolean;
 }) {
   const steps = lane.steps.filter((s) => now >= s.start);
   const writing = lead ? lane.steps.at(-1) : undefined;
-  const written =
-    writing && now >= writing.start
-      ? answer.slice(
-          0,
-          Math.round(
-            answer.length *
-              clamp01((now - writing.start) / (writing.end - writing.start))
-          )
-        )
-      : "";
+  const written = writtenAnswer(answer, writing, now, live);
 
   return (
     <div className="min-h-[148px] border-black/[0.06] border-t px-4 py-3 dark:border-white/[0.08]">

@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Inline Edit
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-21
  * @license: MIT
  * @website: https://kokonutui.com
@@ -36,14 +36,28 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 
+/** A rewrite: the text, a Promise of it, or a stream of text deltas. */
+export type Rewrite = string | Promise<string> | AsyncIterable<string>;
+
 export interface AIInlineEditProps {
   title?: string;
+  /** The document, one string per paragraph. Read once, on mount. */
   paragraphs?: string[];
   /**
-   * Rewrites the selected text. `attempt` counts up with each Try again, so
-   * you can ask the model for a different take.
+   * Rewrites the selected text. Return the text, a Promise of it, or a stream
+   * of deltas (like the AI SDK's `textStream`); the bar shows it working until
+   * the text is complete, then writes the changes in. `attempt` counts up with
+   * each Try again, so you can ask for a different take. `signal` aborts when
+   * the person presses Stop. Throw and the bar shows the error's message.
    */
-  rewrite?: (text: string, instruction: string, attempt: number) => string;
+  rewrite?: (
+    text: string,
+    instruction: string,
+    attempt: number,
+    signal: AbortSignal
+  ) => Rewrite;
+  /** Called with every paragraph once a rewrite is accepted. */
+  onChange?: (paragraphs: string[]) => void;
   className?: string;
 }
 
@@ -64,6 +78,7 @@ interface Op {
 type Phase =
   | "idle"
   | "prompt"
+  | "thinking"
   | "streaming"
   | "review"
   | "settling"
@@ -440,10 +455,31 @@ const stepDelay = (op: Op) => {
   return op.kind === "del" ? 26 : 16;
 };
 
+const isStream = (value: Rewrite): value is AsyncIterable<string> =>
+  typeof value === "object" && Symbol.asyncIterator in value;
+
+/** The whole text of a rewrite, gathering a stream's deltas. */
+async function collect(result: Rewrite) {
+  if (!isStream(result)) {
+    return await result;
+  }
+  let text = "";
+  for await (const delta of result) {
+    text += delta;
+  }
+  return text;
+}
+
+const reasonOf = (error: unknown) =>
+  error instanceof Error && error.message
+    ? error.message
+    : "Couldn’t rewrite that. Try again.";
+
 export default function AIInlineEdit({
   title = "Billing launch update",
   paragraphs = DEMO_PARAGRAPHS,
   rewrite = demoRewrite,
+  onChange,
   className,
 }: AIInlineEditProps) {
   const reduceMotion = useReducedMotion();
@@ -462,6 +498,8 @@ export default function AIInlineEdit({
   const [head, setHead] = useState(0);
   const [flash, setFlash] = useState<Span | null>(null);
   const [flashOn, setFlashOn] = useState(false);
+  const [error, setError] = useState<string>();
+  const abortRef = useRef<AbortController>(undefined);
   /** Null until measured, so the bar never renders (or animates in) at 0,0. */
   const [bar, setBar] = useState<{
     x: number;
@@ -628,11 +666,8 @@ export default function AIInlineEdit({
     };
   }, [capture, editing]);
 
-  const run = (text: string, nextAttempt: number) => {
-    const next = rewrite(selected, text, nextAttempt);
+  const show = (next: string) => {
     const seen = versions.indexOf(next);
-    setLabel(text);
-    setAttempt(nextAttempt);
     if (seen >= 0) {
       setVersion(seen);
       setPhase("review");
@@ -642,6 +677,40 @@ export default function AIInlineEdit({
     setVersion(versions.length);
     setHead(0);
     setPhase("streaming");
+  };
+
+  const run = (text: string, nextAttempt: number) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLabel(text);
+    setAttempt(nextAttempt);
+    setError(undefined);
+    const result = rewrite(selected, text, nextAttempt, controller.signal);
+    if (typeof result === "string") {
+      show(result);
+      return;
+    }
+    setPhase("thinking");
+    collect(result).then(
+      (next) => {
+        if (!controller.signal.aborted) {
+          show(next);
+        }
+      },
+      (e: unknown) => {
+        if (!controller.signal.aborted) {
+          setError(reasonOf(e));
+          setPhase("prompt");
+        }
+      }
+    );
+  };
+
+  /** Stop waiting on the model, back to where the person was. */
+  const stop = () => {
+    abortRef.current?.abort();
+    setPhase(versions.length > 0 ? "review" : "prompt");
   };
 
   const accept = () => {
@@ -656,6 +725,7 @@ export default function AIInlineEdit({
         next[span.p] =
           text.slice(0, span.start) + current + text.slice(span.end);
         setDoc(next);
+        onChange?.(next);
         setFlash({
           p: span.p,
           start: span.start,
@@ -677,18 +747,25 @@ export default function AIInlineEdit({
     timerRef.current = setTimeout(clear, reduceMotion ? 0 : 160);
   };
 
+  /** Escape steps back one phase. */
+  const stepBack = () => {
+    if (phase === "thinking") {
+      stop();
+    } else if (phase === "streaming") {
+      setVersions((v) => v.slice(0, -1));
+      setVersion((v) => Math.max(0, v - 1));
+      setPhase(versions.length > 1 ? "review" : "prompt");
+    } else if (phase === "review") {
+      discard();
+    } else if (phase === "prompt") {
+      clear();
+    }
+  };
+
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
       event.preventDefault();
-      if (phase === "streaming") {
-        setVersions((v) => v.slice(0, -1));
-        setVersion((v) => Math.max(0, v - 1));
-        setPhase(versions.length > 1 ? "review" : "prompt");
-      } else if (phase === "review") {
-        discard();
-      } else if (phase === "prompt") {
-        clear();
-      }
+      stepBack();
     } else if (
       event.key === "Enter" &&
       (event.metaKey || event.ctrlKey) &&
@@ -712,7 +789,7 @@ export default function AIInlineEdit({
   }, []);
 
   const renderRegion = () => {
-    if (!editing) {
+    if (!editing || phase === "thinking") {
       return (
         <mark className="rounded-[3px] bg-sky-500/[0.16] text-inherit [box-decoration-break:clone] dark:bg-sky-400/20">
           {selected}
@@ -827,22 +904,17 @@ export default function AIInlineEdit({
                 style={{ width: bar.width }}
                 transition={{ duration: 0.2, ease: EASE_OUT }}
               >
-                <BarBody
-                  phase={
-                    phase === "settling" || phase === "discarding"
-                      ? "review"
-                      : phase
-                  }
-                >
+                <BarBody phase={barPhase(phase)}>
                   {phase === "prompt" && (
                     <PromptBar
+                      error={error}
                       inputRef={inputRef}
                       instruction={instruction}
                       onInstruction={setInstruction}
                       onRun={(text) => run(text, 0)}
                     />
                   )}
-                  {phase === "streaming" && (
+                  {(phase === "streaming" || phase === "thinking") && (
                     <div className="flex h-11 items-center gap-2 pr-1.5 pl-3">
                       <Dots />
                       <p className="min-w-0 flex-1 truncate text-[13px] text-zinc-600 dark:text-zinc-300">
@@ -855,6 +927,10 @@ export default function AIInlineEdit({
                       <button
                         className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] text-zinc-600 transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-white"
                         onClick={() => {
+                          if (phase === "thinking") {
+                            stop();
+                            return;
+                          }
                           setHead(ops.length);
                           setPhase("review");
                         }}
@@ -865,7 +941,7 @@ export default function AIInlineEdit({
                           aria-hidden="true"
                           className="size-2.5 fill-current"
                         />
-                        Skip
+                        {phase === "thinking" ? "Stop" : "Skip"}
                       </button>
                     </div>
                   )}
@@ -905,12 +981,22 @@ export default function AIInlineEdit({
   );
 }
 
+/** Phases that look the same share one bar, so it doesn't crossfade. */
+function barPhase(phase: Phase): Phase {
+  if (phase === "settling" || phase === "discarding") {
+    return "review";
+  }
+  return phase === "thinking" ? "streaming" : phase;
+}
+
 function PromptBar({
   instruction,
   onInstruction,
   onRun,
   inputRef,
+  error,
 }: {
+  error?: string;
   instruction: string;
   onInstruction: (value: string) => void;
   onRun: (text: string) => void;
@@ -944,6 +1030,14 @@ function PromptBar({
           <ArrowUp className="size-3.5" />
         </button>
       </form>
+      {error ? (
+        <p
+          className="px-3 pb-2 text-[12px] text-rose-600 dark:text-rose-400"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-1 border-black/[0.06] border-t p-1.5 dark:border-white/[0.08]">
         {ACTIONS.map((action) => (
           <button

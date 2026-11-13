@@ -7,7 +7,61 @@ full: false
 ---
 
 import AIConnect from "@/components/kokonutui/ai-connect";
+import AIConnectStream from "@/components/mdx/demos/ai-connect-stream";
 
 <Preview link="ai-connect">
     <AIConnect />
 </Preview>
+
+## Usage
+
+With no `status` it plays the demo. Pass `status` and it follows your tool call: `needs-access` shows the card, `running` and `done` show the call, `error` shows your `error` on it. `onConnect` runs your OAuth flow and returns a Promise; once it resolves the card says connected, and you retry the call and move `status` on. If it throws, the card stays with the error's message. "Not now" only shows when you pass `onSkip`, and the closing lines only when you pass `answer` or `skipped`.
+
+```tsx
+"use client";
+
+import { getToolName, isToolUIPart, type UIMessage } from "ai";
+import AIConnect, { type ConnectStatus } from "@/components/kokonutui/ai-connect";
+
+/** Your tool returns { needsAuth: true } when the app isn't connected. */
+function statusOf(part: Extract<UIMessage["parts"][number], { toolCallId: string }>): ConnectStatus {
+  if (part.state === "output-error") return "error";
+  if (part.state !== "output-available") return "running";
+  return (part.output as { needsAuth?: boolean }).needsAuth ? "needs-access" : "done";
+}
+
+export function GitHubCall({
+  part,
+  retry,
+}: {
+  part: UIMessage["parts"][number];
+  /** Re-runs the tool, e.g. by sending the message again with `regenerate()`. */
+  retry: () => void;
+}) {
+  if (!isToolUIPart(part) || getToolName(part) !== "open_pull_request") {
+    return null;
+  }
+  const output = part.state === "output-available" ? (part.output as { number?: number }) : undefined;
+
+  return (
+    <AIConnect
+      done="Opened a pull request"
+      error={part.state === "output-error" ? part.errorText : undefined}
+      onConnect={async () => {
+        await openOAuthPopup("/api/auth/github"); // your flow; throw if closed
+        retry();
+      }}
+      onSkip={() => undefined}
+      reason="to open a pull request on acme/web"
+      result={output?.number ? `#${output.number}` : undefined}
+      running="Opening a pull request"
+      status={statusOf(part)}
+      target="acme/web"
+    />
+  );
+}
+```
+
+Scopes, app name, logo and colour are props too, so the same card asks for Linear, Slack or your own API.
+
+<AIConnectStream />

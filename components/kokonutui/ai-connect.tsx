@@ -3,14 +3,14 @@
 /**
  * @author: @kokonutui
  * @description: AI Connect
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-31
  * @license: MIT
  * @website: https://kokonutui.com
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { Ban, Check, Eye, GitPullRequest, Lock, Pause } from "lucide-react";
+import { Ban, Check, Eye, GitPullRequest, Lock, Pause, X } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,14 @@ export interface ConnectScope {
   icon?: ReactNode;
 }
 
+/**
+ * Where the tool call is, from your app. `needs-access` shows the card;
+ * `running` is the call before access was asked for, or after it was given.
+ */
+export type ConnectStatus = "needs-access" | "running" | "done" | "error";
+
 export interface AIConnectProps {
+  /** The user's message, drawn as a bubble. Only the demo draws one by default. */
   prompt?: string;
   /** Your product's name, as the person knows it. */
   agent?: string;
@@ -44,9 +51,23 @@ export interface AIConnectProps {
   target?: string;
   /** Shown on the right of the call once done, e.g. "#142". */
   result?: string;
-  answer?: string;
-  /** Runs your OAuth flow. Resolve once connected, throw if cancelled. */
+  answer?: ReactNode;
+  /**
+   * Pass it to drive the card from your tool call. Leave it out and the demo
+   * plays through by itself.
+   */
+  status?: ConnectStatus;
+  /** Why the call failed, shown when `status` is `error`. */
+  error?: string;
+  /**
+   * Runs your OAuth flow. Resolve once connected, then retry the call and
+   * move `status` on. Throw and the card stays, with the error's message.
+   */
   onConnect?: () => Promise<void>;
+  /** "Not now". Live, it only shows when you pass this. */
+  onSkip?: () => void;
+  /** What the assistant says after "Not now". */
+  skipped?: ReactNode;
   className?: string;
 }
 
@@ -57,6 +78,7 @@ type Step =
   | "connected"
   | "resumed"
   | "done"
+  | "failed"
   | "skipped";
 
 type Link = "idle" | "waiting" | "linked";
@@ -93,6 +115,58 @@ const DEMO_SCOPES: ConnectScope[] = [
 const demoConnect = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 1600));
 
+const DEMO_TEXT = {
+  prompt: "Open a PR with the theme fix",
+  target: "kokonut/web",
+  result: "#142",
+  answer:
+    "Opened #142, “Fix theme flash on load”, against main. CI is running now.",
+  skipped:
+    "No problem. The branch is pushed, so you can open the PR on GitHub whenever you like.",
+};
+
+type Shown = Pick<
+  AIConnectProps,
+  "prompt" | "target" | "result" | "answer" | "skipped"
+>;
+
+/** The text around the call: the demo's only when it's the demo. */
+function shownText(text: Shown, isDemo: boolean): Shown {
+  if (!isDemo) {
+    return text;
+  }
+  return {
+    prompt: text.prompt ?? DEMO_TEXT.prompt,
+    target: text.target ?? DEMO_TEXT.target,
+    result: text.result ?? DEMO_TEXT.result,
+    answer: text.answer ?? DEMO_TEXT.answer,
+    skipped: text.skipped ?? DEMO_TEXT.skipped,
+  };
+}
+
+/** Where the card is when your app drives it. */
+function drivenStep(status: ConnectStatus, step: Step): Step {
+  if (step === "skipped") {
+    return "skipped";
+  }
+  if (status === "needs-access") {
+    return step;
+  }
+  if (status === "done") {
+    return "done";
+  }
+  if (status === "error") {
+    return "failed";
+  }
+  // Running again after access was given, or before it was asked for.
+  return step === "connected" ? "resumed" : "running";
+}
+
+const reasonOf = (error: unknown) =>
+  error instanceof Error && error.message
+    ? error.message
+    : "Couldn’t connect. Try again.";
+
 /** Steps that move on by themselves, and after how long. */
 const AUTO: Partial<Record<Step, [number, Step]>> = {
   running: [900, "blocked"],
@@ -101,7 +175,7 @@ const AUTO: Partial<Record<Step, [number, Step]>> = {
 };
 
 export default function AIConnect({
-  prompt = "Open a PR with the theme fix",
+  prompt,
   agent = "Kokonut",
   agentLogo,
   app = "GitHub",
@@ -111,32 +185,47 @@ export default function AIConnect({
   scopes = DEMO_SCOPES,
   running = "Opening a pull request",
   done = "Opened a pull request",
-  target = "kokonut/web",
-  result = "#142",
-  answer = "Opened #142, “Fix theme flash on load”, against main. CI is running now.",
+  target,
+  result,
+  answer,
+  status,
+  error,
   onConnect = demoConnect,
+  onSkip,
+  skipped,
   className,
 }: AIConnectProps) {
-  const [step, setStep] = useState<Step>("running");
+  const driven = status !== undefined;
+  const shown = shownText({ prompt, target, result, answer, skipped }, !driven);
+  const [own, setStep] = useState<Step>(driven ? "blocked" : "running");
+  const [connectError, setConnectError] = useState<string>();
+  const step = driven ? drivenStep(status, own) : own;
   const logo = appLogo ?? <GitHubMark className="size-[18px]" />;
 
   useEffect(() => {
-    const auto = AUTO[step];
-    if (!auto) {
+    const auto = AUTO[own];
+    if (!auto || driven) {
       return;
     }
     const t = setTimeout(() => setStep(auto[1]), auto[0]);
     return () => clearTimeout(t);
-  }, [step]);
+  }, [own, driven]);
 
   const connect = async () => {
     setStep("authorizing");
+    setConnectError(undefined);
     try {
       await onConnect();
       setStep("connected");
-    } catch {
+    } catch (e) {
+      setConnectError(reasonOf(e));
       setStep("blocked");
     }
+  };
+
+  const skip = () => {
+    setStep("skipped");
+    onSkip?.();
   };
 
   const asking =
@@ -144,20 +233,26 @@ export default function AIConnect({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("flex w-full max-w-md flex-col gap-4", className)}>
-        <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
-          {prompt}
-        </p>
+      <div
+        className={cn("flex w-full max-w-md flex-col gap-4", className)}
+        data-state={step}
+      >
+        {shown.prompt ? (
+          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+            {shown.prompt}
+          </p>
+        ) : null}
 
         <AutoHeight className="rounded-[22px] bg-black/[0.04] dark:bg-white/[0.06]">
           <CallBand
             app={app}
             done={done}
+            error={error}
             logo={logo}
-            result={result}
+            result={shown.result}
             running={running}
             step={step}
-            target={target}
+            target={shown.target}
           />
           <AnimatePresence initial={false}>
             {asking && (
@@ -172,9 +267,10 @@ export default function AIConnect({
                   agentLogo={agentLogo}
                   app={app}
                   appColor={appColor}
+                  error={connectError}
                   logo={logo}
                   onConnect={connect}
-                  onSkip={() => setStep("skipped")}
+                  onSkip={!driven || onSkip ? skip : undefined}
                   reason={reason}
                   scopes={scopes}
                   step={step}
@@ -185,22 +281,27 @@ export default function AIConnect({
         </AutoHeight>
 
         <AnimatePresence>
-          {(step === "done" || step === "skipped") && (
-            <motion.p
+          {closingLine(step, shown) ? (
+            <motion.div
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
               className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.15 }}
             >
-              {step === "done"
-                ? answer
-                : `No problem. The branch is pushed, so you can open the PR on ${app} whenever you like.`}
-            </motion.p>
-          )}
+              {closingLine(step, shown)}
+            </motion.div>
+          ) : null}
         </AnimatePresence>
       </div>
     </MotionConfig>
   );
+}
+
+function closingLine(step: Step, shown: Shown) {
+  if (step === "done") {
+    return shown.answer;
+  }
+  return step === "skipped" ? shown.skipped : undefined;
 }
 
 /** The tool call itself, in the frame above the access card. */
@@ -212,14 +313,16 @@ function CallBand({
   done,
   target,
   result,
+  error,
 }: {
   step: Step;
   app: string;
   logo: ReactNode;
   running: string;
   done: string;
-  target: string;
-  result: string;
+  target?: string;
+  result?: string;
+  error?: string;
 }) {
   const paused = step === "blocked" || step === "authorizing";
   const via = step === "resumed" || step === "done";
@@ -228,7 +331,9 @@ function CallBand({
   if (step === "done") {
     label = done;
   } else if (step === "skipped") {
-    label = "Stopped before the pull request";
+    label = "Stopped before it ran";
+  } else if (step === "failed") {
+    label = error ?? "Didn’t finish";
   }
 
   return (
@@ -243,7 +348,9 @@ function CallBand({
             "shrink-0",
             step === "done" || step === "skipped"
               ? "text-zinc-600 dark:text-zinc-400"
-              : "font-medium text-zinc-900 dark:text-zinc-100"
+              : "font-medium text-zinc-900 dark:text-zinc-100",
+            step === "failed" &&
+              "min-w-0 truncate text-rose-600 dark:text-rose-400"
           )}
           exit={{ opacity: 0, filter: "blur(2px)" }}
           initial={{ opacity: 0, filter: "blur(2px)" }}
@@ -253,7 +360,7 @@ function CallBand({
           {label}
         </motion.span>
       </AnimatePresence>
-      {step !== "skipped" && (
+      {step !== "skipped" && step !== "failed" && target && (
         <span className="min-w-0 truncate font-mono text-[11.5px] text-zinc-400 dark:text-zinc-500">
           {target}
         </span>
@@ -282,7 +389,7 @@ function CallBand({
               <span className="text-zinc-800 dark:text-zinc-200 [&_svg]:size-3.5">
                 {logo}
               </span>
-              {step === "done" && (
+              {step === "done" && result && (
                 <span className="font-mono text-zinc-700 dark:text-zinc-300">
                   {result}
                 </span>
@@ -304,6 +411,7 @@ function AccessCard({
   reason,
   scopes,
   step,
+  error,
   onConnect,
   onSkip,
 }: {
@@ -315,8 +423,9 @@ function AccessCard({
   reason: string;
   scopes: ConnectScope[];
   step: Step;
+  error?: string;
   onConnect: () => void;
-  onSkip: () => void;
+  onSkip?: () => void;
 }) {
   const waiting = step === "authorizing";
   const linked = step === "connected";
@@ -412,7 +521,15 @@ function AccessCard({
           </motion.span>
         </AnimatePresence>
       </button>
-      <div className="mt-1 flex justify-center">
+      {error && step === "blocked" ? (
+        <p
+          className="mt-2 text-center text-[12.5px] text-rose-600 dark:text-rose-400"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+      <div className={cn("mt-1 flex justify-center", !onSkip && "hidden")}>
         <button
           className="rounded-md px-2 py-1 text-[12.5px] text-zinc-500 outline-hidden transition-[color,opacity] duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 disabled:opacity-0 dark:text-zinc-400 dark:hover:text-zinc-100"
           disabled={step !== "blocked"}
@@ -480,6 +597,7 @@ function Handshake({ state }: { state: Link }) {
         <motion.line
           animate={{ strokeDashoffset: waiting ? [0, -12] : 0 }}
           className="stroke-zinc-300 dark:stroke-zinc-600"
+          initial={{ strokeDashoffset: 0 }}
           strokeDasharray="3 3"
           strokeLinecap="round"
           strokeWidth="1.5"
@@ -558,6 +676,9 @@ function StateIcon({ step }: { step: Step }) {
       <Pause className="size-3 fill-current text-zinc-500 dark:text-zinc-400" />
     );
     key = "pause";
+  } else if (step === "failed") {
+    icon = <X className="size-3.5 text-rose-600 dark:text-rose-400" />;
+    key = "failed";
   } else if (step === "skipped") {
     icon = (
       <span className="size-1.5 rounded-full bg-zinc-300 dark:bg-zinc-600" />

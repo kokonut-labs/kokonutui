@@ -7,7 +7,48 @@ full: false
 ---
 
 import AIOrderStatus from "@/components/kokonutui/ai-order-status";
+import AIOrderStatusStream from "@/components/mdx/demos/ai-order-status-stream";
 
 <Preview link="ai-order-status">
     <AIOrderStatus />
 </Preview>
+
+## Usage
+
+With no props it plays the demo, counting the ETA down. Pass `status` and it follows your tracking updates instead: each new `order.progress` (0 to 1 along the route) glides the courier there, the ETA shows `order.minutes` as given, and `delivered` turns it green and shows your closing line. The Message button only shows when you pass `onMessage`, and the chat lines only when you pass `prompt` and `message`.
+
+```tsx
+"use client";
+
+import AIOrderStatus from "@/components/kokonutui/ai-order-status";
+
+/** `tracking` comes from your delivery provider's webhook or polling. */
+export function OrderCard({
+  tracking,
+  openChat,
+}: {
+  tracking: { eta: number; progress: number; delivered: boolean; arriveAt: string };
+  openChat: () => void;
+}) {
+  return (
+    <AIOrderStatus
+      delivered="Delivered. Ana left it at the door."
+      onMessage={openChat}
+      order={{
+        merchant: "Noodle Bar",
+        orderId: "7310",
+        courier: "Ana",
+        vehicle: "Blue bike",
+        minutes: tracking.eta,
+        progress: tracking.progress,
+        arriveAt: tracking.arriveAt,
+      }}
+      status={tracking.delivered ? "delivered" : "on-the-way"}
+    />
+  );
+}
+```
+
+From an AI SDK tool, return the same fields from a `track_order` tool and pass its `output` in; call the tool again (or stream data parts) for fresh positions.
+
+<AIOrderStatusStream />

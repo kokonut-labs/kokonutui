@@ -7,7 +7,50 @@ full: false
 ---
 
 import AiBranches from "@/components/kokonutui/ai-branches";
+import AIBranchesStream from "@/components/mdx/demos/ai-branches-stream";
 
 <Preview link="ai-branches">
     <AiBranches />
 </Preview>
+
+## Usage
+
+Pass your conversation as `messages`, each with the `parent` it follows; two messages with the same parent are a fork. Editing a question starts a new branch and calls `reply` with the edit and the messages above it on that branch. Return the reply, a Promise of it, or a stream of deltas, and it writes in with a caret; a throw shows the error's message. `onChange` hands you every message once a branch's reply is in, ready to save.
+
+```tsx
+"use client";
+
+import AIBranches, { type BranchMessage } from "@/components/kokonutui/ai-branches";
+
+export function Thread({ messages, save }: { messages: BranchMessage[]; save: (m: BranchMessage[]) => void }) {
+  return (
+    <AIBranches
+      messages={messages}
+      onChange={save}
+      reply={async function* (prompt, history, signal) {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          body: JSON.stringify({
+            messages: [...history, { role: "user", text: prompt }].map((m) => ({ role: m.role, content: m.text })),
+          }),
+          signal,
+        });
+        if (!(res.ok && res.body)) {
+          throw new Error("Couldn't reach the model. Try again.");
+        }
+        const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) return;
+          yield value;
+        }
+      }}
+      title="Trip planning"
+    />
+  );
+}
+```
+
+The route streams with `streamText({ model, messages }).toTextStreamResponse()`.
+
+<AIBranchesStream />

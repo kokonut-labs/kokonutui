@@ -7,7 +7,46 @@ full: false
 ---
 
 import AiAgentLanes from "@/components/kokonutui/ai-agent-lanes";
+import AIAgentLanesStream from "@/components/mdx/demos/ai-agent-lanes-stream";
 
 <Preview link="ai-agent-lanes">
     <AiAgentLanes />
 </Preview>
+
+## Usage
+
+With no props it plays the demo run, with Play and a scrubber. Pass `elapsed` (seconds since your run started) and it draws the run as it stands instead: no playback controls, each lane's bars growing to the playhead. Leave `end` off a step while it's running and it pulses until you set it. The `answer` shows as you pass it, so you can stream it straight in.
+
+```tsx
+"use client";
+
+import { useEffect, useState } from "react";
+import AIAgentLanes, { type AgentLane } from "@/components/kokonutui/ai-agent-lanes";
+
+export function RunView({
+  startedAt,
+  lanes,
+  answer,
+}: {
+  /** When the run began, from Date.now(). */
+  startedAt: number;
+  /** Your run's lanes; a step has no `end` until it finishes. */
+  lanes: AgentLane[];
+  answer: string;
+}) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const tick = setInterval(() => setElapsed((Date.now() - startedAt) / 1000), 100);
+    return () => clearInterval(tick);
+  }, [startedAt]);
+
+  return <AIAgentLanes answer={answer} elapsed={elapsed} lanes={lanes} task="Why do we hit the rate limit?" />;
+}
+```
+
+With the AI SDK, each sub-agent is usually a tool call: open a step when its part reaches `input-available` and close it at `output-available`, using the seconds since the run began.
+
+Here it's fed a run second by second:
+
+<AIAgentLanesStream />

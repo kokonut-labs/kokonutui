@@ -7,7 +7,56 @@ full: false
 ---
 
 import AiMessageQueue from "@/components/kokonutui/ai-message-queue";
+import AIMessageQueueStream from "@/components/mdx/demos/ai-message-queue-stream";
 
 <Preview link="ai-message-queue">
     <AiMessageQueue />
 </Preview>
+
+## Usage
+
+Pass `respond` to run your agent. It gets the message and a `signal`, and returns a stream of updates: `{ step }` when a new piece of work starts and `{ text }` as the reply comes in. The run ends when the stream does, and the next queued message goes in. Stop and Send now abort the `signal`; a throw ends the run with the error's message. `onQueueChange` hands you the queue on every edit, so it can survive a reload. Without `respond`, the demo plays with its own prompt and queue.
+
+```tsx
+"use client";
+
+import type { UIMessageChunk } from "ai";
+import AIMessageQueue, { type AgentUpdate } from "@/components/kokonutui/ai-message-queue";
+
+/** Turns your agent route's UI message stream into steps and reply text. */
+async function* runAgent(text: string, signal: AbortSignal): AsyncIterable<AgentUpdate> {
+  const res = await fetch("/api/agent", {
+    method: "POST",
+    body: JSON.stringify({ text }),
+    signal,
+  });
+  if (!(res.ok && res.body)) {
+    throw new Error("The agent didn't start. Try again.");
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) return;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ") || line === "data: [DONE]") continue;
+      const chunk = JSON.parse(line.slice(6)) as UIMessageChunk;
+      if (chunk.type === "tool-input-available") yield { step: chunk.toolName };
+      if (chunk.type === "text-delta") yield { text: chunk.delta };
+      if (chunk.type === "error") throw new Error(chunk.errorText);
+    }
+  }
+}
+
+export function AgentPanel() {
+  return <AIMessageQueue respond={runAgent} title="Auth refactor" />;
+}
+```
+
+Your route returns `streamText({ ... }).toUIMessageStreamResponse()`. Map tool names to readable lines ("Reading session.ts") in the same loop.
+
+<AIMessageQueueStream />

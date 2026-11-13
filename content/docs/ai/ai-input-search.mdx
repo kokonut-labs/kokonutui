@@ -42,12 +42,3 @@ import { Map } from "lucide-react";
 />
 ```
 
-| Prop | Type | Default | Description |
-| --- | --- | --- | --- |
-| `placeholder` | `string` | `"Ask anything, or type / for tools"` | Placeholder with no tool picked. Each tool can set its own. |
-| `tools` | `SearchTool[]` | Browse sources, Investigate, Draft a visual, Run some code, Reason it through | Entries in the Tools menu: `id`, `label`, `icon`, `activity`, and optional `hint`, `color`, `placeholder`, `readsSources`, `limit`. |
-| `defaultTool` | `string \| null` | `"browse"` | Tool picked at first. |
-| `models` | `string[]` | `["Opus 5.5", "Sonnet 5.5", "Haiku 5.5"]` | Entries in the model menu. |
-| `defaultModel` | `string` | `"Sonnet 5.5"` | Model picked at first. |
-| `onSearch` | `(query, { tool, model, files, signal, onSource }) => Promise<void> \| void` | — | Runs the request. Omit it for the demo. |
-| `className` | `string` | — | Extra classes for the wrapper. |
