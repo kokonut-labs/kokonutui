@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Conversation Branches
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-21
  * @license: MIT
  * @website: https://kokonutui.com
@@ -34,12 +34,26 @@ export interface BranchMessage {
   parent?: string;
 }
 
+/** A reply: the text, a Promise of it, or a stream of text deltas. */
+export type BranchReply = string | Promise<string> | AsyncIterable<string>;
+
 export interface AIBranchesProps {
   title?: string;
-  /** Every message on every branch. Siblings form a fork. */
+  /** Every message on every branch, read once on mount. Siblings form a fork. */
   messages?: BranchMessage[];
-  /** Writes the reply to an edited message. Demo text when omitted. */
-  reply?: (prompt: string) => string;
+  /**
+   * Writes the reply to an edited message. It gets the edit and the messages
+   * above it on that branch, and returns the reply, a Promise of it, or a
+   * stream of deltas (like the AI SDK's `textStream`). Throw and the reply
+   * shows the error's message. Demo text when omitted.
+   */
+  reply?: (
+    prompt: string,
+    history: BranchMessage[],
+    signal: AbortSignal
+  ) => BranchReply;
+  /** Every message on every branch, once a new branch's reply is in. */
+  onChange?: (messages: BranchMessage[]) => void;
   className?: string;
 }
 
@@ -49,6 +63,8 @@ interface Node {
   text: string;
   parent: string | null;
   children: string[];
+  /** The reply failed; text says why. */
+  error?: boolean;
 }
 
 type Tree = Record<string, Node>;
@@ -117,6 +133,55 @@ const demoReply = (prompt: string) => {
   return `Here is a version built around “${short}”. I kept it to three days and put the busiest stops in the mornings, so the afternoons stay free for wandering.`;
 };
 
+const isStream = (value: BranchReply): value is AsyncIterable<string> =>
+  typeof value === "object" && Symbol.asyncIterator in value;
+
+/** Reads a reply, calling `onText` with all the text so far. */
+async function readReply(reply: BranchReply, onText: (text: string) => void) {
+  if (!isStream(reply)) {
+    onText(await reply);
+    return;
+  }
+  let text = "";
+  for await (const delta of reply) {
+    text += delta;
+    onText(text);
+  }
+}
+
+const reasonOf = (error: unknown) =>
+  error instanceof Error && error.message
+    ? error.message
+    : "Couldn’t write a reply. Try again.";
+
+/** The tree back as a flat list, the shape `messages` takes. */
+const flatten = (tree: Tree): BranchMessage[] =>
+  Object.values(tree)
+    .filter((n) => n.role !== "root" && !n.error)
+    .map((n) => ({
+      id: n.id,
+      role: n.role as BranchMessage["role"],
+      text: n.text,
+      parent: n.parent === ROOT ? undefined : (n.parent ?? undefined),
+    }));
+
+/** The messages from the top of the tree down to `id`, not including it. */
+const historyOf = (tree: Tree, id: string): BranchMessage[] => {
+  const out: BranchMessage[] = [];
+  let at = tree[id].parent;
+  while (at && at !== ROOT) {
+    const n = tree[at];
+    out.unshift({
+      id: n.id,
+      role: n.role as BranchMessage["role"],
+      text: n.text,
+      parent: n.parent === ROOT ? undefined : (n.parent ?? undefined),
+    });
+    at = n.parent;
+  }
+  return out;
+};
+
 const buildTree = (messages: BranchMessage[]): Tree => {
   const tree: Tree = {
     [ROOT]: { id: ROOT, role: "root", text: "", parent: null, children: [] },
@@ -170,10 +235,23 @@ const layout = (tree: Tree) => {
   return { pos, lanes, rows };
 };
 
+/** How much of a reply to show: a demo reply types in, a live one shows all. */
+const wordsFor = (
+  id: string,
+  writing: { id: string; words: number } | null,
+  answering: string | null
+) => {
+  if (writing?.id === id) {
+    return writing.words;
+  }
+  return answering === id ? Number.POSITIVE_INFINITY : undefined;
+};
+
 export default function AIBranches({
   title = "Trip planning",
   messages = DEMO_MESSAGES,
   reply = demoReply,
+  onChange,
   className,
 }: AIBranchesProps) {
   const reduceMotion = useReducedMotion();
@@ -193,6 +271,18 @@ export default function AIBranches({
   } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const count = useRef(0);
+  // A reply still arriving from your model, shown with a caret.
+  const [answering, setAnswering] = useState<string | null>(null);
+  const abortRef = useRef<AbortController>(undefined);
+  // Counts replies that finished, so the app hears about the new tree.
+  const [settled, setSettled] = useState(0);
+  const latest = useRef({ tree, onChange });
+  latest.current = { tree, onChange };
+  useEffect(() => {
+    if (settled > 0) {
+      latest.current.onChange?.(flatten(latest.current.tree));
+    }
+  }, [settled]);
 
   const path = useMemo(() => pathOf(tree, picked), [tree, picked]);
   const map = useMemo(() => layout(tree), [tree]);
@@ -218,12 +308,13 @@ export default function AIBranches({
   }, [writing, tree, reduceMotion]);
 
   // Keep the newest message in view while a reply streams.
+  const answerText = answering ? tree[answering]?.text : undefined;
   useEffect(() => {
-    if (writing) {
+    if (writing || answerText !== undefined) {
       const el = scrollRef.current;
       el?.scrollTo({ top: el.scrollHeight });
     }
-  }, [writing]);
+  }, [writing, answerText]);
 
   /** Point every fork above `id` at it, so the chat shows that branch. */
   const show = (id: string, by?: number) => {
@@ -262,7 +353,11 @@ export default function AIBranches({
     const user = `edit-${count.current}`;
     const answer = `${user}-reply`;
     const parent = tree[id].parent ?? ROOT;
-    const answerText = reply(trimmed);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const result = reply(trimmed, historyOf(tree, id), controller.signal);
+    const sync = typeof result === "string";
     setTree((t) => ({
       ...t,
       [parent]: { ...t[parent], children: [...t[parent].children, user] },
@@ -276,15 +371,34 @@ export default function AIBranches({
       [answer]: {
         id: answer,
         role: "assistant",
-        text: answerText,
+        text: sync ? result : "",
         parent: user,
         children: [],
       },
     }));
     setPicked((p) => ({ ...p, [parent]: tree[parent].children.length }));
     setDir(1);
-    setWriting({ id: answer, words: 0 });
     setRefocus({ id: user, control: "edit" });
+    if (sync) {
+      setWriting({ id: answer, words: 0 });
+      setSettled((n) => n + 1);
+      return;
+    }
+    const write = (text: string, error?: boolean) =>
+      setTree((t) => ({ ...t, [answer]: { ...t[answer], text, error } }));
+    setAnswering(answer);
+    readReply(result, write)
+      .then(
+        () => setSettled((n) => n + 1),
+        (e: unknown) => {
+          if (!controller.signal.aborted) {
+            write(reasonOf(e), true);
+          }
+        }
+      )
+      .finally(() =>
+        setAnswering((current) => (current === answer ? null : current))
+      );
   };
 
   return (
@@ -294,6 +408,7 @@ export default function AIBranches({
           "flex h-[460px] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
           className
         )}
+        data-state={answering || writing ? "streaming" : "idle"}
       >
         <header className="flex items-center justify-between border-black/[0.06] border-b px-4 py-3 dark:border-white/[0.08]">
           <h2 className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
@@ -334,7 +449,7 @@ export default function AIBranches({
                       onStep={(by) => step(id, by)}
                       onSubmit={(text) => submitEdit(id, text)}
                       siblings={tree[tree[id].parent ?? ROOT].children}
-                      words={writing?.id === id ? writing.words : undefined}
+                      words={wordsFor(id, writing, answering)}
                     />
                   </motion.li>
                 ))}
@@ -448,9 +563,13 @@ function MessageView({
     return (
       <p
         className={cn(
-          "-mx-2 whitespace-pre-line rounded-lg px-2 py-1 text-[14px] text-zinc-700 leading-relaxed transition-colors duration-150 dark:text-zinc-300",
+          "-mx-2 whitespace-pre-line rounded-lg px-2 py-1 text-[14px] leading-relaxed transition-colors duration-150",
+          node.error
+            ? "text-rose-600 dark:text-rose-400"
+            : "text-zinc-700 dark:text-zinc-300",
           lit && "bg-zinc-900/[0.03] dark:bg-white/[0.04]"
         )}
+        role={node.error ? "alert" : undefined}
       >
         {text}
         {words !== undefined && (
