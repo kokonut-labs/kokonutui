@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Schedule
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-11-05
  * @license: MIT
  * @website: https://kokonutui.com
@@ -12,7 +12,7 @@
 
 import { Globe, Video } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useId, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /** A span of hours in the day, e.g. [9.5, 11] for 9:30 to 11:00. */
@@ -40,15 +40,24 @@ export interface SchedulePerson {
 }
 
 export interface AIScheduleProps {
+  /** The user's message, drawn as a bubble. Only the demo draws one by default. */
   prompt?: string;
+  /** What the assistant says above the times. */
   message?: string;
+  /** What it says once booked, from the slot that was booked. */
+  confirmation?: (slot: ScheduleSlot) => ReactNode;
+  /** The event's name, on each slot. */
   title?: string;
   duration?: string;
   timezone?: string;
   with?: SchedulePerson;
   me?: SchedulePerson;
+  /** The free times, usually a tool's output. Leave it out for the demo. */
   slots?: ScheduleSlot[];
-  /** Called when a slot is booked. Resolve once the invite is out. */
+  /**
+   * Books the slot. Resolve once the invite is out. Throw and the times come
+   * back with the error's message, e.g. when the slot was just taken.
+   */
   onBook?: (slot: ScheduleSlot) => Promise<void>;
   className?: string;
 }
@@ -116,19 +125,54 @@ const DEMO_SLOTS: ScheduleSlot[] = [
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+const DEMO_TEXT = {
+  prompt: "Find 30 minutes with Priya next week for the roadmap",
+  message:
+    "You’re both free at these times. Pick one and I’ll send the invite.",
+  confirmation: (slot: ScheduleSlot) =>
+    `Booked for ${slot.weekday} at ${slot.time.split(" ")[0]}. Priya has the invite with a video link, and I put the roadmap doc in the notes.`,
+};
+
+/** The chat text around the card: the demo's only when it's the demo. */
+function shownText(
+  text: Pick<AIScheduleProps, "prompt" | "message" | "confirmation">,
+  isDemo: boolean
+) {
+  if (!isDemo) {
+    return text;
+  }
+  return {
+    prompt: text.prompt ?? DEMO_TEXT.prompt,
+    message: text.message ?? DEMO_TEXT.message,
+    confirmation: text.confirmation ?? DEMO_TEXT.confirmation,
+  };
+}
+
+const reasonOf = (error: unknown) =>
+  error instanceof Error && error.message
+    ? error.message
+    : "Couldn’t book it. Try again.";
+
 export default function AISchedule({
-  prompt = "Find 30 minutes with Priya next week for the roadmap",
-  message = "You’re both free at these times. Pick one and I’ll send the invite.",
+  prompt,
+  message,
+  confirmation,
   title = "Roadmap sync",
   duration = "30 min",
   timezone = "CET",
   with: guest = { name: "Priya Shah", initials: "PS" },
   me = { name: "You", initials: "M" },
-  slots = DEMO_SLOTS,
+  slots: slotsProp,
   onBook = () => wait(900),
   className,
 }: AIScheduleProps) {
+  const slots = slotsProp ?? DEMO_SLOTS;
+  const shown = shownText(
+    { prompt, message, confirmation },
+    slotsProp === undefined
+  );
   const name = useId();
+  const [error, setError] = useState<string>();
   const [selected, setSelected] = useState(slots[0]?.id);
   const [status, setStatus] = useState<Status>("pick");
   const slot = slots.find((s) => s.id === selected) ?? slots[0];
@@ -137,23 +181,37 @@ export default function AISchedule({
 
   const book = async () => {
     setStatus("booking");
+    setError(undefined);
     try {
       await onBook(slot);
       setStatus("booked");
-    } catch {
+    } catch (e) {
+      setError(reasonOf(e));
       setStatus("pick");
     }
   };
 
+  const select = (id: string) => {
+    setSelected(id);
+    setError(undefined);
+  };
+
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("flex w-full max-w-md flex-col gap-4", className)}>
-        <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
-          {prompt}
-        </p>
-        <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
-          {message}
-        </p>
+      <div
+        className={cn("flex w-full max-w-md flex-col gap-4", className)}
+        data-state={error ? "error" : status}
+      >
+        {shown.prompt ? (
+          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+            {shown.prompt}
+          </p>
+        ) : null}
+        {shown.message ? (
+          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+            {shown.message}
+          </p>
+        ) : null}
 
         <div className="rounded-[22px] bg-black/[0.04] p-1 dark:bg-white/[0.06]">
           <div className="flex h-8 items-center justify-between px-3 text-[12px] text-zinc-500 dark:text-zinc-400">
@@ -189,7 +247,7 @@ export default function AISchedule({
                     checked={s.id === selected}
                     guest={first}
                     name={name}
-                    onSelect={() => setSelected(s.id)}
+                    onSelect={() => select(s.id)}
                     slot={s}
                     title={title}
                   />
@@ -216,15 +274,7 @@ export default function AISchedule({
                   <DrawnCheck />
                 </motion.span>
               ) : (
-                <motion.span
-                  className="flex min-w-0 flex-1 items-center gap-3 text-[11.5px] text-zinc-500 dark:text-zinc-400"
-                  exit={{ opacity: 0, filter: "blur(3px)" }}
-                  key="legend"
-                  transition={{ duration: 0.2 }}
-                >
-                  <Key className="bg-zinc-300 dark:bg-zinc-600" label="Busy" />
-                  <Key className="bg-blue-500" label="Free for both" />
-                </motion.span>
+                <Footnote error={error} key={error ? "error" : "legend"} />
               )}
             </AnimatePresence>
             {status !== "booked" && (
@@ -238,18 +288,16 @@ export default function AISchedule({
         </div>
 
         <AnimatePresence>
-          {status === "booked" && (
+          {status === "booked" && shown.confirmation ? (
             <motion.p
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
               className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.45 }}
             >
-              Booked for {slot.weekday} at {slot.time.split(" ")[0]}. {first}{" "}
-              has the invite with a video link, and I put the roadmap doc in the
-              notes.
+              {shown.confirmation(slot)}
             </motion.p>
-          )}
+          ) : null}
         </AnimatePresence>
         <p aria-live="polite" className="sr-only">
           {status === "booking" ? "Booking" : ""}
@@ -257,6 +305,37 @@ export default function AISchedule({
         </p>
       </div>
     </MotionConfig>
+  );
+}
+
+/** The colour key under the times, or why booking failed. */
+function Footnote({ error }: { error?: string }) {
+  if (error) {
+    return (
+      <motion.span
+        animate={{ opacity: 1 }}
+        className="min-w-0 flex-1 truncate text-[12px] text-rose-600 dark:text-rose-400"
+        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }}
+        key="error"
+        role="alert"
+        title={error}
+        transition={{ duration: 0.2 }}
+      >
+        {error}
+      </motion.span>
+    );
+  }
+  return (
+    <motion.span
+      className="flex min-w-0 flex-1 items-center gap-3 text-[11.5px] text-zinc-500 dark:text-zinc-400"
+      exit={{ opacity: 0, filter: "blur(3px)" }}
+      key="legend"
+      transition={{ duration: 0.2 }}
+    >
+      <Key className="bg-zinc-300 dark:bg-zinc-600" label="Busy" />
+      <Key className="bg-blue-500" label="Free for both" />
+    </motion.span>
   );
 }
 

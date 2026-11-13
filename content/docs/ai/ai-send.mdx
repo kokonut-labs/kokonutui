@@ -7,7 +7,50 @@ full: false
 ---
 
 import AISend from "@/components/kokonutui/ai-send";
+import AISendStream from "@/components/mdx/demos/ai-send-stream";
 
 <Preview link="ai-send">
     <AISend />
 </Preview>
+
+## Usage
+
+With no `draft` it plays the demo. Pass `draft` and it draws that email; the body follows it as it streams in, until the person types in it, and Send waits while `writing` is true. After Send there are `undoSeconds` to take it back, then `onSend` gets the final text. Return a Promise and it shows sending until it resolves; throw and the draft comes back with your error's message.
+
+The model writes the draft as a tool's input; the person sends it.
+
+```tsx
+"use client";
+
+import { isToolUIPart, type UIMessage } from "ai";
+import AISend, { type DraftEmail } from "@/components/kokonutui/ai-send";
+import { sendEmail } from "@/app/actions"; // your server action
+
+export function DraftPart({ part }: { part: UIMessage["parts"][number] }) {
+  if (!isToolUIPart(part) || part.type !== "tool-draft_email") {
+    return null;
+  }
+  const input = (part.input ?? {}) as Partial<DraftEmail>;
+
+  return (
+    <AISend
+      draft={{
+        from: "you@acme.com",
+        toName: input.toName ?? "",
+        toEmail: input.toEmail ?? "",
+        subject: input.subject ?? "",
+        body: input.body ?? "",
+      }}
+      onSend={async (draft) => {
+        const result = await sendEmail(draft);
+        if (!result.ok) {
+          throw new Error(result.message);
+        }
+      }}
+      writing={part.state === "input-streaming"}
+    />
+  );
+}
+```
+
+<AISendStream />

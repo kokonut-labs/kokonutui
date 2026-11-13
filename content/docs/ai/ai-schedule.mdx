@@ -7,7 +7,51 @@ full: false
 ---
 
 import AISchedule from "@/components/kokonutui/ai-schedule";
+import AIScheduleStream from "@/components/mdx/demos/ai-schedule-stream";
 
 <Preview link="ai-schedule">
     <AISchedule />
 </Preview>
+
+## Usage
+
+With no `slots` it plays the demo. Pass `slots` and it draws only those times, with each day's busy blocks (`you` and `them`, in hours) on a strip from 8:00 to 18:00. `onBook` gets the chosen slot and returns a Promise: resolve once the invite is out and it folds to that one slot; throw and the times come back with your error's message. The chat lines show when you pass `message` and `confirmation`.
+
+Have a `find_times` tool read both calendars and return the slots; booking stays a press by the person, not a model call.
+
+```tsx
+"use client";
+
+import { isToolUIPart, type UIMessage } from "ai";
+import AISchedule, { type ScheduleSlot } from "@/components/kokonutui/ai-schedule";
+import { createEvent } from "@/app/actions"; // your server action
+
+export function TimesPart({ part }: { part: UIMessage["parts"][number] }) {
+  if (!isToolUIPart(part) || part.type !== "tool-find_times" || part.state !== "output-available") {
+    return null;
+  }
+  const { slots, guest } = part.output as {
+    slots: ScheduleSlot[];
+    guest: { name: string; initials: string };
+  };
+
+  return (
+    <AISchedule
+      confirmation={(slot) => `Booked for ${slot.weekday}. ${guest.name} has the invite.`}
+      duration="30 min"
+      onBook={async (slot) => {
+        const result = await createEvent(slot.id);
+        if (!result.ok) {
+          throw new Error("That time was just taken. Pick another.");
+        }
+      }}
+      slots={slots}
+      timezone="CET"
+      title="Roadmap sync"
+      with={guest}
+    />
+  );
+}
+```
+
+<AIScheduleStream />

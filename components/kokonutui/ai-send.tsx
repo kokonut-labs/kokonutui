@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Send
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-31
  * @license: MIT
  * @website: https://kokonutui.com
@@ -31,17 +31,29 @@ export interface DraftEmail {
 }
 
 export interface AISendProps {
+  /** The user's message, drawn as a bubble. Only the demo draws one by default. */
   prompt?: string;
+  /** What the assistant says above the draft. */
   message?: string;
+  /**
+   * The email, usually a tool's input. It can stream in: the body follows
+   * it until the person edits it. Leave it out for the demo.
+   */
   draft?: DraftEmail;
+  /** The model is still writing the draft, so Send waits. */
+  writing?: boolean;
   /** Seconds you have to undo before it really sends. */
   undoSeconds?: number;
-  /** Called once the undo window has passed, with the final text. */
-  onSend?: (draft: DraftEmail) => void;
+  /**
+   * Called once the undo window has passed, with the final text. Return a
+   * Promise to show it sending until it resolves; throw and the draft comes
+   * back with the error's message.
+   */
+  onSend?: (draft: DraftEmail) => void | Promise<void>;
   className?: string;
 }
 
-type Status = "draft" | "pending" | "sent";
+type Status = "draft" | "pending" | "sending" | "sent";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const EASE_DRAWER = [0.32, 0.72, 0, 1] as const;
@@ -55,36 +67,64 @@ const DEMO_DRAFT: DraftEmail = {
   body: "Hi Sam,\n\nQuick heads up: the launch review is now Thursday at 2pm, same room. Design needs the extra day to finish the flows.\n\nThanks,\nMara",
 };
 
+const DEMO_TEXT = {
+  prompt: "Tell Sam the launch review moved to Thursday at 2",
+  message: "Here’s a draft. Change anything you like before it goes.",
+};
+
+const reasonOf = (error: unknown) =>
+  error instanceof Error && error.message
+    ? error.message
+    : "It didn’t send. Try again.";
+
 export default function AISend({
-  prompt = "Tell Sam the launch review moved to Thursday at 2",
-  message = "Here’s a draft. Change anything you like before it goes.",
-  draft = DEMO_DRAFT,
+  prompt,
+  message,
+  draft: draftProp,
+  writing = false,
   undoSeconds = 5,
   onSend,
   className,
 }: AISendProps) {
+  const isDemo = draftProp === undefined;
+  const draft = draftProp ?? DEMO_DRAFT;
+  const shownPrompt = isDemo ? (prompt ?? DEMO_TEXT.prompt) : prompt;
+  const shownMessage = isDemo ? (message ?? DEMO_TEXT.message) : message;
   const id = useId();
   const [status, setStatus] = useState<Status>("draft");
-  const [body, setBody] = useState(draft.body);
+  // Follows the draft as it streams in, until the person edits it.
+  const [edited, setEdited] = useState<string>();
+  const body = edited ?? draft.body;
   const [left, setLeft] = useState(undoSeconds);
+  const [error, setError] = useState<string>();
   const sendRef = useRef<HTMLButtonElement>(null);
+  const final = useRef<DraftEmail>(draft);
+  final.current = { ...draft, body };
+  const onSendRef = useRef(onSend);
+  onSendRef.current = onSend;
 
   // Counts down the undo window, then sends for real.
   useEffect(() => {
     if (status !== "pending") {
       return;
     }
-    if (left <= 0) {
-      onSend?.({ ...draft, body });
-      setStatus("sent");
-      return;
+    if (left > 0) {
+      const t = setTimeout(() => setLeft((n) => n - 1), 1000);
+      return () => clearTimeout(t);
     }
-    const t = setTimeout(() => setLeft((n) => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [status, left, onSend, draft, body]);
+    setStatus("sending");
+    Promise.resolve(onSendRef.current?.(final.current)).then(
+      () => setStatus("sent"),
+      (e: unknown) => {
+        setError(reasonOf(e));
+        setStatus("draft");
+      }
+    );
+  }, [status, left]);
 
   const send = () => {
     setLeft(undoSeconds);
+    setError(undefined);
     setStatus("pending");
   };
 
@@ -95,13 +135,20 @@ export default function AISend({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={cn("flex w-full max-w-md flex-col gap-4", className)}>
-        <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
-          {prompt}
-        </p>
-        <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
-          {message}
-        </p>
+      <div
+        className={cn("flex w-full max-w-md flex-col gap-4", className)}
+        data-state={writing ? "writing" : status}
+      >
+        {shownPrompt ? (
+          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+            {shownPrompt}
+          </p>
+        ) : null}
+        {shownMessage ? (
+          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+            {shownMessage}
+          </p>
+        ) : null}
 
         <AutoHeight className="rounded-2xl bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10">
           <AnimatePresence initial={false} mode="popLayout">
@@ -170,11 +217,11 @@ export default function AISend({
                 <textarea
                   className={cn(
                     "field-sizing-content block w-full resize-none border-black/[0.06] border-t bg-transparent px-4 pt-3 pb-4 text-[14px] text-zinc-800 leading-6 outline-hidden transition-opacity duration-200 dark:border-white/[0.08] dark:text-zinc-200",
-                    status === "pending" && "opacity-50"
+                    status !== "draft" && "opacity-50"
                   )}
                   id={id}
-                  onChange={(e) => setBody(e.target.value)}
-                  readOnly={status === "pending"}
+                  onChange={(e) => setEdited(e.target.value)}
+                  readOnly={status !== "draft" || writing}
                   rows={6}
                   value={body}
                 />
@@ -200,14 +247,23 @@ export default function AISend({
                       )}
                     </AnimatePresence>
                     <SendButton
+                      disabled={writing}
                       left={left}
                       onSend={send}
-                      pending={status === "pending"}
+                      pending={status === "pending" || status === "sending"}
                       ref={sendRef}
                       total={undoSeconds}
                     />
                   </div>
                 </div>
+                {error && status === "draft" ? (
+                  <p
+                    className="px-4 pb-3 text-[12.5px] text-rose-600 dark:text-rose-400"
+                    role="alert"
+                  >
+                    {error}
+                  </p>
+                ) : null}
               </motion.div>
             )}
           </AnimatePresence>
@@ -235,12 +291,14 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 /** Send, then a ring that drains while the undo window is open. */
 function SendButton({
   pending,
+  disabled,
   left,
   total,
   onSend,
   ref,
 }: {
   pending: boolean;
+  disabled: boolean;
   left: number;
   total: number;
   onSend: () => void;
@@ -250,11 +308,12 @@ function SendButton({
     <button
       className={cn(
         "flex h-8 min-w-[76px] items-center justify-center gap-2 rounded-lg px-3 font-medium text-[13px] outline-hidden transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900",
+        disabled && !pending && "opacity-50",
         pending
           ? "bg-zinc-100 text-zinc-700 dark:bg-white/[0.08] dark:text-zinc-200"
           : "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
       )}
-      disabled={pending}
+      disabled={pending || disabled}
       onClick={onSend}
       ref={ref}
       type="button"
@@ -307,7 +366,7 @@ function SendButton({
                     key={left}
                     transition={{ duration: 0.2, ease: EASE_OUT }}
                   >
-                    {left}
+                    {left > 0 ? left : ""}
                   </motion.span>
                 </AnimatePresence>
               </span>
