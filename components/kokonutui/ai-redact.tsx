@@ -3,7 +3,7 @@
 /**
  * @author: @kokonutui
  * @description: AI Redact
- * @version: 1.0.0
+ * @version: 1.1.0
  * @date: 2026-10-21
  * @license: MIT
  * @website: https://kokonutui.com
@@ -48,11 +48,16 @@ export interface AIRedactProps {
   names?: string[];
   /**
    * Answers the masked prompt. It only ever sees placeholders like
-   * `EMAIL_1`; any it writes back are filled in on this side.
+   * `EMAIL_1`; any it writes back are filled in on this side. Return the
+   * reply, a Promise of it, or a stream of text deltas (like the AI SDK's
+   * `textStream`). Throw and the reply shows the error's message.
    */
-  respond?: (masked: string) => string;
+  respond?: (masked: string, signal: AbortSignal) => Reply;
   className?: string;
 }
+
+/** A reply: the text, a Promise of it, or a stream of text deltas. */
+export type Reply = string | Promise<string> | AsyncIterable<string>;
 
 interface Match {
   start: number;
@@ -68,6 +73,8 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   segments: Segment[];
+  /** The reply failed; segments hold why. */
+  error?: boolean;
 }
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -211,6 +218,27 @@ const pieces = (segments: Segment[]): Segment[] =>
     typeof s === "string" ? [...(s.match(WORDS) ?? [])] : [s]
   );
 
+const isStream = (value: Reply): value is AsyncIterable<string> =>
+  typeof value === "object" && Symbol.asyncIterator in value;
+
+/** Reads a reply, calling `onText` with all the text so far. */
+async function readReply(reply: Reply, onText: (text: string) => void) {
+  if (!isStream(reply)) {
+    onText(await reply);
+    return;
+  }
+  let text = "";
+  for await (const delta of reply) {
+    text += delta;
+    onText(text);
+  }
+}
+
+const reasonOf = (error: unknown) =>
+  error instanceof Error && error.message
+    ? error.message
+    : "Something went wrong. Try again.";
+
 let counter = 0;
 const uid = () => {
   counter += 1;
@@ -232,6 +260,9 @@ export default function AIRedact({
   const [restored, setRestored] = useState(true);
   const [modelView, setModelView] = useState(false);
   const [pointed, setPointed] = useState<string | null>(null);
+  // A streamed reply is still arriving; its placeholders stay until it ends.
+  const [receiving, setReceiving] = useState(false);
+  const abortRef = useRef<AbortController>(undefined);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
@@ -248,7 +279,8 @@ export default function AIRedact({
     () => (reply?.role === "assistant" ? pieces(reply.segments) : []),
     [reply]
   );
-  const streaming = reply?.role === "assistant" && shown < replyPieces.length;
+  const streaming =
+    reply?.role === "assistant" && (receiving || shown < replyPieces.length);
 
   // Grow the composer with its text, so the highlight layer lines up.
   // biome-ignore lint/correctness/useExhaustiveDependencies: text drives the height
@@ -275,9 +307,14 @@ export default function AIRedact({
       const id = setTimeout(() => setShown((n) => n + 1), 38);
       return () => clearTimeout(id);
     }
+    if (receiving) {
+      return;
+    }
     const id = setTimeout(() => setRestored(true), 420);
     return () => clearTimeout(id);
-  }, [reply, replyPieces, shown, reduceMotion]);
+  }, [reply, replyPieces, shown, reduceMotion, receiving]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const messageCount = messages.length;
   useEffect(() => {
@@ -292,16 +329,38 @@ export default function AIRedact({
       return;
     }
     const segments = toSegments(text, matches, kept);
-    const answer = restore(respond(flatten(segments)), matches);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const result = respond(flatten(segments), controller.signal);
+    const id = uid();
+    const write = (next: Partial<Message>) =>
+      setMessages((list) =>
+        list.map((m) => (m.id === id ? { ...m, ...next } : m))
+      );
     setMessages((list) => [
       ...list,
       { id: uid(), role: "user", segments },
-      { id: uid(), role: "assistant", segments: answer },
+      {
+        id,
+        role: "assistant",
+        segments: typeof result === "string" ? restore(result, matches) : [],
+      },
     ]);
     setShown(0);
     setRestored(false);
     setText("");
     setKept(new Set());
+    if (typeof result === "string") {
+      return;
+    }
+    setReceiving(true);
+    readReply(result, (reply) => write({ segments: restore(reply, matches) }))
+      .catch((e: unknown) => {
+        if (!controller.signal.aborted) {
+          write({ segments: [reasonOf(e)], error: true });
+        }
+      })
+      .finally(() => setReceiving(false));
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -333,6 +392,7 @@ export default function AIRedact({
           "flex w-full max-w-lg flex-col rounded-2xl bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
           className
         )}
+        data-state={streaming ? "streaming" : "idle"}
       >
         <header className="flex items-center gap-2 border-black/[0.06] border-b py-2.5 pr-2.5 pl-4 dark:border-white/[0.08]">
           <ShieldCheck
@@ -366,8 +426,14 @@ export default function AIRedact({
               </div>
             ) : (
               <p
-                className="text-[13px] text-zinc-800 leading-6 dark:text-zinc-200"
+                className={cn(
+                  "text-[13px] leading-6",
+                  message.error
+                    ? "text-rose-600 dark:text-rose-400"
+                    : "text-zinc-800 dark:text-zinc-200"
+                )}
                 key={message.id}
+                role={message.error ? "alert" : undefined}
               >
                 <Segments
                   hideSecrets
