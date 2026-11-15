@@ -43,7 +43,6 @@ import {
 } from "./data";
 import { Fit, LIVE, LiveFallback, useNearViewport } from "./live";
 import type { Part } from "./parts";
-import { ProductHuntBadge } from "./product-hunt";
 import {
   CELL,
   EASE_COLORS,
@@ -261,7 +260,6 @@ function Cover({
           )}
         >
           <HeroActions count={count} />
-          <ProductHuntBadge />
         </div>
       </div>
 

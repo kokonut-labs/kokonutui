@@ -5,7 +5,7 @@ import { trackLink } from "@/lib/track";
 
 /**
  * One listener for the whole site, mounted in the root layout: it reports
- * links out to Pro, Product Hunt, GitHub and the Open in tools as analytics
+ * links out to Pro, GitHub and the Open in tools as analytics
  * events, so no link needs its own handler. Middle clicks count too.
  */
 export function TrackClicks() {
