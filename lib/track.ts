@@ -62,8 +62,8 @@ export function trackCopy(text?: string) {
 }
 
 /**
- * Report a followed link when it leads to Pro, Product Hunt, the GitHub repo
- * or an AI tool from the Open in menu. Any other link is left alone.
+ * Report a followed link when it leads to Pro, the GitHub repo or an AI tool
+ * from the Open in menu. Any other link is left alone.
  */
 export function trackLink(href: string) {
   let url: URL;
@@ -82,10 +82,6 @@ export function trackLink(href: string) {
         url.searchParams.get("utm_content") ??
         (url.hash.slice(1) || url.pathname.replace(SLASHES, "") || "home"),
     });
-    return;
-  }
-  if (host === "producthunt.com") {
-    track("Product Hunt click");
     return;
   }
   if (
