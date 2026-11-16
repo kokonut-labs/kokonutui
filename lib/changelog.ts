@@ -34,6 +34,142 @@ export const NEW_FOR_DAYS = 30;
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-11-16",
+    added: [],
+    improved: [
+      {
+        name: "ai-tool-approval",
+        pr: 157,
+        note: "Pill buttons, a tinted tool icon and a checkbox that draws its check.",
+      },
+      {
+        name: "ai-tool-calls",
+        pr: 157,
+        note: "Each tool kind gets its own color.",
+      },
+      {
+        name: "ai-model-selector",
+        pr: 157,
+        note: "Model marks, orange effort bars that fill bottom up, and a drawn check.",
+      },
+      {
+        name: "ai-context-meter",
+        pr: 157,
+        note: "Real segment colors, dithered free space, and a legend that counts down when compacting.",
+      },
+      {
+        name: "ai-code-run",
+        pr: 157,
+        note: "Violet dithered bars that build up in pixel steps.",
+      },
+      {
+        name: "ai-order-status",
+        pr: 157,
+        note: "Blue route with a halo on the courier, and a dithered park on the map.",
+      },
+      {
+        name: "ai-agent-lanes",
+        pr: 157,
+        note: "Dithered Read and Thinking bars, and a play button that crossfades.",
+      },
+      {
+        name: "ai-checkout",
+        pr: 157,
+        note: "A drawn coffee bag that stacks with the quantity, and a pill Pay button.",
+      },
+      {
+        name: "ai-schedule",
+        pr: 157,
+        note: "Only the picked day's calendar leaf turns red.",
+      },
+      {
+        name: "ai-prompt",
+        pr: 157,
+        note: "Orange effort bars that fill bottom up, and an accent caret.",
+      },
+      {
+        name: "ai-message-queue",
+        pr: 157,
+        note: "Blue working state, and status marks that crossfade.",
+      },
+      {
+        name: "ai-citations",
+        pr: 157,
+        note: "Each site gets its own tint.",
+      },
+      {
+        name: "ai-branches",
+        pr: 157,
+        note: "The active path and its nodes light up in violet.",
+      },
+      {
+        name: "ai-diff-review",
+        pr: 157,
+        note: "Colored hover pills on accept and reject.",
+      },
+      {
+        name: "ai-memory",
+        pr: 157,
+        note: "Green switch and a rounded composer.",
+      },
+      {
+        name: "ai-loading",
+        pr: 157,
+        note: "Green spinner, check and rail.",
+      },
+      {
+        name: "ai-voice",
+        pr: 157,
+        note: "Records in red with a matching swell ring.",
+      },
+      {
+        name: "ai-send",
+        pr: 157,
+        note: "Send icon leans forward on hover.",
+      },
+      {
+        name: "ai-redact",
+        pr: 157,
+        note: "Pill view switch and an accent caret.",
+      },
+      {
+        name: "ai-inline-edit",
+        pr: 157,
+        note: "Ringed pill chips and an accent caret.",
+      },
+      {
+        name: "ai-input-search",
+        pr: 157,
+        note: "Pill controls and an accent caret.",
+      },
+      {
+        name: "ai-connect",
+        pr: 157,
+        note: "Pill Continue button.",
+      },
+      {
+        name: "ai-handoff",
+        pr: 157,
+        note: "Orange avatar in place of amber.",
+      },
+      {
+        name: "ai-token-alternatives",
+        pr: 157,
+        note: "Orange hover tint on swappable words.",
+      },
+      {
+        name: "ai-autocomplete",
+        pr: 157,
+        note: "Pill page chips and actions.",
+      },
+      {
+        name: "ai-attachment",
+        pr: 157,
+        note: "Replies wrap without a one-word last line.",
+      },
+    ],
+  },
+  {
     date: "2026-11-10",
     added: [
       { name: "ai-tool-calls", pr: 147 },
