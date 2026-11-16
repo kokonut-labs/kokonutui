@@ -863,7 +863,7 @@ function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
       <span className="truncate">{file.name}</span>
       <button
         aria-label={`Remove ${file.name}`}
-        className="flex size-6 shrink-0 items-center justify-center rounded-md text-black/40 outline-hidden transition-colors duration-150 hover:bg-black/[0.06] hover:text-black focus-visible:ring-2 focus-visible:ring-black/15 dark:text-white/40 dark:focus-visible:ring-white/20 dark:hover:bg-white/10 dark:hover:text-white"
+        className="flex size-6 shrink-0 items-center justify-center rounded-full text-black/40 outline-hidden transition-colors duration-150 hover:bg-black/[0.06] hover:text-black focus-visible:ring-2 focus-visible:ring-black/15 dark:text-white/40 dark:focus-visible:ring-white/20 dark:hover:bg-white/10 dark:hover:text-white"
         onClick={onRemove}
         type="button"
       >
@@ -966,7 +966,7 @@ function SendStopButton({
       animate={{ width }}
       aria-label={running ? "Stop" : "Ask"}
       className={cn(
-        "h-8 shrink-0 overflow-hidden rounded-[10px]",
+        "h-8 shrink-0 overflow-hidden rounded-full",
         "transition-[background-color,color,box-shadow] duration-150",
         EASE_OUT_CSS,
         "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
@@ -1218,7 +1218,7 @@ export default function AI_Input_Search({
               // shadow-none and md:text-[15px] beat the shadow-xs and
               // md:text-sm of the current shadcn Textarea. Touch screens get 16px so
               // iOS does not zoom into the field on focus.
-              className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed shadow-none placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-[15px] dark:bg-transparent dark:text-white dark:placeholder:text-white/35 [@media(pointer:coarse)]:text-base"
+              className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed caret-sky-500 shadow-none placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-[15px] dark:bg-transparent dark:text-white dark:caret-sky-400 dark:placeholder:text-white/35 [@media(pointer:coarse)]:text-base"
               onChange={(e) => {
                 setValue(e.target.value);
                 adjustHeight();

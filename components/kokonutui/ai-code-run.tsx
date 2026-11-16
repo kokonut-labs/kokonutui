@@ -12,7 +12,14 @@
 
 import { RotateCcw } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export interface CodeRunBar {
@@ -55,6 +62,71 @@ export interface AICodeRunProps {
   /** Demo only: how long each line takes, in ms. */
   lineMs?: number;
   className?: string;
+}
+
+/** A 4×4 Bayer matrix: the order in which pixels switch on as density rises. */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+/** An inline SVG of 1-bit pixels, used as a mask so any background color shows through. */
+function pixelMask(
+  columns: number,
+  rows: number,
+  densityAt: (row: number) => number,
+  cell: number
+): CSSProperties {
+  let rects = "";
+  for (let y = 0; y < rows; y++) {
+    const on = Math.round(densityAt(y) * 16);
+    for (let x = 0; x < columns; x++) {
+      if (BAYER[(y % 4) * 4 + (x % 4)] < on) {
+        rects += `<rect x='${x}' y='${y}' width='1' height='1'/>`;
+      }
+    }
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${columns}' height='${rows}' shape-rendering='crispEdges'>${rects}</svg>`;
+  const image = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  const size = `${columns * cell}px ${rows * cell}px`;
+  return {
+    maskImage: image,
+    WebkitMaskImage: image,
+    maskSize: size,
+    WebkitMaskSize: size,
+    maskPosition: "left bottom",
+    WebkitMaskPosition: "left bottom",
+  };
+}
+
+const BAR_CELL = 2;
+/** The chart's plot height in px (h-28), so a bar's ramp can match its height. */
+const PLOT_HEIGHT = 112;
+const barMasks = new Map<number, CSSProperties>();
+/** Sparse at the top, solid at the base, sized to the bar. */
+const barRows = (share: number) =>
+  Math.max(4, Math.round((share * PLOT_HEIGHT) / BAR_CELL));
+
+/**
+ * An ease-out that lands on whole dither bands, so a bar builds up in
+ * pixel steps instead of sliding.
+ */
+const pixelEase = (rows: number) => {
+  // One step per 4x4 dither tile, so each step adds a whole band.
+  const steps = Math.max(3, Math.round(rows / 4));
+  return (t: number) => Math.round((1 - (1 - t) ** 3) * steps) / steps;
+};
+
+function barDither(share: number) {
+  const rows = barRows(share);
+  let mask = barMasks.get(rows);
+  if (!mask) {
+    mask = pixelMask(
+      4,
+      rows,
+      (row) => 0.12 + (row / (rows - 1)) * 0.88,
+      BAR_CELL
+    );
+    barMasks.set(rows, mask);
+  }
+  return mask;
 }
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -239,19 +311,19 @@ export default function AICodeRun({
         data-state={status}
       >
         {shown.prompt ? (
-          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+          <p className="max-w-[85%] self-end text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
             {shown.prompt}
           </p>
         ) : null}
         {shown.message ? (
-          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+          <p className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
             {shown.message}
           </p>
         ) : null}
 
         <AutoHeight className="rounded-[22px] bg-black/[0.04] dark:bg-white/[0.06]">
           <div className="flex h-8 items-center gap-2 pr-1 pl-3 text-[12px] text-zinc-500 dark:text-zinc-400">
-            <span className="rounded-[4px] bg-black/[0.06] px-1 font-medium font-mono text-[10px] text-zinc-600 leading-4 dark:bg-white/[0.08] dark:text-zinc-300">
+            <span className="rounded-[5px] bg-sky-500/10 px-1 font-medium font-mono text-[10px] text-sky-700 leading-4 dark:bg-sky-400/15 dark:text-sky-300">
               py
             </span>
             <span className="min-w-0 truncate font-mono text-[11.5px] text-zinc-600 dark:text-zinc-300">
@@ -272,7 +344,7 @@ export default function AICodeRun({
               </AnimatePresence>
               <button
                 aria-label="Run again"
-                className="flex size-6 items-center justify-center rounded-md text-zinc-500 outline-hidden transition-[color,background-color,opacity] duration-150 hover:bg-black/[0.05] hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-black/[0.08] disabled:pointer-events-none disabled:opacity-0 dark:text-zinc-400 dark:active:bg-white/[0.12] dark:hover:bg-white/[0.08] dark:hover:text-zinc-100"
+                className="flex size-6 items-center justify-center rounded-full text-zinc-500 outline-hidden transition-[color,background-color,opacity] duration-150 hover:bg-black/[0.05] hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-black/[0.08] disabled:pointer-events-none disabled:opacity-0 dark:text-zinc-400 dark:active:bg-white/[0.12] dark:hover:bg-white/[0.08] dark:hover:text-zinc-100"
                 disabled={!(finished && again)}
                 onClick={again}
                 type="button"
@@ -371,7 +443,7 @@ export default function AICodeRun({
           {finished && shown.answer ? (
             <motion.div
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               key={`answer-${run}`}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.7 }}
@@ -473,15 +545,24 @@ function Chart({ bars, max }: { bars: CodeRunBar[]; max: number }) {
             <motion.div
               animate={{ clipPath: "inset(0% 0 0 0)" }}
               className={cn(
-                "rounded-t-[4px] rounded-b-[2px]",
+                "w-full",
                 i === last
-                  ? "bg-violet-500 dark:bg-violet-400"
-                  : "bg-zinc-200 dark:bg-zinc-700"
+                  ? "bg-violet-600 dark:bg-violet-400"
+                  : "bg-violet-300 dark:bg-violet-500/60"
               )}
               initial={{ clipPath: "inset(100% 0 0 0)" }}
-              style={{ height: `${(bar.value / max) * 82}%` }}
+              style={{
+                height: `${(bar.value / max) * 82}%`,
+                // Dithered from solid at the base to sparse at the top. The
+                // latest week is the deep violet, so it reads as the answer.
+                ...barDither((bar.value / max) * 0.82),
+              }}
               title={`${bar.label}: ${bar.value}`}
-              transition={{ duration: 0.45, ease: EASE_OUT, delay: i * 0.05 }}
+              transition={{
+                duration: 0.5,
+                ease: pixelEase(barRows((bar.value / max) * 0.82)),
+                delay: i * 0.05,
+              }}
             />
           </div>
         ))}

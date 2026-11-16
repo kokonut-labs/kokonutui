@@ -891,7 +891,7 @@ export default function AIInlineEdit({
               <motion.div
                 animate={{ opacity: 1, scale: 1, x: bar.x, y: bar.y }}
                 aria-label="Edit with AI"
-                className="absolute top-0 left-0 z-20 origin-top-left overflow-hidden rounded-xl bg-white shadow-[0_12px_32px_-12px_rgb(0_0_0/0.25)] ring-1 ring-black/[0.08] dark:bg-zinc-800 dark:shadow-[0_12px_32px_-12px_rgb(0_0_0/0.7)] dark:ring-white/10"
+                className="absolute top-0 left-0 z-20 origin-top-left overflow-hidden rounded-2xl bg-white shadow-[0_12px_32px_-12px_rgb(0_0_0/0.25)] ring-1 ring-black/[0.08] dark:bg-zinc-800 dark:shadow-[0_12px_32px_-12px_rgb(0_0_0/0.7)] dark:ring-white/10"
                 exit={{
                   opacity: 0,
                   scale: 0.98,
@@ -925,7 +925,7 @@ export default function AIInlineEdit({
                         </span>
                       </p>
                       <button
-                        className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] text-zinc-600 transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-white"
+                        className="flex h-7 items-center gap-1.5 rounded-full px-2 text-[12px] text-zinc-600 transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-white"
                         onClick={() => {
                           if (phase === "thinking") {
                             stop();
@@ -1015,7 +1015,7 @@ function PromptBar({
       >
         <input
           aria-label="Tell AI how to edit the selection"
-          className="min-w-0 flex-1 bg-transparent text-[13px] text-zinc-900 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
+          className="min-w-0 flex-1 bg-transparent text-[13px] text-zinc-900 caret-sky-500 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:caret-sky-400 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
           onChange={(event) => onInstruction(event.target.value)}
           placeholder="Ask AI to edit…"
           ref={inputRef}
@@ -1023,7 +1023,7 @@ function PromptBar({
         />
         <button
           aria-label="Rewrite"
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-[background-color,opacity] duration-150 hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
           disabled={!instruction.trim()}
           type="submit"
         >
@@ -1041,7 +1041,7 @@ function PromptBar({
       <div className="flex flex-wrap gap-1 border-black/[0.06] border-t p-1.5 dark:border-white/[0.08]">
         {ACTIONS.map((action) => (
           <button
-            className="h-7 rounded-lg px-2.5 text-[12px] text-zinc-600 outline-hidden transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:bg-zinc-100 dark:text-zinc-300 dark:focus-visible:bg-white/[0.07] dark:hover:bg-white/[0.07] dark:hover:text-white"
+            className="h-7 rounded-full px-3 text-[12px] text-zinc-600 outline-hidden ring-1 ring-black/[0.08] ring-inset transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:bg-zinc-100 active:bg-zinc-200 dark:text-zinc-300 dark:ring-white/10 dark:focus-visible:bg-white/[0.07] dark:hover:bg-white/[0.07] dark:hover:text-white"
             key={action.id}
             onClick={() => onRun(action.label)}
             type="button"
@@ -1080,7 +1080,7 @@ function ReviewBar({
   onAccept: () => void;
 }) {
   const ghost =
-    "flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] text-zinc-600 outline-hidden transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-900/15 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-300 dark:focus-visible:ring-white/20 dark:hover:bg-white/[0.07] dark:hover:text-white";
+    "flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[12px] text-zinc-600 outline-hidden transition-colors duration-100 hover:bg-zinc-100 hover:text-zinc-900 active:bg-zinc-200 focus-visible:ring-2 focus-visible:ring-zinc-900/15 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-300 dark:focus-visible:ring-white/20 dark:hover:bg-white/[0.07] dark:hover:text-white";
   return (
     <div className="flex h-11 items-center gap-1 pr-1.5 pl-2">
       {count > 1 && (
@@ -1133,7 +1133,7 @@ function ReviewBar({
           Discard
         </button>
         <button
-          className="flex h-7 items-center gap-1.5 rounded-lg bg-zinc-900 px-2.5 font-medium text-[12px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-900/30 focus-visible:ring-offset-1 active:bg-zinc-600 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-white/40 dark:focus-visible:ring-offset-zinc-800 dark:hover:bg-zinc-200"
+          className="flex h-7 items-center gap-1.5 rounded-full bg-zinc-900 px-2.5 font-medium text-[12px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-900/30 focus-visible:ring-offset-1 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-white/40 dark:focus-visible:ring-offset-zinc-800 dark:hover:bg-zinc-200"
           disabled={unchanged}
           onClick={onAccept}
           ref={acceptRef}

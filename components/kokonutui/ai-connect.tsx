@@ -238,7 +238,7 @@ export default function AIConnect({
         data-state={step}
       >
         {shown.prompt ? (
-          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+          <p className="max-w-[85%] self-end text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
             {shown.prompt}
           </p>
         ) : null}
@@ -284,7 +284,7 @@ export default function AIConnect({
           {closingLine(step, shown) ? (
             <motion.div
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.15 }}
             >
@@ -502,7 +502,7 @@ function AccessCard({
 
       <button
         aria-busy={waiting}
-        className="mt-4 flex h-10 w-full items-center justify-center rounded-xl font-medium text-[14px] text-white outline-hidden transition-[filter,background-color] duration-300 hover:brightness-125 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-2 active:brightness-110 disabled:pointer-events-none dark:ring-1 dark:ring-white/15 dark:focus-visible:ring-offset-zinc-900"
+        className="mt-4 flex h-10 w-full items-center justify-center rounded-full font-medium text-[14px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] outline-hidden transition-[filter,background-color] duration-300 hover:brightness-125 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-2 active:brightness-110 disabled:pointer-events-none dark:ring-1 dark:ring-white/15 dark:focus-visible:ring-offset-zinc-900"
         disabled={step !== "blocked"}
         onClick={onConnect}
         style={{ backgroundColor: linked ? "#059669" : appColor }}
@@ -531,7 +531,7 @@ function AccessCard({
       ) : null}
       <div className={cn("mt-1 flex justify-center", !onSkip && "hidden")}>
         <button
-          className="rounded-md px-2 py-1 text-[12.5px] text-zinc-500 outline-hidden transition-[color,opacity] duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 disabled:opacity-0 dark:text-zinc-400 dark:hover:text-zinc-100"
+          className="rounded-full px-3 py-1 text-[12.5px] text-zinc-500 outline-hidden transition-[color,background-color,opacity] duration-150 hover:bg-black/5 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 disabled:opacity-0 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
           disabled={step !== "blocked"}
           onClick={onSkip}
           type="button"

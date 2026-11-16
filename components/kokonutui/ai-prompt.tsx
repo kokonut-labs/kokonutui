@@ -305,7 +305,7 @@ function AttachmentChip({
       </span>
       <button
         aria-label={`Remove ${file.name}`}
-        className="flex size-6 shrink-0 items-center justify-center rounded-md text-black/40 transition-colors duration-150 hover:bg-black/5 hover:text-black focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
+        className="flex size-6 shrink-0 items-center justify-center rounded-full text-black/40 transition-colors duration-150 hover:bg-black/5 hover:text-black focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
         onClick={onRemove}
         type="button"
       >
@@ -443,7 +443,7 @@ function CommandPill({
       {command.label}
       <button
         aria-label={`Remove ${command.label} command`}
-        className="flex size-6 items-center justify-center rounded-md transition-colors duration-150 hover:bg-blue-500/10 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500"
+        className="flex size-6 items-center justify-center rounded-full transition-colors duration-150 hover:bg-blue-500/10 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500"
         onClick={onRemove}
         type="button"
       >
@@ -534,7 +534,7 @@ function PromoHeader({
       {action && canSwitch && (
         <button
           className={cn(
-            "flex h-6 shrink-0 items-center gap-1 rounded-md px-2 font-medium",
+            "flex h-6 shrink-0 items-center gap-1 rounded-full px-2 font-medium",
             "transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
             "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500",
             inUse
@@ -568,12 +568,16 @@ function EffortBars({ count, level }: { count: number; level: number }) {
           className={cn(
             "w-[3px] rounded-[1px] transition-colors duration-200",
             i <= level
-              ? "bg-black/80 dark:bg-white/85"
+              ? "bg-orange-500 dark:bg-orange-400"
               : "bg-black/15 dark:bg-white/20"
           )}
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed bars, never reordered
           key={i}
-          style={{ height: `${((i + 1) / count) * 100}%` }}
+          style={{
+            height: `${((i + 1) / count) * 100}%`,
+            // Bars fill bottom up and empty top down.
+            transitionDelay: `${(i <= level ? i : count - 1 - i) * 30}ms`,
+          }}
         />
       ))}
     </span>
@@ -1058,7 +1062,7 @@ export default function AI_Prompt({
             // shadow-none and md:text-[15px] beat the shadow-xs and
             // md:text-sm of the current shadcn Textarea. Touch screens get 16px so
             // iOS does not zoom into the field on focus.
-            className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed shadow-none placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-[15px] dark:bg-transparent dark:text-white dark:placeholder:text-white/35 [@media(pointer:coarse)]:text-base"
+            className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed caret-orange-500 shadow-none placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-[15px] dark:bg-transparent dark:text-white dark:caret-orange-400 dark:placeholder:text-white/35 [@media(pointer:coarse)]:text-base"
             id={textareaId}
             onBlur={() => setMenuDismissed(true)}
             onChange={(e) => {

@@ -126,6 +126,34 @@ const iconFor = (tool: string) => {
   return Wrench;
 };
 
+/** A tint per kind of tool, so the folded stack reads at a glance. */
+const tintFor = (tool: string) => {
+  if (SEARCH_TOOL.test(tool)) {
+    return "bg-sky-50 text-sky-600 ring-sky-600/15 dark:bg-sky-950 dark:text-sky-300 dark:ring-sky-400/20";
+  }
+  if (READ_TOOL.test(tool)) {
+    return "bg-violet-50 text-violet-600 ring-violet-600/15 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-400/20";
+  }
+  if (BOOK_TOOL.test(tool)) {
+    return "bg-orange-50 text-orange-600 ring-orange-600/15 dark:bg-orange-950 dark:text-orange-300 dark:ring-orange-400/20";
+  }
+  return "bg-white text-zinc-500 ring-black/[0.08] dark:bg-zinc-900 dark:text-zinc-400 dark:ring-white/10";
+};
+
+/** The same tints as text only, for the icons in the open list. */
+const inkFor = (tool: string) => {
+  if (SEARCH_TOOL.test(tool)) {
+    return "text-sky-600 dark:text-sky-400";
+  }
+  if (READ_TOOL.test(tool)) {
+    return "text-violet-600 dark:text-violet-400";
+  }
+  if (BOOK_TOOL.test(tool)) {
+    return "text-orange-600 dark:text-orange-400";
+  }
+  return "text-zinc-400 dark:text-zinc-500";
+};
+
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
 const ended = (state?: ToolCallState) =>
@@ -293,7 +321,7 @@ export default function AIToolCalls({
         data-state={finished ? "done" : "running"}
       >
         {shownPrompt ? (
-          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+          <p className="max-w-[85%] self-end text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
             {shownPrompt}
           </p>
         ) : null}
@@ -354,7 +382,7 @@ export default function AIToolCalls({
               <ChevronRight
                 aria-hidden="true"
                 className={cn(
-                  "size-3.5 text-zinc-400 transition-transform duration-200 dark:text-zinc-500",
+                  "size-3.5 text-zinc-400 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] dark:text-zinc-500",
                   open && "rotate-90"
                 )}
               />
@@ -391,7 +419,7 @@ export default function AIToolCalls({
           {answered && shownAnswer ? (
             <motion.div
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={
                 doneAtMount ? false : { opacity: 0, filter: "blur(4px)", y: 4 }
               }
@@ -422,10 +450,10 @@ function IconStack({
       <motion.span
         animate={{ x: 0, opacity: 1 }}
         className={cn(
-          "-ml-1.5 flex size-5 items-center justify-center rounded-full bg-white ring-1 first:ml-0 dark:bg-zinc-900",
+          "-ml-1.5 flex size-5 items-center justify-center rounded-full ring-1 first:ml-0",
           failed(call.state)
-            ? "text-rose-500 ring-rose-500/30"
-            : "text-zinc-500 ring-black/[0.08] dark:text-zinc-400 dark:ring-white/10"
+            ? "bg-rose-50 text-rose-500 ring-rose-500/30 dark:bg-rose-950"
+            : tintFor(call.tool)
         )}
         initial={still ? false : { x: -6 * i, opacity: 0 }}
         key={call.id}
@@ -460,7 +488,10 @@ function CallRow({ call, elapsed }: { call: ToolCallItem; elapsed?: number }) {
       <div className="flex h-8 items-center gap-2 text-[13px]">
         <Icon
           aria-hidden="true"
-          className="size-3.5 shrink-0 text-zinc-400 dark:text-zinc-500"
+          className={cn(
+            "size-3.5 shrink-0",
+            error ? "text-rose-500" : inkFor(call.tool)
+          )}
         />
         <span
           className={cn(

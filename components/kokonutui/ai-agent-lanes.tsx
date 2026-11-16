@@ -78,6 +78,44 @@ function placeLanes(lanes: AgentLane[], elapsed?: number): PlacedLane[] {
   }));
 }
 
+/** A 4×4 Bayer matrix: the order in which pixels switch on as density rises. */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+/** An inline SVG of 1-bit pixels, used as a mask so any background color shows through. */
+function pixelMask(
+  columns: number,
+  rows: number,
+  densityAt: (row: number) => number,
+  cell: number
+): CSSProperties {
+  let rects = "";
+  for (let y = 0; y < rows; y++) {
+    const on = Math.round(densityAt(y) * 16);
+    for (let x = 0; x < columns; x++) {
+      if (BAYER[(y % 4) * 4 + (x % 4)] < on) {
+        rects += `<rect x='${x}' y='${y}' width='1' height='1'/>`;
+      }
+    }
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${columns}' height='${rows}' shape-rendering='crispEdges'>${rects}</svg>`;
+  const image = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  const size = `${columns * cell}px ${rows * cell}px`;
+  return {
+    maskImage: image,
+    WebkitMaskImage: image,
+    maskSize: size,
+    WebkitMaskSize: size,
+    maskPosition: "left bottom",
+    WebkitMaskPosition: "left bottom",
+  };
+}
+
+/** Reading is a dithered tint of searching, and thinking is sparse grey. */
+const TOOL_DITHER: Partial<Record<ToolKind, CSSProperties>> = {
+  think: pixelMask(4, 4, () => 0.375, 2),
+  read: pixelMask(4, 4, () => 0.5, 2),
+};
+
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const LANE_H = 36;
 const TICK = 2;
@@ -196,10 +234,9 @@ const DEMO_ANSWER =
   "Go with Lisbon. Ten of your eleven offices fly there direct, Palácio Chiado fits 30 people at €84 a head, and late May averages 21°C with little rain. Valencia is a close second if you want the beach.";
 
 const TOOL_STYLE: Record<ToolKind, string> = {
-  think:
-    "bg-[repeating-linear-gradient(135deg,rgb(113_113_122/0.35)_0_2px,transparent_2px_5px)] ring-1 ring-inset ring-zinc-400/50 dark:ring-zinc-500/50",
+  think: "bg-zinc-500 dark:bg-zinc-400",
   search: "bg-teal-600 dark:bg-teal-500",
-  read: "bg-stone-400 dark:bg-stone-500",
+  read: "bg-teal-600 dark:bg-teal-500",
   write: "bg-zinc-900 dark:bg-zinc-100",
 };
 
@@ -336,7 +373,7 @@ export default function AIAgentLanes({
         {live ? null : (
           <button
             aria-label={playButtonLabel(done, playing)}
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-zinc-600 ring-1 ring-black/10 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-900/30 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/[0.07] dark:hover:text-white"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full text-zinc-600 ring-1 ring-black/10 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-900/30 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/[0.07] dark:hover:text-white"
             onClick={toggle}
             type="button"
           >
@@ -459,14 +496,19 @@ const playButtonLabel = (done: boolean, playing: boolean) => {
   return playing ? "Pause" : "Play";
 };
 
+const FACE =
+  "absolute inset-0 size-3.5 transition-[opacity,filter,scale] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none";
+const face = (on: boolean) =>
+  on ? "scale-100 opacity-100 blur-0" : "scale-[0.3] opacity-0 blur-[3px]";
+
+/** Play, pause and replay stay mounted and crossfade, so the swap reads as one control. */
 function PlayIcon({ done, playing }: { done: boolean; playing: boolean }) {
-  if (done) {
-    return <RotateCcw className="size-3.5" />;
-  }
-  return playing ? (
-    <Pause className="size-3.5" />
-  ) : (
-    <Play className="size-3.5" />
+  return (
+    <span aria-hidden="true" className="relative size-3.5">
+      <Play className={cn(FACE, face(!(done || playing)))} />
+      <Pause className={cn(FACE, face(!done && playing))} />
+      <RotateCcw className={cn(FACE, face(done))} />
+    </span>
   );
 }
 
@@ -565,6 +607,7 @@ function StepBar({
         className={cn("block h-full rounded-[3px]", TOOL_STYLE[step.tool])}
         // A clip, not a width, keeps the fill off layout and its corners round.
         style={{
+          ...TOOL_DITHER[step.tool],
           clipPath: `inset(0 ${(1 - progress) * 100}% 0 0 round 3px)`,
         }}
       />
@@ -753,7 +796,10 @@ function Legend() {
     <ul className="hidden shrink-0 items-center gap-3 text-[10px] text-zinc-500 sm:flex dark:text-zinc-400">
       {(["search", "read", "think", "write"] as const).map((tool) => (
         <li className="flex items-center gap-1" key={tool}>
-          <span className={cn("h-2 w-3 rounded-[2px]", TOOL_STYLE[tool])} />
+          <span
+            className={cn("h-2 w-3 rounded-[2px]", TOOL_STYLE[tool])}
+            style={TOOL_DITHER[tool]}
+          />
           {TOOL_NAME[tool]}
         </li>
       ))}

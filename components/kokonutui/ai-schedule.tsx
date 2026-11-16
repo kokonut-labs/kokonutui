@@ -203,12 +203,12 @@ export default function AISchedule({
         data-state={error ? "error" : status}
       >
         {shown.prompt ? (
-          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+          <p className="max-w-[85%] self-end text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
             {shown.prompt}
           </p>
         ) : null}
         {shown.message ? (
-          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+          <p className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
             {shown.message}
           </p>
         ) : null}
@@ -291,7 +291,7 @@ export default function AISchedule({
           {status === "booked" && shown.confirmation ? (
             <motion.p
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.45 }}
             >
@@ -375,7 +375,14 @@ function SlotRow({
           value={slot.id}
         />
         <span className="flex w-10 shrink-0 flex-col overflow-hidden rounded-[9px] bg-white text-center ring-1 ring-black/[0.08] dark:bg-zinc-800 dark:ring-white/10">
-          <span className="bg-red-500 py-px font-semibold text-[8.5px] text-white uppercase tracking-wider">
+          <span
+            className={cn(
+              "py-px font-semibold text-[8.5px] uppercase tracking-wider transition-colors duration-200",
+              checked
+                ? "bg-red-500 text-white"
+                : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-300"
+            )}
+          >
             {slot.month}
           </span>
           <span className="py-0.5 font-semibold text-[15px] text-zinc-900 leading-5 dark:text-zinc-100">
@@ -421,7 +428,7 @@ function SlotRow({
               className={cn(
                 "flex size-4 shrink-0 items-center justify-center rounded-full ring-1 transition-colors duration-150",
                 checked
-                  ? "bg-zinc-900 ring-zinc-900 dark:bg-white dark:ring-white"
+                  ? "bg-blue-600 ring-blue-600 dark:bg-blue-500 dark:ring-blue-500"
                   : "ring-zinc-300 dark:ring-zinc-600"
               )}
               exit={{ opacity: 0 }}
@@ -430,7 +437,7 @@ function SlotRow({
             >
               <motion.span
                 animate={{ scale: checked ? 1 : 0.5, opacity: checked ? 1 : 0 }}
-                className="size-1.5 rounded-full bg-white dark:bg-zinc-900"
+                className="size-1.5 rounded-full bg-white"
                 initial={false}
                 transition={{ duration: 0.15, ease: EASE_OUT }}
               />
@@ -528,7 +535,7 @@ function Avatar({
         "flex size-6 items-center justify-center rounded-full font-semibold text-[9.5px]",
         tone === "you"
           ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-          : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+          : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200"
       )}
       title={person.name}
     >
@@ -570,7 +577,7 @@ function BookButton({
 }) {
   return (
     <button
-      className="flex h-9 min-w-[96px] items-center justify-center rounded-full bg-zinc-900 px-4 font-medium text-[13px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 active:bg-zinc-700 disabled:cursor-default dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-zinc-200"
+      className="flex h-9 min-w-[96px] items-center justify-center rounded-full bg-zinc-900 px-4 font-medium text-[13px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 active:bg-zinc-700 disabled:cursor-default dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-zinc-200"
       disabled={busy}
       onClick={onClick}
       type="button"

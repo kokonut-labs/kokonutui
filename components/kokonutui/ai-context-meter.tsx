@@ -11,7 +11,14 @@
  */
 
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export interface ContextSegment {
@@ -39,6 +46,42 @@ interface AIContextMeterProps {
   defaultOpen?: boolean;
   className?: string;
 }
+
+/** A 4×4 Bayer matrix: the order in which pixels switch on as density rises. */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+/** An inline SVG of 1-bit pixels, used as a mask so any background color shows through. */
+function pixelMask(
+  columns: number,
+  rows: number,
+  densityAt: (row: number) => number,
+  cell: number
+): CSSProperties {
+  let rects = "";
+  for (let y = 0; y < rows; y++) {
+    const on = Math.round(densityAt(y) * 16);
+    for (let x = 0; x < columns; x++) {
+      if (BAYER[(y % 4) * 4 + (x % 4)] < on) {
+        rects += `<rect x='${x}' y='${y}' width='1' height='1'/>`;
+      }
+    }
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${columns}' height='${rows}' shape-rendering='crispEdges'>${rects}</svg>`;
+  const image = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  const size = `${columns * cell}px ${rows * cell}px`;
+  return {
+    maskImage: image,
+    WebkitMaskImage: image,
+    maskSize: size,
+    WebkitMaskSize: size,
+    maskPosition: "left bottom",
+    WebkitMaskPosition: "left bottom",
+  };
+}
+
+const FREE_DITHER = pixelMask(4, 4, () => 0.25, 2);
+const LIMIT_DITHER = pixelMask(4, 4, () => 0.25, 2);
+const FREE_SWATCH = pixelMask(4, 4, () => 0.5, 1);
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const FALLBACK_COLORS = [
@@ -129,9 +172,9 @@ function useDemoContext(
 }
 
 const DEMO_COLORS: Record<string, string> = {
-  system: "bg-zinc-300 dark:bg-zinc-600",
-  tools: "bg-zinc-400 dark:bg-zinc-500",
-  files: "bg-zinc-600 dark:bg-zinc-400",
+  system: "bg-zinc-300 dark:bg-zinc-500",
+  tools: "bg-violet-400 dark:bg-violet-400",
+  files: "bg-orange-400 dark:bg-orange-400",
   summary: "bg-sky-300 dark:bg-sky-700",
   messages: "bg-sky-500 dark:bg-sky-400",
 };
@@ -174,6 +217,19 @@ const formatTokens = (tokens: number) =>
   tokens >= 1000
     ? `${(tokens / 1000).toFixed(tokens >= 10_000 ? 0 : 1)}k`
     : `${Math.round(tokens)}`;
+
+const percent = (value: number) => `${value.toFixed(1)}%`;
+
+/** A number that counts to its new value, so compacting reads as tokens draining. */
+function Tweened({
+  value,
+  format,
+}: {
+  value: number;
+  format: (value: number) => string;
+}) {
+  return <>{format(useTweened(value))}</>;
+}
 
 function levelColor(share: number, compactAt: number) {
   // Dark enough to read at 12px on the light bar (amber-500 was 2:1).
@@ -251,7 +307,19 @@ function Breakdown({
       {/* One bar for the whole window, a segment per source. The tick marks
           where the conversation compacts. */}
       <div className="relative" onPointerLeave={() => setActive(null)}>
-        <div className="flex h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-white/10">
+        {/* Free space and the zone past the compact line are dithered, so
+            the solid segments read as what is actually used. */}
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 rounded-l-full bg-zinc-400 dark:bg-zinc-500"
+          style={{ ...FREE_DITHER, width: `${compactAt * 100}%` }}
+        />
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 right-0 rounded-r-full bg-red-400 dark:bg-red-400"
+          style={{ ...LIMIT_DITHER, width: `${(1 - compactAt) * 100}%` }}
+        />
+        <div className="relative flex h-2 overflow-hidden rounded-full">
           {segments.map((segment, index) => (
             <span
               className={cn(
@@ -281,7 +349,7 @@ function Breakdown({
           segment.tokens > 0 ? (
             <li
               className={cn(
-                "flex items-center gap-2 rounded-md px-1.5 py-1 text-xs transition-colors duration-150",
+                "flex items-center gap-2 rounded-lg px-1.5 py-1 text-xs transition-colors duration-150",
                 active === segment.id && "bg-zinc-100 dark:bg-white/5"
               )}
               key={segment.id}
@@ -293,22 +361,28 @@ function Breakdown({
                 {segment.label}
               </span>
               <span className="ml-auto text-zinc-500 tabular-nums dark:text-zinc-400">
-                {formatTokens(segment.tokens)}
+                <Tweened format={formatTokens} value={segment.tokens} />
               </span>
               <span className="w-9 text-right text-zinc-400 tabular-nums dark:text-zinc-500">
-                {((segment.tokens / limit) * 100).toFixed(1)}%
+                <Tweened
+                  format={percent}
+                  value={(segment.tokens / limit) * 100}
+                />
               </span>
             </li>
           ) : null
         )}
         <li className="flex items-center gap-2 px-1.5 py-1 text-xs">
-          <span className="size-2 rounded-[3px] ring-1 ring-zinc-300 ring-inset dark:ring-zinc-600" />
+          <span
+            className="size-2 bg-zinc-400 dark:bg-zinc-500"
+            style={FREE_SWATCH}
+          />
           <span className="text-zinc-500 dark:text-zinc-400">Free</span>
           <span className="ml-auto text-zinc-500 tabular-nums dark:text-zinc-400">
-            {formatTokens(free)}
+            <Tweened format={formatTokens} value={free} />
           </span>
           <span className="w-9 text-right text-zinc-400 tabular-nums dark:text-zinc-500">
-            {((free / limit) * 100).toFixed(1)}%
+            <Tweened format={percent} value={(free / limit) * 100} />
           </span>
         </li>
       </ul>
@@ -319,7 +393,7 @@ function Breakdown({
             Summarize older turns
           </p>
           <button
-            className="h-7 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/60 disabled:bg-zinc-200 disabled:text-zinc-400 dark:bg-white dark:text-zinc-900 dark:disabled:bg-white/10 dark:disabled:text-zinc-500 dark:hover:bg-zinc-200"
+            className="h-7 rounded-full bg-zinc-900 px-3 font-medium text-white text-xs shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400/60 active:bg-zinc-700 disabled:bg-zinc-200 disabled:text-zinc-400 dark:bg-white dark:text-zinc-900 dark:disabled:bg-white/10 dark:disabled:text-zinc-500 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
             disabled={used / limit < 0.4}
             onClick={onCompact}
             type="button"
@@ -399,7 +473,7 @@ export default function AIContextMeter({
   return (
     <MotionConfig reducedMotion="user">
       <div className={cn("w-full max-w-sm", className)} ref={rootRef}>
-        <div className="relative flex h-11 items-center justify-between rounded-xl bg-black/5 pr-1.5 pl-3 dark:bg-white/5">
+        <div className="relative flex h-11 items-center justify-between rounded-full bg-black/5 pr-1.5 pl-4 dark:bg-white/5">
           <span className="text-xs text-zinc-600 dark:text-zinc-300">
             {model}
           </span>
@@ -408,7 +482,7 @@ export default function AIContextMeter({
             aria-expanded={open}
             aria-label={`Context ${Math.round(share * 100)}% full. Show breakdown`}
             className={cn(
-              "flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs outline-hidden transition-colors duration-150 hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10",
+              "flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs outline-hidden transition-colors duration-150 hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10",
               open && "bg-black/5 dark:bg-white/10",
               levelColor(share, compactAt)
             )}
@@ -427,8 +501,13 @@ export default function AIContextMeter({
             {open && (
               <motion.div
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="absolute right-0 bottom-full z-10 mb-2 origin-bottom-right rounded-xl bg-white shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
-                exit={{ opacity: 0, scale: 0.97, y: 4 }}
+                className="absolute right-0 bottom-full z-10 mb-2 origin-bottom-right rounded-2xl bg-white shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
+                exit={{
+                  opacity: 0,
+                  scale: 0.97,
+                  y: 4,
+                  transition: { duration: 0.12, ease: EASE_OUT },
+                }}
                 id={panelId}
                 initial={{ opacity: 0, scale: 0.97, y: 4 }}
                 transition={{ duration: 0.16, ease: EASE_OUT }}

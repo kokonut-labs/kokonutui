@@ -21,6 +21,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import {
+  type CSSProperties,
   type ReactNode,
   useEffect,
   useLayoutEffect,
@@ -65,6 +66,46 @@ export interface AIOrderStatusProps {
   onMessage?: () => void;
   className?: string;
 }
+
+/** A 4×4 Bayer matrix: the order in which pixels switch on as density rises. */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+/** An inline SVG of 1-bit pixels, used as a mask so any background color shows through. */
+function pixelMask(
+  columns: number,
+  rows: number,
+  densityAt: (row: number) => number,
+  cell: number
+): CSSProperties {
+  let rects = "";
+  for (let y = 0; y < rows; y++) {
+    const on = Math.round(densityAt(y) * 16);
+    for (let x = 0; x < columns; x++) {
+      if (BAYER[(y % 4) * 4 + (x % 4)] < on) {
+        rects += `<rect x='${x}' y='${y}' width='1' height='1'/>`;
+      }
+    }
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${columns}' height='${rows}' shape-rendering='crispEdges'>${rects}</svg>`;
+  const image = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  const size = `${columns * cell}px ${rows * cell}px`;
+  return {
+    maskImage: image,
+    WebkitMaskImage: image,
+    maskSize: size,
+    WebkitMaskSize: size,
+    maskPosition: "left bottom",
+    WebkitMaskPosition: "left bottom",
+  };
+}
+
+const PARK_ROWS = 28;
+/** Fades in from the top, denser toward the road below it. */
+const PARK_DITHER: CSSProperties = {
+  ...pixelMask(4, PARK_ROWS, (row) => 0.06 + (row / PARK_ROWS) * 0.44, 2),
+  maskRepeat: "repeat-x",
+  WebkitMaskRepeat: "repeat-x",
+};
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const W = 320;
@@ -198,12 +239,12 @@ export default function AIOrderStatus({
         data-state={arrived ? "delivered" : "on-the-way"}
       >
         {shown.prompt ? (
-          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+          <p className="max-w-[85%] self-end text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
             {shown.prompt}
           </p>
         ) : null}
         {shown.message ? (
-          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+          <p className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
             {shown.message}
           </p>
         ) : null}
@@ -263,6 +304,19 @@ export default function AIOrderStatus({
             </div>
 
             <div className="relative mt-2">
+              {/* A dithered park, so the map has texture without a tile
+                  service. */}
+              <span
+                aria-hidden="true"
+                className="absolute bg-emerald-500/80 dark:bg-emerald-400/50"
+                style={{
+                  ...PARK_DITHER,
+                  left: "32.5%",
+                  top: "58%",
+                  width: "26%",
+                  height: "42%",
+                }}
+              />
               <svg
                 aria-hidden="true"
                 className="block h-auto w-full"
@@ -288,7 +342,7 @@ export default function AIOrderStatus({
                     "transition-colors duration-500",
                     arrived
                       ? "stroke-emerald-500"
-                      : "stroke-zinc-900 dark:stroke-zinc-100"
+                      : "stroke-blue-600 dark:stroke-blue-400"
                   )}
                   d={ROUTE}
                   fill="none"
@@ -326,11 +380,16 @@ export default function AIOrderStatus({
                   {!arrived && (
                     <motion.g exit={{ opacity: 0 }} style={{ x, y }}>
                       <circle
-                        className="fill-zinc-900 dark:fill-white"
+                        className="fill-blue-500/15 dark:fill-blue-400/20"
+                        r="18"
+                      />
+                      <circle
+                        className="fill-blue-600 stroke-white dark:fill-blue-500 dark:stroke-zinc-900"
                         r="12"
+                        strokeWidth="2"
                       />
                       <Bike
-                        className="text-white dark:text-zinc-900"
+                        className="text-white"
                         height={13}
                         width={13}
                         x={-6.5}
@@ -353,7 +412,7 @@ export default function AIOrderStatus({
           {arrived && shown.delivered ? (
             <motion.p
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.5 }}
             >
@@ -422,7 +481,7 @@ function Steps({ arrived }: { arrived: boolean }) {
             animate={{ scaleX: i <= at ? 1 : 0 }}
             className={cn(
               "absolute inset-0 origin-left rounded-full",
-              arrived ? "bg-emerald-500" : "bg-zinc-900 dark:bg-zinc-100"
+              arrived ? "bg-emerald-500" : "bg-blue-600 dark:bg-blue-400"
             )}
             initial={false}
             transition={{ duration: 0.4, ease: EASE_OUT }}

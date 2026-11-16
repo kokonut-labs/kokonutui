@@ -183,7 +183,7 @@ export default function AIAttachment({
         <div className="flex flex-col items-end gap-1.5">
           <FileChip file={file} phase={phase} progress={uploaded} />
           {shownPrompt ? (
-            <p className="max-w-[85%] rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+            <p className="max-w-[85%] text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
               {shownPrompt}
             </p>
           ) : null}
@@ -280,7 +280,7 @@ export default function AIAttachment({
           {done && shownAnswer.length > 0 && (
             <motion.p
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.15 }}
             >
@@ -486,7 +486,7 @@ function Cite({
     <button
       aria-label={`Page ${page}`}
       className={cn(
-        "mx-0.5 inline-flex h-5 translate-y-[-1px] items-center rounded-md px-1.5 align-middle font-medium text-[11px] tabular-nums outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-orange-500/40",
+        "mx-0.5 inline-flex h-5 translate-y-[-1px] items-center rounded-full px-1.5 align-middle font-medium text-[11px] tabular-nums outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-orange-500/40",
         active
           ? "bg-orange-100 text-orange-900 dark:bg-orange-400/20 dark:text-orange-200"
           : "bg-zinc-100 text-zinc-600 dark:bg-white/[0.08] dark:text-zinc-300"

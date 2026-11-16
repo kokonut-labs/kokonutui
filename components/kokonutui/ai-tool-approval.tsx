@@ -220,6 +220,24 @@ function useDemoCalls(enabled: boolean) {
   return { calls, respond, reset };
 }
 
+/** Each kind of tool gets its own tint, so a glance tells them apart. */
+function toolTint(tool: string) {
+  const name = tool.toLowerCase();
+  if (TERMINAL_TOOL.test(name)) {
+    return "text-emerald-600 dark:text-emerald-400";
+  }
+  if (FILE_TOOL.test(name)) {
+    return "text-violet-600 dark:text-violet-400";
+  }
+  if (WEB_TOOL.test(name)) {
+    return "text-sky-600 dark:text-sky-400";
+  }
+  if (SEND_TOOL.test(name)) {
+    return "text-blue-600 dark:text-blue-400";
+  }
+  return "text-zinc-500 dark:text-zinc-400";
+}
+
 function ToolIcon({ call }: { call: ToolCall }) {
   if (call.icon) {
     return <>{call.icon}</>;
@@ -307,7 +325,7 @@ function HoldToAllow({ onConfirm }: { onConfirm: () => void }) {
   return (
     <button
       aria-label="Allow. Press and hold to confirm"
-      className="relative h-8 select-none overflow-hidden rounded-lg bg-red-50 px-3 font-medium text-red-700 text-sm outline-hidden ring-1 ring-red-600/15 focus-visible:ring-2 focus-visible:ring-red-500 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20"
+      className="relative h-8 select-none overflow-hidden rounded-full bg-red-50 px-3.5 font-medium text-red-700 text-sm outline-hidden ring-1 ring-red-600/15 focus-visible:ring-2 focus-visible:ring-red-500 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20"
       onBlur={stop}
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={(event) => {
@@ -375,7 +393,14 @@ function ApprovalCard({
       tabIndex={-1}
     >
       <header className="mb-2.5 flex items-center gap-2">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
+        <span
+          className={cn(
+            "flex size-4 shrink-0 items-center justify-center",
+            call.destructive
+              ? "text-red-600 dark:text-red-400"
+              : toolTint(call.tool)
+          )}
+        >
           <ToolIcon call={call} />
         </span>
         <h2
@@ -388,7 +413,7 @@ function ApprovalCard({
           {call.tool}
         </span>
         {call.destructive && (
-          <span className="ml-auto rounded-md bg-red-50 px-1.5 py-0.5 font-medium text-[11px] text-red-600 dark:bg-red-500/10 dark:text-red-400">
+          <span className="ml-auto rounded-full bg-red-50 px-2 py-0.5 font-medium text-[11px] text-red-600 dark:bg-red-500/10 dark:text-red-400">
             Destructive
           </span>
         )}
@@ -411,17 +436,42 @@ function ApprovalCard({
           >
             <input
               checked={always}
-              className="size-3.5 cursor-pointer accent-zinc-900 dark:accent-zinc-100"
+              className="peer sr-only"
               id={alwaysId}
               onChange={(event) => setAlways(event.target.checked)}
               type="checkbox"
             />
+            <span
+              aria-hidden="true"
+              className="flex size-4 items-center justify-center rounded-[5px] bg-white ring-1 ring-zinc-300 ring-inset transition-colors duration-150 ease-out peer-checked:bg-zinc-900 peer-checked:ring-zinc-900 peer-focus-visible:outline-2 peer-focus-visible:outline-zinc-400 peer-focus-visible:outline-offset-2 dark:bg-transparent dark:ring-zinc-600 dark:peer-checked:bg-white dark:peer-checked:ring-white"
+            >
+              <svg
+                aria-hidden="true"
+                className="size-3 text-white dark:text-zinc-900"
+                fill="none"
+                viewBox="0 0 12 12"
+              >
+                <path
+                  d="M2.5 6.2 5 8.5l4.5-5"
+                  pathLength={1}
+                  stroke="currentColor"
+                  strokeDasharray={1}
+                  strokeDashoffset={always ? 0 : 1}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.6}
+                  style={{
+                    transition: `stroke-dashoffset ${always ? 200 : 100}ms cubic-bezier(0.23, 1, 0.32, 1)`,
+                  }}
+                />
+              </svg>
+            </span>
             Don't ask again for <code className="font-mono">{call.tool}</code>
           </label>
         )}
         <div className="ml-auto flex items-center gap-1.5">
           <button
-            className="h-8 rounded-lg px-3 text-sm text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
+            className="h-8 rounded-full px-3.5 text-sm text-zinc-600 outline-hidden transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 active:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
             onClick={() => onRespond(false, false)}
             type="button"
           >
@@ -431,7 +481,7 @@ function ApprovalCard({
             <HoldToAllow onConfirm={() => onRespond(true, false)} />
           ) : (
             <button
-              className="h-8 rounded-lg bg-zinc-900 px-3 font-medium text-sm text-white outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-1 dark:bg-white dark:text-zinc-900 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-zinc-200"
+              className="h-8 rounded-full bg-zinc-900 px-4 font-medium text-sm text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-1 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-zinc-200"
               onClick={() => onRespond(true, always)}
               type="button"
             >
@@ -474,7 +524,7 @@ function StatusIcon({ state }: { state: ToolCallState }) {
     return (
       <svg
         aria-hidden="true"
-        className="size-3.5 text-zinc-700 dark:text-zinc-200"
+        className="size-3.5 text-emerald-600 dark:text-emerald-400"
         fill="none"
         viewBox="0 0 16 16"
       >
@@ -725,7 +775,7 @@ export default function AIToolApproval({
           {demoFinished && (
             <div className="flex justify-end px-2.5 pb-1">
               <button
-                className="rounded-md px-1.5 py-1 text-xs text-zinc-500 outline-hidden transition-colors duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/40 dark:text-zinc-400 dark:hover:text-white"
+                className="rounded-full px-2.5 py-1 text-xs text-zinc-500 outline-hidden transition-colors duration-150 hover:bg-black/5 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/40 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
                 onClick={() => {
                   keepFocus();
                   demo.reset();

@@ -124,18 +124,41 @@ const hostOf = (url: string) => {
 };
 const siteOf = (source: CitationSource) => source.site ?? hostOf(source.url);
 
+/** Soft tints for the monograms. A site keeps its tint everywhere it shows. */
+const MONOGRAM_TINTS = [
+  "bg-sky-100 text-sky-700 dark:bg-sky-400/20 dark:text-sky-200",
+  "bg-orange-100 text-orange-700 dark:bg-orange-400/20 dark:text-orange-200",
+  "bg-violet-100 text-violet-700 dark:bg-violet-400/20 dark:text-violet-200",
+  "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/20 dark:text-emerald-200",
+  "bg-rose-100 text-rose-700 dark:bg-rose-400/20 dark:text-rose-200",
+];
+/** One tint per site, in the order the sites are listed. */
+function siteTints(sources: CitationSource[]) {
+  const tints = new Map<string, string>();
+  for (const source of sources) {
+    const site = siteOf(source);
+    if (!tints.has(site)) {
+      tints.set(site, MONOGRAM_TINTS[tints.size % MONOGRAM_TINTS.length]);
+    }
+  }
+  return tints;
+}
+
 function Monogram({
   source,
+  tint,
   className,
 }: {
   source: CitationSource;
+  tint?: string;
   className?: string;
 }) {
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "flex size-4 shrink-0 items-center justify-center rounded-[4px] bg-zinc-200 font-semibold text-[9px] text-zinc-600 uppercase dark:bg-zinc-700 dark:text-zinc-200",
+        "flex size-4 shrink-0 items-center justify-center rounded-[4px] font-semibold text-[9px] uppercase",
+        tint ?? MONOGRAM_TINTS[0],
         className
       )}
     >
@@ -225,6 +248,7 @@ export default function AICitations({
   const listId = useId();
 
   const byId = new Map(sources.map((source) => [source.id, source]));
+  const tints = siteTints(sources);
   // Sources numbered in the order the answer first cites them.
   const order: string[] = [];
   for (const part of parts) {
@@ -304,7 +328,7 @@ export default function AICitations({
   return (
     <MotionConfig reducedMotion="user">
       <div className={cn("relative w-full max-w-lg", className)} ref={rootRef}>
-        <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+        <p className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
           {parts.map((part, index) => {
             const partSources = (part.cite ?? [])
               .map((id) => byId.get(id))
@@ -367,7 +391,11 @@ export default function AICitations({
                     }}
                     type="button"
                   >
-                    <Monogram className="size-4 rounded-full" source={first} />
+                    <Monogram
+                      className="size-4 rounded-full"
+                      source={first}
+                      tint={tints.get(siteOf(first))}
+                    />
                     {siteOf(first)}
                     {partSources.length > 1 && (
                       <span className="opacity-60">
@@ -393,7 +421,11 @@ export default function AICitations({
                 y: preview.y,
               }}
               className="pointer-events-none absolute top-0 left-0 z-10"
-              exit={{ opacity: 0, scale: 0.97 }}
+              exit={{
+                opacity: 0,
+                scale: 0.97,
+                transition: { duration: 0.1, ease: EASE_OUT },
+              }}
               id={previewId}
               initial={{ opacity: 0, scale: 0.97, x: preview.x, y: preview.y }}
               role="tooltip"
@@ -432,7 +464,10 @@ export default function AICitations({
                     {activeSources.map((source) => (
                       <div className="rounded-lg p-2.5" key={source.id}>
                         <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                          <Monogram source={source} />
+                          <Monogram
+                            source={source}
+                            tint={tints.get(siteOf(source))}
+                          />
                           <span className="truncate">{hostOf(source.url)}</span>
                           <span className="ml-auto shrink-0 tabular-nums">
                             {order.indexOf(source.id) + 1}
@@ -470,6 +505,7 @@ export default function AICitations({
                     className="size-5 rounded-full ring-2 ring-white dark:ring-zinc-950"
                     key={source.id}
                     source={source}
+                    tint={tints.get(siteOf(source))}
                   />
                 ))}
               </span>
@@ -507,7 +543,10 @@ export default function AICitations({
                         <span className="w-3 shrink-0 text-right text-xs text-zinc-400 tabular-nums">
                           {index + 1}
                         </span>
-                        <Monogram source={source} />
+                        <Monogram
+                          source={source}
+                          tint={tints.get(siteOf(source))}
+                        />
                         <span className="min-w-0 flex-1 truncate text-sm text-zinc-800 dark:text-zinc-200">
                           {source.title}
                         </span>

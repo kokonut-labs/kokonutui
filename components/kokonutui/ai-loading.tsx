@@ -185,7 +185,7 @@ function StepIcon({ status }: { status: AgentStepStatus }) {
                 strokeWidth="1.5"
               />
               <path
-                className="stroke-zinc-700 dark:stroke-zinc-200"
+                className="stroke-emerald-600 dark:stroke-emerald-400"
                 d="M8 1.75a6.25 6.25 0 0 1 6.25 6.25"
                 strokeLinecap="round"
                 strokeWidth="1.5"
@@ -195,7 +195,7 @@ function StepIcon({ status }: { status: AgentStepStatus }) {
           {status === "done" && (
             <svg
               aria-hidden="true"
-              className="size-3.5 text-zinc-700 dark:text-zinc-200"
+              className="size-3.5 text-emerald-600 dark:text-emerald-400"
               fill="none"
               viewBox="0 0 16 16"
             >
@@ -411,7 +411,7 @@ function StepRow({
         >
           <span
             className={cn(
-              "block h-full w-full origin-top bg-zinc-400 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] dark:bg-zinc-500",
+              "block h-full w-full origin-top bg-emerald-500/60 transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] dark:bg-emerald-400/50",
               step.status === "done" ? "scale-y-100" : "scale-y-0"
             )}
           />
