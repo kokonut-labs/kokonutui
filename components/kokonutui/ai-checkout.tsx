@@ -10,7 +10,7 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { Check, Coffee, Lock, Minus, Plus } from "lucide-react";
+import { Check, Lock, Minus, Plus } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -186,12 +186,12 @@ export default function AICheckout({
         data-state={error && status === "review" ? "error" : status}
       >
         {shown.prompt ? (
-          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+          <p className="max-w-[85%] self-end text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
             {shown.prompt}
           </p>
         ) : null}
         {shown.message ? (
-          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+          <p className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
             {shown.message}
           </p>
         ) : null}
@@ -230,9 +230,13 @@ export default function AICheckout({
 
                 <div className="rounded-[18px] bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/[0.06] dark:bg-zinc-900 dark:ring-white/[0.08]">
                   <div className="flex items-center gap-3 p-3.5">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#6f4e37] text-[#f3e6d8]">
-                      {item.icon ?? <Coffee className="size-5" />}
-                    </span>
+                    {item.icon ? (
+                      <span className="flex size-11 shrink-0 items-center justify-center">
+                        {item.icon}
+                      </span>
+                    ) : (
+                      <BagStack count={quantity} />
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-[14px] text-zinc-900 dark:text-zinc-100">
                         {item.title}
@@ -304,7 +308,7 @@ export default function AICheckout({
           {status === "receipt" && shown.confirmation ? (
             <motion.p
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.4 }}
             >
@@ -408,6 +412,77 @@ function Stepper({
 }
 
 /** A small card face, so the saved method reads at a glance. */
+/** A kraft coffee bag, drawn so the demo needs no product photo. */
+function Bag({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 32 40"
+    >
+      <path
+        d="M4.5 7.5h23l1.3 29.2a2 2 0 0 1-2 2.1H5.2a2 2 0 0 1-2-2.1z"
+        fill="#c09166"
+      />
+      <path d="M4.5 7.5h23l.1 2.5h-23.2z" fill="#a87a50" />
+      <rect fill="#8a6240" height="5.5" rx="1" width="25" x="3.5" y="2.5" />
+      <path
+        d="M7 3.5v3.5M10.5 3.5v3.5M14 3.5v3.5M17.5 3.5v3.5M21 3.5v3.5M24.5 3.5v3.5"
+        stroke="#6f4e37"
+        strokeWidth=".8"
+      />
+      <circle cx="16" cy="13.5" fill="#8a6240" r="1.3" />
+      <rect fill="#f6efe6" height="15" rx="1.5" width="17" x="7.5" y="18" />
+      <ellipse
+        cx="16"
+        cy="23"
+        fill="#6f4e37"
+        rx="2.2"
+        ry="3"
+        transform="rotate(28 16 23)"
+      />
+      <path
+        d="M16.9 20.6c-1.4 1.3-.4 3.4-1.8 4.8"
+        stroke="#f6efe6"
+        strokeLinecap="round"
+        strokeWidth=".7"
+      />
+      <rect fill="#6f4e37" height="1" rx=".5" width="9" x="11.5" y="28" />
+      <rect fill="#c9b8a6" height="1" rx=".5" width="6" x="13" y="30" />
+    </svg>
+  );
+}
+
+/** One bag per unit, up to three: the stack follows the stepper. */
+function BagStack({ count }: { count: number }) {
+  const behind = Math.min(Math.max(count, 1), 3) - 1;
+  return (
+    <span aria-hidden="true" className="relative h-11 w-12 shrink-0">
+      <AnimatePresence initial={false}>
+        {Array.from({ length: behind }, (_, i) => {
+          const depth = behind - i;
+          return (
+            <motion.span
+              animate={{ x: depth * 7, y: -depth, opacity: 1 }}
+              className="absolute bottom-0 left-0 brightness-[0.82]"
+              exit={{ x: 0, y: 0, opacity: 0 }}
+              initial={{ x: 0, y: 0, opacity: 0 }}
+              key={depth}
+              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+            >
+              <Bag className="h-[42px] w-[34px]" />
+            </motion.span>
+          );
+        })}
+      </AnimatePresence>
+      <span className="absolute bottom-0 left-0 drop-shadow-[1px_0_0_rgb(0_0_0/0.12)]">
+        <Bag className="h-[42px] w-[34px]" />
+      </span>
+    </span>
+  );
+}
+
 function CardChip() {
   return (
     <span

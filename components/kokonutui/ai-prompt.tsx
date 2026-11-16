@@ -568,7 +568,7 @@ function EffortBars({ count, level }: { count: number; level: number }) {
           className={cn(
             "w-[3px] rounded-[1px] transition-colors duration-200",
             i <= level
-              ? "bg-black/80 dark:bg-white/85"
+              ? "bg-orange-500 dark:bg-orange-400"
               : "bg-black/15 dark:bg-white/20"
           )}
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed bars, never reordered
@@ -1058,7 +1058,7 @@ export default function AI_Prompt({
             // shadow-none and md:text-[15px] beat the shadow-xs and
             // md:text-sm of the current shadcn Textarea. Touch screens get 16px so
             // iOS does not zoom into the field on focus.
-            className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed shadow-none placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-[15px] dark:bg-transparent dark:text-white dark:placeholder:text-white/35 [@media(pointer:coarse)]:text-base"
+            className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed caret-orange-500 shadow-none placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-[15px] dark:bg-transparent dark:text-white dark:caret-orange-400 dark:placeholder:text-white/35 [@media(pointer:coarse)]:text-base"
             id={textareaId}
             onBlur={() => setMenuDismissed(true)}
             onChange={(e) => {

@@ -470,7 +470,7 @@ export default function AIRedact({
               </div>
               <textarea
                 aria-label="Message"
-                className="relative block max-h-40 min-h-12 w-full resize-none overflow-y-auto bg-transparent text-[13px] text-zinc-900 leading-6 outline-hidden [scrollbar-gutter:stable] placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
+                className="relative block max-h-40 min-h-12 w-full resize-none overflow-y-auto bg-transparent text-[13px] text-zinc-900 leading-6 caret-orange-500 outline-hidden [scrollbar-gutter:stable] placeholder:text-zinc-400 dark:text-zinc-100 dark:caret-orange-400 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
                 onChange={(event) => setText(event.target.value)}
                 onKeyDown={onKeyDown}
                 onScroll={(event) => {

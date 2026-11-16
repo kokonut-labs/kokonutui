@@ -223,12 +223,12 @@ export default function AIHandoff({
         data-state={status}
       >
         {shown.prompt ? (
-          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+          <p className="max-w-[85%] self-end text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
             {shown.prompt}
           </p>
         ) : null}
         {shown.message ? (
-          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+          <p className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
             {shown.message}
           </p>
         ) : null}
@@ -435,7 +435,7 @@ export default function AIHandoff({
           {status === "stayed" && (
             <motion.p
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               key="stayed"
               transition={{ duration: 0.35, ease: EASE_OUT }}

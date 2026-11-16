@@ -140,12 +140,12 @@ export default function AISend({
         data-state={writing ? "writing" : status}
       >
         {shownPrompt ? (
-          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+          <p className="max-w-[85%] self-end text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
             {shownPrompt}
           </p>
         ) : null}
         {shownMessage ? (
-          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+          <p className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
             {shownMessage}
           </p>
         ) : null}
@@ -216,7 +216,7 @@ export default function AISend({
                 </label>
                 <textarea
                   className={cn(
-                    "field-sizing-content block w-full resize-none border-black/[0.06] border-t bg-transparent px-4 pt-3 pb-4 text-[14px] text-zinc-800 leading-6 outline-hidden transition-opacity duration-200 dark:border-white/[0.08] dark:text-zinc-200",
+                    "field-sizing-content block w-full resize-none border-black/[0.06] border-t bg-transparent px-4 pt-3 pb-4 text-[14px] text-zinc-800 leading-6 caret-blue-500 outline-hidden transition-opacity duration-200 dark:border-white/[0.08] dark:text-zinc-200 dark:caret-blue-400",
                     status !== "draft" && "opacity-50"
                   )}
                   id={id}

@@ -561,7 +561,7 @@ export default function AIMessageQueue({
             <div className="flex items-end gap-2 p-2">
               <textarea
                 aria-label="Message the agent"
-                className="max-h-28 min-h-8 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-[13px] text-zinc-900 leading-5 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
+                className="max-h-28 min-h-8 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-[13px] text-zinc-900 leading-5 caret-blue-500 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:caret-blue-400 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder={

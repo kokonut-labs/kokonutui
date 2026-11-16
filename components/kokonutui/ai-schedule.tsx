@@ -203,12 +203,12 @@ export default function AISchedule({
         data-state={error ? "error" : status}
       >
         {shown.prompt ? (
-          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+          <p className="max-w-[85%] self-end text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
             {shown.prompt}
           </p>
         ) : null}
         {shown.message ? (
-          <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+          <p className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
             {shown.message}
           </p>
         ) : null}
@@ -291,7 +291,7 @@ export default function AISchedule({
           {status === "booked" && shown.confirmation ? (
             <motion.p
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={{ opacity: 0, filter: "blur(4px)", y: 4 }}
               transition={{ duration: 0.4, ease: EASE_OUT, delay: 0.45 }}
             >
@@ -375,7 +375,14 @@ function SlotRow({
           value={slot.id}
         />
         <span className="flex w-10 shrink-0 flex-col overflow-hidden rounded-[9px] bg-white text-center ring-1 ring-black/[0.08] dark:bg-zinc-800 dark:ring-white/10">
-          <span className="bg-red-500 py-px font-semibold text-[8.5px] text-white uppercase tracking-wider">
+          <span
+            className={cn(
+              "py-px font-semibold text-[8.5px] uppercase tracking-wider transition-colors duration-200",
+              checked
+                ? "bg-red-500 text-white"
+                : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-300"
+            )}
+          >
             {slot.month}
           </span>
           <span className="py-0.5 font-semibold text-[15px] text-zinc-900 leading-5 dark:text-zinc-100">

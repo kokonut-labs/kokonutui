@@ -465,7 +465,7 @@ export default function AITokenAlternatives({
 
         <div className="relative px-4 pt-4 pb-5" ref={answerRef}>
           <p
-            className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+            className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
             ref={textRef}
             style={{ minHeight: streaming ? minHeight : undefined }}
           >

@@ -590,7 +590,7 @@ function MessageView({
       ) : (
         <p
           className={cn(
-            "max-w-[85%] rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug transition-colors duration-150 dark:bg-zinc-800 dark:text-zinc-100",
+            "max-w-[85%] text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug transition-colors duration-150 dark:bg-zinc-800 dark:text-zinc-100",
             lit && "bg-violet-100 dark:bg-violet-500/20"
           )}
         >
@@ -676,7 +676,7 @@ function EditBox({
     <div className="w-full max-w-[85%] rounded-2xl bg-zinc-100 p-2 dark:bg-zinc-800">
       <textarea
         aria-label="Edit message"
-        className="block w-full resize-none bg-transparent px-1.5 py-1 text-[14px] text-zinc-900 leading-snug outline-hidden dark:text-zinc-100 [@media(pointer:coarse)]:text-base"
+        className="block w-full resize-none bg-transparent px-1.5 py-1 text-[14px] text-zinc-900 leading-snug caret-violet-500 outline-hidden dark:text-zinc-100 dark:caret-violet-400 [@media(pointer:coarse)]:text-base"
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={onKeyDown}
         ref={ref}

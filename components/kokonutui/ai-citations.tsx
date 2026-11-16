@@ -328,7 +328,7 @@ export default function AICitations({
   return (
     <MotionConfig reducedMotion="user">
       <div className={cn("relative w-full max-w-lg", className)} ref={rootRef}>
-        <p className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
+        <p className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200">
           {parts.map((part, index) => {
             const partSources = (part.cite ?? [])
               .map((id) => byId.get(id))

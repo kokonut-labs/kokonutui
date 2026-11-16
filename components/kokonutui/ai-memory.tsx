@@ -542,7 +542,7 @@ export default function AIMemory({
               >
                 <input
                   aria-label="Message"
-                  className="h-8 min-w-0 flex-1 bg-transparent text-[13px] text-zinc-900 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
+                  className="h-8 min-w-0 flex-1 bg-transparent text-[13px] text-zinc-900 caret-emerald-500 outline-hidden placeholder:text-zinc-400 dark:text-zinc-100 dark:caret-emerald-400 dark:placeholder:text-zinc-500 [@media(pointer:coarse)]:text-base"
                   onChange={(event) => setDraft(event.target.value)}
                   placeholder="Tell it something about you…"
                   value={draft}

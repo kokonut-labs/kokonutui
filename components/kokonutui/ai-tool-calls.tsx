@@ -321,7 +321,7 @@ export default function AIToolCalls({
         data-state={finished ? "done" : "running"}
       >
         {shownPrompt ? (
-          <p className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
+          <p className="max-w-[85%] self-end text-pretty rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug dark:bg-zinc-800 dark:text-zinc-100">
             {shownPrompt}
           </p>
         ) : null}
@@ -419,7 +419,7 @@ export default function AIToolCalls({
           {answered && shownAnswer ? (
             <motion.div
               animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              className="text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
+              className="text-pretty text-[15px] text-zinc-800 leading-7 dark:text-zinc-200"
               initial={
                 doneAtMount ? false : { opacity: 0, filter: "blur(4px)", y: 4 }
               }

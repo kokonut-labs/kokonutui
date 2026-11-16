@@ -1218,7 +1218,7 @@ export default function AI_Input_Search({
               // shadow-none and md:text-[15px] beat the shadow-xs and
               // md:text-sm of the current shadcn Textarea. Touch screens get 16px so
               // iOS does not zoom into the field on focus.
-              className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed shadow-none placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-[15px] dark:bg-transparent dark:text-white dark:placeholder:text-white/35 [@media(pointer:coarse)]:text-base"
+              className="min-h-[56px] w-full resize-none rounded-none border-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] text-black leading-relaxed caret-sky-500 shadow-none placeholder:text-black/35 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-[15px] dark:bg-transparent dark:text-white dark:caret-sky-400 dark:placeholder:text-white/35 [@media(pointer:coarse)]:text-base"
               onChange={(e) => {
                 setValue(e.target.value);
                 adjustHeight();
