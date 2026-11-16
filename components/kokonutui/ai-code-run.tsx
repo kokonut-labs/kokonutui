@@ -12,7 +12,14 @@
 
 import { RotateCcw } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export interface CodeRunBar {
@@ -55,6 +62,58 @@ export interface AICodeRunProps {
   /** Demo only: how long each line takes, in ms. */
   lineMs?: number;
   className?: string;
+}
+
+/** A 4×4 Bayer matrix: the order in which pixels switch on as density rises. */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+/** An inline SVG of 1-bit pixels, used as a mask so any background color shows through. */
+function pixelMask(
+  columns: number,
+  rows: number,
+  densityAt: (row: number) => number,
+  cell: number
+): CSSProperties {
+  let rects = "";
+  for (let y = 0; y < rows; y++) {
+    const on = Math.round(densityAt(y) * 16);
+    for (let x = 0; x < columns; x++) {
+      if (BAYER[(y % 4) * 4 + (x % 4)] < on) {
+        rects += `<rect x='${x}' y='${y}' width='1' height='1'/>`;
+      }
+    }
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${columns}' height='${rows}' shape-rendering='crispEdges'>${rects}</svg>`;
+  const image = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  const size = `${columns * cell}px ${rows * cell}px`;
+  return {
+    maskImage: image,
+    WebkitMaskImage: image,
+    maskSize: size,
+    WebkitMaskSize: size,
+    maskPosition: "left bottom",
+    WebkitMaskPosition: "left bottom",
+  };
+}
+
+const BAR_CELL = 2;
+/** The chart's plot height in px (h-28), so a bar's ramp can match its height. */
+const PLOT_HEIGHT = 112;
+const barMasks = new Map<number, CSSProperties>();
+/** Sparse at the top, solid at the base, sized to the bar. */
+function barDither(share: number) {
+  const rows = Math.max(4, Math.round((share * PLOT_HEIGHT) / BAR_CELL));
+  let mask = barMasks.get(rows);
+  if (!mask) {
+    mask = pixelMask(
+      4,
+      rows,
+      (row) => 0.12 + (row / (rows - 1)) * 0.88,
+      BAR_CELL
+    );
+    barMasks.set(rows, mask);
+  }
+  return mask;
 }
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -473,13 +532,18 @@ function Chart({ bars, max }: { bars: CodeRunBar[]; max: number }) {
             <motion.div
               animate={{ clipPath: "inset(0% 0 0 0)" }}
               className={cn(
-                "rounded-t-[6px] rounded-b-[2px]",
+                "w-full",
                 i === last
-                  ? "bg-gradient-to-t from-violet-600 to-violet-400 shadow-[inset_0_1px_0_rgb(255_255_255/0.25)] dark:from-violet-500 dark:to-violet-300"
-                  : "bg-violet-100 dark:bg-violet-400/15"
+                  ? "bg-violet-600 dark:bg-violet-400"
+                  : "bg-violet-300 dark:bg-violet-500/60"
               )}
               initial={{ clipPath: "inset(100% 0 0 0)" }}
-              style={{ height: `${(bar.value / max) * 82}%` }}
+              style={{
+                height: `${(bar.value / max) * 82}%`,
+                // Dithered from solid at the base to sparse at the top. The
+                // latest week is the deep violet, so it reads as the answer.
+                ...barDither((bar.value / max) * 0.82),
+              }}
               title={`${bar.label}: ${bar.value}`}
               transition={{ duration: 0.45, ease: EASE_OUT, delay: i * 0.05 }}
             />

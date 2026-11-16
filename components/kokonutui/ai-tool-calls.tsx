@@ -140,6 +140,20 @@ const tintFor = (tool: string) => {
   return "bg-white text-zinc-500 ring-black/[0.08] dark:bg-zinc-900 dark:text-zinc-400 dark:ring-white/10";
 };
 
+/** The same tints as text only, for the icons in the open list. */
+const inkFor = (tool: string) => {
+  if (SEARCH_TOOL.test(tool)) {
+    return "text-sky-600 dark:text-sky-400";
+  }
+  if (READ_TOOL.test(tool)) {
+    return "text-violet-600 dark:text-violet-400";
+  }
+  if (BOOK_TOOL.test(tool)) {
+    return "text-orange-600 dark:text-orange-400";
+  }
+  return "text-zinc-400 dark:text-zinc-500";
+};
+
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
 const ended = (state?: ToolCallState) =>
@@ -472,16 +486,13 @@ function CallRow({ call, elapsed }: { call: ToolCallItem; elapsed?: number }) {
       transition={{ duration: 0.3, ease: EASE_OUT }}
     >
       <div className="flex h-8 items-center gap-2 text-[13px]">
-        <span
+        <Icon
+          aria-hidden="true"
           className={cn(
-            "flex size-5 shrink-0 items-center justify-center rounded-full ring-1 ring-inset transition-colors duration-200",
-            error
-              ? "bg-rose-50 text-rose-500 ring-rose-500/30 dark:bg-rose-950"
-              : tintFor(call.tool)
+            "size-3.5 shrink-0",
+            error ? "text-rose-500" : inkFor(call.tool)
           )}
-        >
-          <Icon aria-hidden="true" className="size-3" />
-        </span>
+        />
         <span
           className={cn(
             "shrink-0",

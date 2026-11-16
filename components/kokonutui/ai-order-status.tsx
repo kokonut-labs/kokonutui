@@ -21,6 +21,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import {
+  type CSSProperties,
   type ReactNode,
   useEffect,
   useLayoutEffect,
@@ -65,6 +66,46 @@ export interface AIOrderStatusProps {
   onMessage?: () => void;
   className?: string;
 }
+
+/** A 4×4 Bayer matrix: the order in which pixels switch on as density rises. */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+/** An inline SVG of 1-bit pixels, used as a mask so any background color shows through. */
+function pixelMask(
+  columns: number,
+  rows: number,
+  densityAt: (row: number) => number,
+  cell: number
+): CSSProperties {
+  let rects = "";
+  for (let y = 0; y < rows; y++) {
+    const on = Math.round(densityAt(y) * 16);
+    for (let x = 0; x < columns; x++) {
+      if (BAYER[(y % 4) * 4 + (x % 4)] < on) {
+        rects += `<rect x='${x}' y='${y}' width='1' height='1'/>`;
+      }
+    }
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${columns}' height='${rows}' shape-rendering='crispEdges'>${rects}</svg>`;
+  const image = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  const size = `${columns * cell}px ${rows * cell}px`;
+  return {
+    maskImage: image,
+    WebkitMaskImage: image,
+    maskSize: size,
+    WebkitMaskSize: size,
+    maskPosition: "left bottom",
+    WebkitMaskPosition: "left bottom",
+  };
+}
+
+const PARK_ROWS = 28;
+/** Fades in from the top, denser toward the road below it. */
+const PARK_DITHER: CSSProperties = {
+  ...pixelMask(4, PARK_ROWS, (row) => 0.06 + (row / PARK_ROWS) * 0.44, 2),
+  maskRepeat: "repeat-x",
+  WebkitMaskRepeat: "repeat-x",
+};
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const W = 320;
@@ -263,6 +304,19 @@ export default function AIOrderStatus({
             </div>
 
             <div className="relative mt-2">
+              {/* A dithered park, so the map has texture without a tile
+                  service. */}
+              <span
+                aria-hidden="true"
+                className="absolute bg-emerald-500/80 dark:bg-emerald-400/50"
+                style={{
+                  ...PARK_DITHER,
+                  left: "32.5%",
+                  top: "58%",
+                  width: "26%",
+                  height: "42%",
+                }}
+              />
               <svg
                 aria-hidden="true"
                 className="block h-auto w-full"

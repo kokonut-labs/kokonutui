@@ -426,7 +426,7 @@ export default function AIModelSelector({
                         tabIndex={selected ? 0 : -1}
                         type="button"
                       >
-                        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-zinc-50 ring-1 ring-black/5 ring-inset dark:bg-white/5 dark:ring-white/10 [&>*]:size-3.5">
+                        <span className="flex size-4 shrink-0 items-center justify-center self-start pt-1 [&>*]:size-3.5">
                           <ModelMark model={option} />
                         </span>
                         <span className="min-w-0 flex-1">

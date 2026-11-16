@@ -224,18 +224,18 @@ function useDemoCalls(enabled: boolean) {
 function toolTint(tool: string) {
   const name = tool.toLowerCase();
   if (TERMINAL_TOOL.test(name)) {
-    return "bg-emerald-50 text-emerald-700 ring-emerald-600/15 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20";
+    return "text-emerald-600 dark:text-emerald-400";
   }
   if (FILE_TOOL.test(name)) {
-    return "bg-violet-50 text-violet-700 ring-violet-600/15 dark:bg-violet-400/10 dark:text-violet-300 dark:ring-violet-400/20";
+    return "text-violet-600 dark:text-violet-400";
   }
   if (WEB_TOOL.test(name)) {
-    return "bg-sky-50 text-sky-700 ring-sky-600/15 dark:bg-sky-400/10 dark:text-sky-300 dark:ring-sky-400/20";
+    return "text-sky-600 dark:text-sky-400";
   }
   if (SEND_TOOL.test(name)) {
-    return "bg-blue-50 text-blue-700 ring-blue-600/15 dark:bg-blue-400/10 dark:text-blue-300 dark:ring-blue-400/20";
+    return "text-blue-600 dark:text-blue-400";
   }
-  return "bg-zinc-100 text-zinc-600 ring-black/5 dark:bg-white/10 dark:text-zinc-300 dark:ring-white/10";
+  return "text-zinc-500 dark:text-zinc-400";
 }
 
 function ToolIcon({ call }: { call: ToolCall }) {
@@ -395,9 +395,9 @@ function ApprovalCard({
       <header className="mb-2.5 flex items-center gap-2">
         <span
           className={cn(
-            "flex size-7 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset",
+            "flex size-4 shrink-0 items-center justify-center",
             call.destructive
-              ? "bg-red-50 text-red-600 ring-red-600/15 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20"
+              ? "text-red-600 dark:text-red-400"
               : toolTint(call.tool)
           )}
         >

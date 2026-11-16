@@ -11,7 +11,14 @@
  */
 
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export interface ContextSegment {
@@ -39,6 +46,42 @@ interface AIContextMeterProps {
   defaultOpen?: boolean;
   className?: string;
 }
+
+/** A 4×4 Bayer matrix: the order in which pixels switch on as density rises. */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+/** An inline SVG of 1-bit pixels, used as a mask so any background color shows through. */
+function pixelMask(
+  columns: number,
+  rows: number,
+  densityAt: (row: number) => number,
+  cell: number
+): CSSProperties {
+  let rects = "";
+  for (let y = 0; y < rows; y++) {
+    const on = Math.round(densityAt(y) * 16);
+    for (let x = 0; x < columns; x++) {
+      if (BAYER[(y % 4) * 4 + (x % 4)] < on) {
+        rects += `<rect x='${x}' y='${y}' width='1' height='1'/>`;
+      }
+    }
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${columns}' height='${rows}' shape-rendering='crispEdges'>${rects}</svg>`;
+  const image = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  const size = `${columns * cell}px ${rows * cell}px`;
+  return {
+    maskImage: image,
+    WebkitMaskImage: image,
+    maskSize: size,
+    WebkitMaskSize: size,
+    maskPosition: "left bottom",
+    WebkitMaskPosition: "left bottom",
+  };
+}
+
+const FREE_DITHER = pixelMask(4, 4, () => 0.25, 2);
+const LIMIT_DITHER = pixelMask(4, 4, () => 0.25, 2);
+const FREE_SWATCH = pixelMask(4, 4, () => 0.5, 1);
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const FALLBACK_COLORS = [
@@ -251,7 +294,19 @@ function Breakdown({
       {/* One bar for the whole window, a segment per source. The tick marks
           where the conversation compacts. */}
       <div className="relative" onPointerLeave={() => setActive(null)}>
-        <div className="flex h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-white/10">
+        {/* Free space and the zone past the compact line are dithered, so
+            the solid segments read as what is actually used. */}
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 rounded-l-full bg-zinc-400 dark:bg-zinc-500"
+          style={{ ...FREE_DITHER, width: `${compactAt * 100}%` }}
+        />
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 right-0 rounded-r-full bg-red-400 dark:bg-red-400"
+          style={{ ...LIMIT_DITHER, width: `${(1 - compactAt) * 100}%` }}
+        />
+        <div className="relative flex h-2 overflow-hidden rounded-full">
           {segments.map((segment, index) => (
             <span
               className={cn(
@@ -302,7 +357,10 @@ function Breakdown({
           ) : null
         )}
         <li className="flex items-center gap-2 px-1.5 py-1 text-xs">
-          <span className="size-2 rounded-[3px] ring-1 ring-zinc-300 ring-inset dark:ring-zinc-600" />
+          <span
+            className="size-2 bg-zinc-400 dark:bg-zinc-500"
+            style={FREE_SWATCH}
+          />
           <span className="text-zinc-500 dark:text-zinc-400">Free</span>
           <span className="ml-auto text-zinc-500 tabular-nums dark:text-zinc-400">
             {formatTokens(free)}

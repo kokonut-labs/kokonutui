@@ -439,7 +439,7 @@ function AccessCard({
   return (
     <div className="m-1 mt-0 rounded-[18px] bg-white px-4 pt-5 pb-3 shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/[0.06] dark:bg-zinc-900 dark:ring-white/[0.08]">
       <div className="flex items-center justify-center">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-b from-violet-500 to-violet-600 font-semibold text-[15px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.25),0_1px_2px_rgb(76_29_149/0.3)]">
+        <span className="flex size-10 items-center justify-center rounded-xl bg-zinc-100 font-semibold text-[15px] text-zinc-900 ring-1 ring-black/[0.06] dark:bg-zinc-800 dark:text-zinc-100 dark:ring-white/10">
           {agentLogo ?? agent.slice(0, 1)}
         </span>
         <Handshake state={link} />
