@@ -18,7 +18,6 @@
   <a href="https://kokonutui.pro">Pro</a>
 </p>
 
-
 ## Quick start
 
 Kokonut UI is a [shadcn/ui registry](https://ui.shadcn.com/docs/registry). Add the namespace to your `components.json`:
