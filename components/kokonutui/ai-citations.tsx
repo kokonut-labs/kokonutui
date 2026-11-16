@@ -421,7 +421,11 @@ export default function AICitations({
                 y: preview.y,
               }}
               className="pointer-events-none absolute top-0 left-0 z-10"
-              exit={{ opacity: 0, scale: 0.97 }}
+              exit={{
+                opacity: 0,
+                scale: 0.97,
+                transition: { duration: 0.1, ease: EASE_OUT },
+              }}
               id={previewId}
               initial={{ opacity: 0, scale: 0.97, x: preview.x, y: preview.y }}
               role="tooltip"

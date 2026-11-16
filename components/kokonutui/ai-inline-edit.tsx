@@ -1023,7 +1023,7 @@ function PromptBar({
         />
         <button
           aria-label="Rewrite"
-          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-[background-color,opacity] duration-150 hover:bg-zinc-800 active:bg-zinc-600 active:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-[background-color,opacity] duration-150 hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
           disabled={!instruction.trim()}
           type="submit"
         >
@@ -1133,7 +1133,7 @@ function ReviewBar({
           Discard
         </button>
         <button
-          className="flex h-7 items-center gap-1.5 rounded-full bg-zinc-900 px-2.5 font-medium text-[12px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-900/30 focus-visible:ring-offset-1 active:bg-zinc-600 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-white/40 dark:focus-visible:ring-offset-zinc-800 dark:hover:bg-zinc-200"
+          className="flex h-7 items-center gap-1.5 rounded-full bg-zinc-900 px-2.5 font-medium text-[12px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-900/30 focus-visible:ring-offset-1 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-white/40 dark:focus-visible:ring-offset-zinc-800 dark:hover:bg-zinc-200"
           disabled={unchanged}
           onClick={onAccept}
           ref={acceptRef}

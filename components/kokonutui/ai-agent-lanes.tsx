@@ -496,14 +496,19 @@ const playButtonLabel = (done: boolean, playing: boolean) => {
   return playing ? "Pause" : "Play";
 };
 
+const FACE =
+  "absolute inset-0 size-3.5 transition-[opacity,filter,scale] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none";
+const face = (on: boolean) =>
+  on ? "scale-100 opacity-100 blur-0" : "scale-[0.3] opacity-0 blur-[3px]";
+
+/** Play, pause and replay stay mounted and crossfade, so the swap reads as one control. */
 function PlayIcon({ done, playing }: { done: boolean; playing: boolean }) {
-  if (done) {
-    return <RotateCcw className="size-3.5" />;
-  }
-  return playing ? (
-    <Pause className="size-3.5" />
-  ) : (
-    <Play className="size-3.5" />
+  return (
+    <span aria-hidden="true" className="relative size-3.5">
+      <Play className={cn(FACE, face(!(done || playing)))} />
+      <Pause className={cn(FACE, face(!done && playing))} />
+      <RotateCcw className={cn(FACE, face(done))} />
+    </span>
   );
 }
 

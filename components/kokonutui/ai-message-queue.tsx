@@ -613,9 +613,9 @@ function AgentBlock({ entry }: { entry: AgentEntry }) {
   return (
     <div className="space-y-1.5">
       <div className="flex h-5 items-center gap-2 text-[12px] text-zinc-500 dark:text-zinc-400">
+        <StatusIcon status={entry.status} />
         {working ? (
           <>
-            <Pulse />
             <span className="relative h-5 min-w-0 flex-1 overflow-hidden">
               <AnimatePresence initial={false} mode="popLayout">
                 <motion.span
@@ -637,14 +637,7 @@ function AgentBlock({ entry }: { entry: AgentEntry }) {
             </span>
           </>
         ) : (
-          <>
-            {entry.status === "done" ? (
-              <Check aria-hidden="true" className="size-3.5" />
-            ) : (
-              <Square aria-hidden="true" className="size-2.5 fill-current" />
-            )}
-            <EndLine entry={entry} />
-          </>
+          <EndLine entry={entry} />
         )}
       </div>
       <AnimatePresence initial={false}>
@@ -718,7 +711,7 @@ function ComposerAction({
         ) : (
           <button
             aria-label={mode === "queue" ? "Add to queue" : "Send"}
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-2.5 font-medium text-[12px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-[background-color,opacity] duration-150 hover:bg-zinc-800 active:bg-zinc-600 active:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-2.5 font-medium text-[12px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-[background-color,opacity] duration-150 hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
             disabled={!draft.trim()}
             onClick={onSend}
             type="button"
@@ -992,20 +985,44 @@ function QueueRow({
   );
 }
 
-function Pulse() {
+const FACE =
+  "absolute transition-[opacity,filter,scale] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none";
+const face = (on: boolean) =>
+  on ? "scale-100 opacity-100 blur-0" : "scale-[0.3] opacity-0 blur-[3px]";
+
+/**
+ * The working pulse, the done check and the stopped square share one slot
+ * and crossfade, so finishing reads as the same mark changing state.
+ */
+function StatusIcon({ status }: { status: AgentEntry["status"] }) {
+  const working = status === "running";
   return (
     <span
       aria-hidden="true"
-      className="relative flex size-3.5 items-center justify-center"
+      className="relative flex size-3.5 shrink-0 items-center justify-center"
     >
-      <motion.span
-        animate={{ opacity: [0.35, 1, 0.35] }}
-        className="size-1.5 rounded-full bg-blue-500 dark:bg-blue-400"
-        transition={{
-          duration: 1.2,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: "easeInOut",
-        }}
+      <span className={cn(FACE, "flex", face(working))}>
+        <motion.span
+          animate={working ? { opacity: [0.35, 1, 0.35] } : { opacity: 1 }}
+          className="size-1.5 rounded-full bg-blue-500 dark:bg-blue-400"
+          transition={
+            working
+              ? {
+                  duration: 1.2,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }
+              : { duration: 0 }
+          }
+        />
+      </span>
+      <Check className={cn(FACE, "size-3.5", face(status === "done"))} />
+      <Square
+        className={cn(
+          FACE,
+          "size-2.5 fill-current",
+          face(!working && status !== "done")
+        )}
       />
     </span>
   );

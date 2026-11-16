@@ -170,7 +170,11 @@ function EffortGlyph({ count, level }: { count: number; level: number }) {
           )}
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed bars, never reordered
           key={i}
-          style={{ height: `${((i + 1) / count) * 100}%` }}
+          style={{
+            height: `${((i + 1) / count) * 100}%`,
+            // Bars fill bottom up and empty top down.
+            transitionDelay: `${(i <= level ? i : count - 1 - i) * 30}ms`,
+          }}
         />
       ))}
     </span>
@@ -403,7 +407,12 @@ export default function AIModelSelector({
               <motion.div
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 className="absolute bottom-full left-0 z-10 mb-2 w-80 max-w-[calc(100vw-2rem)] origin-bottom-left rounded-2xl bg-white p-1 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
-                exit={{ opacity: 0, scale: 0.97, y: 4 }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.97,
+                  y: 4,
+                  transition: { duration: 0.12, ease: EASE_OUT },
+                }}
                 id={panelId}
                 initial={{ opacity: 0, scale: 0.97, y: 4 }}
                 transition={{ duration: 0.16, ease: EASE_OUT }}

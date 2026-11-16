@@ -573,7 +573,11 @@ function EffortBars({ count, level }: { count: number; level: number }) {
           )}
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed bars, never reordered
           key={i}
-          style={{ height: `${((i + 1) / count) * 100}%` }}
+          style={{
+            height: `${((i + 1) / count) * 100}%`,
+            // Bars fill bottom up and empty top down.
+            transitionDelay: `${(i <= level ? i : count - 1 - i) * 30}ms`,
+          }}
         />
       ))}
     </span>

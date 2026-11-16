@@ -549,7 +549,7 @@ export default function AIMemory({
                 />
                 <button
                   aria-label="Send"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-[background-color,opacity] duration-150 hover:bg-zinc-800 active:bg-zinc-600 active:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-[background-color,opacity] duration-150 hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
                   disabled={!draft.trim() || busy}
                   type="submit"
                 >

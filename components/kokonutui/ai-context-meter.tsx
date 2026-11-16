@@ -218,6 +218,19 @@ const formatTokens = (tokens: number) =>
     ? `${(tokens / 1000).toFixed(tokens >= 10_000 ? 0 : 1)}k`
     : `${Math.round(tokens)}`;
 
+const percent = (value: number) => `${value.toFixed(1)}%`;
+
+/** A number that counts to its new value, so compacting reads as tokens draining. */
+function Tweened({
+  value,
+  format,
+}: {
+  value: number;
+  format: (value: number) => string;
+}) {
+  return <>{format(useTweened(value))}</>;
+}
+
 function levelColor(share: number, compactAt: number) {
   // Dark enough to read at 12px on the light bar (amber-500 was 2:1).
   if (share >= compactAt + (1 - compactAt) / 2) {
@@ -348,10 +361,13 @@ function Breakdown({
                 {segment.label}
               </span>
               <span className="ml-auto text-zinc-500 tabular-nums dark:text-zinc-400">
-                {formatTokens(segment.tokens)}
+                <Tweened format={formatTokens} value={segment.tokens} />
               </span>
               <span className="w-9 text-right text-zinc-400 tabular-nums dark:text-zinc-500">
-                {((segment.tokens / limit) * 100).toFixed(1)}%
+                <Tweened
+                  format={percent}
+                  value={(segment.tokens / limit) * 100}
+                />
               </span>
             </li>
           ) : null
@@ -363,10 +379,10 @@ function Breakdown({
           />
           <span className="text-zinc-500 dark:text-zinc-400">Free</span>
           <span className="ml-auto text-zinc-500 tabular-nums dark:text-zinc-400">
-            {formatTokens(free)}
+            <Tweened format={formatTokens} value={free} />
           </span>
           <span className="w-9 text-right text-zinc-400 tabular-nums dark:text-zinc-500">
-            {((free / limit) * 100).toFixed(1)}%
+            <Tweened format={percent} value={(free / limit) * 100} />
           </span>
         </li>
       </ul>
@@ -486,7 +502,12 @@ export default function AIContextMeter({
               <motion.div
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 className="absolute right-0 bottom-full z-10 mb-2 origin-bottom-right rounded-2xl bg-white shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
-                exit={{ opacity: 0, scale: 0.97, y: 4 }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.97,
+                  y: 4,
+                  transition: { duration: 0.12, ease: EASE_OUT },
+                }}
                 id={panelId}
                 initial={{ opacity: 0, scale: 0.97, y: 4 }}
                 transition={{ duration: 0.16, ease: EASE_OUT }}

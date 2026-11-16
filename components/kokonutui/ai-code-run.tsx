@@ -101,8 +101,21 @@ const BAR_CELL = 2;
 const PLOT_HEIGHT = 112;
 const barMasks = new Map<number, CSSProperties>();
 /** Sparse at the top, solid at the base, sized to the bar. */
+const barRows = (share: number) =>
+  Math.max(4, Math.round((share * PLOT_HEIGHT) / BAR_CELL));
+
+/**
+ * An ease-out that lands on whole dither bands, so a bar builds up in
+ * pixel steps instead of sliding.
+ */
+const pixelEase = (rows: number) => {
+  // One step per 4x4 dither tile, so each step adds a whole band.
+  const steps = Math.max(3, Math.round(rows / 4));
+  return (t: number) => Math.round((1 - (1 - t) ** 3) * steps) / steps;
+};
+
 function barDither(share: number) {
-  const rows = Math.max(4, Math.round((share * PLOT_HEIGHT) / BAR_CELL));
+  const rows = barRows(share);
   let mask = barMasks.get(rows);
   if (!mask) {
     mask = pixelMask(
@@ -545,7 +558,11 @@ function Chart({ bars, max }: { bars: CodeRunBar[]; max: number }) {
                 ...barDither((bar.value / max) * 0.82),
               }}
               title={`${bar.label}: ${bar.value}`}
-              transition={{ duration: 0.45, ease: EASE_OUT, delay: i * 0.05 }}
+              transition={{
+                duration: 0.5,
+                ease: pixelEase(barRows((bar.value / max) * 0.82)),
+                delay: i * 0.05,
+              }}
             />
           </div>
         ))}
