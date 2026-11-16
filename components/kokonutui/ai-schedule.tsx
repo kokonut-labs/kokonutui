@@ -421,7 +421,7 @@ function SlotRow({
               className={cn(
                 "flex size-4 shrink-0 items-center justify-center rounded-full ring-1 transition-colors duration-150",
                 checked
-                  ? "bg-zinc-900 ring-zinc-900 dark:bg-white dark:ring-white"
+                  ? "bg-blue-600 ring-blue-600 dark:bg-blue-500 dark:ring-blue-500"
                   : "ring-zinc-300 dark:ring-zinc-600"
               )}
               exit={{ opacity: 0 }}
@@ -430,7 +430,7 @@ function SlotRow({
             >
               <motion.span
                 animate={{ scale: checked ? 1 : 0.5, opacity: checked ? 1 : 0 }}
-                className="size-1.5 rounded-full bg-white dark:bg-zinc-900"
+                className="size-1.5 rounded-full bg-white"
                 initial={false}
                 transition={{ duration: 0.15, ease: EASE_OUT }}
               />
@@ -528,7 +528,7 @@ function Avatar({
         "flex size-6 items-center justify-center rounded-full font-semibold text-[9.5px]",
         tone === "you"
           ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-          : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+          : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200"
       )}
       title={person.name}
     >
@@ -570,7 +570,7 @@ function BookButton({
 }) {
   return (
     <button
-      className="flex h-9 min-w-[96px] items-center justify-center rounded-full bg-zinc-900 px-4 font-medium text-[13px] text-white outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 active:bg-zinc-700 disabled:cursor-default dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-zinc-200"
+      className="flex h-9 min-w-[96px] items-center justify-center rounded-full bg-zinc-900 px-4 font-medium text-[13px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 active:bg-zinc-700 disabled:cursor-default dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:focus-visible:ring-offset-zinc-900 dark:hover:bg-zinc-200"
       disabled={busy}
       onClick={onClick}
       type="button"

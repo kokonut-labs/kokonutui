@@ -305,7 +305,7 @@ function AttachmentChip({
       </span>
       <button
         aria-label={`Remove ${file.name}`}
-        className="flex size-6 shrink-0 items-center justify-center rounded-md text-black/40 transition-colors duration-150 hover:bg-black/5 hover:text-black focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
+        className="flex size-6 shrink-0 items-center justify-center rounded-full text-black/40 transition-colors duration-150 hover:bg-black/5 hover:text-black focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white"
         onClick={onRemove}
         type="button"
       >
@@ -443,7 +443,7 @@ function CommandPill({
       {command.label}
       <button
         aria-label={`Remove ${command.label} command`}
-        className="flex size-6 items-center justify-center rounded-md transition-colors duration-150 hover:bg-blue-500/10 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500"
+        className="flex size-6 items-center justify-center rounded-full transition-colors duration-150 hover:bg-blue-500/10 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500"
         onClick={onRemove}
         type="button"
       >
@@ -534,7 +534,7 @@ function PromoHeader({
       {action && canSwitch && (
         <button
           className={cn(
-            "flex h-6 shrink-0 items-center gap-1 rounded-md px-2 font-medium",
+            "flex h-6 shrink-0 items-center gap-1 rounded-full px-2 font-medium",
             "transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
             "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-blue-500",
             inUse

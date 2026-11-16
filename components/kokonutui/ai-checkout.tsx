@@ -450,7 +450,7 @@ function PayButton({
         round ? "w-10" : "px-4",
         paid
           ? "bg-emerald-600 text-white dark:bg-emerald-500"
-          : "bg-zinc-900 text-white hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
+          : "bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
       )}
       disabled={round}
       layout

@@ -82,7 +82,7 @@ const DEMO_AGENTS: HandoffAgent[] = [
   {
     name: "Ama",
     initials: "A",
-    tone: "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
+    tone: "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-200",
   },
 ];
 

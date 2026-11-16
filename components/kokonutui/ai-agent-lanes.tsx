@@ -336,7 +336,7 @@ export default function AIAgentLanes({
         {live ? null : (
           <button
             aria-label={playButtonLabel(done, playing)}
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-zinc-600 ring-1 ring-black/10 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-900/30 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/[0.07] dark:hover:text-white"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full text-zinc-600 ring-1 ring-black/10 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-zinc-900/30 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/[0.07] dark:hover:text-white"
             onClick={toggle}
             type="button"
           >

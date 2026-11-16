@@ -251,7 +251,7 @@ export default function AICodeRun({
 
         <AutoHeight className="rounded-[22px] bg-black/[0.04] dark:bg-white/[0.06]">
           <div className="flex h-8 items-center gap-2 pr-1 pl-3 text-[12px] text-zinc-500 dark:text-zinc-400">
-            <span className="rounded-[4px] bg-black/[0.06] px-1 font-medium font-mono text-[10px] text-zinc-600 leading-4 dark:bg-white/[0.08] dark:text-zinc-300">
+            <span className="rounded-[5px] bg-sky-500/10 px-1 font-medium font-mono text-[10px] text-sky-700 leading-4 dark:bg-sky-400/15 dark:text-sky-300">
               py
             </span>
             <span className="min-w-0 truncate font-mono text-[11.5px] text-zinc-600 dark:text-zinc-300">
@@ -272,7 +272,7 @@ export default function AICodeRun({
               </AnimatePresence>
               <button
                 aria-label="Run again"
-                className="flex size-6 items-center justify-center rounded-md text-zinc-500 outline-hidden transition-[color,background-color,opacity] duration-150 hover:bg-black/[0.05] hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-black/[0.08] disabled:pointer-events-none disabled:opacity-0 dark:text-zinc-400 dark:active:bg-white/[0.12] dark:hover:bg-white/[0.08] dark:hover:text-zinc-100"
+                className="flex size-6 items-center justify-center rounded-full text-zinc-500 outline-hidden transition-[color,background-color,opacity] duration-150 hover:bg-black/[0.05] hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-black/[0.08] disabled:pointer-events-none disabled:opacity-0 dark:text-zinc-400 dark:active:bg-white/[0.12] dark:hover:bg-white/[0.08] dark:hover:text-zinc-100"
                 disabled={!(finished && again)}
                 onClick={again}
                 type="button"
@@ -473,10 +473,10 @@ function Chart({ bars, max }: { bars: CodeRunBar[]; max: number }) {
             <motion.div
               animate={{ clipPath: "inset(0% 0 0 0)" }}
               className={cn(
-                "rounded-t-[4px] rounded-b-[2px]",
+                "rounded-t-[6px] rounded-b-[2px]",
                 i === last
-                  ? "bg-violet-500 dark:bg-violet-400"
-                  : "bg-zinc-200 dark:bg-zinc-700"
+                  ? "bg-gradient-to-t from-violet-600 to-violet-400 shadow-[inset_0_1px_0_rgb(255_255_255/0.25)] dark:from-violet-500 dark:to-violet-300"
+                  : "bg-violet-100 dark:bg-violet-400/15"
               )}
               initial={{ clipPath: "inset(100% 0 0 0)" }}
               style={{ height: `${(bar.value / max) * 82}%` }}

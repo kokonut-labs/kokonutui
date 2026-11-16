@@ -129,9 +129,9 @@ function useDemoContext(
 }
 
 const DEMO_COLORS: Record<string, string> = {
-  system: "bg-zinc-300 dark:bg-zinc-600",
-  tools: "bg-zinc-400 dark:bg-zinc-500",
-  files: "bg-zinc-600 dark:bg-zinc-400",
+  system: "bg-zinc-300 dark:bg-zinc-500",
+  tools: "bg-violet-400 dark:bg-violet-400",
+  files: "bg-orange-400 dark:bg-orange-400",
   summary: "bg-sky-300 dark:bg-sky-700",
   messages: "bg-sky-500 dark:bg-sky-400",
 };
@@ -281,7 +281,7 @@ function Breakdown({
           segment.tokens > 0 ? (
             <li
               className={cn(
-                "flex items-center gap-2 rounded-md px-1.5 py-1 text-xs transition-colors duration-150",
+                "flex items-center gap-2 rounded-lg px-1.5 py-1 text-xs transition-colors duration-150",
                 active === segment.id && "bg-zinc-100 dark:bg-white/5"
               )}
               key={segment.id}
@@ -319,7 +319,7 @@ function Breakdown({
             Summarize older turns
           </p>
           <button
-            className="h-7 rounded-md bg-zinc-900 px-2.5 font-medium text-white text-xs outline-hidden transition-colors duration-150 hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400/60 disabled:bg-zinc-200 disabled:text-zinc-400 dark:bg-white dark:text-zinc-900 dark:disabled:bg-white/10 dark:disabled:text-zinc-500 dark:hover:bg-zinc-200"
+            className="h-7 rounded-full bg-zinc-900 px-3 font-medium text-white text-xs shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] outline-hidden transition-colors duration-150 hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400/60 active:bg-zinc-700 disabled:bg-zinc-200 disabled:text-zinc-400 dark:bg-white dark:text-zinc-900 dark:disabled:bg-white/10 dark:disabled:text-zinc-500 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
             disabled={used / limit < 0.4}
             onClick={onCompact}
             type="button"
@@ -399,7 +399,7 @@ export default function AIContextMeter({
   return (
     <MotionConfig reducedMotion="user">
       <div className={cn("w-full max-w-sm", className)} ref={rootRef}>
-        <div className="relative flex h-11 items-center justify-between rounded-xl bg-black/5 pr-1.5 pl-3 dark:bg-white/5">
+        <div className="relative flex h-11 items-center justify-between rounded-full bg-black/5 pr-1.5 pl-4 dark:bg-white/5">
           <span className="text-xs text-zinc-600 dark:text-zinc-300">
             {model}
           </span>
@@ -408,7 +408,7 @@ export default function AIContextMeter({
             aria-expanded={open}
             aria-label={`Context ${Math.round(share * 100)}% full. Show breakdown`}
             className={cn(
-              "flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs outline-hidden transition-colors duration-150 hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10",
+              "flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs outline-hidden transition-colors duration-150 hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:hover:bg-white/10",
               open && "bg-black/5 dark:bg-white/10",
               levelColor(share, compactAt)
             )}
@@ -427,7 +427,7 @@ export default function AIContextMeter({
             {open && (
               <motion.div
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="absolute right-0 bottom-full z-10 mb-2 origin-bottom-right rounded-xl bg-white shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
+                className="absolute right-0 bottom-full z-10 mb-2 origin-bottom-right rounded-2xl bg-white shadow-[0_8px_24px_-8px_rgb(0_0_0/0.18)] ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
                 exit={{ opacity: 0, scale: 0.97, y: 4 }}
                 id={panelId}
                 initial={{ opacity: 0, scale: 0.97, y: 4 }}

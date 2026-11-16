@@ -139,7 +139,7 @@ function ButtonFaces({ visible }: { visible: Record<Face, boolean> }) {
         aria-hidden="true"
         className={cn(
           FACE_CLASS,
-          "h-5 w-5 rounded-[5px] bg-black dark:bg-white",
+          "h-5 w-5 rounded-[6px] bg-red-500 dark:bg-red-400",
           faceState(visible.stop)
         )}
       />
@@ -185,7 +185,7 @@ function ReviewActions({
     >
       <button
         className={cn(
-          "flex h-7 items-center gap-1 rounded-lg px-2 text-black/60 text-xs transition-colors duration-150 hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white",
+          "flex h-7 items-center gap-1 rounded-full px-2 text-black/60 text-xs transition-colors duration-150 hover:bg-black/5 hover:text-black dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white",
           ACTION_FOCUS
         )}
         onClick={onDiscard}
@@ -196,7 +196,7 @@ function ReviewActions({
       </button>
       <button
         className={cn(
-          "flex h-7 items-center gap-1 rounded-lg bg-black px-2.5 text-white text-xs transition-colors duration-150 hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80",
+          "flex h-7 items-center gap-1 rounded-full bg-black px-2.5 text-white text-xs shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-colors duration-150 hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80",
           ACTION_FOCUS
         )}
         onClick={onSend}
@@ -521,18 +521,19 @@ export default function AI_Voice({
           {/* Swells with the voice while recording. */}
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-xl bg-black/5 opacity-0 dark:bg-white/5"
+            className="pointer-events-none absolute inset-0 rounded-full bg-red-500/10 opacity-0 dark:bg-red-400/15"
             ref={ringRef}
           />
           <button
             aria-label={mainLabelFor(mode, playing)}
             aria-pressed={recording && announce}
             className={cn(
-              "relative flex h-16 w-16 items-center justify-center rounded-xl transition-colors duration-150 ease-out",
+              "relative flex h-16 w-16 items-center justify-center rounded-full transition-colors duration-150 ease-out",
               "outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
-              mode === "idle"
-                ? "hover:bg-black/5 dark:hover:bg-white/5"
-                : "bg-black/5 dark:bg-white/5"
+              mode === "idle" &&
+                "ring-1 ring-black/[0.08] hover:bg-black/5 dark:ring-white/10 dark:hover:bg-white/5",
+              recording && "bg-red-500/10 dark:bg-red-400/15",
+              reviewing && "bg-black/5 dark:bg-white/5"
             )}
             onClick={handleMainClick}
             ref={mainRef}

@@ -10,7 +10,7 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { Check, Mail } from "lucide-react";
+import { Check, Mail, SendHorizontal } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import {
   type ReactNode,
@@ -235,7 +235,7 @@ export default function AISend({
                       {status === "pending" && (
                         <motion.button
                           animate={{ opacity: 1, x: 0 }}
-                          className="h-8 rounded-lg px-3 font-medium text-[13px] text-zinc-900 outline-hidden transition-colors duration-100 hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-zinc-200 dark:text-zinc-100 dark:active:bg-white/[0.11] dark:hover:bg-white/[0.07]"
+                          className="h-8 rounded-full px-3 font-medium text-[13px] text-zinc-900 outline-hidden transition-colors duration-100 hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-blue-500/40 active:bg-zinc-200 dark:text-zinc-100 dark:active:bg-white/[0.11] dark:hover:bg-white/[0.07]"
                           exit={{ opacity: 0, x: 6 }}
                           initial={{ opacity: 0, x: 6 }}
                           onClick={undo}
@@ -307,11 +307,11 @@ function SendButton({
   return (
     <button
       className={cn(
-        "flex h-8 min-w-[76px] items-center justify-center gap-2 rounded-lg px-3 font-medium text-[13px] outline-hidden transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900",
+        "group/send flex h-8 min-w-[84px] items-center justify-center gap-2 rounded-full px-3.5 font-medium text-[13px] outline-hidden transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900",
         disabled && !pending && "opacity-50",
         pending
           ? "bg-zinc-100 text-zinc-700 dark:bg-white/[0.08] dark:text-zinc-200"
-          : "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          : "bg-blue-600 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.2),0_1px_2px_rgb(29_78_216/0.35)] hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-500 dark:active:bg-blue-700 dark:hover:bg-blue-600"
       )}
       disabled={pending || disabled}
       onClick={onSend}
@@ -376,12 +376,18 @@ function SendButton({
         ) : (
           <motion.span
             animate={{ opacity: 1 }}
+            className="flex items-center gap-1.5"
             exit={{ opacity: 0 }}
             initial={{ opacity: 0 }}
             key="send"
             transition={{ duration: 0.15 }}
           >
             Send
+            {/* Leans forward on hover, as if about to go. */}
+            <SendHorizontal
+              aria-hidden="true"
+              className="size-3.5 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/send:translate-x-0.5 motion-reduce:transition-none"
+            />
           </motion.span>
         )}
       </AnimatePresence>

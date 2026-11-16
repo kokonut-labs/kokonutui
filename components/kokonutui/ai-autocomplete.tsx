@@ -310,7 +310,7 @@ function AcceptBar({
       )}
     >
       <button
-        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+        className="flex items-center gap-1.5 rounded-full px-1.5 py-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
         onClick={onAccept}
         onMouseDown={keep}
         tabIndex={-1}
@@ -322,7 +322,7 @@ function AcceptBar({
         Accept
       </button>
       <button
-        className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+        className="flex items-center gap-1.5 rounded-full px-1.5 py-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-colors duration-150 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
         onClick={onWord}
         onMouseDown={keep}
         tabIndex={-1}

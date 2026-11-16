@@ -288,7 +288,7 @@ export default function AIOrderStatus({
                     "transition-colors duration-500",
                     arrived
                       ? "stroke-emerald-500"
-                      : "stroke-zinc-900 dark:stroke-zinc-100"
+                      : "stroke-blue-600 dark:stroke-blue-400"
                   )}
                   d={ROUTE}
                   fill="none"
@@ -326,11 +326,16 @@ export default function AIOrderStatus({
                   {!arrived && (
                     <motion.g exit={{ opacity: 0 }} style={{ x, y }}>
                       <circle
-                        className="fill-zinc-900 dark:fill-white"
+                        className="fill-blue-500/15 dark:fill-blue-400/20"
+                        r="18"
+                      />
+                      <circle
+                        className="fill-blue-600 stroke-white dark:fill-blue-500 dark:stroke-zinc-900"
                         r="12"
+                        strokeWidth="2"
                       />
                       <Bike
-                        className="text-white dark:text-zinc-900"
+                        className="text-white"
                         height={13}
                         width={13}
                         x={-6.5}
@@ -422,7 +427,7 @@ function Steps({ arrived }: { arrived: boolean }) {
             animate={{ scaleX: i <= at ? 1 : 0 }}
             className={cn(
               "absolute inset-0 origin-left rounded-full",
-              arrived ? "bg-emerald-500" : "bg-zinc-900 dark:bg-zinc-100"
+              arrived ? "bg-emerald-500" : "bg-blue-600 dark:bg-blue-400"
             )}
             initial={false}
             transition={{ duration: 0.4, ease: EASE_OUT }}

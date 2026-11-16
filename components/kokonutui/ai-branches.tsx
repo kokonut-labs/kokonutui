@@ -567,7 +567,7 @@ function MessageView({
           node.error
             ? "text-rose-600 dark:text-rose-400"
             : "text-zinc-700 dark:text-zinc-300",
-          lit && "bg-zinc-900/[0.03] dark:bg-white/[0.04]"
+          lit && "bg-violet-500/[0.06] dark:bg-violet-400/[0.08]"
         )}
         role={node.error ? "alert" : undefined}
       >
@@ -591,7 +591,7 @@ function MessageView({
         <p
           className={cn(
             "max-w-[85%] rounded-2xl rounded-br-md bg-zinc-100 px-3.5 py-2 text-[14px] text-zinc-800 leading-snug transition-colors duration-150 dark:bg-zinc-800 dark:text-zinc-100",
-            lit && "bg-zinc-200/80 dark:bg-zinc-700/80"
+            lit && "bg-violet-100 dark:bg-violet-500/20"
           )}
         >
           {node.text}
@@ -601,7 +601,7 @@ function MessageView({
         <div className="flex h-6 items-center gap-0.5 text-zinc-400 dark:text-zinc-500">
           <button
             aria-label="Edit message"
-            className="flex size-6 items-center justify-center rounded-md opacity-0 transition-[opacity,color,background-color] duration-150 hover:bg-zinc-100 hover:text-zinc-700 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:bg-white/[0.07] dark:hover:text-zinc-200 [@media(hover:none)]:opacity-100"
+            className="flex size-6 items-center justify-center rounded-full opacity-0 transition-[opacity,color,background-color] duration-150 hover:bg-zinc-100 hover:text-zinc-700 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:bg-white/[0.07] dark:hover:text-zinc-200 [@media(hover:none)]:opacity-100"
             onClick={onEdit}
             ref={editRef}
             type="button"
@@ -612,7 +612,7 @@ function MessageView({
             <>
               <button
                 aria-label="Previous version"
-                className="flex size-6 items-center justify-center rounded-md transition-colors duration-150 enabled:hover:bg-zinc-100 enabled:hover:text-zinc-700 disabled:opacity-40 dark:enabled:hover:bg-white/[0.07] dark:enabled:hover:text-zinc-200"
+                className="flex size-6 items-center justify-center rounded-full transition-colors duration-150 enabled:hover:bg-zinc-100 enabled:hover:text-zinc-700 disabled:opacity-40 dark:enabled:hover:bg-white/[0.07] dark:enabled:hover:text-zinc-200"
                 disabled={index === 0}
                 onClick={() => onStep(-1)}
                 ref={prevRef}
@@ -625,7 +625,7 @@ function MessageView({
               </span>
               <button
                 aria-label="Next version"
-                className="flex size-6 items-center justify-center rounded-md transition-colors duration-150 enabled:hover:bg-zinc-100 enabled:hover:text-zinc-700 disabled:opacity-40 dark:enabled:hover:bg-white/[0.07] dark:enabled:hover:text-zinc-200"
+                className="flex size-6 items-center justify-center rounded-full transition-colors duration-150 enabled:hover:bg-zinc-100 enabled:hover:text-zinc-700 disabled:opacity-40 dark:enabled:hover:bg-white/[0.07] dark:enabled:hover:text-zinc-200"
                 disabled={index === siblings.length - 1}
                 onClick={() => onStep(1)}
                 ref={nextRef}
@@ -689,14 +689,14 @@ function EditBox({
         </p>
         <div className="flex gap-1.5">
           <button
-            className="h-7 rounded-lg px-2.5 text-[12px] text-zinc-600 transition-colors duration-150 hover:bg-white hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-white"
+            className="h-7 rounded-full px-2.5 text-[12px] text-zinc-600 transition-colors duration-150 hover:bg-white hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-white"
             onClick={onCancel}
             type="button"
           >
             Cancel
           </button>
           <button
-            className="h-7 rounded-lg bg-zinc-900 px-2.5 font-medium text-[12px] text-white transition-colors duration-150 hover:bg-zinc-700 disabled:opacity-40 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="h-7 rounded-full bg-zinc-900 px-2.5 font-medium text-[12px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-colors duration-150 hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-40 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
             disabled={!draft.trim()}
             onClick={() => onSubmit(draft)}
             type="button"
@@ -762,7 +762,7 @@ function Rail({
                 className={cn(
                   "fill-none transition-[stroke,stroke-width] duration-300",
                   lit
-                    ? "stroke-zinc-900 dark:stroke-zinc-100"
+                    ? "stroke-violet-600 dark:stroke-violet-400"
                     : "stroke-zinc-300 dark:stroke-zinc-700"
                 )}
                 d={d}
@@ -782,11 +782,11 @@ function Rail({
                 className={cn(
                   "transition-[fill,stroke] duration-300",
                   lit
-                    ? "stroke-zinc-900 dark:stroke-zinc-100"
+                    ? "stroke-violet-600 dark:stroke-violet-400"
                     : "stroke-zinc-300 dark:stroke-zinc-700",
                   n.role === "assistant" &&
                     lit &&
-                    "fill-zinc-900 dark:fill-zinc-100",
+                    "fill-violet-600 dark:fill-violet-400",
                   n.role === "assistant" &&
                     !lit &&
                     "fill-zinc-300 dark:fill-zinc-700",

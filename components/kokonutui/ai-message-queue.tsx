@@ -474,11 +474,21 @@ export default function AIMessageQueue({
           <span
             className={cn(
               "text-[12px] tabular-nums",
+              "flex items-center gap-1.5",
               running
-                ? "text-zinc-600 dark:text-zinc-300"
+                ? "text-blue-600 dark:text-blue-400"
                 : "text-zinc-400 dark:text-zinc-500"
             )}
           >
+            <span
+              aria-hidden="true"
+              className={cn(
+                "size-1.5 rounded-full transition-colors duration-300",
+                running
+                  ? "bg-blue-500 dark:bg-blue-400"
+                  : "bg-zinc-300 dark:bg-zinc-600"
+              )}
+            />
             {running ? "Working" : "Idle"}
           </span>
         </header>
@@ -512,7 +522,7 @@ export default function AIMessageQueue({
         </div>
 
         <div className="p-2 pt-0">
-          <div className="rounded-xl bg-zinc-50 ring-1 ring-black/[0.07] dark:bg-zinc-800/60 dark:ring-white/[0.08]">
+          <div className="rounded-2xl bg-zinc-50 ring-1 ring-black/[0.07] dark:bg-zinc-800/60 dark:ring-white/[0.08]">
             <QueueList
               onClear={() => {
                 setQueue([]);
@@ -699,7 +709,7 @@ function ComposerAction({
         {mode === "stop" ? (
           <button
             aria-label="Stop the agent"
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-200 text-zinc-700 transition-colors duration-150 hover:bg-zinc-300 active:bg-zinc-400/70 dark:bg-zinc-700 dark:text-zinc-200 dark:active:bg-zinc-500 dark:hover:bg-zinc-600"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-700 transition-colors duration-150 hover:bg-zinc-300 active:bg-zinc-400/70 dark:bg-zinc-700 dark:text-zinc-200 dark:active:bg-zinc-500 dark:hover:bg-zinc-600"
             onClick={onStop}
             type="button"
           >
@@ -708,7 +718,7 @@ function ComposerAction({
         ) : (
           <button
             aria-label={mode === "queue" ? "Add to queue" : "Send"}
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-zinc-900 px-2.5 font-medium text-[12px] text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-2.5 font-medium text-[12px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-[background-color,opacity] duration-150 hover:bg-zinc-800 active:bg-zinc-600 active:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
             disabled={!draft.trim()}
             onClick={onSend}
             type="button"
@@ -782,7 +792,7 @@ function QueueList({
               </span>
               {paused && (
                 <button
-                  className="flex items-center gap-1 rounded px-1 font-medium text-zinc-800 transition-colors duration-100 hover:bg-zinc-900/[0.06] dark:text-zinc-100 dark:hover:bg-white/10"
+                  className="flex items-center gap-1 rounded-full px-1 font-medium text-zinc-800 transition-colors duration-100 hover:bg-zinc-900/[0.06] dark:text-zinc-100 dark:hover:bg-white/10"
                   onClick={onResume}
                   type="button"
                 >
@@ -791,7 +801,7 @@ function QueueList({
                 </button>
               )}
               <button
-                className="ml-auto rounded px-1 transition-colors duration-100 hover:bg-zinc-900/[0.06] hover:text-zinc-800 dark:hover:bg-white/10 dark:hover:text-zinc-100"
+                className="ml-auto rounded-full px-1 transition-colors duration-100 hover:bg-zinc-900/[0.06] hover:text-zinc-800 dark:hover:bg-white/10 dark:hover:text-zinc-100"
                 onClick={onClear}
                 type="button"
               >
@@ -881,12 +891,12 @@ function QueueRow({
   };
 
   const icon =
-    "flex size-6 shrink-0 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-100 hover:bg-zinc-900/[0.06] hover:text-zinc-800 focus-visible:bg-zinc-900/[0.06] active:bg-zinc-900/[0.1] dark:active:bg-white/15 focus-visible:text-zinc-800 dark:text-zinc-500 dark:focus-visible:bg-white/10 dark:focus-visible:text-zinc-100 dark:hover:bg-white/10 dark:hover:text-zinc-100";
+    "flex size-6 shrink-0 items-center justify-center rounded-full text-zinc-400 outline-hidden transition-colors duration-100 hover:bg-zinc-900/[0.06] hover:text-zinc-800 focus-visible:bg-zinc-900/[0.06] active:bg-zinc-900/[0.1] dark:active:bg-white/15 focus-visible:text-zinc-800 dark:text-zinc-500 dark:focus-visible:bg-white/10 dark:focus-visible:text-zinc-100 dark:hover:bg-white/10 dark:hover:text-zinc-100";
 
   return (
     <Reorder.Item
       animate={{ opacity: 1, y: 0 }}
-      className="group/row relative flex h-8 items-center gap-1 overflow-hidden rounded-lg bg-white pr-1 pl-0.5 ring-1 ring-black/[0.05] dark:bg-zinc-900 dark:ring-white/[0.06]"
+      className="group/row relative flex h-8 items-center gap-1 overflow-hidden rounded-xl bg-white pr-1 pl-0.5 ring-1 ring-black/[0.05] dark:bg-zinc-900 dark:ring-white/[0.06]"
       dragControls={controls}
       dragListener={false}
       exit={{ opacity: 0, y: -6, transition: { duration: 0.15 } }}
@@ -916,7 +926,7 @@ function QueueRow({
         <motion.span
           animate={{ scaleX: progress, opacity: progress > 0 ? 1 : 0 }}
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-px origin-left bg-zinc-900/25 dark:bg-white/30"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 origin-left bg-blue-500/70 dark:bg-blue-400/70"
           initial={false}
           transition={{ duration: 0.4, ease: EASE_OUT }}
         />
@@ -990,7 +1000,7 @@ function Pulse() {
     >
       <motion.span
         animate={{ opacity: [0.35, 1, 0.35] }}
-        className="size-1.5 rounded-full bg-zinc-800 dark:bg-zinc-200"
+        className="size-1.5 rounded-full bg-blue-500 dark:bg-blue-400"
         transition={{
           duration: 1.2,
           repeat: Number.POSITIVE_INFINITY,

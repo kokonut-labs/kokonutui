@@ -486,7 +486,7 @@ function Cite({
     <button
       aria-label={`Page ${page}`}
       className={cn(
-        "mx-0.5 inline-flex h-5 translate-y-[-1px] items-center rounded-md px-1.5 align-middle font-medium text-[11px] tabular-nums outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-orange-500/40",
+        "mx-0.5 inline-flex h-5 translate-y-[-1px] items-center rounded-full px-1.5 align-middle font-medium text-[11px] tabular-nums outline-hidden transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-orange-500/40",
         active
           ? "bg-orange-100 text-orange-900 dark:bg-orange-400/20 dark:text-orange-200"
           : "bg-zinc-100 text-zinc-600 dark:bg-white/[0.08] dark:text-zinc-300"

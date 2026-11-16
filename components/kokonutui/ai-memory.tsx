@@ -534,7 +534,7 @@ export default function AIMemory({
                 )}
               </AnimatePresence>
               <form
-                className="flex items-center gap-2 rounded-xl bg-zinc-50 py-1.5 pr-1.5 pl-3 ring-1 ring-black/[0.07] dark:bg-zinc-800/60 dark:ring-white/[0.08]"
+                className="flex items-center gap-2 rounded-full bg-zinc-50 py-1.5 pr-1.5 pl-4 ring-1 ring-black/[0.07] dark:bg-zinc-800/60 dark:ring-white/[0.08]"
                 onSubmit={(event) => {
                   event.preventDefault();
                   send(draft);
@@ -549,7 +549,7 @@ export default function AIMemory({
                 />
                 <button
                   aria-label="Send"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-[background-color,opacity] duration-150 hover:bg-zinc-800 active:bg-zinc-600 active:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
                   disabled={!draft.trim() || busy}
                   type="submit"
                 >
@@ -620,7 +620,7 @@ export default function AIMemory({
                 {undo && (
                   <motion.div
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex h-8 items-center gap-2 rounded-lg bg-zinc-900 pr-1 pl-3 text-[12px] text-white dark:bg-zinc-100 dark:text-zinc-900"
+                    className="flex h-8 items-center gap-2 rounded-full bg-zinc-900 pr-1 pl-3.5 text-[12px] text-white dark:bg-zinc-100 dark:text-zinc-900"
                     exit={{ opacity: 0, y: 4, transition: { duration: 0.15 } }}
                     initial={{ opacity: 0, y: 4 }}
                     transition={{ duration: 0.2, ease: EASE_OUT }}
@@ -629,7 +629,7 @@ export default function AIMemory({
                       Forgot “{undo.row.text}”
                     </span>
                     <button
-                      className="h-6 shrink-0 rounded-md px-2 font-medium transition-colors duration-100 hover:bg-white/15 active:bg-white/25 dark:active:bg-black/15 dark:hover:bg-black/10"
+                      className="h-6 shrink-0 rounded-full px-2.5 font-medium transition-colors duration-100 hover:bg-white/15 active:bg-white/25 dark:active:bg-black/15 dark:hover:bg-black/10"
                       onClick={restoreRow}
                       ref={undoRef}
                       type="button"
@@ -695,7 +695,7 @@ function MemoryRow({
   };
 
   const icon =
-    "flex size-6 shrink-0 items-center justify-center rounded-md text-zinc-400 outline-hidden transition-colors duration-100 hover:bg-zinc-900/[0.06] hover:text-zinc-800 focus-visible:bg-zinc-900/[0.06] focus-visible:text-zinc-800 active:bg-zinc-900/[0.1] dark:text-zinc-500 dark:active:bg-white/15 dark:focus-visible:bg-white/10 dark:focus-visible:text-zinc-100 dark:hover:bg-white/10 dark:hover:text-zinc-100";
+    "flex size-6 shrink-0 items-center justify-center rounded-full text-zinc-400 outline-hidden transition-colors duration-100 hover:bg-zinc-900/[0.06] hover:text-zinc-800 focus-visible:bg-zinc-900/[0.06] focus-visible:text-zinc-800 active:bg-zinc-900/[0.1] dark:text-zinc-500 dark:active:bg-white/15 dark:focus-visible:bg-white/10 dark:focus-visible:text-zinc-100 dark:hover:bg-white/10 dark:hover:text-zinc-100";
 
   return (
     <motion.li
@@ -709,7 +709,7 @@ function MemoryRow({
     >
       <div
         className={cn(
-          "group/mem flex min-h-8 items-center gap-1 rounded-lg py-1 pr-1 pl-2 transition-colors duration-700",
+          "group/mem flex min-h-8 items-center gap-1 rounded-xl py-1 pr-1 pl-2 transition-colors duration-700",
           row.state === "new" &&
             "bg-emerald-500/[0.1] duration-200 dark:bg-emerald-400/[0.12]",
           flash && "bg-zinc-900/[0.06] duration-150 dark:bg-white/[0.08]"
@@ -824,12 +824,14 @@ function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       <span
         className={cn(
           "relative h-4 w-7 rounded-full transition-colors duration-200",
-          on ? "bg-zinc-900 dark:bg-zinc-100" : "bg-zinc-300 dark:bg-zinc-600"
+          on
+            ? "bg-emerald-500 dark:bg-emerald-500"
+            : "bg-zinc-300 dark:bg-zinc-600"
         )}
       >
         <span
           className={cn(
-            "absolute top-0.5 left-0.5 size-3 rounded-full bg-white shadow-sm transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] dark:bg-zinc-900",
+            "absolute top-0.5 left-0.5 size-3 rounded-full bg-white shadow-sm transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
             on && "translate-x-3"
           )}
         />

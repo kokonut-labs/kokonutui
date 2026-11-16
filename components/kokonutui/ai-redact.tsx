@@ -448,7 +448,7 @@ export default function AIRedact({
         </div>
 
         <div className="p-2 pt-0">
-          <div className="rounded-xl bg-zinc-50 ring-1 ring-black/[0.07] dark:bg-zinc-800/60 dark:ring-white/[0.08]">
+          <div className="rounded-2xl bg-zinc-50 ring-1 ring-black/[0.07] dark:bg-zinc-800/60 dark:ring-white/[0.08]">
             <div className="relative px-3 pt-2.5">
               {/* Highlights sit under the transparent textarea, letter for letter. */}
               <div
@@ -507,7 +507,7 @@ export default function AIRedact({
               </div>
               <button
                 aria-label="Send"
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white transition-[background-color,opacity] duration-150 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
+                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] transition-[background-color,opacity] duration-150 hover:bg-zinc-800 active:bg-zinc-600 active:bg-zinc-700 disabled:opacity-30 dark:bg-white dark:text-zinc-900 dark:active:bg-zinc-300 dark:hover:bg-zinc-200"
                 disabled={!text.trim() || streaming}
                 onClick={send}
                 type="button"
@@ -599,7 +599,7 @@ function TokenChip({
       aria-label={label}
       aria-pressed={!kept}
       className={cn(
-        "flex h-6 items-center gap-1 rounded-md px-1.5 font-mono text-[10.5px] ring-1 transition-colors duration-150",
+        "flex h-6 items-center gap-1 rounded-full px-1.5 font-mono text-[10.5px] ring-1 transition-colors duration-150",
         kept &&
           "text-zinc-400 ring-black/[0.06] hover:text-zinc-600 active:bg-zinc-900/[0.05] dark:text-zinc-500 dark:ring-white/[0.08] dark:active:bg-white/[0.06] dark:hover:text-zinc-300",
         !kept &&
@@ -711,7 +711,7 @@ function ViewSwitch({
 }) {
   const id = useId();
   return (
-    <div className="flex h-7 items-center rounded-lg bg-zinc-100 p-0.5 text-[12px] dark:bg-zinc-800">
+    <div className="flex h-7 items-center rounded-full bg-zinc-100 p-0.5 text-[12px] dark:bg-zinc-800">
       {[
         { value: false, label: "You see" },
         { value: true, label: "Model sees" },
@@ -719,7 +719,7 @@ function ViewSwitch({
         <button
           aria-pressed={model === option.value}
           className={cn(
-            "relative h-6 rounded-md px-2 transition-colors duration-150",
+            "relative h-6 rounded-full px-2.5 transition-colors duration-150",
             model === option.value
               ? "text-zinc-900 dark:text-zinc-100"
               : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
@@ -730,7 +730,7 @@ function ViewSwitch({
         >
           {model === option.value && (
             <motion.span
-              className="absolute inset-0 rounded-md bg-white shadow-xs dark:bg-zinc-700"
+              className="absolute inset-0 rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.08),0_0_0_0.5px_rgb(0_0_0/0.06)] dark:bg-zinc-700"
               layoutId={`${id}-view`}
               transition={{ duration: 0.22, ease: EASE_OUT }}
             />

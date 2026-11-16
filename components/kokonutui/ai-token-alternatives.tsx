@@ -618,8 +618,8 @@ function TokenView({
             ? "decoration-orange-600 decoration-solid dark:decoration-orange-400"
             : "decoration-zinc-400 decoration-dotted dark:decoration-zinc-500",
           active
-            ? "bg-zinc-900/[0.07] dark:bg-white/10"
-            : "hover:bg-zinc-900/[0.05] dark:hover:bg-white/[0.07]"
+            ? "bg-orange-500/10 dark:bg-orange-400/15"
+            : "hover:bg-orange-500/[0.06] dark:hover:bg-orange-400/10"
         )}
         onClick={onToggle}
         ref={ref}
@@ -678,7 +678,7 @@ function Alternatives({
     <motion.div
       animate={{ opacity: 1, scale: 1, y: 0 }}
       aria-label="Other words the model considered"
-      className="absolute z-20 origin-top-left rounded-xl bg-white p-1.5 shadow-[0_12px_32px_-12px_rgb(0_0_0/0.25)] ring-1 ring-black/[0.08] dark:bg-zinc-800 dark:shadow-[0_12px_32px_-12px_rgb(0_0_0/0.7)] dark:ring-white/10"
+      className="absolute z-20 origin-top-left rounded-2xl bg-white p-1.5 shadow-[0_12px_32px_-12px_rgb(0_0_0/0.25)] ring-1 ring-black/[0.08] dark:bg-zinc-800 dark:shadow-[0_12px_32px_-12px_rgb(0_0_0/0.7)] dark:ring-white/10"
       exit={{ opacity: 0, transition: { duration: 0.1 } }}
       initial={{ opacity: 0, scale: 0.97, y: -4 }}
       onKeyDown={onKeyDown}
@@ -695,7 +695,7 @@ function Alternatives({
         return (
           <button
             aria-selected={selected}
-            className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left outline-hidden transition-colors duration-100 hover:bg-zinc-100 focus-visible:bg-zinc-100 dark:focus-visible:bg-white/[0.07] dark:hover:bg-white/[0.07]"
+            className="flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left outline-hidden transition-colors duration-100 hover:bg-zinc-100 focus-visible:bg-zinc-100 dark:focus-visible:bg-white/[0.07] dark:hover:bg-white/[0.07]"
             key={option.text}
             onClick={() => onPick(option.text)}
             role="option"

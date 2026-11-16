@@ -439,7 +439,7 @@ function AccessCard({
   return (
     <div className="m-1 mt-0 rounded-[18px] bg-white px-4 pt-5 pb-3 shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/[0.06] dark:bg-zinc-900 dark:ring-white/[0.08]">
       <div className="flex items-center justify-center">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-zinc-100 font-semibold text-[15px] text-zinc-900 ring-1 ring-black/[0.06] dark:bg-zinc-800 dark:text-zinc-100 dark:ring-white/10">
+        <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-b from-violet-500 to-violet-600 font-semibold text-[15px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.25),0_1px_2px_rgb(76_29_149/0.3)]">
           {agentLogo ?? agent.slice(0, 1)}
         </span>
         <Handshake state={link} />
@@ -502,7 +502,7 @@ function AccessCard({
 
       <button
         aria-busy={waiting}
-        className="mt-4 flex h-10 w-full items-center justify-center rounded-xl font-medium text-[14px] text-white outline-hidden transition-[filter,background-color] duration-300 hover:brightness-125 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-2 active:brightness-110 disabled:pointer-events-none dark:ring-1 dark:ring-white/15 dark:focus-visible:ring-offset-zinc-900"
+        className="mt-4 flex h-10 w-full items-center justify-center rounded-full font-medium text-[14px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(0_0_0/0.16)] outline-hidden transition-[filter,background-color] duration-300 hover:brightness-125 focus-visible:ring-2 focus-visible:ring-zinc-400/60 focus-visible:ring-offset-2 active:brightness-110 disabled:pointer-events-none dark:ring-1 dark:ring-white/15 dark:focus-visible:ring-offset-zinc-900"
         disabled={step !== "blocked"}
         onClick={onConnect}
         style={{ backgroundColor: linked ? "#059669" : appColor }}
@@ -531,7 +531,7 @@ function AccessCard({
       ) : null}
       <div className={cn("mt-1 flex justify-center", !onSkip && "hidden")}>
         <button
-          className="rounded-md px-2 py-1 text-[12.5px] text-zinc-500 outline-hidden transition-[color,opacity] duration-150 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 disabled:opacity-0 dark:text-zinc-400 dark:hover:text-zinc-100"
+          className="rounded-full px-3 py-1 text-[12.5px] text-zinc-500 outline-hidden transition-[color,background-color,opacity] duration-150 hover:bg-black/5 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400/50 disabled:opacity-0 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-zinc-100"
           disabled={step !== "blocked"}
           onClick={onSkip}
           type="button"

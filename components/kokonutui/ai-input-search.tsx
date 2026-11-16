@@ -863,7 +863,7 @@ function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
       <span className="truncate">{file.name}</span>
       <button
         aria-label={`Remove ${file.name}`}
-        className="flex size-6 shrink-0 items-center justify-center rounded-md text-black/40 outline-hidden transition-colors duration-150 hover:bg-black/[0.06] hover:text-black focus-visible:ring-2 focus-visible:ring-black/15 dark:text-white/40 dark:focus-visible:ring-white/20 dark:hover:bg-white/10 dark:hover:text-white"
+        className="flex size-6 shrink-0 items-center justify-center rounded-full text-black/40 outline-hidden transition-colors duration-150 hover:bg-black/[0.06] hover:text-black focus-visible:ring-2 focus-visible:ring-black/15 dark:text-white/40 dark:focus-visible:ring-white/20 dark:hover:bg-white/10 dark:hover:text-white"
         onClick={onRemove}
         type="button"
       >
@@ -966,7 +966,7 @@ function SendStopButton({
       animate={{ width }}
       aria-label={running ? "Stop" : "Ask"}
       className={cn(
-        "h-8 shrink-0 overflow-hidden rounded-[10px]",
+        "h-8 shrink-0 overflow-hidden rounded-full",
         "transition-[background-color,color,box-shadow] duration-150",
         EASE_OUT_CSS,
         "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/30",
