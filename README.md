@@ -7,7 +7,7 @@
 <h1 align="center">Kokonut UI</h1>
 
 <p align="center">
-  Open-source React components for AI apps, and the inputs, cards and buttons around them.<br>
+  Open-source React components for AI chat and agents, and the inputs, cards and buttons around them.<br>
   100+ components built with Tailwind CSS, Motion and shadcn/ui. Your agent or the shadcn CLI installs them, and they live in your codebase.
 </p>
 

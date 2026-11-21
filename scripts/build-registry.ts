@@ -291,9 +291,9 @@ const generateLLMsFile = async (docs: ComponentInfo[]): Promise<void> => {
   const link = (page: ComponentInfo) =>
     `[${page.title}](${SITE_URL}${page.route}.md): ${page.description}`;
 
-  const llmsContent = `# KokonutUI - Component Registry Index
+  const llmsContent = `# Kokonut UI - Component Registry Index
 
-Collection of ${components.length} UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+${components.length} free, open-source React components for AI chat and agents, plus the inputs, cards and buttons around them. Built with Tailwind CSS, Motion and shadcn/ui.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 

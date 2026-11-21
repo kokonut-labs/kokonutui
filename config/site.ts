@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "Kokonut UI",
   url: "https://kokonutui.com",
   description:
-    "Kokonut UI is a free, open-source library of React components for AI apps, built with Tailwind CSS, Motion and shadcn/ui. Install any of them with one command or one prompt.",
+    "Kokonut UI is 100+ free, open-source React components for AI chat and agents, plus the inputs, cards and buttons around them. Install with the shadcn CLI or MCP.",
   links: {
     twitter: "https://twitter.com/dorianbaffier",
     github: "https://github.com/kokonut-labs/kokonutui",
