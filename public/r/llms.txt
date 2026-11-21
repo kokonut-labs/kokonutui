@@ -1,6 +1,6 @@
-# KokonutUI - Component Registry Index
+# Kokonut UI - Component Registry Index
 
-Collection of 116 UI components free and open source built with Next.js, React, Tailwind CSS, and Motion.
+116 free, open-source React components for AI chat and agents, plus the inputs, cards and buttons around them. Built with Tailwind CSS, Motion and shadcn/ui.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -139,10 +139,10 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 
 ## Categories
 
-- [AI Components](https://kokonutui.com/docs/ai.md): Free React components for AI apps: chat inputs with model pickers, tool approvals, citations, diff review, streaming states and more, built with Tailwind CSS.
+- [AI Components](https://kokonutui.com/docs/ai.md): Free React components for AI chat and agents: prompt inputs, voice, tool calls and approvals, in-chat checkout and order tracking, citations and diff review.
 - [Background Components](https://kokonutui.com/docs/backgrounds.md): Free animated React backgrounds and hero sections: dot fields, flow fields, ink, caustics and rain on glass, built with Tailwind CSS, canvas and WebGL.
 - [Button Components](https://kokonutui.com/docs/buttons.md): Free animated React buttons: hold to confirm, slide to confirm, magnet, particle, undo and save buttons with real feedback, built with Tailwind CSS and Motion.
-- [Card Components](https://kokonutui.com/docs/cards.md): Free React card components: flip cards, card stacks, widget grids, activity rings, receipts and metric cards, animated with Motion and styled with Tailwind CSS.
+- [Card Components](https://kokonutui.com/docs/cards.md): Free React card components: flick cards, throw decks, widget grids, activity rings, boarding passes, receipts and metric cards, animated with Motion.
 - [Feedback Components](https://kokonutui.com/docs/feedback.md): Free React feedback components: a promise toast, an inline alert, a save status pill, an empty state and a helpful rating, built with Tailwind CSS and Motion.
 - [Input Components](https://kokonutui.com/docs/inputs.md): Free React input components: file upload, date and slot pickers, wheel picker, signature pad, card field, seat map and sliders, built with Tailwind CSS.
 - [Media Components](https://kokonutui.com/docs/media.md): Free React media components: clip trimmer, contact sheet, synced transcript, focal point picker and photo straightening, built with Tailwind CSS and Motion.

@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Find and install a KokonutUI React component into a project using the shadcn CLI, and read its source and documentation.",
       "url": "https://kokonutui.com/.well-known/agent-skills/install-component/SKILL.md",
-      "digest": "sha256:0808375a3b630c10d4b877b0dd79d87313a27165ec5f51cec8e7215868ddd366"
+      "digest": "sha256:632137440a6ba404eb731b307cfc4152dce78314cfb4b04549724e30d46dce47"
     }
   ]
 }
