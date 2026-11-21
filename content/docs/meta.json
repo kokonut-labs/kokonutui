@@ -1,6 +1,6 @@
 {
   "title": "KokonutUI",
-  "description": "Open-source React components for AI apps, built with Tailwind CSS, Motion and shadcn/ui.",
+  "description": "Free, open-source React components for AI chat and agents, plus the inputs, cards and buttons around them. Built with Tailwind CSS, Motion and shadcn/ui.",
   "root": true,
   "pages": [
     "index",

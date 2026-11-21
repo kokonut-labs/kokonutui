@@ -5,8 +5,10 @@ description: Find and install a KokonutUI React component into a project using t
 
 # Installing a KokonutUI component
 
-KokonutUI is a collection of 100+ open-source React components built with
-Next.js, React, Tailwind CSS v4, and Motion. Components are not published as
+KokonutUI is a collection of 100+ open-source React components for AI chat and
+agents (prompt inputs, tool calls, in-chat checkout and order tracking), plus
+the inputs, cards and buttons around them, built with React, Tailwind CSS v4
+and Motion. Components are not published as
 an npm package — each one is copied into the target project as source code
 via the shadcn CLI, so it can be edited freely afterwards.
 
@@ -27,7 +29,7 @@ append `.md` to the URL) to get clean Markdown instead of HTML. For example,
 
 If a shadcn MCP server is available, use it to browse and install components
 directly — it works with the `@kokonutui` registry out of the box. Setup:
-`https://kokonutui.com/docs/mcp`.
+`https://kokonutui.com/docs/agents`.
 
 Otherwise, use the shadcn CLI with the `@kokonutui` namespace:
 

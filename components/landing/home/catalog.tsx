@@ -247,9 +247,9 @@ function Cover({
               )}
               style={enter(1)}
             >
-              Open-source React components for AI apps, and the inputs and cards
-              around them. All live on this page. Install any of them with one
-              command or one prompt.
+              Open-source React components for AI chat and agents, and the
+              inputs and cards around them. All live on this page. Install any
+              of them with the shadcn CLI, or ask your agent to.
             </p>
           </div>
         </div>
