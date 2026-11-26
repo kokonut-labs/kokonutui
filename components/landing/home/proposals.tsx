@@ -149,6 +149,38 @@ function AgentMarks({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Beside the cover's buttons: the agents that install from the registry,
+ * each mark in its own color, linking to the agents guide.
+ */
+function AgentStrip() {
+  return (
+    <Link
+      className={cn("home-enter group flex flex-col gap-2 rounded-sm", FOCUS)}
+      href="/docs/agents"
+      style={enter(2)}
+    >
+      <span className={META}>Install with your agent</span>
+      <span className="grid w-fit grid-cols-2 gap-x-6 gap-y-2">
+        {AGENTS.filter((a) => a.id !== "vscode").map(
+          ({ id, label, Mark, color }) => (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 font-medium text-[14px] text-black/70 group-hover:text-black dark:text-white/70 dark:group-hover:text-white",
+                EASE_COLORS
+              )}
+              key={id}
+            >
+              <Mark className={cn("size-4 shrink-0", color)} />
+              {id === "any" ? "any agent" : label}
+            </span>
+          )
+        )}
+      </span>
+    </Link>
+  );
+}
+
 function AgentTabs({
   value,
   onChange,
@@ -374,14 +406,16 @@ function Agents({ number }: { number: string }) {
 
 /* Shared cover pieces --------------------------------------------------- */
 
-function MetaRow() {
+function MetaRow({ agents = true }: { agents?: boolean }) {
+  const labels = [
+    "Kokonut UI",
+    "UI and AI components",
+    "React, Tailwind CSS, Motion",
+    ...(agents ? [] : ["Free and open source"]),
+  ];
   return (
     <div className={cn("grid grid-cols-2 md:grid-cols-4", GRID)}>
-      {[
-        "Kokonut UI",
-        "UI and AI components",
-        "React, Tailwind CSS, Motion",
-      ].map((label, i) => (
+      {labels.map((label, i) => (
         <p
           className={cn(
             "home-enter flex h-10 items-center px-4",
@@ -396,17 +430,19 @@ function MetaRow() {
           {label}
         </p>
       ))}
-      <p
-        className={cn(
-          "home-enter flex h-10 items-center justify-between gap-3 px-4",
-          CELL,
-          META
-        )}
-        style={enter(0)}
-      >
-        <span>Works with</span>
-        <AgentMarks />
-      </p>
+      {agents ? (
+        <p
+          className={cn(
+            "home-enter flex h-10 items-center justify-between gap-3 px-4",
+            CELL,
+            META
+          )}
+          style={enter(0)}
+        >
+          <span>Works with</span>
+          <AgentMarks />
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -461,16 +497,11 @@ export function LandingByScreen({ parts }: { parts: Part[] }) {
         aria-label="Kokonut UI"
         className={cn("grid grid-cols-1 border", GRID, LINE)}
       >
-        <MetaRow />
-        <div
-          className={cn(
-            "grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-[1fr_auto]",
-            GRID
-          )}
-        >
+        <MetaRow agents={false} />
+        <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
           <div
             className={cn(
-              "order-1 flex items-center p-5 sm:p-8 lg:col-span-8 lg:p-10",
+              "order-1 flex flex-col justify-between gap-8 p-5 sm:gap-12 sm:p-8 lg:col-span-8 lg:p-10",
               CELL
             )}
           >
@@ -485,42 +516,41 @@ export function LandingByScreen({ parts }: { parts: Part[] }) {
               components <br />
               that feel right.
             </h1>
-          </div>
-          <div
-            className={cn(
-              "contents lg:order-2 lg:col-span-4 lg:row-span-2 lg:grid lg:grid-rows-[1fr_auto]",
-              GRID
-            )}
-          >
-            {pick(["apple-activity-card"]).map((part) => (
-              <CornerPlate key={part.name} part={part} />
-            ))}
-            <div
-              className={cn(
-                "order-2 flex items-end p-5 sm:p-8 lg:px-10 lg:py-7",
-                CELL
-              )}
+            <p
+              className="home-enter max-w-[620px] text-pretty text-[19px] leading-[1.45] tracking-[-0.01em] sm:text-[22px]"
+              style={enter(1)}
             >
-              <p
-                className={cn(
-                  "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
-                  SOFT
-                )}
-                style={enter(1)}
-              >
+              <span className={INK}>
                 Open-source React components for the chat and the app around it,
-                made to sit on the same screen. Install them with the shadcn
-                CLI, or ask Claude Code, Codex or Cursor to.
-              </p>
-            </div>
+                made to sit on the same screen.
+              </span>{" "}
+              <span className={SOFT}>
+                Install them with the shadcn CLI, or ask your agent to.
+              </span>
+            </p>
           </div>
+          {pick(["apple-activity-card"]).map((part) => (
+            <CornerPlate
+              className="order-4 lg:order-2 lg:col-span-4"
+              key={part.name}
+              part={part}
+            />
+          ))}
           <div
             className={cn(
-              "order-3 flex flex-wrap items-center gap-x-6 gap-y-4 p-5 sm:px-8 lg:col-span-8 lg:px-10",
+              "order-2 flex flex-wrap items-center gap-x-6 gap-y-4 p-5 sm:px-8 lg:order-3 lg:col-span-8 lg:px-10",
               CELL
             )}
           >
             <HeroActions count={parts.length} />
+          </div>
+          <div
+            className={cn(
+              "order-3 flex items-center p-5 sm:px-8 lg:order-4 lg:col-span-4 lg:px-6",
+              CELL
+            )}
+          >
+            <AgentStrip />
           </div>
         </div>
 

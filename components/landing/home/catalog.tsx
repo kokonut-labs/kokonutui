@@ -328,11 +328,21 @@ export function HeroActions({ count }: { count: number }) {
  * The live part beside the headline. Stacked, it comes after the buttons, so
  * the pitch and the two ways in stay together.
  */
-export function CornerPlate({ part }: { part: Part }) {
+export function CornerPlate({
+  part,
+  className,
+}: {
+  part: Part;
+  className?: string;
+}) {
   const { Component: Demo, hint } = LIVE[part.name];
   return (
     <figure
-      className={cn("home-enter order-4 flex flex-col lg:order-1", CELL)}
+      className={cn(
+        "home-enter order-4 flex flex-col lg:order-1",
+        CELL,
+        className
+      )}
       style={enter(1)}
     >
       <figcaption className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
