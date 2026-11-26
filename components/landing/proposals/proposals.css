@@ -1,0 +1,63 @@
+/* Motion and surfaces for the landing proposals. */
+
+/* Ask: a reply's words land one after another, out of a blur. 18ms apart,
+   so a two-line answer has landed in under half a second. */
+@keyframes ask-word {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+.ask-word {
+  animation: ask-word 320ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: calc(min(var(--i, 0), 30) * 18ms);
+}
+
+/* The sent ask settles in from where the composer is. */
+@keyframes ask-sent {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.ask-sent {
+  animation: ask-sent 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  transform-origin: bottom right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-word,
+  .ask-sent {
+    animation: home-fade 150ms ease-out both;
+    animation-delay: 0ms;
+  }
+}
+
+/* Canvas: a dot grid that moves and scales with the camera (the script sets
+   its size and position). */
+.canvas-dots {
+  --canvas-dot: rgb(0 0 0 / 0.16);
+  background-color: #f3f3f2;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--canvas-dot) 1px,
+    transparent 1.4px
+  );
+  background-size: 24px 24px;
+  cursor: default;
+}
+
+.dark .canvas-dots {
+  --canvas-dot: rgb(255 255 255 / 0.14);
+  background-color: #050505;
+}
+
+.canvas-dots[data-grab="true"] {
+  cursor: grab;
+}
+
+.canvas-dots[data-dragging="true"] {
+  cursor: grabbing;
+}

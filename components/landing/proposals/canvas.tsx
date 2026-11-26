@@ -1,0 +1,1093 @@
+"use client";
+
+import Link from "next/link";
+import {
+  type KeyboardEvent,
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { GITHUB_URL } from "@/components/landing/home/data";
+import { Fit } from "@/components/landing/home/live";
+import type { Part } from "@/components/landing/home/parts";
+import {
+  EASE_COLORS,
+  FOCUS,
+  FOCUS_INSET,
+  INK,
+  LEAF,
+  META,
+  MONO,
+  SOFT,
+} from "@/components/landing/home/styles";
+import { cn } from "@/lib/utils";
+import { PartDemo } from "./demo";
+import { InstallBar } from "./install";
+import { matchParts } from "./match";
+
+// The homepage is one canvas with every component on it, running, laid out
+// like a design file: a group per category, an artboard per component.
+// Drag to pan, pinch or ctrl-scroll to zoom, pick one to add it.
+
+const BOARD_W = 440;
+const BOARD_H: Record<string, number> = {
+  buttons: 240,
+  texts: 240,
+  backgrounds: 330,
+};
+const BOARD_H_DEFAULT = 430;
+const LABEL = 34;
+const GAP_X = 56;
+const GAP_Y = 64;
+const COLS = 4;
+const GROUP_HEAD = 300;
+const GROUP_GAP = 360;
+const GROUP_COLUMNS = 3;
+const GROUP_W = COLS * BOARD_W + (COLS - 1) * GAP_X;
+
+/** Below this zoom, artboards show their name instead of running. */
+const DETAIL = 0.42;
+const MIN_Z = 0.05;
+const MAX_Z = 1.6;
+
+/** Strong ease-in-out, for the camera moving across the canvas. */
+const FLY_MS = 620;
+
+interface Board {
+  part: Part;
+  x: number;
+  y: number;
+  h: number;
+}
+
+interface Group {
+  slug: string;
+  title: string;
+  count: number;
+  x: number;
+  y: number;
+  h: number;
+}
+
+interface View {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/** Groups go into the shortest of three columns, AI first. */
+function layout(parts: Part[]) {
+  const slugs = [...new Set(parts.map((p) => p.categorySlug))].sort(
+    (a, b) => Number(b === "ai") - Number(a === "ai")
+  );
+  const heights = new Array<number>(GROUP_COLUMNS).fill(0);
+  const boards: Board[] = [];
+  const groups: Group[] = [];
+  for (const slug of slugs) {
+    const items = parts.filter((p) => p.categorySlug === slug);
+    const h = BOARD_H[slug] ?? BOARD_H_DEFAULT;
+    const rows = Math.ceil(items.length / COLS);
+    const groupH = GROUP_HEAD + rows * (LABEL + h + GAP_Y) - GAP_Y;
+    const column = heights.indexOf(Math.min(...heights));
+    const gx = column * (GROUP_W + GROUP_GAP);
+    const gy = heights[column];
+    heights[column] += groupH + GROUP_GAP;
+    groups.push({
+      slug,
+      title: items[0]?.category ?? slug,
+      count: items.length,
+      x: gx,
+      y: gy,
+      h: groupH,
+    });
+    items.forEach((part, i) => {
+      boards.push({
+        part,
+        h,
+        x: gx + (i % COLS) * (BOARD_W + GAP_X),
+        y: gy + GROUP_HEAD + Math.floor(i / COLS) * (LABEL + h + GAP_Y),
+      });
+    });
+  }
+  return {
+    boards,
+    groups,
+    width: GROUP_COLUMNS * GROUP_W + (GROUP_COLUMNS - 1) * GROUP_GAP,
+    height: Math.max(...heights) - GROUP_GAP,
+  };
+}
+
+/** cubic-bezier(x1, y1, x2, y2) as a function of time, solved with Newton. */
+function bezier(x1: number, y1: number, x2: number, y2: number) {
+  const at = (s: number, a: number, b: number) =>
+    3 * a * (1 - s) ** 2 * s + 3 * b * (1 - s) * s ** 2 + s ** 3;
+  const slope = (s: number, a: number, b: number) =>
+    3 * a * (1 - s) ** 2 + 6 * (b - a) * (1 - s) * s + 3 * (1 - b) * s ** 2;
+  return (t: number) => {
+    let s = t;
+    for (let i = 0; i < 8; i++) {
+      const err = at(s, x1, x2) - t;
+      const d = slope(s, x1, x2);
+      if (Math.abs(err) < 1e-5 || Math.abs(d) < 1e-6) {
+        break;
+      }
+      s = Math.min(1, Math.max(0, s - err / d));
+    }
+    return at(s, y1, y2);
+  };
+}
+const EASE_IN_OUT = bezier(0.77, 0, 0.175, 1);
+
+/** Arrow keys move the camera; the canvas moves the other way. */
+const PAN: Record<string, [number, number]> = {
+  ArrowLeft: [1, 0],
+  ArrowRight: [-1, 0],
+  ArrowUp: [0, 1],
+  ArrowDown: [0, -1],
+};
+
+const clampZ = (z: number) => Math.min(MAX_Z, Math.max(MIN_Z, z));
+const reduced = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+type Selection =
+  | { kind: "one"; name: string }
+  | { kind: "view"; names: string[] };
+
+function ToolButton({
+  children,
+  label,
+  onClick,
+  className,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      aria-label={label}
+      className={cn(
+        "flex h-8 min-w-8 items-center justify-center rounded-[9px] px-2 text-[13px] text-black/70 hover:bg-black/[0.06] hover:text-black dark:text-white/70 dark:hover:bg-white/[0.08] dark:hover:text-white",
+        EASE_COLORS,
+        FOCUS_INSET,
+        className
+      )}
+      onClick={onClick}
+      title={label}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
+
+const PANEL =
+  "rounded-[16px] border border-black/[0.1] bg-white dark:border-white/[0.12] dark:bg-[#0b0b0b]";
+
+export function Canvas({ parts }: { parts: Part[] }) {
+  const { boards, groups, width, height } = useMemo(
+    () => layout(parts),
+    [parts]
+  );
+  const byName = useMemo(
+    () => new Map(boards.map((b) => [b.part.name, b])),
+    [boards]
+  );
+
+  const viewport = useRef<HTMLDivElement>(null);
+  const world = useRef<HTMLDivElement>(null);
+  const view = useRef<View>({ x: 0, y: 0, z: 1 });
+  const frame = useRef(0);
+  const motion = useRef(0);
+  const space = useRef(false);
+
+  const [ready, setReady] = useState(false);
+  const [visible, setVisible] = useState("");
+  const [detail, setDetail] = useState(true);
+  const [zoom, setZoom] = useState(100);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [intro, setIntro] = useState(true);
+  const [query, setQuery] = useState("");
+
+  const live = useMemo(() => new Set(visible.split("|")), [visible]);
+  const found = useMemo(
+    () => (query.trim() ? matchParts(parts, query, 6) : []),
+    [parts, query]
+  );
+
+  /** Writes the camera to the DOM, then culls what's on screen. */
+  const apply = useCallback(() => {
+    const el = viewport.current;
+    const w = world.current;
+    if (!(el && w)) {
+      return;
+    }
+    const { x, y, z } = view.current;
+    w.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
+    let step = 24 * z;
+    while (step < 14) {
+      step *= 2;
+    }
+    el.style.backgroundSize = `${step}px ${step}px`;
+    el.style.backgroundPosition = `${x}px ${y}px`;
+
+    cancelAnimationFrame(frame.current);
+    frame.current = requestAnimationFrame(() => {
+      const { width: vw, height: vh } = el.getBoundingClientRect();
+      const margin = 160 / z;
+      const left = -x / z - margin;
+      const top = -y / z - margin;
+      const right = (vw - x) / z + margin;
+      const bottom = (vh - y) / z + margin;
+      const names = boards
+        .filter(
+          (b) =>
+            b.x < right &&
+            b.x + BOARD_W > left &&
+            b.y < bottom &&
+            b.y + LABEL + b.h > top
+        )
+        .map((b) => b.part.name);
+      setVisible(names.join("|"));
+      setDetail(z >= DETAIL);
+      setZoom(Math.round(z * 100));
+    });
+  }, [boards]);
+
+  /** Keeps some of the canvas on screen, however far you drag. */
+  const clamp = useCallback(() => {
+    const el = viewport.current;
+    if (!el) {
+      return;
+    }
+    const v = view.current;
+    const keep = 200;
+    v.z = clampZ(v.z);
+    v.x = Math.min(el.clientWidth - keep, Math.max(keep - width * v.z, v.x));
+    v.y = Math.min(el.clientHeight - keep, Math.max(keep - height * v.z, v.y));
+  }, [width, height]);
+
+  const stop = useCallback(() => cancelAnimationFrame(motion.current), []);
+
+  /** Where a focused thing should land: the middle of the free space. */
+  const anchor = useCallback(
+    (withPanel: boolean) => {
+      const el = viewport.current;
+      const vw = el?.clientWidth ?? 1280;
+      const vh = el?.clientHeight ?? 800;
+      const wide = vw >= 1024;
+      const left = wide && intro ? 392 : 0;
+      const right = wide && withPanel ? 392 : 0;
+      return {
+        ax: (left + vw - right) / 2,
+        ay: wide ? vh / 2 : vh * 0.42,
+        w: vw - left - right,
+        h: vh,
+      };
+    },
+    [intro]
+  );
+
+  /** Moves the camera so world point (cx, cy) sits at the anchor, at zoom z. */
+  const flyTo = useCallback(
+    (cx: number, cy: number, z: number, withPanel: boolean, ms = FLY_MS) => {
+      stop();
+      const { ax, ay } = anchor(withPanel);
+      const from = view.current;
+      const fz = from.z;
+      const fcx = (ax - from.x) / fz;
+      const fcy = (ay - from.y) / fz;
+      const tz = clampZ(z);
+      const set = (t: number) => {
+        const k = Math.exp(Math.log(fz) + (Math.log(tz) - Math.log(fz)) * t);
+        const px = fcx + (cx - fcx) * t;
+        const py = fcy + (cy - fcy) * t;
+        view.current = { x: ax - px * k, y: ay - py * k, z: k };
+        apply();
+      };
+      if (ms === 0 || reduced()) {
+        set(1);
+        return;
+      }
+      const start = performance.now();
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / ms);
+        set(EASE_IN_OUT(t));
+        if (t < 1) {
+          motion.current = requestAnimationFrame(tick);
+        }
+      };
+      motion.current = requestAnimationFrame(tick);
+    },
+    [anchor, apply, stop]
+  );
+
+  const zoomAt = useCallback(
+    (sx: number, sy: number, z: number) => {
+      const v = view.current;
+      const next = clampZ(z);
+      const wx = (sx - v.x) / v.z;
+      const wy = (sy - v.y) / v.z;
+      view.current = { x: sx - wx * next, y: sy - wy * next, z: next };
+      clamp();
+      apply();
+    },
+    [apply, clamp]
+  );
+
+  const focusBoard = useCallback(
+    (name: string) => {
+      const b = byName.get(name);
+      if (!b) {
+        return;
+      }
+      setSelection({ kind: "one", name });
+      const { w, h } = anchor(true);
+      const z = Math.min(1, (w - 80) / BOARD_W, (h - 120) / (b.h + LABEL));
+      flyTo(b.x + BOARD_W / 2, b.y + (LABEL + b.h) / 2, z, true);
+    },
+    [anchor, byName, flyTo]
+  );
+
+  const focusGroup = useCallback(
+    (slug: string, ms = FLY_MS) => {
+      const g = groups.find((item) => item.slug === slug);
+      if (!g) {
+        return;
+      }
+      const { w, h } = anchor(false);
+      const z = Math.min(
+        0.9,
+        (w - 80) / GROUP_W,
+        (h - 80) / Math.min(g.h, 1500)
+      );
+      // Big groups land on their first rows, not their middle.
+      const cy = g.y + Math.min(g.h, 1500) / 2;
+      flyTo(g.x + GROUP_W / 2, cy, z, false, ms);
+    },
+    [anchor, flyTo, groups]
+  );
+
+  const fitAll = useCallback(() => {
+    const { w, h } = anchor(false);
+    flyTo(
+      width / 2,
+      height / 2,
+      Math.min((w - 48) / width, (h - 120) / height),
+      false
+    );
+  }, [anchor, flyTo, height, width]);
+
+  const zoomBy = useCallback(
+    (factor: number) => {
+      const el = viewport.current;
+      if (!el) {
+        return;
+      }
+      zoomAt(el.clientWidth / 2, el.clientHeight / 2, view.current.z * factor);
+    },
+    [zoomAt]
+  );
+
+  const inView = useCallback(() => {
+    const el = viewport.current;
+    if (!el) {
+      return;
+    }
+    const { x, y, z } = view.current;
+    const names = boards
+      .filter(
+        (b) =>
+          b.x * z + x >= -40 &&
+          (b.x + BOARD_W) * z + x <= el.clientWidth + 40 &&
+          b.y * z + y >= -40 &&
+          (b.y + LABEL + b.h) * z + y <= el.clientHeight + 40
+      )
+      .slice(0, 12)
+      .map((b) => b.part.name);
+    if (names.length) {
+      setSelection({ kind: "view", names });
+    }
+  }, [boards]);
+
+  // First frame: open on the AI group, beside the intro.
+  useLayoutEffect(() => {
+    const el = viewport.current;
+    if (!el) {
+      return;
+    }
+    const wide = el.clientWidth >= 1024;
+    const z = wide ? 0.78 : Math.min(0.66, (el.clientWidth - 32) / BOARD_W);
+    const ai = groups[0];
+    view.current = {
+      x: (wide ? 412 : 16) - (ai?.x ?? 0) * z,
+      y: (wide ? 28 : 300) - (ai?.y ?? 0) * z,
+      z,
+    };
+    apply();
+    setReady(true);
+  }, [apply, groups]);
+
+  // Wheel: ctrl or a trackpad pinch zooms at the pointer, the rest pans.
+  // Native so it can prevent the page from scrolling under the canvas.
+  useEffect(() => {
+    const el = viewport.current;
+    if (!el) {
+      return;
+    }
+    const onWheel = (e: WheelEvent) => {
+      if ((e.target as Element).closest("[data-ui]")) {
+        return;
+      }
+      e.preventDefault();
+      stop();
+      const line = e.deltaMode === 1 ? 16 : 1;
+      if (e.ctrlKey || e.metaKey) {
+        const r = el.getBoundingClientRect();
+        const d = Math.max(-60, Math.min(60, e.deltaY * line));
+        zoomAt(
+          e.clientX - r.left,
+          e.clientY - r.top,
+          view.current.z * Math.exp(-d * 0.01)
+        );
+        return;
+      }
+      const dx = e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX;
+      const dy = e.shiftKey && !e.deltaX ? 0 : e.deltaY;
+      view.current.x -= dx * line;
+      view.current.y -= dy * line;
+      clamp();
+      apply();
+    };
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      const typing = (e.target as Element).closest(
+        "input, textarea, [contenteditable]"
+      );
+      if (e.key === " " && !typing && el.matches(":hover")) {
+        if (e.type === "keydown") {
+          e.preventDefault();
+        }
+        space.current = e.type === "keydown";
+        el.dataset.grab = space.current ? "true" : "";
+      }
+    };
+    const onResize = () => {
+      clamp();
+      apply();
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKey);
+    window.addEventListener("resize", onResize);
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKey);
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(frame.current);
+      cancelAnimationFrame(motion.current);
+    };
+  }, [apply, clamp, stop, zoomAt]);
+
+  // Dragging. One pointer pans from anywhere that isn't a running component
+  // (or anywhere, holding space); two touches pinch, wherever they land.
+  const drag = useRef<{
+    id: number;
+    sx: number;
+    sy: number;
+    lx: number;
+    ly: number;
+    lt: number;
+    vx: number;
+    vy: number;
+    moved: boolean;
+    board: string | null;
+  } | null>(null);
+  const touches = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ d: number; z: number; mx: number; my: number } | null>(
+    null
+  );
+
+  const local = (e: PointerEvent) => {
+    const r = viewport.current?.getBoundingClientRect();
+    return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) };
+  };
+
+  const pinchState = () => {
+    const [a, b] = [...touches.current.values()];
+    return {
+      d: Math.hypot(a.x - b.x, a.y - b.y),
+      mx: (a.x + b.x) / 2,
+      my: (a.y + b.y) / 2,
+    };
+  };
+
+  const onPointerDownCapture = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "touch") {
+      return;
+    }
+    touches.current.set(e.pointerId, local(e));
+    if (touches.current.size === 2) {
+      stop();
+      drag.current = null;
+      const s = pinchState();
+      pinch.current = { ...s, z: view.current.z };
+      for (const id of touches.current.keys()) {
+        viewport.current?.setPointerCapture(id);
+      }
+      e.stopPropagation();
+    }
+  };
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (pinch.current) {
+      return;
+    }
+    const target = e.target as Element;
+    if (target.closest("[data-ui]")) {
+      return;
+    }
+    const pan = space.current || e.button === 1;
+    if (!pan && (e.button !== 0 || target.closest("[data-live]"))) {
+      return;
+    }
+    e.preventDefault();
+    stop();
+    const p = local(e);
+    drag.current = {
+      id: e.pointerId,
+      sx: p.x,
+      sy: p.y,
+      lx: p.x,
+      ly: p.y,
+      lt: e.timeStamp,
+      vx: 0,
+      vy: 0,
+      moved: false,
+      board: target.closest("[data-board]")?.getAttribute("data-board") ?? null,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (pinch.current && touches.current.has(e.pointerId)) {
+      touches.current.set(e.pointerId, local(e));
+      const start = pinch.current;
+      const now = pinchState();
+      const v = view.current;
+      const z = clampZ(start.z * (now.d / start.d));
+      // The world point under the fingers' midpoint stays under it.
+      const wx = (start.mx - v.x) / v.z;
+      const wy = (start.my - v.y) / v.z;
+      view.current = { x: now.mx - wx * z, y: now.my - wy * z, z };
+      pinch.current = { ...start, mx: now.mx, my: now.my, z, d: now.d };
+      clamp();
+      apply();
+      return;
+    }
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) {
+      return;
+    }
+    const p = local(e);
+    if (!d.moved && Math.hypot(p.x - d.sx, p.y - d.sy) > 4) {
+      d.moved = true;
+      viewport.current?.setAttribute("data-dragging", "true");
+    }
+    if (!d.moved) {
+      return;
+    }
+    const dt = Math.max(1, e.timeStamp - d.lt);
+    d.vx = (p.x - d.lx) / dt;
+    d.vy = (p.y - d.ly) / dt;
+    view.current.x += p.x - d.lx;
+    view.current.y += p.y - d.ly;
+    d.lx = p.x;
+    d.ly = p.y;
+    d.lt = e.timeStamp;
+    clamp();
+    apply();
+  };
+
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    if (touches.current.delete(e.pointerId) && touches.current.size < 2) {
+      pinch.current = null;
+    }
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) {
+      return;
+    }
+    drag.current = null;
+    viewport.current?.removeAttribute("data-dragging");
+    if (!d.moved) {
+      if (d.board) {
+        if (view.current.z < DETAIL) {
+          focusBoard(d.board);
+        } else {
+          setSelection({ kind: "one", name: d.board });
+        }
+      }
+      return;
+    }
+    // A flick keeps going, and slows the way a page does.
+    if (reduced() || e.timeStamp - d.lt > 60) {
+      return;
+    }
+    let { vx, vy } = d;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = now - last;
+      last = now;
+      view.current.x += vx * dt;
+      view.current.y += vy * dt;
+      const decay = 0.94 ** (dt / 16);
+      vx *= decay;
+      vy *= decay;
+      clamp();
+      apply();
+      if (Math.hypot(vx, vy) > 0.02) {
+        motion.current = requestAnimationFrame(tick);
+      }
+    };
+    motion.current = requestAnimationFrame(tick);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget) {
+      return;
+    }
+    const pan = PAN[e.key];
+    if (pan) {
+      e.preventDefault();
+      stop();
+      view.current.x += pan[0] * 120;
+      view.current.y += pan[1] * 120;
+      clamp();
+      apply();
+    } else if (e.key === "+" || e.key === "=") {
+      zoomBy(1.25);
+    } else if (e.key === "-") {
+      zoomBy(0.8);
+    } else if (e.key === "0") {
+      fitAll();
+    }
+  };
+
+  const selected =
+    selection?.kind === "one" ? byName.get(selection.name) : null;
+  const picked =
+    selection?.kind === "view"
+      ? selection.names.flatMap((n) => byName.get(n)?.part ?? [])
+      : [];
+
+  return (
+    <div className="relative">
+      <h1 className="sr-only">Kokonut UI: every component on one canvas</h1>
+      {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: the canvas is the control; it pans and zooms with the pointer and keys */}
+      <div
+        aria-label="Component canvas. Arrow keys pan, plus and minus zoom, 0 shows everything."
+        aria-roledescription="canvas"
+        className={cn(
+          "canvas-dots relative h-[calc(100svh-140px)] min-h-[540px] w-full touch-none select-none overflow-hidden border-black/[0.1] border-t dark:border-white/[0.12]",
+          FOCUS_INSET
+        )}
+        onKeyDown={onKeyDown}
+        onPointerCancel={onPointerUp}
+        onPointerDown={onPointerDown}
+        onPointerDownCapture={onPointerDownCapture}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        ref={viewport}
+        role="application"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: focusable so the arrow and zoom keys reach it
+        tabIndex={0}
+      >
+        <div
+          className={cn(
+            "absolute top-0 left-0 origin-top-left transition-opacity duration-200 ease-out",
+            ready ? "opacity-100" : "opacity-0"
+          )}
+          ref={world}
+          style={{ width, height }}
+        >
+          {groups.map((g) => (
+            <div
+              className="pointer-events-none absolute"
+              key={g.slug}
+              style={{ left: g.x, top: g.y, width: GROUP_W }}
+            >
+              <p
+                className={cn(
+                  "font-semibold leading-none tracking-[-0.04em]",
+                  INK
+                )}
+                style={{ fontSize: 150 }}
+              >
+                {g.title}
+              </p>
+              <p className={cn(MONO, "mt-6", SOFT)} style={{ fontSize: 34 }}>
+                {g.count} components
+              </p>
+            </div>
+          ))}
+          {boards.map((b) => {
+            const running = detail && live.has(b.part.name);
+            const isSelected =
+              selection?.kind === "one"
+                ? selection.name === b.part.name
+                : selection?.names.includes(b.part.name);
+            return (
+              <div
+                className="absolute"
+                data-board={b.part.name}
+                key={b.part.name}
+                style={{ left: b.x, top: b.y, width: BOARD_W }}
+              >
+                <button
+                  className={cn(
+                    "flex h-[34px] w-full items-center gap-2 text-left text-[13px]",
+                    isSelected ? "text-[#0a6cff]" : SOFT,
+                    FOCUS_INSET
+                  )}
+                  onClick={(e) => {
+                    // Pointer clicks are handled on release, so a drag that
+                    // starts on a label doesn't select it.
+                    if (e.detail === 0) {
+                      focusBoard(b.part.name);
+                    }
+                  }}
+                  type="button"
+                >
+                  <span className={cn(MONO, "text-[11.5px]", LEAF)}>
+                    {b.part.code}
+                  </span>
+                  <span className="truncate">{b.part.title}</span>
+                </button>
+                <div
+                  className={cn(
+                    "relative overflow-hidden bg-white outline-offset-0 dark:bg-[#0b0b0b]",
+                    isSelected
+                      ? "outline-2 outline-[#0a6cff] outline-solid"
+                      : "outline-1 outline-black/[0.08] outline-solid dark:outline-white/[0.1]"
+                  )}
+                  data-live={running ? "" : undefined}
+                  style={{ height: b.h }}
+                >
+                  {running ? (
+                    <Fit className="p-6">
+                      <PartDemo part={b.part} />
+                    </Fit>
+                  ) : (
+                    <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-3 px-8 text-center">
+                      <span
+                        className="font-semibold text-black/30 leading-tight dark:text-white/30"
+                        style={{ fontSize: 40 }}
+                      >
+                        {b.part.title}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {intro ? (
+          <aside
+            className={cn(
+              PANEL,
+              "absolute top-3 right-3 left-3 flex max-h-[calc(100%-96px)] flex-col overflow-y-auto p-5 md:right-auto md:w-[372px]"
+            )}
+            data-ui
+          >
+            <div className="flex items-start justify-between gap-4">
+              <p className={META}>Kokonut UI · Free and open source</p>
+              <button
+                aria-label="Hide intro"
+                className={cn(
+                  "-mt-1 -mr-1 flex size-7 items-center justify-center rounded-full text-black/50 hover:bg-black/[0.06] hover:text-black dark:text-white/50 dark:hover:bg-white/[0.08] dark:hover:text-white",
+                  EASE_COLORS,
+                  FOCUS
+                )}
+                onClick={() => setIntro(false)}
+                type="button"
+              >
+                ×
+              </button>
+            </div>
+            <p
+              className={cn(
+                "mt-3 font-semibold text-[26px] leading-[1.1] tracking-[-0.025em]",
+                INK
+              )}
+            >
+              {parts.length} components, all running. Find yours.
+            </p>
+            <p className={cn("mt-3 text-[14px] leading-[1.55]", SOFT)}>
+              Drag to look around, pinch or ctrl-scroll to zoom. Pick one and
+              add it with shadcn, Claude Code, Codex, Cursor or any agent.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                className={cn(
+                  "inline-flex h-9 items-center rounded-full bg-black px-4 font-medium text-[13px] text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80",
+                  EASE_COLORS,
+                  FOCUS
+                )}
+                href="/docs"
+              >
+                Read the docs
+              </Link>
+              <a
+                className={cn(
+                  "inline-flex h-9 items-center rounded-full border border-black/[0.12] px-4 font-medium text-[13px] hover:border-black/30 dark:border-white/[0.14] dark:hover:border-white/35",
+                  INK,
+                  EASE_COLORS,
+                  FOCUS
+                )}
+                href={GITHUB_URL}
+                rel="noopener"
+                target="_blank"
+              >
+                GitHub
+              </a>
+            </div>
+            <nav
+              aria-label="Groups"
+              className="mt-6 hidden flex-col border-black/[0.08] border-t pt-3 md:flex dark:border-white/[0.1]"
+            >
+              {groups.map((g) => (
+                <button
+                  className={cn(
+                    "-mx-2 flex h-8 items-center justify-between rounded-[8px] px-2 text-[13px] hover:bg-black/[0.05] dark:hover:bg-white/[0.07]",
+                    INK,
+                    EASE_COLORS,
+                    FOCUS_INSET
+                  )}
+                  key={g.slug}
+                  onClick={() => focusGroup(g.slug)}
+                  type="button"
+                >
+                  <span>{g.title}</span>
+                  <span className={META}>{g.count}</span>
+                </button>
+              ))}
+            </nav>
+          </aside>
+        ) : (
+          <button
+            className={cn(
+              PANEL,
+              "absolute top-3 left-3 h-9 px-3.5 font-medium text-[13px]",
+              INK,
+              FOCUS
+            )}
+            data-ui
+            onClick={() => setIntro(true)}
+            type="button"
+          >
+            Kokonut UI
+          </button>
+        )}
+
+        {selected || picked.length ? (
+          <aside
+            className={cn(
+              PANEL,
+              "absolute right-3 bottom-[68px] left-3 z-10 flex max-h-[60%] flex-col gap-4 overflow-y-auto p-5 md:top-3 md:bottom-auto md:left-auto md:max-h-[calc(100%-96px)] md:w-[372px]"
+            )}
+            data-ui
+          >
+            <div className="flex items-start justify-between gap-4">
+              <p className={cn(META, "flex gap-3")}>
+                {selected ? (
+                  <>
+                    <span className={LEAF}>{selected.part.code}</span>
+                    <span>{selected.part.category}</span>
+                  </>
+                ) : (
+                  <span>{picked.length} in view</span>
+                )}
+              </p>
+              <button
+                aria-label="Close"
+                className={cn(
+                  "-mt-1 -mr-1 flex size-7 items-center justify-center rounded-full text-black/50 hover:bg-black/[0.06] hover:text-black dark:text-white/50 dark:hover:bg-white/[0.08] dark:hover:text-white",
+                  EASE_COLORS,
+                  FOCUS
+                )}
+                onClick={() => setSelection(null)}
+                type="button"
+              >
+                ×
+              </button>
+            </div>
+            {selected ? (
+              <>
+                <div>
+                  <p
+                    className={cn(
+                      "font-semibold text-[22px] leading-[1.15] tracking-[-0.02em]",
+                      INK
+                    )}
+                  >
+                    {selected.part.title}
+                  </p>
+                  {selected.part.description ? (
+                    <p className={cn("mt-2 text-[14px] leading-[1.55]", SOFT)}>
+                      {selected.part.description}
+                    </p>
+                  ) : null}
+                </div>
+                {selected.part.dependencies.length ? (
+                  <p className={META}>
+                    Installs {selected.part.dependencies.join(", ")}
+                  </p>
+                ) : null}
+                <InstallBar
+                  defaultWay="claude"
+                  key={selected.part.name}
+                  names={[selected.part.name]}
+                />
+                <Link
+                  className={cn(
+                    "text-[13px] underline-offset-4 hover:underline",
+                    INK,
+                    FOCUS
+                  )}
+                  href={selected.part.url}
+                >
+                  Docs and props ↗
+                </Link>
+              </>
+            ) : (
+              <>
+                <p
+                  className={cn(
+                    "font-semibold text-[20px] leading-[1.2] tracking-[-0.02em]",
+                    INK
+                  )}
+                >
+                  Everything on screen, in one ask.
+                </p>
+                <p className={cn("text-[13px] leading-[1.6]", SOFT)}>
+                  {picked.map((p) => p.title).join(", ")}
+                </p>
+                <InstallBar
+                  defaultWay="claude"
+                  key={picked.map((p) => p.name).join()}
+                  names={picked.map((p) => p.name)}
+                />
+              </>
+            )}
+          </aside>
+        ) : null}
+
+        <div
+          className="absolute bottom-3 left-1/2 z-20 w-max max-w-[calc(100%-24px)] -translate-x-1/2"
+          data-ui
+        >
+          {found.length ? (
+            <ul
+              className={cn(
+                PANEL,
+                "absolute right-0 bottom-full left-0 mb-2 flex flex-col p-1"
+              )}
+            >
+              {found.map((p) => (
+                <li key={p.name}>
+                  <button
+                    className={cn(
+                      "flex h-9 w-full items-center gap-2.5 rounded-[10px] px-2.5 text-left text-[13px] hover:bg-black/[0.05] dark:hover:bg-white/[0.07]",
+                      INK,
+                      EASE_COLORS,
+                      FOCUS_INSET
+                    )}
+                    onClick={() => {
+                      setQuery("");
+                      focusBoard(p.name);
+                    }}
+                    type="button"
+                  >
+                    <span className={cn(MONO, "text-[11px]", LEAF)}>
+                      {p.code}
+                    </span>
+                    <span className="truncate">{p.title}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className={cn(PANEL, "flex items-center gap-0.5 p-1")}>
+            <ToolButton label="Zoom out" onClick={() => zoomBy(0.8)}>
+              −
+            </ToolButton>
+            <span
+              className={cn(
+                MONO,
+                "w-11 text-center text-[11.5px] tabular-nums",
+                SOFT
+              )}
+            >
+              {zoom}%
+            </span>
+            <ToolButton label="Zoom in" onClick={() => zoomBy(1.25)}>
+              +
+            </ToolButton>
+            <ToolButton label="Show everything" onClick={fitAll}>
+              Fit
+            </ToolButton>
+            <span className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.12]" />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const first = found[0];
+                if (first) {
+                  setQuery("");
+                  focusBoard(first.name);
+                }
+              }}
+            >
+              <label className="sr-only" htmlFor="canvas-find">
+                Find a component
+              </label>
+              <input
+                autoComplete="off"
+                className={cn(
+                  "h-8 w-[112px] rounded-[9px] bg-black/[0.04] px-2.5 text-[13px] outline-none placeholder:text-black/45 focus:bg-black/[0.07] sm:w-[200px] dark:bg-white/[0.06] dark:focus:bg-white/[0.1] dark:placeholder:text-white/45",
+                  INK,
+                  EASE_COLORS
+                )}
+                id="canvas-find"
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setQuery("");
+                  }
+                }}
+                placeholder="Find: seat, toast, pay…"
+                value={query}
+              />
+            </form>
+            <span className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.12]" />
+            <ToolButton
+              className="whitespace-nowrap font-medium text-black dark:text-white"
+              label="Add everything in view"
+              onClick={inView}
+            >
+              <span className="sm:hidden">Add view</span>
+              <span className="hidden sm:inline">Add what's in view</span>
+            </ToolButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

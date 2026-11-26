@@ -4,9 +4,8 @@ import { cn } from "@/lib/utils";
 
 const PROPOSALS = [
   { href: "/", label: "Current" },
-  { href: "/landing/assembled", label: "1. Assembled" },
-  { href: "/landing/contents", label: "2. Contents" },
-  { href: "/landing/compare", label: "3. Compare" },
+  { href: "/landing/ask", label: "1. Ask" },
+  { href: "/landing/canvas", label: "2. Canvas" },
 ];
 
 /** Links between the proposals, above the cover. Not part of the design. */
@@ -14,7 +13,7 @@ export function ProposalNav({ current }: { current: string }) {
   return (
     <nav
       aria-label="Landing proposals"
-      className={cn("mb-4 flex flex-wrap gap-x-5 gap-y-1", META)}
+      className={cn("flex h-9 flex-wrap items-center gap-x-5 gap-y-1", META)}
     >
       <span>Landing proposals</span>
       {PROPOSALS.map((p) => (
