@@ -8,6 +8,7 @@ import {
 import {
   LandingAskAgent,
   LandingByScreen,
+  LandingWide,
   ProposalNav,
 } from "@/components/landing/home/proposals";
 import "@/components/landing/home/home.css";
@@ -22,7 +23,7 @@ export function generateStaticParams() {
   return PROPOSAL_IDS.map((variant) => ({ variant }));
 }
 
-const VIEWS = { a: LandingByScreen, b: LandingAskAgent };
+const VIEWS = { a: LandingByScreen, b: LandingAskAgent, c: LandingWide };
 
 export default async function LandingProposal({
   params,

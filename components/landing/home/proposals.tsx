@@ -23,7 +23,7 @@ import {
 } from "./catalog";
 import { AgentIcon } from "./client";
 import { CopyLine } from "./controls";
-import { type McpClient, mcpCommand } from "./data";
+import { type McpClient, mcpCommand, VERCEL_OSS_URL } from "./data";
 import { LIVE, LiveFallback } from "./live";
 import { ClaudeMark, CursorMark, OpenAIMark, VSCodeMark } from "./logos";
 import type { Part } from "./parts";
@@ -484,6 +484,57 @@ const SCREENS = [
   },
 ];
 
+/** Rows of one app screen each, AI and UI parts side by side. */
+function Screens({ pick }: { pick: Pick }) {
+  return (
+    <section aria-labelledby="screens" className="pt-24 md:pt-32">
+      <SectionHead
+        aside="Each row is one screen of a real app: the assistant's part and the controls around it, live and installable on their own."
+        id="screens"
+        number="01"
+        title="AI and UI, together"
+      />
+      <div className={cn("grid grid-cols-1 border", GRID, LINE)}>
+        {SCREENS.map((screen) => {
+          const row = pick(screen.names);
+          return (
+            <section
+              aria-labelledby={`screen-${screen.id}`}
+              className={cn("grid grid-cols-1", GRID)}
+              key={screen.id}
+            >
+              <div
+                className={cn(
+                  "flex flex-col gap-1 px-4 py-3.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6",
+                  CELL
+                )}
+              >
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                  <span
+                    className={cn("shrink-0 font-medium text-[17px]", INK)}
+                    id={`screen-${screen.id}`}
+                  >
+                    {screen.title}
+                  </span>
+                  <span className={cn("text-[14px]", SOFT)}>{screen.line}</span>
+                </p>
+                <span className={cn(META, "shrink-0")}>
+                  {row.map((p) => p.code).join(" + ")}
+                </span>
+              </div>
+              <div className={cn("grid grid-cols-1 lg:grid-cols-3", GRID)}>
+                {row.map((part) => (
+                  <Plate key={part.name} part={part} room={screen.room} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export function LandingByScreen({ parts }: { parts: Part[] }) {
   const pick = usePick(parts);
   const steps: FlowStep[] = ORDER.flatMap((step) => {
@@ -583,54 +634,7 @@ export function LandingByScreen({ parts }: { parts: Part[] }) {
         </div>
       </section>
 
-      <section aria-labelledby="screens" className="pt-24 md:pt-32">
-        <SectionHead
-          aside="Each row is one screen of a real app: the assistant's part and the controls around it, live and installable on their own."
-          id="screens"
-          number="01"
-          title="AI and UI, together"
-        />
-        <div className={cn("grid grid-cols-1 border", GRID, LINE)}>
-          {SCREENS.map((screen) => {
-            const row = pick(screen.names);
-            return (
-              <section
-                aria-labelledby={`screen-${screen.id}`}
-                className={cn("grid grid-cols-1", GRID)}
-                key={screen.id}
-              >
-                <div
-                  className={cn(
-                    "flex flex-col gap-1 px-4 py-3.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6",
-                    CELL
-                  )}
-                >
-                  <p className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-                    <span
-                      className={cn("shrink-0 font-medium text-[17px]", INK)}
-                      id={`screen-${screen.id}`}
-                    >
-                      {screen.title}
-                    </span>
-                    <span className={cn("text-[14px]", SOFT)}>
-                      {screen.line}
-                    </span>
-                  </p>
-                  <span className={cn(META, "shrink-0")}>
-                    {row.map((p) => p.code).join(" + ")}
-                  </span>
-                </div>
-                <div className={cn("grid grid-cols-1 lg:grid-cols-3", GRID)}>
-                  {row.map((part) => (
-                    <Plate key={part.name} part={part} room={screen.room} />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-        </div>
-      </section>
-
+      <Screens pick={pick} />
       <Agents number="02" />
       <Index number="03" parts={parts} />
       <References number="04" />
@@ -982,12 +986,191 @@ function MixedPlates({ parts, pick }: { parts: Part[]; pick: Pick }) {
   );
 }
 
+/* C. Wide headline --------------------------------------------------------- */
+
+const ORDER_PROMPT =
+  "Add @kokonutui/ai-checkout, receipt-printer and ai-order-status to my order flow";
+
+/**
+ * The same cover as A, laid out in bands: the headline takes the full
+ * width, the pitch, the colour part and the ways in share one row, then the
+ * order story, then the prompt that installs it in the agent you pick.
+ */
+export function LandingWide({ parts }: { parts: Part[] }) {
+  const pick = usePick(parts);
+  const steps: FlowStep[] = ORDER.flatMap((step) => {
+    const part = pick([step.name])[0];
+    return part ? [{ ...step, part }] : [];
+  });
+  const [agentId, setAgentId] = useState<AgentId>("claude");
+  const agent = DECK_AGENTS.find((a) => a.id === agentId) ?? DECK_AGENTS[0];
+
+  return (
+    <>
+      <section
+        aria-label="Kokonut UI"
+        className={cn("grid grid-cols-1 border", GRID, LINE)}
+      >
+        <div className={cn("grid grid-cols-2 md:grid-cols-4", GRID)}>
+          {[
+            "Kokonut UI",
+            "UI and AI components",
+            "React, Tailwind CSS, Motion",
+          ].map((label, i) => (
+            <p
+              className={cn(
+                "home-enter flex h-10 items-center px-4",
+                CELL,
+                i === 0
+                  ? "font-medium text-[11.5px] text-black dark:text-white"
+                  : META
+              )}
+              key={label}
+              style={enter(0)}
+            >
+              {label}
+            </p>
+          ))}
+          <VercelMeta />
+        </div>
+
+        <div className={cn("px-5 pt-8 pb-6 sm:px-8 sm:pt-12 lg:px-10", CELL)}>
+          <h1
+            className={cn(
+              "home-enter font-semibold text-[clamp(40px,12.5vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,7.8vw,112px)]",
+              INK
+            )}
+            style={enter(0)}
+          >
+            UI and AI components <br />
+            that feel right.
+          </h1>
+        </div>
+
+        <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
+          <div
+            className={cn(
+              "order-1 flex items-end p-5 sm:p-8 lg:col-span-5 lg:px-10",
+              CELL
+            )}
+          >
+            <p
+              className="home-enter max-w-[560px] text-pretty text-[19px] leading-[1.45] tracking-[-0.01em] sm:text-[22px]"
+              style={enter(1)}
+            >
+              <span className={INK}>
+                Open-source React components for the chat and the app around it,
+                made to sit on the same screen.
+              </span>{" "}
+              <span className={SOFT}>
+                Install them with the shadcn CLI, or ask your agent to.
+              </span>
+            </p>
+          </div>
+          {pick(["apple-activity-card"]).map((part) => (
+            <CornerPlate
+              className="order-3 lg:order-2 lg:col-span-4"
+              key={part.name}
+              part={part}
+            />
+          ))}
+          <div
+            className={cn(
+              "order-2 flex flex-col justify-between gap-8 p-5 sm:p-8 lg:order-3 lg:col-span-3 lg:px-6 lg:py-7",
+              CELL
+            )}
+          >
+            <HeroActions count={parts.length} />
+            <AgentStrip />
+          </div>
+        </div>
+
+        <div className={cn("grid grid-cols-1 lg:grid-cols-3", GRID)}>
+          {steps.map((step, i) => (
+            <FlowPlate
+              key={step.part.name}
+              label={`${i + 1}. ${step.label}`}
+              part={step.part}
+              room={step.room}
+            />
+          ))}
+        </div>
+
+        <div className={cn("grid grid-cols-1 md:grid-cols-12", GRID)}>
+          <AgentTabs
+            agents={DECK_AGENTS}
+            className={cn("grid grid-cols-2 md:col-span-5", GRID)}
+            itemClassName="h-12 justify-start gap-2 px-4 md:h-auto"
+            onChange={setAgentId}
+            value={agentId}
+          />
+          <div
+            className={cn(
+              "flex flex-col justify-center gap-2.5 p-5 sm:p-6 md:col-span-7",
+              CELL
+            )}
+          >
+            <p className={META}>
+              Ask {agentId === "any" ? "your agent" : agent.label} for all three
+            </p>
+            <CopyLine
+              className={cn("text-[14px]", INK)}
+              label="prompt"
+              prefix={agent.cli ? "$" : "›"}
+              value={runPrompt(agent, ORDER_PROMPT)}
+            />
+          </div>
+        </div>
+      </section>
+
+      <Screens pick={pick} />
+      <Agents number="02" />
+      <Index number="03" parts={parts} />
+      <References number="04" />
+      <Supplement number="05" />
+    </>
+  );
+}
+
+/** Vercel's open-source program, as the meta row's last cell. */
+function VercelMeta() {
+  return (
+    <a
+      className={cn(
+        "home-enter group flex h-10 items-center justify-between gap-3 px-4",
+        CELL,
+        META,
+        "hover:text-black dark:hover:text-white",
+        EASE_COLORS,
+        FOCUS_INSET
+      )}
+      href={VERCEL_OSS_URL}
+      rel="noreferrer"
+      style={enter(0)}
+      target="_blank"
+    >
+      <span>
+        <span className="hidden sm:inline">Backed by </span>Vercel OSS
+      </span>
+      <svg
+        aria-hidden="true"
+        className="size-3"
+        fill="currentColor"
+        viewBox="0 0 76 65"
+      >
+        <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+      </svg>
+    </a>
+  );
+}
+
 /* Prototype chrome --------------------------------------------------------- */
 
 const PROPOSALS = [
   { href: "/", label: "Current" },
   { href: "/landing/a", label: "A. By screen" },
   { href: "/landing/b", label: "B. Ask your agent" },
+  { href: "/landing/c", label: "C. Cover A in bands" },
 ];
 
 /** Links between the proposals, above the cover. Not part of the design. */
