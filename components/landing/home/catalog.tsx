@@ -279,7 +279,7 @@ function VercelMeta() {
  * The two ways into the library, each drawn with a Kokonut button: Slide Text
  * Button opens the docs, Command Button opens search (and answers ⌘K).
  */
-function HeroActions({ count }: { count: number }) {
+export function HeroActions({ count }: { count: number }) {
   const { setOpenSearch } = useSearchContext();
   return (
     <div
@@ -395,7 +395,7 @@ function Screens({ pick }: { pick: PickParts }) {
  * Pick your agent, get its three lines: the setup prompt, the MCP server (or
  * the index, for agents without one) and a first thing to ask for.
  */
-function Agents() {
+export function Agents({ number = "02" }: { number?: string }) {
   const [id, setId] = useState<AgentId>("claude");
   const agent = AGENTS.find((a) => a.id === id) ?? AGENTS[0];
   const steps = [
@@ -452,7 +452,7 @@ function Agents() {
       <SectionHead
         aside="Kokonut UI is a shadcn registry with an MCP server, a setup file and Markdown for every page, so the agent you already use can find a component and install it for you."
         id="agents"
-        number="02"
+        number={number}
         title="Works with agents"
       />
       <div className={cn("grid grid-cols-1 border", GRID, LINE)}>
@@ -589,7 +589,7 @@ function PlateHead({ code, note }: { code: string; note: string }) {
   );
 }
 
-function PlateFoot({ part }: { part: Part }) {
+export function PlateFoot({ part }: { part: Part }) {
   const spec = part.dependencies.length
     ? part.dependencies.join(", ")
     : "no extra packages";
@@ -625,7 +625,7 @@ function PlateFoot({ part }: { part: Part }) {
   );
 }
 
-function PlateCopy({
+export function PlateCopy({
   label,
   target,
   value,
@@ -659,7 +659,7 @@ function PlateCopy({
   );
 }
 
-function SectionHead({
+export function SectionHead({
   id,
   number,
   title,
@@ -707,7 +707,13 @@ function SectionHead({
 
 /* Index ---------------------------------------------------------------- */
 
-function Index({ parts }: { parts: Part[] }) {
+export function Index({
+  parts,
+  number = "03",
+}: {
+  parts: Part[];
+  number?: string;
+}) {
   const groups = new Map<string, Part[]>();
   for (const p of parts) {
     groups.set(p.category, [...(groups.get(p.category) ?? []), p]);
@@ -722,7 +728,7 @@ function Index({ parts }: { parts: Part[] }) {
       <SectionHead
         aside="Every Kokonut UI component by category, from AI chat inputs to text effects. Each name opens its docs page."
         id="all-components-title"
-        number="03"
+        number={number}
         title="All components"
       />
       <div
@@ -819,7 +825,7 @@ function Index({ parts }: { parts: Part[] }) {
 
 /* References ------------------------------------------------------------ */
 
-function References() {
+export function References({ number = "04" }: { number?: string }) {
   const { post, reply } = V0_THREAD;
   return (
     <section
@@ -830,7 +836,7 @@ function References() {
       <SectionHead
         aside="What developers said when they found it, including the person behind shadcn/ui."
         id="references"
-        number="04"
+        number={number}
         title="What developers say"
       />
       <div
@@ -930,7 +936,7 @@ const SHOWCASE_ITEMS = new Map(
   )
 );
 
-function Supplement() {
+export function Supplement({ number = "05" }: { number?: string }) {
   const stills = PRO_STILLS.map((name) => SHOWCASE_ITEMS.get(name)).filter(
     (item) => item !== undefined
   );
@@ -941,7 +947,7 @@ function Supplement() {
       <SectionHead
         aside="The paid half of the catalog: heroes, app screens, pricing, AI parts and full website templates, on the same stack and installed the same way."
         id="supplement"
-        number="05"
+        number={number}
         title="Kokonut UI Pro"
       />
       <div className={cn("grid grid-cols-1 border", GRID, LINE)}>
