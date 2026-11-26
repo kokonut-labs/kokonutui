@@ -172,6 +172,60 @@ export const LIVE: Record<string, LiveEntry> = {
     ({ default: C }) => <C className="w-full max-w-[300px]" />,
     "Compact before the window fills"
   ),
+  "receipt-printer": live(
+    () => import("@/components/kokonutui/receipt-printer"),
+    // The order AI Checkout takes in the chat, so the receipt adds up to the
+    // same $41.04.
+    ({ default: C }) => (
+      <C
+        date="26 Nov 2026 · 09:14"
+        items={[{ name: "Ethiopia Guji", quantity: 2, price: 19 }]}
+        merchant="Northside Roasters"
+        order="#2207"
+      />
+    ),
+    "Pull the receipt to tear it off"
+  ),
+  "spending-ring": live(
+    () => import("@/components/kokonutui/spending-ring"),
+    ({ default: C }) => <C />,
+    "Flick the ring and let it settle"
+  ),
+  "boarding-pass": live(
+    () => import("@/components/kokonutui/boarding-pass"),
+    ({ default: C }) => <C />,
+    "Changed details roll over"
+  ),
+  "stay-picker": live(
+    () => import("@/components/kokonutui/stay-picker"),
+    ({ default: C }) => <C />,
+    "Pick check-in, then check-out"
+  ),
+  "ai-handoff": live(
+    () => import("@/components/kokonutui/ai-handoff"),
+    ({ default: C }) => <C className="w-full max-w-[360px]" />,
+    "The queue counts down to a person"
+  ),
+  "amount-pad": live(
+    () => import("@/components/kokonutui/amount-pad"),
+    ({ default: C }) => <C />,
+    "Type an amount; it shrinks to fit"
+  ),
+  "ai-schedule": live(
+    () => import("@/components/kokonutui/ai-schedule"),
+    ({ default: C }) => <C className="w-full max-w-[360px]" />,
+    "Pick a time, then book it"
+  ),
+  "ai-send": live(
+    () => import("@/components/kokonutui/ai-send"),
+    ({ default: C }) => <C className="w-full max-w-[360px]" />,
+    "Edit the draft, then send or undo"
+  ),
+  "metric-card": live(
+    () => import("@/components/kokonutui/metric-card"),
+    ({ default: C }) => <C />,
+    "Scrub a day, or drag a range"
+  ),
 };
 
 /**

@@ -152,7 +152,7 @@ export function Catalog({
 
 /* Cover ---------------------------------------------------------------- */
 
-interface FlowStep {
+export interface FlowStep {
   label: string;
   part: Part;
   /**
@@ -286,34 +286,7 @@ function Cover({
           <PromptLine prompt={AGENT_PROMPT} />
         </div>
         <ConnectEditor />
-        <a
-          className={cn(
-            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-1",
-            CELL,
-            "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
-            EASE_COLORS,
-            FOCUS_INSET
-          )}
-          href={VERCEL_OSS_URL}
-          rel="noreferrer"
-          style={enter(2)}
-          target="_blank"
-        >
-          <span className="flex flex-col gap-1">
-            <span className={META}>Backed by</span>
-            <span className={cn("font-medium text-[17px]", INK)}>
-              Vercel OSS
-            </span>
-          </span>
-          <svg
-            aria-hidden="true"
-            className="size-4 text-black/40 transition-colors duration-150 ease-out group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
-            fill="currentColor"
-            viewBox="0 0 76 65"
-          >
-            <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
-          </svg>
-        </a>
+        <VercelCell className="md:col-span-5 md:col-start-8 md:row-start-1" />
         <LatestRelease parts={latest} />
       </div>
     </section>
@@ -324,7 +297,7 @@ function Cover({
  * The two ways into the library, each drawn with a Kokonut button: Slide Text
  * Button opens the docs, Command Button opens search (and answers ⌘K).
  */
-function HeroActions({ count }: { count: number }) {
+export function HeroActions({ count }: { count: number }) {
   const { setOpenSearch } = useSearchContext();
   return (
     <div
@@ -355,7 +328,7 @@ function HeroActions({ count }: { count: number }) {
  * The live part beside the headline. Stacked, it comes after the buttons, so
  * the pitch and the two ways in stay together.
  */
-function CornerPlate({ part }: { part: Part }) {
+export function CornerPlate({ part }: { part: Part }) {
   const { Component: Demo, hint } = LIVE[part.name];
   return (
     <figure
@@ -393,7 +366,7 @@ function CornerPlate({ part }: { part: Part }) {
 }
 
 /** One step of the cover's agent turn: a live part under its step name. */
-function FlowPlate({
+export function FlowPlate({
   part,
   label,
   room,
@@ -422,8 +395,47 @@ function FlowPlate({
   );
 }
 
+/** Vercel's open-source program, which backs the project. */
+export function VercelCell({ className }: { className?: string }) {
+  return (
+    <a
+      className={cn(
+        "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6",
+        className,
+        CELL,
+        "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
+        EASE_COLORS,
+        FOCUS_INSET
+      )}
+      href={VERCEL_OSS_URL}
+      rel="noreferrer"
+      style={enter(2)}
+      target="_blank"
+    >
+      <span className="flex flex-col gap-1">
+        <span className={META}>Backed by</span>
+        <span className={cn("font-medium text-[17px]", INK)}>Vercel OSS</span>
+      </span>
+      <svg
+        aria-hidden="true"
+        className="size-4 text-black/40 transition-colors duration-150 ease-out group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
+        fill="currentColor"
+        viewBox="0 0 76 65"
+      >
+        <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+      </svg>
+    </a>
+  );
+}
+
 /** The newest release, under Vercel: what was added and when. */
-function LatestRelease({ parts }: { parts: Part[] }) {
+export function LatestRelease({
+  parts,
+  className = "md:col-span-5 md:col-start-8 md:row-start-2",
+}: {
+  parts: Part[];
+  className?: string;
+}) {
   if (parts.length === 0) {
     return null;
   }
@@ -432,7 +444,8 @@ function LatestRelease({ parts }: { parts: Part[] }) {
   return (
     <Link
       className={cn(
-        "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-2",
+        "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6",
+        className,
         CELL,
         "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
         EASE_COLORS,
@@ -462,7 +475,7 @@ function LatestRelease({ parts }: { parts: Part[] }) {
 }
 
 /** What you'd type into Claude Code, Cursor or Codex to get the featured part. */
-function PromptLine({ prompt }: { prompt: string }) {
+export function PromptLine({ prompt }: { prompt: string }) {
   const { copied, copy } = useCopy();
   return (
     <button
@@ -556,7 +569,16 @@ function Plates({
   );
 }
 
-function Plate({ part }: { part: Part }) {
+export function Plate({
+  part,
+  room = "h-[300px]",
+  className,
+}: {
+  part: Part;
+  /** The demo's box; plates in a row share one height. */
+  room?: string;
+  className?: string;
+}) {
   const entry = LIVE[part.name];
   const Demo = entry.Component;
   const { ref, near } = useNearViewport<HTMLDivElement>();
@@ -567,12 +589,17 @@ function Plate({ part }: { part: Part }) {
   ) : null;
   return (
     <figure
-      className={cn("flex flex-col", entry.wide && "sm:col-span-2", CELL)}
+      className={cn(
+        "flex flex-col",
+        entry.wide && "sm:col-span-2",
+        CELL,
+        className
+      )}
     >
       <PlateHead code={part.code} note={entry.hint} />
       {/* Every plate is the same height; big parts are shown reduced, and
           backgrounds fill a double plate edge to edge. */}
-      <div className="relative h-[300px]" ref={ref}>
+      <div className={cn("relative", room)} ref={ref}>
         {entry.wide ? (
           <div className="absolute inset-x-4 inset-y-3 overflow-hidden">
             {demo}
@@ -597,7 +624,7 @@ function PlateHead({ code, note }: { code: string; note: string }) {
   );
 }
 
-function PlateFoot({ part }: { part: Part }) {
+export function PlateFoot({ part }: { part: Part }) {
   const spec = part.dependencies.length
     ? part.dependencies.join(", ")
     : "no extra packages";
@@ -667,7 +694,7 @@ function PlateCopy({
   );
 }
 
-function SectionHead({
+export function SectionHead({
   id,
   number,
   title,
@@ -715,7 +742,13 @@ function SectionHead({
 
 /* Index ---------------------------------------------------------------- */
 
-function Index({ parts }: { parts: Part[] }) {
+export function Index({
+  parts,
+  number = "03",
+}: {
+  parts: Part[];
+  number?: string;
+}) {
   const groups = new Map<string, Part[]>();
   for (const p of parts) {
     groups.set(p.category, [...(groups.get(p.category) ?? []), p]);
@@ -730,7 +763,7 @@ function Index({ parts }: { parts: Part[] }) {
       <SectionHead
         aside="Every Kokonut UI component by category, from AI chat inputs to text effects. Each name opens its docs page."
         id="all-components-title"
-        number="03"
+        number={number}
         title="All components"
       />
       <div
@@ -900,7 +933,7 @@ function Method({
 
 /* References ------------------------------------------------------------ */
 
-function References() {
+export function References({ number = "05" }: { number?: string }) {
   const { post, reply } = V0_THREAD;
   return (
     <section
@@ -911,7 +944,7 @@ function References() {
       <SectionHead
         aside="What developers said when they found it, including the person behind shadcn/ui."
         id="references"
-        number="05"
+        number={number}
         title="What developers say"
       />
       <div
@@ -1011,7 +1044,7 @@ const SHOWCASE_ITEMS = new Map(
   )
 );
 
-function Supplement() {
+export function Supplement({ number = "06" }: { number?: string }) {
   const stills = PRO_STILLS.map((name) => SHOWCASE_ITEMS.get(name)).filter(
     (item) => item !== undefined
   );
@@ -1022,7 +1055,7 @@ function Supplement() {
       <SectionHead
         aside="The paid half of the catalog: heroes, app screens, pricing, AI parts and full website templates, on the same stack and installed the same way."
         id="supplement"
-        number="06"
+        number={number}
         title="Kokonut UI Pro"
       />
       <div className={cn("grid grid-cols-1 border", GRID, LINE)}>
