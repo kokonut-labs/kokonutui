@@ -988,9 +988,6 @@ function MixedPlates({ parts, pick }: { parts: Part[]; pick: Pick }) {
 
 /* C. Wide headline --------------------------------------------------------- */
 
-const ORDER_PROMPT =
-  "Add @kokonutui/ai-checkout, receipt-printer and ai-order-status to my order flow";
-
 /**
  * The same cover as A, laid out in bands: the headline takes the full
  * width, the pitch, the colour part and the ways in share one row, then the
@@ -1002,8 +999,6 @@ export function LandingWide({ parts }: { parts: Part[] }) {
     const part = pick([step.name])[0];
     return part ? [{ ...step, part }] : [];
   });
-  const [agentId, setAgentId] = useState<AgentId>("claude");
-  const agent = DECK_AGENTS.find((a) => a.id === agentId) ?? DECK_AGENTS[0];
 
   return (
     <>
@@ -1050,7 +1045,7 @@ export function LandingWide({ parts }: { parts: Part[] }) {
         <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
           <div
             className={cn(
-              "flex flex-col justify-end gap-8 p-5 sm:p-8 lg:col-span-8 lg:px-10 lg:py-9",
+              "flex flex-col justify-between gap-8 p-5 sm:p-8 lg:col-span-7 lg:px-10 lg:py-9",
               CELL
             )}
           >
@@ -1068,13 +1063,7 @@ export function LandingWide({ parts }: { parts: Part[] }) {
             </p>
             <HeroActions count={parts.length} />
           </div>
-          {pick(["apple-activity-card"]).map((part) => (
-            <CornerPlate
-              className="order-none lg:order-none lg:col-span-4"
-              key={part.name}
-              part={part}
-            />
-          ))}
+          <AgentSession parts={steps.map((step) => step.part)} />
         </div>
 
         <div className={cn("grid grid-cols-1 lg:grid-cols-3", GRID)}>
@@ -1087,32 +1076,6 @@ export function LandingWide({ parts }: { parts: Part[] }) {
             />
           ))}
         </div>
-
-        <div className={cn("grid grid-cols-1 md:grid-cols-12", GRID)}>
-          <AgentTabs
-            agents={DECK_AGENTS}
-            className={cn("grid grid-cols-2 md:col-span-5", GRID)}
-            itemClassName="h-12 justify-start gap-2 px-4 md:h-auto"
-            onChange={setAgentId}
-            value={agentId}
-          />
-          <div
-            className={cn(
-              "flex flex-col justify-center gap-2.5 p-5 sm:p-6 md:col-span-7",
-              CELL
-            )}
-          >
-            <p className={META}>
-              Ask {agentId === "any" ? "your agent" : agent.label} for all three
-            </p>
-            <CopyLine
-              className={cn("text-[14px]", INK)}
-              label="prompt"
-              prefix={agent.cli ? "$" : "›"}
-              value={runPrompt(agent, ORDER_PROMPT)}
-            />
-          </div>
-        </div>
       </section>
 
       <Screens pick={pick} />
@@ -1121,6 +1084,84 @@ export function LandingWide({ parts }: { parts: Part[] }) {
       <References number="04" />
       <Supplement number="05" />
     </>
+  );
+}
+
+/**
+ * Beside the pitch: what happens when you ask your agent for the order
+ * flow. Pick the agent, copy the exact command, read the steps it takes
+ * (packages and files come from the registry entries); the parts it
+ * installs run live in the row below. Switching agents swaps the text at
+ * once.
+ */
+function AgentSession({ parts }: { parts: Part[] }) {
+  const [id, setId] = useState<AgentId>("claude");
+  const agent = DECK_AGENTS.find((a) => a.id === id) ?? DECK_AGENTS[0];
+  const names = parts.map((p) => `@kokonutui/${p.name}`);
+  const prompt = `Add ${names.join(", ")} to the order page`;
+  const deps = [...new Set(parts.flatMap((p) => p.dependencies))];
+  const files = parts.flatMap((p) => p.files);
+  const steps = [
+    id === "any"
+      ? `Read kokonutui.com/llms.txt and found all ${parts.length}`
+      : `Found all ${parts.length} in @kokonutui over the shadcn MCP server`,
+    `Ran npx shadcn@latest add ${names.join(" ")}`,
+    ...(deps.length ? [`Installed ${deps.join(", ")}`] : []),
+    `Wrote ${files.join(", ")}`,
+  ];
+
+  return (
+    <figure
+      className={cn("home-enter flex flex-col lg:col-span-5", CELL)}
+      style={enter(1)}
+    >
+      <AgentTabs
+        agents={DECK_AGENTS}
+        className={cn("grid grid-cols-2 border-b sm:grid-cols-4", GRID, LINE)}
+        itemClassName="h-10 justify-center px-2 text-[12.5px]"
+        onChange={setId}
+        value={id}
+      />
+      <div className="flex flex-1 flex-col gap-3 px-4 pt-4 pb-4">
+        <CopyLine
+          className={cn("text-[13px]", INK)}
+          label="prompt"
+          prefix={agent.cli ? "$" : "›"}
+          value={runPrompt(agent, prompt)}
+        />
+        <ol className="flex flex-col gap-1.5 pl-[18px]">
+          {steps.map((step, i) => (
+            <li
+              className={cn(
+                MONO,
+                "home-enter flex items-baseline gap-2 text-[12px] leading-[1.5]",
+                SOFT
+              )}
+              key={step}
+              style={enter(i + 2)}
+            >
+              <span aria-hidden className={LEAF}>
+                ✓
+              </span>
+              <span className="wrap-anywhere min-w-0">{step}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <figcaption
+        className={cn(
+          "flex items-baseline justify-between gap-4 border-t px-4 py-3",
+          LINE
+        )}
+      >
+        <span className={META}>
+          {parts.map((p) => p.code).join(" + ")} are live below
+        </span>
+        <span aria-hidden className={cn(META, "text-[13px]")}>
+          ↓
+        </span>
+      </figcaption>
+    </figure>
   );
 }
 
