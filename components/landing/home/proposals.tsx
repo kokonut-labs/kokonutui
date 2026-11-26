@@ -1050,12 +1050,12 @@ export function LandingWide({ parts }: { parts: Part[] }) {
         <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
           <div
             className={cn(
-              "order-1 flex items-end p-5 sm:p-8 lg:col-span-5 lg:px-10",
+              "flex flex-col justify-end gap-8 p-5 sm:p-8 lg:col-span-8 lg:px-10 lg:py-9",
               CELL
             )}
           >
             <p
-              className="home-enter max-w-[560px] text-pretty text-[19px] leading-[1.45] tracking-[-0.01em] sm:text-[22px]"
+              className="home-enter max-w-[640px] text-pretty text-[19px] leading-[1.45] tracking-[-0.01em] sm:text-[22px]"
               style={enter(1)}
             >
               <span className={INK}>
@@ -1066,23 +1066,15 @@ export function LandingWide({ parts }: { parts: Part[] }) {
                 Install them with the shadcn CLI, or ask your agent to.
               </span>
             </p>
+            <HeroActions count={parts.length} />
           </div>
           {pick(["apple-activity-card"]).map((part) => (
             <CornerPlate
-              className="order-3 lg:order-2 lg:col-span-4"
+              className="order-none lg:order-none lg:col-span-4"
               key={part.name}
               part={part}
             />
           ))}
-          <div
-            className={cn(
-              "order-2 flex flex-col justify-between gap-8 p-5 sm:p-8 lg:order-3 lg:col-span-3 lg:px-6 lg:py-7",
-              CELL
-            )}
-          >
-            <HeroActions count={parts.length} />
-            <AgentStrip />
-          </div>
         </div>
 
         <div className={cn("grid grid-cols-1 lg:grid-cols-3", GRID)}>
