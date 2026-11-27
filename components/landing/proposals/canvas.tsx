@@ -89,13 +89,9 @@ interface View {
   z: number;
 }
 
-/** How many boards share a row: Pro heroes alone, backgrounds two, the rest four. */
-function boardCols(part: Part) {
-  if (isProHero(part)) {
-    return 1;
-  }
-  return WIDE.has(part.categorySlug) ? WIDE_COLS : COLS;
-}
+/** How many boards share a row: backgrounds two, the rest four. */
+const boardCols = (part: Part) =>
+  WIDE.has(part.categorySlug) ? WIDE_COLS : COLS;
 
 const boardWidth = (cols: number) => (GROUP_W - (cols - 1) * GAP_X) / cols;
 

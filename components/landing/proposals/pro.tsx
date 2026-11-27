@@ -34,7 +34,7 @@ const RATIO: Record<string, number> = {
   "terminal-hero": 1.159,
 };
 
-/** Pro heroes are page-wide designs: they get the full width of the group. */
+/** Pro heroes are page-wide designs: their boards keep the still's shape. */
 export const isProHero = (part: Part) =>
   part.categorySlug === PRO_SLUG && part.name.endsWith("-hero");
 
@@ -90,14 +90,14 @@ export function ProStill({ part }: { part: Part }) {
         alt={part.title}
         className={cn(fit, "dark:hidden")}
         fill
-        sizes={isProHero(part) ? "1928px" : "440px"}
+        sizes="440px"
         src={showcaseStill(name, "light")}
       />
       <Image
         alt={part.title}
         className={cn(fit, "hidden dark:block")}
         fill
-        sizes={isProHero(part) ? "1928px" : "440px"}
+        sizes="440px"
         src={showcaseStill(name, "dark")}
       />
     </>
