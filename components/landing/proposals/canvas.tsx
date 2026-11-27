@@ -12,7 +12,6 @@ import {
   useState,
 } from "react";
 import { AGENTS } from "@/components/landing/home/agents";
-import { HeroActions } from "@/components/landing/home/catalog";
 import { Fit } from "@/components/landing/home/live";
 import type { Part } from "@/components/landing/home/parts";
 import {
@@ -26,9 +25,10 @@ import {
   SOFT,
 } from "@/components/landing/home/styles";
 import { cn } from "@/lib/utils";
+import { ProposalActions } from "./actions";
 import { PartDemo } from "./demo";
 import { matchParts } from "./match";
-import { PRO_PARTS, PRO_RED, PRO_SLUG, ProStill } from "./pro";
+import { PRO_LINE, PRO_PARTS, PRO_RED, PRO_SLUG, ProStill } from "./pro";
 
 // The homepage is one canvas with every component on it, running, laid out
 // like a design file: a group per category, an artboard per component.
@@ -39,8 +39,6 @@ const BOARD_H: Record<string, number> = {
   buttons: 240,
   texts: 240,
   backgrounds: 600,
-  // Pro stills are 1000 × 1125.
-  [PRO_SLUG]: 495,
 };
 const BOARD_H_DEFAULT = 430;
 const LABEL = 34;
@@ -84,7 +82,23 @@ interface View {
   z: number;
 }
 
-/** Groups go into the shortest of three columns, AI first. */
+/** Backgrounds and Pro heroes fill a screen; they get the wide boards. */
+const isWideBoard = (part: Part) =>
+  WIDE.has(part.categorySlug) ||
+  (part.categorySlug === PRO_SLUG && part.name.endsWith("-hero"));
+
+function boardHeight(part: Part, wide: boolean) {
+  if (part.categorySlug === PRO_SLUG) {
+    // Pro stills are 1000 × 1125; the board keeps their shape.
+    return Math.round((wide ? WIDE_W : BOARD_W) * 1.125);
+  }
+  return BOARD_H[part.categorySlug] ?? BOARD_H_DEFAULT;
+}
+
+/**
+ * Groups go into the shortest of three columns, AI first. Inside a group,
+ * rows hold four boards, or two wide ones; a change of width starts a row.
+ */
 function layout(parts: Part[]) {
   const slugs = [...new Set(parts.map((p) => p.categorySlug))].sort(
     (a, b) => Number(b === "ai") - Number(a === "ai")
@@ -94,14 +108,30 @@ function layout(parts: Part[]) {
   const groups: Group[] = [];
   for (const slug of slugs) {
     const items = parts.filter((p) => p.categorySlug === slug);
-    const h = BOARD_H[slug] ?? BOARD_H_DEFAULT;
-    const cols = WIDE.has(slug) ? WIDE_COLS : COLS;
-    const w = WIDE.has(slug) ? WIDE_W : BOARD_W;
-    const rows = Math.ceil(items.length / cols);
-    const groupH = GROUP_HEAD + rows * (LABEL + h + GAP_Y) - GAP_Y;
     const column = heights.indexOf(Math.min(...heights));
     const gx = column * (GROUP_W + GROUP_GAP);
     const gy = heights[column];
+    let y = gy + GROUP_HEAD;
+    let col = 0;
+    let rowCols = 0;
+    let rowH = 0;
+    for (const part of items) {
+      const wide = isWideBoard(part);
+      const cols = wide ? WIDE_COLS : COLS;
+      const w = wide ? WIDE_W : BOARD_W;
+      const h = boardHeight(part, wide);
+      if (col > 0 && (cols !== rowCols || col >= cols)) {
+        y += LABEL + rowH + GAP_Y;
+        col = 0;
+      }
+      if (col === 0) {
+        rowCols = cols;
+        rowH = h;
+      }
+      boards.push({ part, w, h, x: gx + col * (w + GAP_X), y });
+      col += 1;
+    }
+    const groupH = y + LABEL + rowH - gy;
     heights[column] += groupH + GROUP_GAP;
     groups.push({
       slug,
@@ -111,15 +141,6 @@ function layout(parts: Part[]) {
       x: gx,
       y: gy,
       h: groupH,
-    });
-    items.forEach((part, i) => {
-      boards.push({
-        part,
-        w,
-        h,
-        x: gx + (i % cols) * (w + GAP_X),
-        y: gy + GROUP_HEAD + Math.floor(i / cols) * (LABEL + h + GAP_Y),
-      });
     });
   }
   return {
@@ -252,13 +273,36 @@ function BoardBody({ part }: { part: Part }) {
   if (isPro(part)) {
     return <ProStill part={part} />;
   }
-  if (WIDE.has(part.categorySlug)) {
+  if (isWideBoard(part)) {
     return <PartDemo fill part={part} />;
   }
   return (
     <Fit className="p-6">
       <PartDemo part={part} />
     </Fit>
+  );
+}
+
+/** The left panel's way to Pro: what it is, in full, under its name. */
+function ProGroupRow({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      className={cn(
+        "-mx-2 mt-2 flex flex-col gap-1 rounded-[8px] border-black/[0.08] border-t px-2 pt-3 pb-2 text-left hover:bg-black/[0.05] dark:border-white/[0.1] dark:hover:bg-white/[0.07]",
+        EASE_COLORS,
+        FOCUS_INSET
+      )}
+      onClick={onClick}
+      type="button"
+    >
+      <span className="flex items-center justify-between text-[13px]">
+        <span className={INK}>Kokonut UI Pro</span>
+        <span className={cn(MONO, "text-[11px]", PRO_RED)}>PRO</span>
+      </span>
+      <span className={cn("text-[12.5px] leading-[1.45]", SOFT)}>
+        {PRO_LINE}, built for AI products.
+      </span>
+    </button>
   );
 }
 
@@ -986,7 +1030,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
               </p>
               <p className={cn(MONO, "mt-6", SOFT)} style={{ fontSize: 34 }}>
                 {g.slug === PRO_SLUG
-                  ? `${g.count} of 150+ components · Pro`
+                  ? `${g.count} of ${PRO_LINE}`
                   : `${g.count} components`}
               </p>
             </div>
@@ -1112,7 +1156,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
               Install them with the shadcn CLI, or ask your agent to.
             </p>
             <div className="mt-5">
-              <HeroActions count={parts.length} />
+              <ProposalActions count={parts.length} />
             </div>
             <p
               className={cn(
@@ -1137,22 +1181,29 @@ export function Canvas({ parts }: { parts: Part[] }) {
               aria-label="Groups"
               className="mt-6 hidden flex-col border-black/[0.08] border-t pt-3 md:flex dark:border-white/[0.1]"
             >
-              {groups.map((g) => (
-                <button
-                  className={cn(
-                    "-mx-2 flex h-8 items-center justify-between rounded-[8px] px-2 text-[13px] hover:bg-black/[0.05] dark:hover:bg-white/[0.07]",
-                    INK,
-                    EASE_COLORS,
-                    FOCUS_INSET
-                  )}
-                  key={g.slug}
-                  onClick={() => focusGroup(g.slug)}
-                  type="button"
-                >
-                  <span>{g.title}</span>
-                  <span className={META}>{g.count}</span>
-                </button>
-              ))}
+              {groups.map((g) =>
+                g.slug === PRO_SLUG ? (
+                  <ProGroupRow
+                    key={g.slug}
+                    onClick={() => focusGroup(g.slug)}
+                  />
+                ) : (
+                  <button
+                    className={cn(
+                      "-mx-2 flex h-8 items-center justify-between rounded-[8px] px-2 text-[13px] hover:bg-black/[0.05] dark:hover:bg-white/[0.07]",
+                      INK,
+                      EASE_COLORS,
+                      FOCUS_INSET
+                    )}
+                    key={g.slug}
+                    onClick={() => focusGroup(g.slug)}
+                    type="button"
+                  >
+                    <span>{g.title}</span>
+                    <span className={META}>{g.count}</span>
+                  </button>
+                )
+              )}
             </nav>
           </aside>
         ) : (

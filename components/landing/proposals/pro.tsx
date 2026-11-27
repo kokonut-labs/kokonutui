@@ -1,6 +1,11 @@
 import Image from "next/image";
 import type { Part } from "@/components/landing/home/parts";
-import { PRO_SHOWCASE, showcaseStill, showcaseUrl } from "@/lib/pro-showcase";
+import {
+  PRO_SHOWCASE,
+  PRO_STATS,
+  showcaseStill,
+  showcaseUrl,
+} from "@/lib/pro-showcase";
 
 /** A dozen Pro components for the canvas, one or two from each kind. */
 const PICKS = [
@@ -19,6 +24,9 @@ const PICKS = [
 ];
 
 export const PRO_SLUG = "pro";
+
+/** Pro in full: everything it sells, not just the components. */
+export const PRO_LINE = `${PRO_STATS[0].value} components and website templates`;
 
 /** Pro's code color: the red of its own marks. */
 export const PRO_RED = "text-[#E5223F] dark:text-[#FF2D55]";
@@ -61,14 +69,14 @@ export function ProStill({ part }: { part: Part }) {
         alt={part.title}
         className="object-cover object-top dark:hidden"
         fill
-        sizes="440px"
+        sizes="940px"
         src={showcaseStill(name, "light")}
       />
       <Image
         alt={part.title}
         className="hidden object-cover object-top dark:block"
         fill
-        sizes="440px"
+        sizes="940px"
         src={showcaseStill(name, "dark")}
       />
     </>

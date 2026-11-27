@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { AGENTS } from "@/components/landing/home/agents";
-import { Catalog, HeroActions } from "@/components/landing/home/catalog";
+import { Catalog } from "@/components/landing/home/catalog";
 import { CopyIconSwap, useCopy } from "@/components/landing/home/client";
 import { installCommand } from "@/components/landing/home/data";
 import type { Part } from "@/components/landing/home/parts";
@@ -22,6 +22,7 @@ import {
   SOFT,
 } from "@/components/landing/home/styles";
 import { cn } from "@/lib/utils";
+import { ProposalActions } from "./actions";
 
 /** What people ask their agent for, and the part that answers it. */
 const ASKS = [
@@ -143,7 +144,7 @@ function PromptsCover({ count }: { count: number }) {
         <div className="home-enter" style={enter(1)} {...hold}>
           <InstallLine name={current.name} />
         </div>
-        <HeroActions count={count} />
+        <ProposalActions count={count} />
       </div>
 
       <div
