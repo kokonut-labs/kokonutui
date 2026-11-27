@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
   useCallback,
@@ -167,6 +168,49 @@ const PAN: Record<string, [number, number]> = {
   ArrowDown: [0, -1],
 };
 
+/** A 4×4 Bayer matrix: the order pixels switch on as density rises. */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const DITHER_CELL = 4;
+const ditherMasks = new Map<number, CSSProperties>();
+
+/**
+ * The site's dither, for an artboard of height h: 1-bit pixels that thicken
+ * toward the bottom edge, as a mask four pixels wide repeated across, so
+ * any color shows through and the pattern scales with the canvas.
+ */
+function ditherMask(h: number) {
+  let mask = ditherMasks.get(h);
+  if (mask) {
+    return mask;
+  }
+  const rows = Math.round(h / DITHER_CELL);
+  let rects = "";
+  for (let y = 0; y < rows; y++) {
+    const t = y / (rows - 1);
+    const on = Math.round(Math.max(0, (t - 0.45) / 0.55) ** 1.4 * 0.6 * 16);
+    for (let x = 0; x < 4; x++) {
+      if (BAYER[(y % 4) * 4 + x] < on) {
+        rects += `<rect x='${x}' y='${y}' width='1' height='1'/>`;
+      }
+    }
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='4' height='${rows}' shape-rendering='crispEdges'>${rects}</svg>`;
+  const image = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  const size = `${4 * DITHER_CELL}px ${rows * DITHER_CELL}px`;
+  mask = {
+    maskImage: image,
+    WebkitMaskImage: image,
+    maskSize: size,
+    WebkitMaskSize: size,
+    maskRepeat: "repeat-x",
+    WebkitMaskRepeat: "repeat-x",
+    maskPosition: "left bottom",
+    WebkitMaskPosition: "left bottom",
+  };
+  ditherMasks.set(h, mask);
+  return mask;
+}
+
 const clampZ = (z: number) => Math.min(MAX_Z, Math.max(MIN_Z, z));
 const reduced = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -219,8 +263,6 @@ export function Canvas({ parts }: { parts: Part[] }) {
 
   const viewport = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
-  const fine = useRef<HTMLDivElement>(null);
-  const coarse = useRef<HTMLDivElement>(null);
   const zoomLabel = useRef<HTMLSpanElement>(null);
   const view = useRef<View>({ x: 0, y: 0, z: 1 });
   const frame = useRef(0);
@@ -250,28 +292,6 @@ export function Canvas({ parts }: { parts: Part[] }) {
     const { x, y, z } = view.current;
     w.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
 
-    // The dither: square pixels in a staggered (ordered-dither) pattern.
-    // The fine layer fades out as you zoom out, leaving every other pixel,
-    // and becomes the coarse layer at the next step, so it never pops.
-    let period = 28 * z;
-    while (period < 16) {
-      period *= 2;
-    }
-    const position = `${x}px ${y}px`;
-    const size = `${period * 2}px ${period * 2}px`;
-    for (const layer of [fine.current, coarse.current]) {
-      if (layer) {
-        layer.style.maskSize = size;
-        layer.style.maskPosition = position;
-        layer.style.webkitMaskSize = size;
-        layer.style.webkitMaskPosition = position;
-      }
-    }
-    if (fine.current) {
-      fine.current.style.opacity = String(
-        Math.min(1, Math.max(0, (period - 16) / 10))
-      );
-    }
     if (zoomLabel.current) {
       zoomLabel.current.textContent = `${Math.round(z * 100)}%`;
     }
@@ -846,16 +866,6 @@ export function Canvas({ parts }: { parts: Part[] }) {
         tabIndex={0}
       >
         <div
-          aria-hidden="true"
-          className="canvas-dither canvas-dither-fine pointer-events-none absolute inset-0"
-          ref={fine}
-        />
-        <div
-          aria-hidden="true"
-          className="canvas-dither canvas-dither-coarse pointer-events-none absolute inset-0"
-          ref={coarse}
-        />
-        <div
           className={cn(
             "absolute top-0 left-0 origin-top-left transition-opacity duration-200 ease-out",
             ready ? "opacity-100" : "opacity-0"
@@ -926,6 +936,11 @@ export function Canvas({ parts }: { parts: Part[] }) {
                   data-live={running ? "" : undefined}
                   style={{ height: b.h }}
                 >
+                  <div
+                    aria-hidden="true"
+                    className="canvas-board-dither pointer-events-none absolute inset-0"
+                    style={ditherMask(b.h)}
+                  />
                   {running ? (
                     // Arrives from a blur as it comes into view, so panning
                     // reveals parts instead of popping them in.

@@ -35,19 +35,14 @@
   }
 }
 
-/* Canvas: the site's dither instead of a dot grid. Square pixels in a
-   staggered ordered-dither pattern, masked out of a faint ink so they follow
-   the theme. Two layers: the coarse one is every other pixel of the fine
-   one, and the script fades the fine one as you zoom out, so the pattern
-   thins out instead of jumping. It moves and scales with the camera. */
+/* Canvas: a plain surface; the texture is the dither inside each
+   artboard (a mask from the script, thickening toward the bottom edge). */
 .canvas-surface {
-  --canvas-pixel: rgb(0 0 0 / 0.13);
   background-color: #f6f6f5;
   cursor: grab;
 }
 
 .dark .canvas-surface {
-  --canvas-pixel: rgb(255 255 255 / 0.1);
   background-color: #050505;
 }
 
@@ -60,24 +55,12 @@
   cursor: auto;
 }
 
-.canvas-dither {
-  background-color: var(--canvas-pixel);
-  mask-repeat: repeat;
-  -webkit-mask-repeat: repeat;
-  mask-size: 56px 56px;
-  -webkit-mask-size: 56px 56px;
+.canvas-board-dither {
+  background-color: rgb(0 0 0 / 0.08);
 }
 
-.canvas-dither-coarse {
-  --pixels: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Crect width='1' height='1'/%3E%3Crect x='16' y='16' width='1' height='1'/%3E%3C/svg%3E");
-  mask-image: var(--pixels);
-  -webkit-mask-image: var(--pixels);
-}
-
-.canvas-dither-fine {
-  --pixels: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Crect x='16' width='1' height='1'/%3E%3Crect y='16' width='1' height='1'/%3E%3Crect x='8' y='8' width='1' height='1'/%3E%3Crect x='24' y='8' width='1' height='1'/%3E%3Crect x='8' y='24' width='1' height='1'/%3E%3Crect x='24' y='24' width='1' height='1'/%3E%3C/svg%3E");
-  mask-image: var(--pixels);
-  -webkit-mask-image: var(--pixels);
+.dark .canvas-board-dither {
+  background-color: rgb(255 255 255 / 0.07);
 }
 
 /* A part arrives from a blur as it pans into view. */
