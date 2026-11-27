@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
   useCallback,
@@ -19,7 +20,6 @@ import {
   FOCUS,
   FOCUS_INSET,
   INK,
-  LEAF,
   META,
   MONO,
   SOFT,
@@ -54,8 +54,32 @@ const DETAIL = 0.42;
 const MIN_Z = 0.05;
 const MAX_Z = 1.6;
 
-/** Strong ease-in-out, for the camera moving across the canvas. */
-const FLY_MS = 620;
+/** Each group sits on a tinted section, this far out from its artboards. */
+const SECTION_PAD = 72;
+
+/**
+ * One accent per group, so the sections tell apart at any zoom: the leaf
+ * green for AI, the rest spread around the wheel (no yellow, it fails on
+ * white). Light and dark values.
+ */
+const TONES: Record<string, [string, string]> = {
+  ai: ["#15852A", "#3BB44B"],
+  buttons: ["#E8590C", "#FF8A4C"],
+  cards: ["#2563EB", "#7AA5FF"],
+  inputs: ["#7C3AED", "#A78BFA"],
+  navigation: ["#0D9488", "#2DD4BF"],
+  media: ["#DB2777", "#F472B6"],
+  feedback: ["#DC2626", "#F87171"],
+  texts: ["#C026D3", "#E879F9"],
+  backgrounds: ["#0891B2", "#22D3EE"],
+};
+const toneStyle = (slug: string) => {
+  const [light, dark] = TONES[slug] ?? ["#525252", "#a3a3a3"];
+  return { "--tone-light": light, "--tone-dark": dark } as CSSProperties;
+};
+
+/** The overview in the corner, this wide. */
+const MINI_W = 128;
 
 interface Board {
   part: Part;
@@ -140,7 +164,27 @@ function bezier(x1: number, y1: number, x2: number, y2: number) {
     return at(s, y1, y2);
   };
 }
+/** Camera moves across the canvas: strong ease-in-out. */
 const EASE_IN_OUT = bezier(0.77, 0, 0.175, 1);
+/** Responses to a press (zoom buttons, the spring back at an edge). */
+const EASE_OUT = bezier(0.23, 1, 0.32, 1);
+
+/**
+ * How far past an edge the canvas follows a drag: less the further you
+ * pull, like iOS, instead of a wall.
+ */
+function rubber(over: number, dim: number) {
+  return (1 - 1 / ((over * 0.55) / dim + 1)) * dim;
+}
+function band(v: number, lo: number, hi: number, dim: number) {
+  if (v > hi) {
+    return hi + rubber(v - hi, dim);
+  }
+  if (v < lo) {
+    return lo - rubber(lo - v, dim);
+  }
+  return v;
+}
 
 /** Arrow keys move the camera; the canvas moves the other way. */
 const PAN: Record<string, [number, number]> = {
@@ -202,6 +246,10 @@ export function Canvas({ parts }: { parts: Part[] }) {
 
   const viewport = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
+  const minor = useRef<HTMLDivElement>(null);
+  const major = useRef<HTMLDivElement>(null);
+  const zoomLabel = useRef<HTMLSpanElement>(null);
+  const miniView = useRef<HTMLDivElement>(null);
   const view = useRef<View>({ x: 0, y: 0, z: 1 });
   const frame = useRef(0);
   const motion = useRef(0);
@@ -210,7 +258,6 @@ export function Canvas({ parts }: { parts: Part[] }) {
   const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState("");
   const [detail, setDetail] = useState(true);
-  const [zoom, setZoom] = useState(100);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [intro, setIntro] = useState(true);
   const [query, setQuery] = useState("");
@@ -230,12 +277,34 @@ export function Canvas({ parts }: { parts: Part[] }) {
     }
     const { x, y, z } = view.current;
     w.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
+
+    // Two layers of dots, the second every fifth. As you zoom out the fine
+    // layer fades before it gets dense, and the coarse one takes its place,
+    // so the grid never pops between sizes.
     let step = 24 * z;
-    while (step < 14) {
-      step *= 2;
+    while (step < 8) {
+      step *= 5;
     }
-    el.style.backgroundSize = `${step}px ${step}px`;
-    el.style.backgroundPosition = `${x}px ${y}px`;
+    const position = `${x}px ${y}px`;
+    if (minor.current && major.current) {
+      minor.current.style.backgroundSize = `${step}px ${step}px`;
+      minor.current.style.backgroundPosition = position;
+      minor.current.style.opacity = String(
+        Math.min(1, Math.max(0, (step - 8) / 18))
+      );
+      major.current.style.backgroundSize = `${step * 5}px ${step * 5}px`;
+      major.current.style.backgroundPosition = position;
+    }
+    if (zoomLabel.current) {
+      zoomLabel.current.textContent = `${Math.round(z * 100)}%`;
+    }
+    const mini = miniView.current;
+    if (mini) {
+      const m = MINI_W / width;
+      mini.style.transform = `translate(${(-x / z) * m}px, ${(-y / z) * m}px)`;
+      mini.style.width = `${(el.clientWidth / z) * m}px`;
+      mini.style.height = `${(el.clientHeight / z) * m}px`;
+    }
 
     cancelAnimationFrame(frame.current);
     frame.current = requestAnimationFrame(() => {
@@ -256,22 +325,35 @@ export function Canvas({ parts }: { parts: Part[] }) {
         .map((b) => b.part.name);
       setVisible(names.join("|"));
       setDetail(z >= DETAIL);
-      setZoom(Math.round(z * 100));
     });
-  }, [boards]);
+  }, [boards, width]);
 
-  /** Keeps some of the canvas on screen, however far you drag. */
+  /** How far the camera may go: some of the canvas always stays on screen. */
+  const bounds = useCallback(
+    (z: number) => {
+      const el = viewport.current;
+      const keep = 200;
+      const vw = el?.clientWidth ?? 1280;
+      const vh = el?.clientHeight ?? 800;
+      return {
+        minX: keep - width * z,
+        maxX: vw - keep,
+        minY: keep - height * z,
+        maxY: vh - keep,
+        vw,
+        vh,
+      };
+    },
+    [width, height]
+  );
+
   const clamp = useCallback(() => {
-    const el = viewport.current;
-    if (!el) {
-      return;
-    }
     const v = view.current;
-    const keep = 200;
     v.z = clampZ(v.z);
-    v.x = Math.min(el.clientWidth - keep, Math.max(keep - width * v.z, v.x));
-    v.y = Math.min(el.clientHeight - keep, Math.max(keep - height * v.z, v.y));
-  }, [width, height]);
+    const b = bounds(v.z);
+    v.x = Math.min(b.maxX, Math.max(b.minX, v.x));
+    v.y = Math.min(b.maxY, Math.max(b.minY, v.y));
+  }, [bounds]);
 
   const stop = useCallback(() => cancelAnimationFrame(motion.current), []);
 
@@ -296,7 +378,13 @@ export function Canvas({ parts }: { parts: Part[] }) {
 
   /** Moves the camera so world point (cx, cy) sits at the anchor, at zoom z. */
   const flyTo = useCallback(
-    (cx: number, cy: number, z: number, withPanel: boolean, ms = FLY_MS) => {
+    (
+      cx: number,
+      cy: number,
+      z: number,
+      withPanel: boolean,
+      instant = false
+    ) => {
       stop();
       const { ax, ay } = anchor(withPanel);
       const from = view.current;
@@ -304,6 +392,12 @@ export function Canvas({ parts }: { parts: Part[] }) {
       const fcx = (ax - from.x) / fz;
       const fcy = (ay - from.y) / fz;
       const tz = clampZ(z);
+      // Short hops are quick; crossing the canvas takes a little longer, so
+      // the eye can follow where it went. 360 to 640ms.
+      const travel =
+        Math.hypot(cx - fcx, cy - fcy) * Math.min(fz, tz) +
+        Math.abs(Math.log(tz / fz)) * 400;
+      const ms = instant ? 0 : Math.min(640, 360 + travel * 0.25);
       const set = (t: number) => {
         const k = Math.exp(Math.log(fz) + (Math.log(tz) - Math.log(fz)) * t);
         const px = fcx + (cx - fcx) * t;
@@ -328,17 +422,38 @@ export function Canvas({ parts }: { parts: Part[] }) {
     [anchor, apply, stop]
   );
 
+  /** Zooms keeping the world point under (sx, sy) where it is. */
   const zoomAt = useCallback(
-    (sx: number, sy: number, z: number) => {
+    (sx: number, sy: number, z: number, ms = 0) => {
+      stop();
       const v = view.current;
+      const from = v.z;
       const next = clampZ(z);
       const wx = (sx - v.x) / v.z;
       const wy = (sy - v.y) / v.z;
-      view.current = { x: sx - wx * next, y: sy - wy * next, z: next };
-      clamp();
-      apply();
+      const set = (t: number) => {
+        const k = Math.exp(
+          Math.log(from) + (Math.log(next) - Math.log(from)) * t
+        );
+        view.current = { x: sx - wx * k, y: sy - wy * k, z: k };
+        clamp();
+        apply();
+      };
+      if (ms === 0 || reduced()) {
+        set(1);
+        return;
+      }
+      const start = performance.now();
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / ms);
+        set(EASE_OUT(t));
+        if (t < 1) {
+          motion.current = requestAnimationFrame(tick);
+        }
+      };
+      motion.current = requestAnimationFrame(tick);
     },
-    [apply, clamp]
+    [apply, clamp, stop]
   );
 
   const focusBoard = useCallback(
@@ -356,7 +471,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
   );
 
   const focusGroup = useCallback(
-    (slug: string, ms = FLY_MS) => {
+    (slug: string) => {
       const g = groups.find((item) => item.slug === slug);
       if (!g) {
         return;
@@ -369,31 +484,92 @@ export function Canvas({ parts }: { parts: Part[] }) {
       );
       // Big groups land on their first rows, not their middle.
       const cy = g.y + Math.min(g.h, 1500) / 2;
-      flyTo(g.x + GROUP_W / 2, cy, z, false, ms);
+      flyTo(g.x + GROUP_W / 2, cy, z, false);
     },
     [anchor, flyTo, groups]
   );
 
-  const fitAll = useCallback(() => {
-    const { w, h } = anchor(false);
-    flyTo(
-      width / 2,
-      height / 2,
-      Math.min((w - 48) / width, (h - 120) / height),
-      false
-    );
-  }, [anchor, flyTo, height, width]);
+  const fitAll = useCallback(
+    (instant = false) => {
+      const { w, h } = anchor(false);
+      flyTo(
+        width / 2,
+        height / 2,
+        Math.min((w - 48) / width, (h - 120) / height),
+        false,
+        instant
+      );
+    },
+    [anchor, flyTo, height, width]
+  );
 
+  /** Buttons ease the zoom (200ms); the keyboard jumps, it repeats. */
   const zoomBy = useCallback(
-    (factor: number) => {
+    (factor: number, ms = 0) => {
       const el = viewport.current;
       if (!el) {
         return;
       }
-      zoomAt(el.clientWidth / 2, el.clientHeight / 2, view.current.z * factor);
+      zoomAt(
+        el.clientWidth / 2,
+        el.clientHeight / 2,
+        view.current.z * factor,
+        ms
+      );
     },
     [zoomAt]
   );
+
+  /** The overview: press or drag on it to look there. */
+  const miniDrag = useRef(false);
+  const lookAt = (e: PointerEvent<HTMLDivElement>, instant: boolean) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const m = MINI_W / width;
+    const wx = (e.clientX - r.left) / m;
+    const wy = (e.clientY - r.top) / m;
+    if (instant) {
+      const el = viewport.current;
+      const { z } = view.current;
+      view.current = {
+        x: (el?.clientWidth ?? 0) / 2 - wx * z,
+        y: (el?.clientHeight ?? 0) / 2 - wy * z,
+        z,
+      };
+      clamp();
+      apply();
+    } else {
+      const el = viewport.current;
+      const z = view.current.z;
+      stop();
+      const from = { ...view.current };
+      const to = {
+        x: (el?.clientWidth ?? 0) / 2 - wx * z,
+        y: (el?.clientHeight ?? 0) / 2 - wy * z,
+      };
+      if (reduced()) {
+        view.current = { ...to, z };
+        clamp();
+        apply();
+        return;
+      }
+      const start = performance.now();
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / 280);
+        const k = EASE_OUT(t);
+        view.current = {
+          x: from.x + (to.x - from.x) * k,
+          y: from.y + (to.y - from.y) * k,
+          z,
+        };
+        clamp();
+        apply();
+        if (t < 1) {
+          motion.current = requestAnimationFrame(tick);
+        }
+      };
+      motion.current = requestAnimationFrame(tick);
+    }
+  };
 
   const inView = useCallback(() => {
     const el = viewport.current;
@@ -506,6 +682,9 @@ export function Canvas({ parts }: { parts: Part[] }) {
     lt: number;
     vx: number;
     vy: number;
+    /** Where the camera would be without the edges' resistance. */
+    rx: number;
+    ry: number;
     moved: boolean;
     board: string | null;
   } | null>(null);
@@ -569,6 +748,8 @@ export function Canvas({ parts }: { parts: Part[] }) {
       lt: e.timeStamp,
       vx: 0,
       vy: 0,
+      rx: view.current.x,
+      ry: view.current.y,
       moved: false,
       board: target.closest("[data-board]")?.getAttribute("data-board") ?? null,
     };
@@ -606,13 +787,47 @@ export function Canvas({ parts }: { parts: Part[] }) {
     const dt = Math.max(1, e.timeStamp - d.lt);
     d.vx = (p.x - d.lx) / dt;
     d.vy = (p.y - d.ly) / dt;
-    view.current.x += p.x - d.lx;
-    view.current.y += p.y - d.ly;
+    d.rx += p.x - d.lx;
+    d.ry += p.y - d.ly;
+    const b = bounds(view.current.z);
+    view.current.x = band(d.rx, b.minX, b.maxX, b.vw);
+    view.current.y = band(d.ry, b.minY, b.maxY, b.vh);
     d.lx = p.x;
     d.ly = p.y;
     d.lt = e.timeStamp;
-    clamp();
     apply();
+  };
+
+  /** Pulled past an edge: settle back inside, quickly. */
+  const settle = () => {
+    const from = { ...view.current };
+    clamp();
+    const to = { ...view.current };
+    view.current = from;
+    if (from.x === to.x && from.y === to.y) {
+      return false;
+    }
+    if (reduced()) {
+      view.current = to;
+      apply();
+      return true;
+    }
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / 300);
+      const k = EASE_OUT(t);
+      view.current = {
+        x: from.x + (to.x - from.x) * k,
+        y: from.y + (to.y - from.y) * k,
+        z: from.z,
+      };
+      apply();
+      if (t < 1) {
+        motion.current = requestAnimationFrame(tick);
+      }
+    };
+    motion.current = requestAnimationFrame(tick);
+    return true;
   };
 
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
@@ -633,6 +848,9 @@ export function Canvas({ parts }: { parts: Part[] }) {
           setSelection({ kind: "one", name: d.board });
         }
       }
+      return;
+    }
+    if (settle()) {
       return;
     }
     // A flick keeps going, and slows the way a page does.
@@ -675,7 +893,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
     } else if (e.key === "-") {
       zoomBy(0.8);
     } else if (e.key === "0") {
-      fitAll();
+      fitAll(true);
     }
   };
 
@@ -694,7 +912,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
         aria-label="Component canvas. Arrow keys pan, plus and minus zoom, 0 shows everything."
         aria-roledescription="canvas"
         className={cn(
-          "canvas-dots relative h-[calc(100svh-140px)] min-h-[540px] w-full touch-none select-none overflow-hidden border-black/[0.1] border-t dark:border-white/[0.12]",
+          "canvas-surface relative h-[calc(100svh-140px)] min-h-[540px] w-full touch-none select-none overflow-hidden border-black/[0.1] border-t dark:border-white/[0.12]",
           FOCUS_INSET
         )}
         onKeyDown={onKeyDown}
@@ -709,6 +927,16 @@ export function Canvas({ parts }: { parts: Part[] }) {
         tabIndex={0}
       >
         <div
+          aria-hidden="true"
+          className="canvas-grid pointer-events-none absolute inset-0"
+          ref={minor}
+        />
+        <div
+          aria-hidden="true"
+          className="canvas-grid pointer-events-none absolute inset-0"
+          ref={major}
+        />
+        <div
           className={cn(
             "absolute top-0 left-0 origin-top-left transition-opacity duration-200 ease-out",
             ready ? "opacity-100" : "opacity-0"
@@ -718,15 +946,19 @@ export function Canvas({ parts }: { parts: Part[] }) {
         >
           {groups.map((g) => (
             <div
-              className="pointer-events-none absolute"
+              className="canvas-section pointer-events-none absolute"
               key={g.slug}
-              style={{ left: g.x, top: g.y, width: GROUP_W }}
+              style={{
+                ...toneStyle(g.slug),
+                left: g.x - SECTION_PAD,
+                top: g.y - SECTION_PAD,
+                width: GROUP_W + SECTION_PAD * 2,
+                height: g.h + SECTION_PAD * 2,
+                padding: SECTION_PAD,
+              }}
             >
               <p
-                className={cn(
-                  "font-semibold leading-none tracking-[-0.04em]",
-                  INK
-                )}
+                className="canvas-tone font-semibold leading-none tracking-[-0.04em]"
                 style={{ fontSize: 150 }}
               >
                 {g.title}
@@ -747,7 +979,12 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 className="absolute"
                 data-board={b.part.name}
                 key={b.part.name}
-                style={{ left: b.x, top: b.y, width: BOARD_W }}
+                style={{
+                  ...toneStyle(b.part.categorySlug),
+                  left: b.x,
+                  top: b.y,
+                  width: BOARD_W,
+                }}
               >
                 <button
                   className={cn(
@@ -764,14 +1001,14 @@ export function Canvas({ parts }: { parts: Part[] }) {
                   }}
                   type="button"
                 >
-                  <span className={cn(MONO, "text-[11.5px]", LEAF)}>
+                  <span className={cn(MONO, "canvas-tone text-[11.5px]")}>
                     {b.part.code}
                   </span>
                   <span className="truncate">{b.part.title}</span>
                 </button>
                 <div
                   className={cn(
-                    "relative overflow-hidden bg-white outline-offset-0 dark:bg-[#0b0b0b]",
+                    "canvas-board relative overflow-hidden bg-white outline-offset-0 dark:bg-[#0b0b0b]",
                     isSelected
                       ? "outline-2 outline-[#0a6cff] outline-solid"
                       : "outline-1 outline-black/[0.08] outline-solid dark:outline-white/[0.1]"
@@ -780,13 +1017,17 @@ export function Canvas({ parts }: { parts: Part[] }) {
                   style={{ height: b.h }}
                 >
                   {running ? (
-                    <Fit className="p-6">
-                      <PartDemo part={b.part} />
-                    </Fit>
+                    // Arrives from a blur as it comes into view, so panning
+                    // reveals parts instead of popping them in.
+                    <div className="canvas-live-in absolute inset-0">
+                      <Fit className="p-6">
+                        <PartDemo part={b.part} />
+                      </Fit>
+                    </div>
                   ) : (
                     <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-3 px-8 text-center">
                       <span
-                        className="font-semibold text-black/30 leading-tight dark:text-white/30"
+                        className="canvas-tone font-semibold leading-tight opacity-45"
                         style={{ fontSize: 40 }}
                       >
                         {b.part.title}
@@ -803,7 +1044,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
           <aside
             className={cn(
               PANEL,
-              "absolute top-3 right-3 left-3 flex max-h-[calc(100%-96px)] flex-col overflow-y-auto p-5 md:right-auto md:w-[372px]"
+              "canvas-panel-in absolute top-3 right-3 left-3 flex max-h-[calc(100%-96px)] flex-col overflow-y-auto p-5 md:right-auto md:w-[372px]"
             )}
             data-ui
           >
@@ -831,8 +1072,8 @@ export function Canvas({ parts }: { parts: Part[] }) {
               {parts.length} components, all running. Find yours.
             </p>
             <p className={cn("mt-3 text-[14px] leading-[1.55]", SOFT)}>
-              Drag to look around, pinch or ctrl-scroll to zoom. Pick one and
-              add it with shadcn, Claude Code, Codex, Cursor or any agent.
+              Drag or scroll to look around, pinch or ⌘-scroll to zoom. Pick one
+              and add it with shadcn, Claude Code, Codex, Cursor or any agent.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
@@ -875,7 +1116,16 @@ export function Canvas({ parts }: { parts: Part[] }) {
                   onClick={() => focusGroup(g.slug)}
                   type="button"
                 >
-                  <span>{g.title}</span>
+                  <span
+                    className="flex items-center gap-2.5"
+                    style={toneStyle(g.slug)}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="canvas-swatch size-2 rounded-[2px]"
+                    />
+                    {g.title}
+                  </span>
                   <span className={META}>{g.count}</span>
                 </button>
               ))}
@@ -885,7 +1135,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
           <button
             className={cn(
               PANEL,
-              "absolute top-3 left-3 h-9 px-3.5 font-medium text-[13px]",
+              "canvas-panel-in absolute top-3 left-3 h-9 px-3.5 font-medium text-[13px]",
               INK,
               FOCUS
             )}
@@ -901,7 +1151,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
           <aside
             className={cn(
               PANEL,
-              "absolute right-3 bottom-[68px] left-3 z-10 flex max-h-[60%] flex-col gap-4 overflow-y-auto p-5 md:top-3 md:bottom-auto md:left-auto md:max-h-[calc(100%-96px)] md:w-[372px]"
+              "canvas-panel-in absolute right-3 bottom-[68px] left-3 z-10 flex max-h-[60%] flex-col gap-4 overflow-y-auto p-5 md:top-3 md:bottom-auto md:left-auto md:max-h-[calc(100%-96px)] md:w-[372px] lg:max-h-[calc(100%-200px)]"
             )}
             data-ui
           >
@@ -909,7 +1159,12 @@ export function Canvas({ parts }: { parts: Part[] }) {
               <p className={cn(META, "flex gap-3")}>
                 {selected ? (
                   <>
-                    <span className={LEAF}>{selected.part.code}</span>
+                    <span
+                      className="canvas-tone"
+                      style={toneStyle(selected.part.categorySlug)}
+                    >
+                      {selected.part.code}
+                    </span>
                     <span>{selected.part.category}</span>
                   </>
                 ) : (
@@ -998,7 +1253,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
             <ul
               className={cn(
                 PANEL,
-                "absolute right-0 bottom-full left-0 mb-2 flex flex-col p-1"
+                "canvas-pop absolute right-0 bottom-full left-0 mb-2 flex flex-col p-1"
               )}
             >
               {found.map((p) => (
@@ -1016,7 +1271,10 @@ export function Canvas({ parts }: { parts: Part[] }) {
                     }}
                     type="button"
                   >
-                    <span className={cn(MONO, "text-[11px]", LEAF)}>
+                    <span
+                      className={cn(MONO, "canvas-tone text-[11px]")}
+                      style={toneStyle(p.categorySlug)}
+                    >
                       {p.code}
                     </span>
                     <span className="truncate">{p.title}</span>
@@ -1026,7 +1284,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
             </ul>
           ) : null}
           <div className={cn(PANEL, "flex items-center gap-0.5 p-1")}>
-            <ToolButton label="Zoom out" onClick={() => zoomBy(0.8)}>
+            <ToolButton label="Zoom out" onClick={() => zoomBy(0.8, 200)}>
               −
             </ToolButton>
             <span
@@ -1036,12 +1294,12 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 SOFT
               )}
             >
-              {zoom}%
+              <span ref={zoomLabel}>100%</span>
             </span>
-            <ToolButton label="Zoom in" onClick={() => zoomBy(1.25)}>
+            <ToolButton label="Zoom in" onClick={() => zoomBy(1.25, 200)}>
               +
             </ToolButton>
-            <ToolButton label="Show everything" onClick={fitAll}>
+            <ToolButton label="Show everything" onClick={() => fitAll()}>
               Fit
             </ToolButton>
             <span className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.12]" />
@@ -1086,6 +1344,50 @@ export function Canvas({ parts }: { parts: Part[] }) {
               <span className="hidden sm:inline">Add what's in view</span>
             </ToolButton>
           </div>
+        </div>
+
+        <div
+          aria-hidden="true"
+          className={cn(
+            PANEL,
+            "canvas-mini absolute right-3 bottom-3 z-10 hidden cursor-pointer overflow-hidden p-0 lg:block"
+          )}
+          data-ui
+          onPointerDown={(e) => {
+            miniDrag.current = true;
+            e.currentTarget.setPointerCapture(e.pointerId);
+            lookAt(e, false);
+          }}
+          onPointerMove={(e) => {
+            if (miniDrag.current && e.buttons) {
+              lookAt(e, true);
+            }
+          }}
+          onPointerUp={() => {
+            miniDrag.current = false;
+          }}
+          style={{ width: MINI_W + 2, height: (height * MINI_W) / width + 2 }}
+        >
+          {groups.map((g) => {
+            const m = MINI_W / width;
+            return (
+              <div
+                className="canvas-mini-section absolute rounded-[2px]"
+                key={g.slug}
+                style={{
+                  ...toneStyle(g.slug),
+                  left: g.x * m,
+                  top: g.y * m,
+                  width: GROUP_W * m,
+                  height: g.h * m,
+                }}
+              />
+            );
+          })}
+          <div
+            className="pointer-events-none absolute top-0 left-0 rounded-[3px] border-[1.5px] border-black/70 dark:border-white/80"
+            ref={miniView}
+          />
         </div>
       </div>
     </div>

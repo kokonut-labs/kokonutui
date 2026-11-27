@@ -35,29 +35,126 @@
   }
 }
 
-/* Canvas: a dot grid that moves and scales with the camera (the script sets
-   its size and position). */
-.canvas-dots {
-  --canvas-dot: rgb(0 0 0 / 0.16);
-  background-color: #f3f3f2;
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    var(--canvas-dot) 1px,
-    transparent 1.4px
-  );
-  background-size: 24px 24px;
-  cursor: default;
-}
-
-.dark .canvas-dots {
-  --canvas-dot: rgb(255 255 255 / 0.14);
-  background-color: #050505;
-}
-
-.canvas-dots[data-grab="true"] {
+/* Canvas: a design-file surface. The dots sit on their own layers (the
+   script sets their size, position and the fine layer's opacity), so moving
+   them never restyles the artboards. */
+.canvas-surface {
+  --canvas-dot: rgb(0 0 0 / 0.2);
+  background-color: #f4f4f2;
   cursor: grab;
 }
 
-.canvas-dots[data-dragging="true"] {
+.dark .canvas-surface {
+  --canvas-dot: rgb(255 255 255 / 0.16);
+  background-color: #070707;
+}
+
+.canvas-surface[data-dragging="true"] {
   cursor: grabbing;
+}
+
+/* Running parts keep their own cursors. */
+.canvas-surface [data-live] {
+  cursor: auto;
+}
+
+.canvas-grid {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--canvas-dot) 1px,
+    transparent 1.5px
+  );
+  background-size: 24px 24px;
+}
+
+/* Each group's accent: light and dark values come in as variables. */
+[style*="--tone-light"] {
+  --tone: var(--tone-light);
+}
+
+.dark [style*="--tone-light"] {
+  --tone: var(--tone-dark);
+}
+
+.canvas-tone {
+  color: var(--tone);
+}
+
+.canvas-swatch {
+  background-color: var(--tone);
+}
+
+/* A group's section: a wash of its accent over the dots, with a rule that
+   holds the edge when you zoom out. */
+.canvas-section {
+  background-color: color-mix(in oklab, var(--tone) 5%, transparent);
+  border: 2px solid color-mix(in oklab, var(--tone) 16%, transparent);
+  border-radius: 56px;
+}
+
+.dark .canvas-section {
+  background-color: color-mix(in oklab, var(--tone) 7%, transparent);
+  border-color: color-mix(in oklab, var(--tone) 22%, transparent);
+}
+
+/* Artboards sit on the canvas like paper: a hairline and the slightest
+   shadow, no lift. */
+.canvas-board {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 12px 32px -20px rgb(0 0 0 / 0.18);
+}
+
+.dark .canvas-board {
+  box-shadow: none;
+}
+
+.canvas-mini-section {
+  background-color: color-mix(in oklab, var(--tone) 22%, transparent);
+}
+
+/* A part arrives from a blur as it pans into view. */
+@keyframes canvas-live-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+.canvas-live-in {
+  animation: canvas-live-in 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* Panels come in from where they sit, small and quick; they leave at once. */
+@keyframes canvas-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+    filter: blur(2px);
+  }
+}
+
+.canvas-panel-in {
+  animation: canvas-panel-in 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* Search results grow out of the toolbar they belong to. */
+@keyframes canvas-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+.canvas-pop {
+  animation: canvas-pop 160ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  transform-origin: bottom center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-live-in,
+  .canvas-panel-in,
+  .canvas-pop {
+    animation: home-fade 150ms ease-out both;
+  }
 }
