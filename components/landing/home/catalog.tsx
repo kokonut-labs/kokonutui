@@ -1,20 +1,14 @@
 "use client";
 
 import { useSearchContext } from "fumadocs-ui/contexts/search";
-import { ArrowRightIcon, ArrowUpRightIcon } from "lucide-react";
+import { ArrowUpRightIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type ComponentType, type ReactNode, Suspense, useState } from "react";
 import { HoverLink } from "@/components/hover-link";
 import CommandButton from "@/components/kokonutui/command-button";
 import SlideTextButton from "@/components/kokonutui/slide-text-button";
-import { componentPrompt } from "@/lib/agents";
-import {
-  CHANGELOG_URL,
-  formatReleaseDate,
-  RELEASES,
-  releaseAnchor,
-} from "@/lib/changelog";
+import { componentPrompt, SETUP_PROMPT } from "@/lib/agents";
 import {
   PRO_SHOWCASE,
   PRO_SHOWCASE_PAGE,
@@ -24,19 +18,24 @@ import {
 } from "@/lib/pro-showcase";
 import { PRO_TEMPLATE_LIST, PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
 import { cn } from "@/lib/utils";
+import {
+  AGENTS,
+  type AgentId,
+  AgentSession,
+  AgentTabs,
+  runPrompt,
+} from "./agents";
 import { AgentIcon, Avatar, CopyIconSwap, useCopy } from "./client";
-import { ClientPicker, CopyLine } from "./controls";
+import { CopyLine } from "./controls";
 import {
   GITHUB_URL,
   installCommand,
-  type McpClient,
   mcpCommand,
   POSTS,
   PRO_INCLUDED,
   PRO_LANDING_URL,
   PRO_PRICE,
   PRO_STILLS,
-  REGISTRY_ENTRY,
   V0_THREAD,
   VERCEL_OSS_URL,
   VIDEO_ID,
@@ -59,44 +58,58 @@ import {
 } from "./styles";
 import { VideoCard } from "./video";
 
-/** The newest release, shown under Vercel in the cover. */
-const LATEST = RELEASES[0];
 /**
- * One order told in three live parts, left to right: ask for it, pay in the
- * chat, follow the delivery.
+ * One order told in three live parts, left to right: pay in the chat, the
+ * receipt prints, the courier arrives. The agent session above installs
+ * exactly these.
  */
-const FLOW = [
-  { name: "ai-input-search", label: "Ask", room: "min-h-[240px]" },
+const ORDER = [
   { name: "ai-checkout", label: "Pay", room: "min-h-[460px]" },
+  { name: "receipt-printer", label: "Receipt", room: "min-h-[460px]" },
   { name: "ai-order-status", label: "Track", room: "min-h-[460px]" },
 ];
-/** The live part in the cover's corner, above the pitch. */
-const CORNER = "apple-activity-card";
-/** The middle step of the cover, asked for the way you'd ask a colleague. */
-const AGENT_PROMPT = "Add @kokonutui/ai-checkout to my agent's chat";
-const AI_PLATES = [
-  "ai-tool-calls",
-  "ai-autocomplete",
-  "ai-prompt",
-  "ai-model-selector",
-  "ai-loading",
-  "ai-context-meter",
+
+/** Rows of one app screen each, every row mixing AI and UI parts. */
+const SCREENS = [
+  {
+    id: "trip",
+    title: "A trip",
+    line: "The assistant finds the hotel, you pick the nights, the pass keeps itself current.",
+    names: ["ai-tool-calls", "stay-picker", "boarding-pass"],
+    room: "h-[480px]",
+  },
+  {
+    id: "money",
+    title: "Money",
+    line: "See where it went, hand a double charge to a person, send what you owe.",
+    names: ["spending-ring", "ai-handoff", "amount-pad"],
+    room: "h-[460px]",
+  },
+  {
+    id: "work",
+    title: "Work",
+    line: "Find a time for both calendars, send the draft, watch the number move.",
+    names: ["ai-schedule", "ai-send", "metric-card"],
+    room: "h-[480px]",
+  },
 ];
-// The wide background comes after four plates, so it starts a row at both
-// two and three columns.
-const PLATES = [
-  "hold-button",
-  "detent-dial",
-  "slide-to-confirm",
-  "tear-button",
-  "drape-background",
-  "wheel-picker",
-  "plucked-text",
-  "pull-cord",
-  "activity-terrain",
-  "liquid-gauge",
-  "bell-button",
+
+/** What to ask once a project is set up: an AI part and a UI part together. */
+const MIXED_PROMPT =
+  "Add a chat input with a model picker and a slide-to-pay button from @kokonutui";
+
+/** Files the site serves for agents, linked so people can read them too. */
+const READS = [
+  { path: "/setup.md", line: "Setup steps, written for an agent" },
+  { path: "/llms.txt", line: "Every docs page, one line each" },
+  { path: "/r/registry.json", line: "The registry the shadcn CLI reads" },
+  {
+    path: "/docs/ai/ai-checkout.md",
+    line: "Any docs page as Markdown, source included",
+  },
 ];
+
+type PickParts = (names: string[]) => Part[];
 
 export function Catalog({
   parts,
@@ -106,13 +119,13 @@ export function Catalog({
   className?: string;
 }) {
   const byName = new Map(parts.map((p) => [p.name, p]));
-  const pick = (names: string[]) =>
+  const pick: PickParts = (names) =>
     names
       .map((name) => byName.get(name))
       .filter((p): p is Part => Boolean(p && LIVE[p.name]));
-  const steps = FLOW.flatMap((step) => {
-    const part = byName.get(step.name);
-    return part && LIVE[part.name] ? [{ ...step, part }] : [];
+  const steps = ORDER.flatMap((step) => {
+    const part = pick([step.name])[0];
+    return part ? [{ ...step, part }] : [];
   });
 
   return (
@@ -122,28 +135,10 @@ export function Catalog({
         className
       )}
     >
-      <Cover
-        corner={pick([CORNER])[0]}
-        count={parts.length}
-        latest={LATEST.added.flatMap((e) => byName.get(e.name) ?? [])}
-        steps={steps}
-      />
-      <Plates
-        aside="The parts of an AI product people touch: tool calls in a reply, autocomplete as you type, the model picker. Live demos, not screenshots."
-        id="ai"
-        number="01"
-        plates={pick(AI_PLATES)}
-        title="AI components"
-      />
-      <Plates
-        aside="Inputs, cards, buttons and text for the screens around the chat. Each component installs as a single file you own."
-        id="featured"
-        number="02"
-        plates={pick(PLATES)}
-        title="UI components"
-      />
+      <Cover count={parts.length} steps={steps} />
+      <Screens pick={pick} />
+      <Agents />
       <Index parts={parts} />
-      <Ordering />
       <References />
       <Supplement />
     </div>
@@ -155,24 +150,16 @@ export function Catalog({
 interface FlowStep {
   label: string;
   part: Part;
-  /**
-   * Height that shows the part at its own size. Side by side, the row takes
-   * the tallest; stacked, the composer doesn't hold a card's worth of space.
-   */
+  /** Height that shows the part at its own size; the row takes the tallest. */
   room: string;
 }
 
-function Cover({
-  corner,
-  steps,
-  latest,
-  count,
-}: {
-  corner?: Part;
-  steps: FlowStep[];
-  latest: Part[];
-  count: number;
-}) {
+/**
+ * In bands: the meta row, the headline across the full width, then the
+ * pitch and the ways in beside the agent session, then the order it installs,
+ * live.
+ */
+function Cover({ steps, count }: { steps: FlowStep[]; count: number }) {
   return (
     <section
       aria-label="Kokonut UI"
@@ -181,9 +168,8 @@ function Cover({
       <div className={cn("grid grid-cols-2 md:grid-cols-4", GRID)}>
         {[
           "Kokonut UI",
-          "Components for AI apps",
+          "UI and AI components",
           "React, Tailwind CSS, Motion",
-          "Free and open source",
         ].map((label, i) => (
           <p
             className={cn(
@@ -199,68 +185,48 @@ function Cover({
             {label}
           </p>
         ))}
+        <VercelMeta />
       </div>
 
-      {/* Headline, then the pitch, then the two ways in, then a live part.
-          From lg up the part and the pitch share a column beside the rest. */}
-      <div
-        className={cn(
-          "grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-[1fr_auto]",
-          GRID
-        )}
-      >
+      <div className={cn("px-5 pt-8 pb-6 sm:px-8 sm:pt-12 lg:px-10", CELL)}>
+        <h1
+          className={cn(
+            "home-enter font-semibold text-[clamp(40px,12.5vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,7.8vw,112px)]",
+            INK
+          )}
+          style={enter(0)}
+        >
+          {/* The space keeps the words apart for crawlers and screen readers. */}
+          UI and AI components <br />
+          that feel right.
+        </h1>
+      </div>
+
+      <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
         <div
           className={cn(
-            "order-1 flex items-center p-5 sm:p-8 lg:col-span-8 lg:p-10",
+            "flex flex-col justify-between gap-8 p-5 sm:p-8 lg:col-span-7 lg:px-10 lg:py-9",
             CELL
           )}
         >
-          <h1
-            className={cn(
-              "home-enter font-semibold text-[clamp(40px,12.5vw,52px)] leading-[0.9] tracking-[-0.06em] sm:text-[clamp(52px,8vw,112px)]",
-              INK
-            )}
-            style={enter(0)}
+          <p
+            className="home-enter max-w-[640px] text-pretty text-[19px] leading-[1.45] tracking-[-0.01em] sm:text-[22px]"
+            style={enter(1)}
           >
-            {/* The space keeps the words apart for crawlers and screen readers. */}
-            AI components <br />
-            that feel right.
-          </h1>
-        </div>
-        <div
-          className={cn(
-            "contents lg:order-2 lg:col-span-4 lg:row-span-2 lg:grid lg:grid-rows-[1fr_auto]",
-            GRID
-          )}
-        >
-          {corner ? <CornerPlate part={corner} /> : null}
-          <div
-            className={cn(
-              "order-2 flex items-end p-5 sm:p-8 lg:px-10 lg:py-7",
-              CELL
-            )}
-          >
-            <p
-              className={cn(
-                "home-enter max-w-[520px] text-pretty text-[17px] leading-relaxed",
-                SOFT
-              )}
-              style={enter(1)}
-            >
-              Open-source React components for AI chat and agents, and the
-              inputs and cards around them. All live on this page. Install any
-              of them with the shadcn CLI, or ask your agent to.
-            </p>
-          </div>
-        </div>
-        <div
-          className={cn(
-            "order-3 flex flex-wrap items-center gap-x-6 gap-y-4 p-5 sm:px-8 lg:col-span-8 lg:px-10",
-            CELL
-          )}
-        >
+            <span className={INK}>
+              Open-source React components for the chat and the app around it,
+              made to sit on the same screen.
+            </span>{" "}
+            <span className={SOFT}>
+              Install them with the shadcn CLI, or ask your agent to.
+            </span>
+          </p>
           <HeroActions count={count} />
         </div>
+        <AgentSession
+          className="lg:col-span-5"
+          parts={steps.map((step) => step.part)}
+        />
       </div>
 
       <div className={cn("grid grid-cols-1 lg:grid-cols-3", GRID)}>
@@ -273,50 +239,39 @@ function Cover({
           />
         ))}
       </div>
-
-      <div className={cn("grid grid-cols-1 md:grid-cols-12", GRID)}>
-        <div
-          className={cn(
-            "home-enter flex flex-col gap-3 p-5 sm:p-6 md:col-span-7",
-            CELL
-          )}
-          style={enter(2)}
-        >
-          <p className={META}>Ask your agent</p>
-          <PromptLine prompt={AGENT_PROMPT} />
-        </div>
-        <ConnectEditor />
-        <a
-          className={cn(
-            "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-1",
-            CELL,
-            "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
-            EASE_COLORS,
-            FOCUS_INSET
-          )}
-          href={VERCEL_OSS_URL}
-          rel="noreferrer"
-          style={enter(2)}
-          target="_blank"
-        >
-          <span className="flex flex-col gap-1">
-            <span className={META}>Backed by</span>
-            <span className={cn("font-medium text-[17px]", INK)}>
-              Vercel OSS
-            </span>
-          </span>
-          <svg
-            aria-hidden="true"
-            className="size-4 text-black/40 transition-colors duration-150 ease-out group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
-            fill="currentColor"
-            viewBox="0 0 76 65"
-          >
-            <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
-          </svg>
-        </a>
-        <LatestRelease parts={latest} />
-      </div>
     </section>
+  );
+}
+
+/** Vercel's open-source program, which backs the project; the meta row's last cell. */
+function VercelMeta() {
+  return (
+    <a
+      className={cn(
+        "home-enter group flex h-10 items-center justify-between gap-3 px-4",
+        CELL,
+        META,
+        "hover:text-black dark:hover:text-white",
+        EASE_COLORS,
+        FOCUS_INSET
+      )}
+      href={VERCEL_OSS_URL}
+      rel="noreferrer"
+      style={enter(0)}
+      target="_blank"
+    >
+      <span>
+        <span className="hidden sm:inline">Backed by </span>Vercel OSS
+      </span>
+      <svg
+        aria-hidden="true"
+        className="size-3"
+        fill="currentColor"
+        viewBox="0 0 76 65"
+      >
+        <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+      </svg>
+    </a>
   );
 }
 
@@ -351,48 +306,7 @@ function HeroActions({ count }: { count: number }) {
   );
 }
 
-/**
- * The live part beside the headline. Stacked, it comes after the buttons, so
- * the pitch and the two ways in stay together.
- */
-function CornerPlate({ part }: { part: Part }) {
-  const { Component: Demo, hint } = LIVE[part.name];
-  return (
-    <figure
-      className={cn("home-enter order-4 flex flex-col lg:order-1", CELL)}
-      style={enter(1)}
-    >
-      <figcaption className="flex items-baseline justify-between gap-4 px-4 pt-3.5">
-        <span className="flex shrink-0 items-baseline gap-2">
-          <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>
-            {part.code}
-          </span>
-          <HoverLink
-            className={cn(
-              MONO,
-              "rounded-sm text-[12px] underline-offset-4 hover:underline",
-              INK,
-              FOCUS
-            )}
-            href={part.url}
-          >
-            {part.title}
-          </HoverLink>
-        </span>
-        <span className={cn(META, "truncate")}>{hint}</span>
-      </figcaption>
-      <div className="relative min-h-[236px] flex-1">
-        <Fit className="px-3 py-4">
-          <Suspense fallback={<LiveFallback />}>
-            <Demo />
-          </Suspense>
-        </Fit>
-      </div>
-    </figure>
-  );
-}
-
-/** One step of the cover's agent turn: a live part under its step name. */
+/** One step of the cover's order: a live part under its step name. */
 function FlowPlate({
   part,
   label,
@@ -422,143 +336,230 @@ function FlowPlate({
   );
 }
 
-/** The newest release, under Vercel: what was added and when. */
-function LatestRelease({ parts }: { parts: Part[] }) {
-  if (parts.length === 0) {
-    return null;
-  }
-  const shown = parts.slice(0, 3).map((p) => p.title);
-  const more = parts.length - shown.length;
-  return (
-    <Link
-      className={cn(
-        "home-enter group flex items-center justify-between gap-4 p-5 sm:p-6 md:col-span-5 md:col-start-8 md:row-start-2",
-        CELL,
-        "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]",
-        EASE_COLORS,
-        FOCUS_INSET
-      )}
-      href={`${CHANGELOG_URL}#${releaseAnchor(LATEST.date)}`}
-      style={enter(2)}
-    >
-      <span className="flex min-w-0 flex-col gap-1">
-        <span className={META}>
-          What&apos;s new · {formatReleaseDate(LATEST.date)}
-        </span>
-        <span className={cn("font-medium text-[17px]", INK)}>
-          {parts.length} new components
-        </span>
-        <span className={cn("text-pretty text-[13px] leading-snug", SOFT)}>
-          {shown.join(", ")}
-          {more > 0 ? ` and ${more} more` : null}
-        </span>
-      </span>
-      <ArrowRightIcon
-        aria-hidden
-        className="size-4 shrink-0 text-black/40 transition-colors duration-150 ease-out group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
-      />
-    </Link>
-  );
-}
+/* Screens -------------------------------------------------------------- */
 
-/** What you'd type into Claude Code, Cursor or Codex to get the featured part. */
-function PromptLine({ prompt }: { prompt: string }) {
-  const { copied, copy } = useCopy();
+/** Rows of one app screen each, AI and UI parts side by side. */
+function Screens({ pick }: { pick: PickParts }) {
   return (
-    <button
-      aria-label={copied ? "Copied" : `Copy the prompt: ${prompt}`}
-      className={cn(
-        "group flex min-w-0 items-start gap-3 text-left text-[clamp(14px,1.5vw,17px)] leading-snug",
-        MONO,
-        INK,
-        FOCUS
-      )}
-      onClick={() => copy(prompt)}
-      type="button"
-    >
-      <span aria-hidden className={LEAF}>
-        &rsaquo;
-      </span>
-      <span className="min-w-0 flex-1 text-pretty">{prompt}</span>
-      <CopyIconSwap
-        className="mt-0.5 size-4 text-black/40 group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
-        copied={copied}
+    <section aria-labelledby="screens" className="pt-24 md:pt-32">
+      <SectionHead
+        aside="Each row is one screen of a real app: the assistant's part and the controls around it, live and installable on their own."
+        id="screens"
+        number="01"
+        title="AI and UI, together"
       />
-    </button>
-  );
-}
-
-/** One command connects the editor to the registry over the shadcn MCP server. */
-function ConnectEditor() {
-  const [client, setClient] = useState<McpClient>("claude");
-  return (
-    <div
-      className={cn(
-        "home-enter flex flex-col gap-3 p-5 sm:p-6 md:col-span-7 md:row-start-2",
-        CELL
-      )}
-      style={enter(2)}
-    >
-      <p className="flex items-baseline justify-between gap-4">
-        <span className={META}>Connect your editor once</span>
-        <span className={cn(MONO, "text-[11.5px]", LEAF)}>shadcn MCP</span>
-      </p>
-      <ClientPicker
-        className={cn(
-          "grid grid-cols-2 border sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4",
-          GRID,
-          LINE
-        )}
-        itemClassName={cn("h-9 justify-start px-3", CELL)}
-        onChange={setClient}
-        selectedClassName="bg-[#f4f4f4] dark:bg-[#161616]"
-        value={client}
-      />
-      <CopyLine
-        className={cn("text-[13px]", INK)}
-        prefix="$"
-        value={mcpCommand(client)}
-      />
-    </div>
-  );
-}
-
-/* Plates --------------------------------------------------------------- */
-
-function Plates({
-  plates,
-  id,
-  number,
-  title,
-  aside,
-}: {
-  plates: Part[];
-  id: string;
-  number: string;
-  title: string;
-  aside: string;
-}) {
-  return (
-    <section aria-labelledby={id} className="pt-24 md:pt-32">
-      <SectionHead aside={aside} id={id} number={number} title={title} />
-      <div
-        className={cn(
-          "grid grid-cols-1 border sm:grid-cols-2 lg:grid-cols-3",
-          GRID,
-          LINE
-        )}
-      >
-        {plates.map((part) => (
-          <Plate key={part.name} part={part} />
-        ))}
+      <div className={cn("grid grid-cols-1 border", GRID, LINE)}>
+        {SCREENS.map((screen) => {
+          const row = pick(screen.names);
+          return (
+            <section
+              aria-labelledby={`screen-${screen.id}`}
+              className={cn("grid grid-cols-1", GRID)}
+              key={screen.id}
+            >
+              <div
+                className={cn(
+                  "flex flex-col gap-1 px-4 py-3.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6",
+                  CELL
+                )}
+              >
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                  <span
+                    className={cn("shrink-0 font-medium text-[17px]", INK)}
+                    id={`screen-${screen.id}`}
+                  >
+                    {screen.title}
+                  </span>
+                  <span className={cn("text-[14px]", SOFT)}>{screen.line}</span>
+                </p>
+                <span className={cn(META, "shrink-0")}>
+                  {row.map((p) => p.code).join(" + ")}
+                </span>
+              </div>
+              <div className={cn("grid grid-cols-1 lg:grid-cols-3", GRID)}>
+                {row.map((part) => (
+                  <Plate key={part.name} part={part} room={screen.room} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </section>
   );
 }
 
-function Plate({ part }: { part: Part }) {
-  const entry = LIVE[part.name];
-  const Demo = entry.Component;
+/* Agents --------------------------------------------------------------- */
+
+/**
+ * Pick your agent, get its three lines: the setup prompt, the MCP server (or
+ * the index, for agents without one) and a first thing to ask for.
+ */
+export function Agents({ number = "02" }: { number?: string }) {
+  const [id, setId] = useState<AgentId>("claude");
+  const agent = AGENTS.find((a) => a.id === id) ?? AGENTS[0];
+  const steps = [
+    {
+      title: "Set it up with one prompt",
+      note: "It reads the steps at /setup.md: registry, MCP server and rules.",
+      line: (
+        <CopyLine
+          className={cn("text-[13px]", INK)}
+          label="setup prompt"
+          prefix="›"
+          value={SETUP_PROMPT}
+        />
+      ),
+    },
+    id === "any"
+      ? {
+          title: "Or point it at the index",
+          note: "Every page as Markdown, for agents without an MCP client.",
+          line: (
+            <CopyLine
+              className={cn("text-[13px]", INK)}
+              value="https://kokonutui.com/llms.txt"
+            />
+          ),
+        }
+      : {
+          title: "Connect the shadcn MCP server",
+          note: `So ${agent.label} can browse the registry and install from it.`,
+          line: (
+            <CopyLine
+              className={cn("text-[13px]", INK)}
+              prefix="$"
+              value={mcpCommand(id)}
+            />
+          ),
+        },
+    {
+      title: "Then ask in plain words",
+      note: "AI parts and UI parts come from the same registry.",
+      line: (
+        <CopyLine
+          className={cn("text-[13px]", INK)}
+          label="prompt"
+          prefix={agent.cli ? "$" : "›"}
+          value={runPrompt(agent, MIXED_PROMPT)}
+        />
+      ),
+    },
+  ];
+
+  return (
+    <section aria-labelledby="agents" className="pt-24 md:pt-32">
+      <SectionHead
+        aside="Kokonut UI is a shadcn registry with an MCP server, a setup file and Markdown for every page, so the agent you already use can find a component and install it for you."
+        id="agents"
+        number={number}
+        title="Works with agents"
+      />
+      <div className={cn("grid grid-cols-1 border", GRID, LINE)}>
+        <AgentTabs
+          className={cn("grid grid-cols-2 sm:grid-cols-5", GRID)}
+          itemClassName="h-14 justify-start gap-2.5 px-4 text-[15px] last:col-span-2 sm:h-[72px] sm:last:col-span-1 [&_svg]:size-5"
+          onChange={setId}
+          value={id}
+        />
+        <div className={cn("grid grid-cols-1 lg:grid-cols-12", GRID)}>
+          <ol className={cn("grid grid-cols-1 lg:col-span-8", GRID)}>
+            {steps.map((step, i) => (
+              <li
+                className={cn("flex gap-4 p-5 sm:gap-6 sm:p-6", CELL)}
+                key={step.title}
+              >
+                <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-3">
+                  <p className="flex flex-col gap-0.5">
+                    <span className={cn("font-medium text-[15px]", INK)}>
+                      {step.title}
+                    </span>
+                    <span className={cn("text-[13.5px] leading-snug", SOFT)}>
+                      {step.note}
+                    </span>
+                  </p>
+                  {step.line}
+                </div>
+              </li>
+            ))}
+          </ol>
+          <div
+            className={cn(
+              "flex flex-col justify-between gap-8 p-5 sm:p-6 lg:col-span-4",
+              CELL
+            )}
+          >
+            <div className="flex flex-col gap-1">
+              <p className={META}>Rules go in</p>
+              <p className={cn(MONO, "text-[15px]", INK)}>{agent.rules}</p>
+              <p className={cn("text-[13.5px] leading-snug", SOFT)}>
+                So {id === "any" ? "your agent" : agent.label} keeps using the
+                registry, the cn helper and the @/ paths.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <p className={META}>What it reads</p>
+              <ul className={cn("flex flex-col border-t", LINE)}>
+                {READS.map((r) => (
+                  <li
+                    className={cn("border-b last:border-b-0", LINE)}
+                    key={r.path}
+                  >
+                    <a
+                      className={cn(
+                        "group flex flex-col gap-0.5 py-2",
+                        FOCUS_INSET
+                      )}
+                      href={r.path}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      <span
+                        className={cn(
+                          MONO,
+                          "text-[12.5px] underline-offset-4 group-hover:underline",
+                          INK
+                        )}
+                      >
+                        {r.path}
+                      </span>
+                      <span className={cn("text-[13px]", SOFT)}>{r.line}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                className={cn(
+                  "mt-1 w-fit text-[13px] underline decoration-black/25 underline-offset-4 hover:decoration-black dark:decoration-white/25 dark:hover:decoration-white",
+                  SOFT,
+                  EASE_COLORS,
+                  FOCUS
+                )}
+                href="/docs/agents"
+              >
+                The full agents guide
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* Plates --------------------------------------------------------------- */
+
+function Plate({
+  part,
+  room,
+}: {
+  part: Part /** The demo's box; plates in a row share one height. */;
+  room: string;
+}) {
+  const { Component: Demo, hint } = LIVE[part.name];
   const { ref, near } = useNearViewport<HTMLDivElement>();
   const demo = near ? (
     <Suspense fallback={<LiveFallback />}>
@@ -566,20 +567,11 @@ function Plate({ part }: { part: Part }) {
     </Suspense>
   ) : null;
   return (
-    <figure
-      className={cn("flex flex-col", entry.wide && "sm:col-span-2", CELL)}
-    >
-      <PlateHead code={part.code} note={entry.hint} />
-      {/* Every plate is the same height; big parts are shown reduced, and
-          backgrounds fill a double plate edge to edge. */}
-      <div className="relative h-[300px]" ref={ref}>
-        {entry.wide ? (
-          <div className="absolute inset-x-4 inset-y-3 overflow-hidden">
-            {demo}
-          </div>
-        ) : (
-          <Fit className="px-6 py-4">{demo}</Fit>
-        )}
+    <figure className={cn("flex flex-col", CELL)}>
+      <PlateHead code={part.code} note={hint} />
+      {/* Big parts are shown reduced to fit the row's height. */}
+      <div className={cn("relative", room)} ref={ref}>
+        <Fit className="px-6 py-4">{demo}</Fit>
       </div>
       <PlateFoot part={part} />
     </figure>
@@ -597,7 +589,7 @@ function PlateHead({ code, note }: { code: string; note: string }) {
   );
 }
 
-function PlateFoot({ part }: { part: Part }) {
+export function PlateFoot({ part }: { part: Part }) {
   const spec = part.dependencies.length
     ? part.dependencies.join(", ")
     : "no extra packages";
@@ -633,7 +625,7 @@ function PlateFoot({ part }: { part: Part }) {
   );
 }
 
-function PlateCopy({
+export function PlateCopy({
   label,
   target,
   value,
@@ -667,7 +659,7 @@ function PlateCopy({
   );
 }
 
-function SectionHead({
+export function SectionHead({
   id,
   number,
   title,
@@ -715,7 +707,13 @@ function SectionHead({
 
 /* Index ---------------------------------------------------------------- */
 
-function Index({ parts }: { parts: Part[] }) {
+export function Index({
+  parts,
+  number = "03",
+}: {
+  parts: Part[];
+  number?: string;
+}) {
   const groups = new Map<string, Part[]>();
   for (const p of parts) {
     groups.set(p.category, [...(groups.get(p.category) ?? []), p]);
@@ -730,7 +728,7 @@ function Index({ parts }: { parts: Part[] }) {
       <SectionHead
         aside="Every Kokonut UI component by category, from AI chat inputs to text effects. Each name opens its docs page."
         id="all-components-title"
-        number="03"
+        number={number}
         title="All components"
       />
       <div
@@ -825,82 +823,9 @@ function Index({ parts }: { parts: Part[] }) {
   );
 }
 
-/* Ordering -------------------------------------------------------------- */
-
-function Ordering() {
-  return (
-    <section aria-labelledby="ordering" className="pt-24 md:pt-32">
-      <SectionHead
-        aside="Kokonut UI is a shadcn/ui registry, so every component arrives as source in your repo, with its dependencies installed."
-        id="ordering"
-        number="04"
-        title="How to install"
-      />
-      <ol className={cn("grid grid-cols-1 border md:grid-cols-3", GRID, LINE)}>
-        <Method code="A" title="AI agent">
-          <p className={cn("text-[14px] leading-relaxed", SOFT)}>
-            Name a component, or describe what you need. Your agent finds it in
-            the registry and installs it with its dependencies.
-          </p>
-          <CopyLine
-            className={cn("mt-auto", INK)}
-            label="prompt"
-            prefix="›"
-            value="Add an AI chat input with a model picker to the home page"
-          />
-        </Method>
-        <Method code="B" title="shadcn CLI">
-          <p className={cn("text-[14px] leading-relaxed", SOFT)}>
-            Name the component. The shadcn CLI writes the file and installs what
-            it needs.
-          </p>
-          <CopyLine
-            className={cn("mt-auto", INK)}
-            prefix="$"
-            value={installCommand("particle-button")}
-          />
-        </Method>
-        <Method code="C" title="Registry">
-          <p className={cn("text-[14px] leading-relaxed", SOFT)}>
-            Add the namespace to components.json once, then use the short names
-            everywhere.
-          </p>
-          <CopyLine
-            className={cn("mt-auto", INK)}
-            label="registry entry"
-            value={REGISTRY_ENTRY}
-          />
-        </Method>
-      </ol>
-    </section>
-  );
-}
-
-function Method({
-  code,
-  title,
-  children,
-}: {
-  code: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <li className={cn("flex min-h-[260px] flex-col gap-4 p-5 sm:p-6", CELL)}>
-      <p className="flex items-baseline justify-between">
-        <span className={cn("font-medium text-[17px]", INK)}>{title}</span>
-        <span className={cn(MONO, "font-medium text-[12px]", LEAF)}>
-          {code}
-        </span>
-      </p>
-      {children}
-    </li>
-  );
-}
-
 /* References ------------------------------------------------------------ */
 
-function References() {
+export function References({ number = "04" }: { number?: string }) {
   const { post, reply } = V0_THREAD;
   return (
     <section
@@ -911,7 +836,7 @@ function References() {
       <SectionHead
         aside="What developers said when they found it, including the person behind shadcn/ui."
         id="references"
-        number="05"
+        number={number}
         title="What developers say"
       />
       <div
@@ -1011,7 +936,7 @@ const SHOWCASE_ITEMS = new Map(
   )
 );
 
-function Supplement() {
+export function Supplement({ number = "05" }: { number?: string }) {
   const stills = PRO_STILLS.map((name) => SHOWCASE_ITEMS.get(name)).filter(
     (item) => item !== undefined
   );
@@ -1022,7 +947,7 @@ function Supplement() {
       <SectionHead
         aside="The paid half of the catalog: heroes, app screens, pricing, AI parts and full website templates, on the same stack and installed the same way."
         id="supplement"
-        number="06"
+        number={number}
         title="Kokonut UI Pro"
       />
       <div className={cn("grid grid-cols-1 border", GRID, LINE)}>

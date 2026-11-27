@@ -14,30 +14,24 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * The components that run live on the homepage, each loaded on demand. Every
- * entry renders the docs demo (same props), so what you try here is what the
- * docs show and what the CLI installs.
+ * The components that run live on the homepage (and in the OG lab frames),
+ * each loaded on demand. Every entry renders the docs demo, so what you try
+ * here is what the docs show and what the CLI installs; the few props set
+ * here only tune it for the page.
  */
 export interface LiveEntry {
   Component: LazyExoticComponent<ComponentType>;
   /** One line telling people what to do with it. */
   hint: string;
-  /**
-   * Fills a two-column plate edge to edge instead of being fitted into one,
-   * for backgrounds.
-   */
-  wide?: boolean;
 }
 
 function live<M extends { default: unknown }>(
   load: () => Promise<M>,
   render: (mod: M) => ReactNode,
-  hint: string,
-  options: { wide?: boolean } = {}
+  hint: string
 ): LiveEntry {
   return {
     hint,
-    ...options,
     Component: lazy(async () => {
       const mod = await load();
       return { default: () => render(mod) };
@@ -46,90 +40,15 @@ function live<M extends { default: unknown }>(
 }
 
 export const LIVE: Record<string, LiveEntry> = {
-  "apple-activity-card": live(
-    () => import("@/components/kokonutui/apple-activity-card"),
-    // The cover's corner is narrower than the card's side-by-side breakpoint,
-    // so the card is laid out at that width with its title hidden (the plate
-    // names it), and the wrapper hands Fit only the rings and legend.
-    ({ default: C }) => (
-      <div className="flex w-[384px] justify-center">
-        <C className="w-[448px] max-w-none shrink-0 p-0 [&_h2]:hidden" />
-      </div>
-    ),
-    "Rings fill as it mounts"
-  ),
-  "hold-button": live(
-    () => import("@/components/kokonutui/hold-button"),
-    ({ default: C }) => (
-      <div className="flex flex-col items-center gap-3">
-        <C />
-        <C variant="green" />
-        <C holdDuration={2000} variant="grey" />
-      </div>
-    ),
-    "Press and hold to confirm"
-  ),
   "slide-to-confirm": live(
     () => import("@/components/kokonutui/slide-to-confirm"),
     ({ default: C }) => <C className="w-[320px]" />,
     "Slide all the way to pay"
   ),
-  "ai-prompt": live(
-    () => import("@/components/kokonutui/ai-prompt"),
-    ({ default: C }) => <C className="w-full max-w-[520px]" />,
-    "Type / for commands, drop a file"
-  ),
-  "detent-dial": live(
-    () => import("@/components/kokonutui/detent-dial"),
-    ({ default: C }) => <C />,
-    "Turn it, or flick and let it coast"
-  ),
   "ai-loading": live(
     () => import("@/components/kokonutui/ai-loading"),
     ({ default: C }) => <C className="w-full max-w-[400px]" />,
     "An agent working through its steps"
-  ),
-  "tear-button": live(
-    () => import("@/components/kokonutui/tear-button"),
-    ({ default: C }) => <C />,
-    "Tear the stub off to confirm"
-  ),
-  "drape-background": live(
-    () => import("@/components/kokonutui/drape-background"),
-    // Edge to edge, with no headline: the cloth is the demo.
-    ({ default: C }) => <C className="absolute inset-0 min-h-0">{null}</C>,
-    "Sweep through it, or grab a fold",
-    { wide: true }
-  ),
-  "wheel-picker": live(
-    () => import("@/components/kokonutui/wheel-picker"),
-    ({ default: C }) => <C />,
-    "Flick a wheel"
-  ),
-  "plucked-text": live(
-    () => import("@/components/kokonutui/plucked-text"),
-    ({ default: C }) => <C />,
-    "Pluck the string under the words"
-  ),
-  "pull-cord": live(
-    () => import("@/components/kokonutui/pull-cord"),
-    ({ default: C }) => <C />,
-    "Pull the cord"
-  ),
-  "activity-terrain": live(
-    () => import("@/components/kokonutui/activity-terrain"),
-    ({ default: C }) => <C />,
-    "Drag to turn the terrain"
-  ),
-  "bell-button": live(
-    () => import("@/components/kokonutui/bell-button"),
-    ({ default: C }) => <C />,
-    "Click it to ring the bell"
-  ),
-  "liquid-gauge": live(
-    () => import("@/components/kokonutui/liquid-gauge"),
-    ({ default: C }) => <C />,
-    "Drag sideways to slosh it"
   ),
   "ai-input-search": live(
     () => import("@/components/kokonutui/ai-input-search"),
@@ -157,20 +76,59 @@ export const LIVE: Record<string, LiveEntry> = {
     ({ default: C }) => <C minuteMs={2400} />,
     "Watch the courier arrive"
   ),
-  "ai-autocomplete": live(
-    () => import("@/components/kokonutui/ai-autocomplete"),
+  "receipt-printer": live(
+    () => import("@/components/kokonutui/receipt-printer"),
+    // The order AI Checkout takes in the chat, so the receipt adds up to the
+    // same $41.04.
+    ({ default: C }) => (
+      <C
+        date="26 Nov 2026 · 09:14"
+        items={[{ name: "Ethiopia Guji", quantity: 2, price: 19 }]}
+        merchant="Northside Roasters"
+        order="#2207"
+      />
+    ),
+    "Pull the receipt to tear it off"
+  ),
+  "spending-ring": live(
+    () => import("@/components/kokonutui/spending-ring"),
     ({ default: C }) => <C />,
-    "Type, then Tab to take the suggestion"
+    "Flick the ring and let it settle"
   ),
-  "ai-model-selector": live(
-    () => import("@/components/kokonutui/ai-model-selector"),
-    ({ default: C }) => <C className="w-full max-w-[300px]" />,
-    "Pick a model, then the effort"
+  "boarding-pass": live(
+    () => import("@/components/kokonutui/boarding-pass"),
+    ({ default: C }) => <C />,
+    "Changed details roll over"
   ),
-  "ai-context-meter": live(
-    () => import("@/components/kokonutui/ai-context-meter"),
-    ({ default: C }) => <C className="w-full max-w-[300px]" />,
-    "Compact before the window fills"
+  "stay-picker": live(
+    () => import("@/components/kokonutui/stay-picker"),
+    ({ default: C }) => <C />,
+    "Pick check-in, then check-out"
+  ),
+  "ai-handoff": live(
+    () => import("@/components/kokonutui/ai-handoff"),
+    ({ default: C }) => <C className="w-full max-w-[360px]" />,
+    "The queue counts down to a person"
+  ),
+  "amount-pad": live(
+    () => import("@/components/kokonutui/amount-pad"),
+    ({ default: C }) => <C />,
+    "Type an amount; it shrinks to fit"
+  ),
+  "ai-schedule": live(
+    () => import("@/components/kokonutui/ai-schedule"),
+    ({ default: C }) => <C className="w-full max-w-[360px]" />,
+    "Pick a time, then book it"
+  ),
+  "ai-send": live(
+    () => import("@/components/kokonutui/ai-send"),
+    ({ default: C }) => <C className="w-full max-w-[360px]" />,
+    "Edit the draft, then send or undo"
+  ),
+  "metric-card": live(
+    () => import("@/components/kokonutui/metric-card"),
+    ({ default: C }) => <C />,
+    "Scrub a day, or drag a range"
   ),
 };
 
