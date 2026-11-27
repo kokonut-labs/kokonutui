@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
   useCallback,
@@ -12,7 +11,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { GITHUB_URL } from "@/components/landing/home/data";
+import { AGENTS } from "@/components/landing/home/agents";
+import { HeroActions } from "@/components/landing/home/catalog";
 import { Fit } from "@/components/landing/home/live";
 import type { Part } from "@/components/landing/home/parts";
 import {
@@ -170,46 +170,71 @@ const PAN: Record<string, [number, number]> = {
 
 /** A 4×4 Bayer matrix: the order pixels switch on as density rises. */
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-const DITHER_CELL = 4;
-const ditherMasks = new Map<number, CSSProperties>();
+/** World pixels per dither pixel, and how far the field runs past the parts. */
+const DITHER_CELL = 5;
+const DITHER_PAD = 2400;
 
 /**
- * The site's dither, for an artboard of height h: 1-bit pixels that thicken
- * toward the bottom edge, as a mask four pixels wide repeated across, so
- * any color shows through and the pattern scales with the canvas.
+ * The background: the site's 1-bit dither over the whole canvas, drawn once
+ * into a canvas and scaled with the camera like everything else. Its density
+ * drifts in slow waves, so it reads as shading rather than a grid, and fades
+ * to nothing before its edge.
  */
-function ditherMask(h: number) {
-  let mask = ditherMasks.get(h);
-  if (mask) {
-    return mask;
-  }
-  const rows = Math.round(h / DITHER_CELL);
-  let rects = "";
-  for (let y = 0; y < rows; y++) {
-    const t = y / (rows - 1);
-    const on = Math.round(Math.max(0, (t - 0.45) / 0.55) ** 1.4 * 0.6 * 16);
-    for (let x = 0; x < 4; x++) {
-      if (BAYER[(y % 4) * 4 + x] < on) {
-        rects += `<rect x='${x}' y='${y}' width='1' height='1'/>`;
+function DitherField({ width, height }: { width: number; height: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas?.getContext("2d");
+    if (!(canvas && ctx)) {
+      return;
+    }
+    const cols = Math.ceil((width + DITHER_PAD * 2) / DITHER_CELL);
+    const rows = Math.ceil((height + DITHER_PAD * 2) / DITHER_CELL);
+    canvas.width = cols;
+    canvas.height = rows;
+    const image = ctx.createImageData(cols, rows);
+    const data = image.data;
+    const fade = DITHER_PAD * 0.8;
+    for (let row = 0; row < rows; row++) {
+      const wy = row * DITHER_CELL - DITHER_PAD;
+      const edgeY = Math.min(wy + DITHER_PAD, height + DITHER_PAD - wy) / fade;
+      for (let col = 0; col < cols; col++) {
+        const wx = col * DITHER_CELL - DITHER_PAD;
+        const edgeX = Math.min(wx + DITHER_PAD, width + DITHER_PAD - wx) / fade;
+        const wave =
+          0.55 * Math.sin(wx / 900 + 0.4) * Math.sin(wy / 1100 + 1.1) +
+          0.45 * Math.sin((wx * 0.6 - wy * 0.8) / 1500 + 2.3);
+        const t = Math.min(1, Math.max(0, (wave + 0.15) / 1.05));
+        const density = t * t * (3 - 2 * t) * 0.4 * Math.min(1, edgeX, edgeY);
+        if (BAYER[(row % 4) * 4 + (col % 4)] < density * 16) {
+          data[(row * cols + col) * 4 + 3] = 255;
+        }
       }
     }
-  }
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='4' height='${rows}' shape-rendering='crispEdges'>${rects}</svg>`;
-  const image = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-  const size = `${4 * DITHER_CELL}px ${rows * DITHER_CELL}px`;
-  mask = {
-    maskImage: image,
-    WebkitMaskImage: image,
-    maskSize: size,
-    WebkitMaskSize: size,
-    maskRepeat: "repeat-x",
-    WebkitMaskRepeat: "repeat-x",
-    maskPosition: "left bottom",
-    WebkitMaskPosition: "left bottom",
-  };
-  ditherMasks.set(h, mask);
-  return mask;
+    ctx.putImageData(image, 0, 0);
+  }, [width, height]);
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+      <canvas
+        className="canvas-dither absolute"
+        ref={ref}
+        style={{
+          left: -DITHER_PAD,
+          top: -DITHER_PAD,
+          width: width + DITHER_PAD * 2,
+          height: height + DITHER_PAD * 2,
+        }}
+      />
+    </div>
+  );
 }
+
+const HANDLES = [
+  "-top-[5px] -left-[5px]",
+  "-top-[5px] -right-[5px]",
+  "-bottom-[5px] -left-[5px]",
+  "-bottom-[5px] -right-[5px]",
+];
 
 const clampZ = (z: number) => Math.min(MAX_Z, Math.max(MIN_Z, z));
 const reduced = () =>
@@ -460,6 +485,34 @@ export function Canvas({ parts }: { parts: Part[] }) {
     [anchor, byName, flyTo]
   );
 
+  /**
+   * Select without moving, unless the artboard sits under a panel or off
+   * screen: then glide it into the free space, keeping the zoom.
+   */
+  const selectBoard = useCallback(
+    (name: string) => {
+      const b = byName.get(name);
+      const el = viewport.current;
+      if (!(b && el)) {
+        return;
+      }
+      setSelection({ kind: "one", name });
+      const { x, y, z } = view.current;
+      const vw = el.clientWidth;
+      const wide = vw >= 1024;
+      const left = wide && intro ? 392 : 0;
+      const right = wide ? vw - 392 : vw;
+      const sx = b.x * z + x;
+      const ex = (b.x + BOARD_W) * z + x;
+      const sy = b.y * z + y;
+      const ey = (b.y + LABEL + b.h) * z + y;
+      if (sx < left || ex > right || sy < 0 || ey > el.clientHeight - 64) {
+        flyTo(b.x + BOARD_W / 2, b.y + (LABEL + b.h) / 2, z, true);
+      }
+    },
+    [byName, flyTo, intro]
+  );
+
   const focusGroup = useCallback(
     (slug: string) => {
       const g = groups.find((item) => item.slug === slug);
@@ -628,6 +681,23 @@ export function Canvas({ parts }: { parts: Part[] }) {
     board: string | null;
   } | null>(null);
   const touches = useRef(new Map<number, { x: number; y: number }>());
+  const press = useRef<{ x: number; y: number; board: string | null } | null>(
+    null
+  );
+
+  const onClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    const p = press.current;
+    press.current = null;
+    if (!p?.board) {
+      return;
+    }
+    const r = viewport.current?.getBoundingClientRect();
+    const x = e.clientX - (r?.left ?? 0);
+    const y = e.clientY - (r?.top ?? 0);
+    if (Math.hypot(x - p.x, y - p.y) < 6) {
+      selectBoard(p.board);
+    }
+  };
   const pinch = useRef<{ d: number; z: number; mx: number; my: number } | null>(
     null
   );
@@ -672,7 +742,19 @@ export function Canvas({ parts }: { parts: Part[] }) {
       return;
     }
     const pan = space.current || e.button === 1;
-    if (!pan && (e.button !== 0 || target.closest("[data-live]"))) {
+    const live = target.closest("[data-live]");
+    if (!pan && live) {
+      // A running part keeps its own pointer; a click on it (not a drag
+      // inside it) still selects its artboard, on release.
+      const p = local(e);
+      press.current = {
+        x: p.x,
+        y: p.y,
+        board: live.closest("[data-board]")?.getAttribute("data-board") ?? null,
+      };
+      return;
+    }
+    if (!pan && e.button !== 0) {
       return;
     }
     e.preventDefault();
@@ -784,7 +866,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
         if (view.current.z < DETAIL) {
           focusBoard(d.board);
         } else {
-          setSelection({ kind: "one", name: d.board });
+          selectBoard(d.board);
         }
       }
       return;
@@ -854,6 +936,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
           "canvas-surface relative h-[calc(100svh-140px)] min-h-[540px] w-full touch-none select-none overflow-hidden border-black/[0.1] border-t dark:border-white/[0.12]",
           FOCUS_INSET
         )}
+        onClickCapture={onClickCapture}
         onKeyDown={onKeyDown}
         onPointerCancel={onPointerUp}
         onPointerDown={onPointerDown}
@@ -873,6 +956,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
           ref={world}
           style={{ width, height }}
         >
+          <DitherField height={height} width={width} />
           {groups.map((g) => (
             <div
               className="pointer-events-none absolute"
@@ -909,7 +993,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 <button
                   className={cn(
                     "flex h-[34px] w-full items-center gap-2 text-left text-[13px]",
-                    isSelected ? "text-[#0a6cff]" : SOFT,
+                    isSelected ? cn(INK, "font-medium") : SOFT,
                     FOCUS_INSET
                   )}
                   onClick={(e) => {
@@ -928,37 +1012,50 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 </button>
                 <div
                   className={cn(
-                    "relative overflow-hidden bg-white outline-offset-0 dark:bg-[#0b0b0b]",
+                    "relative bg-white outline-solid dark:bg-[#0b0b0b]",
                     isSelected
-                      ? "outline-2 outline-[#0a6cff] outline-solid"
-                      : "outline-1 outline-black/[0.08] outline-solid dark:outline-white/[0.1]"
+                      ? "outline-2 outline-black dark:outline-white"
+                      : "outline-1 outline-black/[0.1] hover:outline-black/30 dark:outline-white/[0.12] dark:hover:outline-white/35",
+                    "transition-[outline-color] duration-150 ease-out"
                   )}
                   data-live={running ? "" : undefined}
                   style={{ height: b.h }}
                 >
-                  <div
-                    aria-hidden="true"
-                    className="canvas-board-dither pointer-events-none absolute inset-0"
-                    style={ditherMask(b.h)}
-                  />
-                  {running ? (
-                    // Arrives from a blur as it comes into view, so panning
-                    // reveals parts instead of popping them in.
-                    <div className="canvas-live-in absolute inset-0">
-                      <Fit className="p-6">
-                        <PartDemo part={b.part} />
-                      </Fit>
-                    </div>
-                  ) : (
-                    <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-3 px-8 text-center">
-                      <span
-                        className="font-semibold text-black/30 leading-tight dark:text-white/30"
-                        style={{ fontSize: 40 }}
-                      >
-                        {b.part.title}
-                      </span>
-                    </div>
-                  )}
+                  {isSelected ? (
+                    // Handles on the corners, as in a design tool: the
+                    // selection reads at any zoom without a new color.
+                    <span aria-hidden="true">
+                      {HANDLES.map((corner) => (
+                        <span
+                          className={cn(
+                            "absolute z-10 size-[9px] border-[1.5px] border-black bg-white dark:border-white dark:bg-black",
+                            corner
+                          )}
+                          key={corner}
+                        />
+                      ))}
+                    </span>
+                  ) : null}
+                  <div className="absolute inset-0 overflow-hidden">
+                    {running ? (
+                      // Arrives from a blur as it comes into view, so panning
+                      // reveals parts instead of popping them in.
+                      <div className="canvas-live-in absolute inset-0">
+                        <Fit className="p-6">
+                          <PartDemo part={b.part} />
+                        </Fit>
+                      </div>
+                    ) : (
+                      <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-3 px-8 text-center">
+                        <span
+                          className="font-semibold text-black/30 leading-tight dark:text-white/30"
+                          style={{ fontSize: 40 }}
+                        >
+                          {b.part.title}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -994,37 +1091,35 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 INK
               )}
             >
-              {parts.length} components, all running. Find yours.
+              Every component, running on one canvas.
             </p>
             <p className={cn("mt-3 text-[14px] leading-[1.55]", SOFT)}>
-              Drag or scroll to look around, pinch or ⌘-scroll to zoom. Pick one
-              and add it with shadcn, Claude Code, Codex, Cursor or any agent.
+              Try any of the {parts.length} parts right here. Click one to get
+              the line that adds it to your project, through shadcn or your
+              agent.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                className={cn(
-                  "inline-flex h-9 items-center rounded-full bg-black px-4 font-medium text-[13px] text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80",
-                  EASE_COLORS,
-                  FOCUS
-                )}
-                href="/docs"
-              >
-                Read the docs
-              </Link>
-              <a
-                className={cn(
-                  "inline-flex h-9 items-center rounded-full border border-black/[0.12] px-4 font-medium text-[13px] hover:border-black/30 dark:border-white/[0.14] dark:hover:border-white/35",
-                  INK,
-                  EASE_COLORS,
-                  FOCUS
-                )}
-                href={GITHUB_URL}
-                rel="noopener"
-                target="_blank"
-              >
-                GitHub
-              </a>
+            <div className="mt-5">
+              <HeroActions count={parts.length} />
             </div>
+            <p
+              className={cn(
+                META,
+                "mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5"
+              )}
+            >
+              <span>Works with</span>
+              {AGENTS.filter((a) => a.id !== "vscode").map(
+                ({ id, label, Mark }) => (
+                  <span className="inline-flex items-center gap-1.5" key={id}>
+                    <Mark className="size-3.5 shrink-0" />
+                    {label}
+                  </span>
+                )
+              )}
+            </p>
+            <p className={cn(META, "mt-4 hidden md:block")}>
+              Drag to move · Scroll or pinch to zoom · Click to pick
+            </p>
             <nav
               aria-label="Groups"
               className="mt-6 hidden flex-col border-black/[0.08] border-t pt-3 md:flex dark:border-white/[0.1]"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import {
   AGENTS,
   type AgentId,
@@ -13,11 +13,35 @@ import { cn } from "@/lib/utils";
 
 export type Way = "cli" | AgentId;
 
-const WAYS: { id: Way; label: string }[] = [
-  { id: "cli", label: "shadcn" },
+/** The shadcn mark: two strokes. */
+function ShadcnMark({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 256 256"
+    >
+      <path
+        d="M208 128 128 208M192 40 40 192"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="28"
+      />
+    </svg>
+  );
+}
+
+const WAYS: {
+  id: Way;
+  label: string;
+  Mark: (props: { className?: string }) => ReactNode;
+}[] = [
+  { id: "cli", label: "shadcn", Mark: ShadcnMark },
   ...AGENTS.filter((a) => a.id !== "vscode").map((a) => ({
     id: a.id,
     label: a.label,
+    Mark: a.Mark,
   })),
 ];
 
@@ -53,7 +77,7 @@ export function InstallBar({
           <button
             aria-pressed={way === w.id}
             className={cn(
-              "h-7 rounded-full px-2.5 font-medium text-[12px]",
+              "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 font-medium text-[12px]",
               way === w.id
                 ? "bg-black text-white dark:bg-white dark:text-black"
                 : "text-black/55 hover:bg-black/[0.05] hover:text-black dark:text-white/55 dark:hover:bg-white/[0.08] dark:hover:text-white",
@@ -64,6 +88,7 @@ export function InstallBar({
             onClick={() => setWay(w.id)}
             type="button"
           >
+            <w.Mark className="size-3.5 shrink-0" />
             {w.label}
           </button>
         ))}
