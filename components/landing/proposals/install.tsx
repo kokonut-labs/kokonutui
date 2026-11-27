@@ -36,12 +36,20 @@ const WAYS: {
   id: Way;
   label: string;
   Mark: (props: { className?: string }) => ReactNode;
+  /** The mark's own color, kept on every tab. */
+  color: string;
 }[] = [
-  { id: "cli", label: "shadcn", Mark: ShadcnMark },
+  {
+    id: "cli",
+    label: "shadcn",
+    Mark: ShadcnMark,
+    color: "text-black dark:text-white",
+  },
   ...AGENTS.filter((a) => a.id !== "vscode").map((a) => ({
     id: a.id,
     label: a.label,
     Mark: a.Mark,
+    color: a.color,
   })),
 ];
 
@@ -79,8 +87,8 @@ export function InstallBar({
             className={cn(
               "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 font-medium text-[12px]",
               way === w.id
-                ? "bg-black text-white dark:bg-white dark:text-black"
-                : "text-black/55 hover:bg-black/[0.05] hover:text-black dark:text-white/55 dark:hover:bg-white/[0.08] dark:hover:text-white",
+                ? "bg-black/[0.07] text-black dark:bg-white/[0.12] dark:text-white"
+                : "text-black/55 hover:bg-black/[0.04] hover:text-black dark:text-white/55 dark:hover:bg-white/[0.06] dark:hover:text-white",
               EASE_COLORS,
               FOCUS_INSET
             )}
@@ -88,7 +96,7 @@ export function InstallBar({
             onClick={() => setWay(w.id)}
             type="button"
           >
-            <w.Mark className="size-3.5 shrink-0" />
+            <w.Mark className={cn("size-3.5 shrink-0", w.color)} />
             {w.label}
           </button>
         ))}

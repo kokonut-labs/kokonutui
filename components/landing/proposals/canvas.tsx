@@ -1109,9 +1109,9 @@ export function Canvas({ parts }: { parts: Part[] }) {
             >
               <span>Works with</span>
               {AGENTS.filter((a) => a.id !== "vscode").map(
-                ({ id, label, Mark }) => (
+                ({ id, label, Mark, color }) => (
                   <span className="inline-flex items-center gap-1.5" key={id}>
-                    <Mark className="size-3.5 shrink-0" />
+                    <Mark className={cn("size-3.5 shrink-0", color)} />
                     {label}
                   </span>
                 )
