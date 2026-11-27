@@ -294,11 +294,19 @@ function BoardBody({ part }: { part: Part }) {
 }
 
 /** The left panel's way to Pro: what it is, in full, under its name. */
-function ProGroupRow({ onClick }: { onClick: () => void }) {
+function ProGroupRow({
+  active,
+  onClick,
+}: {
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
+      aria-current={active ? "location" : undefined}
       className={cn(
         "-mx-2 mt-2 flex flex-col gap-1 rounded-[8px] border-black/[0.08] border-t px-2 pt-3 pb-2 text-left hover:bg-black/[0.05] dark:border-white/[0.1] dark:hover:bg-white/[0.07]",
+        active && GROUP_HERE,
         EASE_COLORS,
         FOCUS_INSET
       )}
@@ -315,6 +323,9 @@ function ProGroupRow({ onClick }: { onClick: () => void }) {
     </button>
   );
 }
+
+/** The group the view is on, marked in the list the way a hover marks it. */
+const GROUP_HERE = "bg-black/[0.05] dark:bg-white/[0.07]";
 
 const HANDLES = [
   "-top-[5px] -left-[5px]",
@@ -381,6 +392,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
   const [visible, setVisible] = useState("");
   const [detail, setDetail] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+  const [here, setHere] = useState<string | null>(null);
   const [intro, setIntro] = useState(true);
   const [query, setQuery] = useState("");
 
@@ -423,8 +435,23 @@ export function Canvas({ parts }: { parts: Part[] }) {
         .map((b) => b.part.name);
       setVisible(names.join("|"));
       setDetail(z >= DETAIL);
+      // The group nearest the middle of the screen is the one you're on.
+      const mx = (vw / 2 - x) / z;
+      const my = (vh / 2 - y) / z;
+      let near: string | null = null;
+      let best = Number.POSITIVE_INFINITY;
+      for (const g of groups) {
+        const dx = Math.max(g.x - mx, 0, mx - (g.x + GROUP_W));
+        const dy = Math.max(g.y - my, 0, my - (g.y + g.h));
+        const d = Math.hypot(dx, dy);
+        if (d < best) {
+          best = d;
+          near = g.slug;
+        }
+      }
+      setHere(near);
     });
-  }, [boards]);
+  }, [boards, groups]);
 
   /** How far the camera may go: some of the canvas always stays on screen. */
   const bounds = useCallback(
@@ -597,7 +624,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
   );
 
   const focusGroup = useCallback(
-    (slug: string) => {
+    (slug: string, instant = false) => {
       const g = groups.find((item) => item.slug === slug);
       if (!g) {
         return;
@@ -610,7 +637,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
       );
       // Big groups land on their first rows, not their middle.
       const cy = g.y + Math.min(g.h, 1500) / 2;
-      flyTo(g.x + GROUP_W / 2, cy, z, false);
+      flyTo(g.x + GROUP_W / 2, cy, z, false, instant);
     },
     [anchor, flyTo, groups]
   );
@@ -646,21 +673,30 @@ export function Canvas({ parts }: { parts: Part[] }) {
     [zoomAt]
   );
 
-  // First frame: open on the AI group, beside the intro.
+  // First frame: open on the AI group as its row in the list frames it.
+  // Narrow screens can't fit a whole group at a running zoom, so they open
+  // on its first part instead.
+  const focusGroupRef = useRef(focusGroup);
+  focusGroupRef.current = focusGroup;
   useLayoutEffect(() => {
     const el = viewport.current;
     if (!el) {
       return;
     }
-    const wide = el.clientWidth >= 1024;
-    const z = wide ? 0.78 : Math.min(0.66, (el.clientWidth - 32) / BOARD_W);
     const ai = groups[0];
-    view.current = {
-      x: (wide ? 412 : 16) - (ai?.x ?? 0) * z,
-      y: (wide ? 28 : 300) - (ai?.y ?? 0) * z,
-      z,
-    };
-    apply();
+    if (el.clientWidth >= 1024 && ai) {
+      // Through a ref: closing the intro changes focusGroup, and that
+      // mustn't move the camera back.
+      focusGroupRef.current(ai.slug, true);
+    } else {
+      const z = Math.min(0.66, (el.clientWidth - 32) / BOARD_W);
+      view.current = {
+        x: 16 - (ai?.x ?? 0) * z,
+        y: 300 - (ai?.y ?? 0) * z,
+        z,
+      };
+      apply();
+    }
     setReady(true);
   }, [apply, groups]);
 
@@ -1194,13 +1230,16 @@ export function Canvas({ parts }: { parts: Part[] }) {
               {groups.map((g) =>
                 g.slug === PRO_SLUG ? (
                   <ProGroupRow
+                    active={here === g.slug}
                     key={g.slug}
                     onClick={() => focusGroup(g.slug)}
                   />
                 ) : (
                   <button
+                    aria-current={here === g.slug ? "location" : undefined}
                     className={cn(
                       "-mx-2 flex h-8 items-center justify-between rounded-[8px] px-2 text-[13px] hover:bg-black/[0.05] dark:hover:bg-white/[0.07]",
+                      here === g.slug && GROUP_HERE,
                       INK,
                       EASE_COLORS,
                       FOCUS_INSET
