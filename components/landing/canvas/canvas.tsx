@@ -301,26 +301,30 @@ function ProGroupRow({
   active: boolean;
   onClick: () => void;
 }) {
+  // The divider sits on a wrapper, straight across like the one above the
+  // groups; the rounded hover lives on the button under it.
   return (
-    <button
-      aria-current={active ? "location" : undefined}
-      className={cn(
-        "col-span-2 -mx-2 mt-2 flex flex-col gap-1 rounded-[8px] border-black/[0.08] border-t px-2 pt-3 pb-2 text-left hover:bg-black/[0.05] dark:border-white/[0.1] dark:hover:bg-white/[0.07]",
-        active && GROUP_HERE,
-        EASE_COLORS,
-        FOCUS_INSET
-      )}
-      onClick={onClick}
-      type="button"
-    >
-      <span className="flex items-center justify-between text-[13px]">
-        <span className={INK}>Kokonut UI Pro</span>
-        <span className={cn(MONO, "text-[11px]", PRO_RED)}>PRO</span>
-      </span>
-      <span className={cn("text-[12.5px] leading-[1.45]", SOFT)}>
-        {PRO_LINE}, built for AI products.
-      </span>
-    </button>
+    <div className="col-span-2 mt-2 border-black/[0.08] border-t pt-2 dark:border-white/[0.1]">
+      <button
+        aria-current={active ? "location" : undefined}
+        className={cn(
+          "-mx-2 flex w-[calc(100%+16px)] flex-col gap-1 rounded-[8px] px-2 py-2 text-left hover:bg-black/[0.05] dark:hover:bg-white/[0.07]",
+          active && GROUP_HERE,
+          EASE_COLORS,
+          FOCUS_INSET
+        )}
+        onClick={onClick}
+        type="button"
+      >
+        <span className="flex items-center justify-between text-[13px]">
+          <span className={INK}>Kokonut UI Pro</span>
+          <span className={cn(MONO, "text-[11px]", PRO_RED)}>PRO</span>
+        </span>
+        <span className={cn("text-[12.5px] leading-[1.45]", SOFT)}>
+          {PRO_LINE}, built for AI products.
+        </span>
+      </button>
+    </div>
   );
 }
 
