@@ -35,18 +35,20 @@
   }
 }
 
-/* Canvas: a design-file surface. The dots sit on their own layers (the
-   script sets their size, position and the fine layer's opacity), so moving
-   them never restyles the artboards. */
+/* Canvas: the site's dither instead of a dot grid. Square pixels in a
+   staggered ordered-dither pattern, masked out of a faint ink so they follow
+   the theme. Two layers: the coarse one is every other pixel of the fine
+   one, and the script fades the fine one as you zoom out, so the pattern
+   thins out instead of jumping. It moves and scales with the camera. */
 .canvas-surface {
-  --canvas-dot: rgb(0 0 0 / 0.2);
-  background-color: #f4f4f2;
+  --canvas-pixel: rgb(0 0 0 / 0.13);
+  background-color: #f6f6f5;
   cursor: grab;
 }
 
 .dark .canvas-surface {
-  --canvas-dot: rgb(255 255 255 / 0.16);
-  background-color: #070707;
+  --canvas-pixel: rgb(255 255 255 / 0.1);
+  background-color: #050505;
 }
 
 .canvas-surface[data-dragging="true"] {
@@ -58,59 +60,24 @@
   cursor: auto;
 }
 
-.canvas-grid {
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    var(--canvas-dot) 1px,
-    transparent 1.5px
-  );
-  background-size: 24px 24px;
+.canvas-dither {
+  background-color: var(--canvas-pixel);
+  mask-repeat: repeat;
+  -webkit-mask-repeat: repeat;
+  mask-size: 56px 56px;
+  -webkit-mask-size: 56px 56px;
 }
 
-/* Each group's accent: light and dark values come in as variables. */
-[style*="--tone-light"] {
-  --tone: var(--tone-light);
+.canvas-dither-coarse {
+  --pixels: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Crect width='1' height='1'/%3E%3Crect x='16' y='16' width='1' height='1'/%3E%3C/svg%3E");
+  mask-image: var(--pixels);
+  -webkit-mask-image: var(--pixels);
 }
 
-.dark [style*="--tone-light"] {
-  --tone: var(--tone-dark);
-}
-
-.canvas-tone {
-  color: var(--tone);
-}
-
-.canvas-swatch {
-  background-color: var(--tone);
-}
-
-/* A group's section: a wash of its accent over the dots, with a rule that
-   holds the edge when you zoom out. */
-.canvas-section {
-  background-color: color-mix(in oklab, var(--tone) 5%, transparent);
-  border: 2px solid color-mix(in oklab, var(--tone) 16%, transparent);
-  border-radius: 56px;
-}
-
-.dark .canvas-section {
-  background-color: color-mix(in oklab, var(--tone) 7%, transparent);
-  border-color: color-mix(in oklab, var(--tone) 22%, transparent);
-}
-
-/* Artboards sit on the canvas like paper: a hairline and the slightest
-   shadow, no lift. */
-.canvas-board {
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.04),
-    0 12px 32px -20px rgb(0 0 0 / 0.18);
-}
-
-.dark .canvas-board {
-  box-shadow: none;
-}
-
-.canvas-mini-section {
-  background-color: color-mix(in oklab, var(--tone) 22%, transparent);
+.canvas-dither-fine {
+  --pixels: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Crect x='16' width='1' height='1'/%3E%3Crect y='16' width='1' height='1'/%3E%3Crect x='8' y='8' width='1' height='1'/%3E%3Crect x='24' y='8' width='1' height='1'/%3E%3Crect x='8' y='24' width='1' height='1'/%3E%3Crect x='24' y='24' width='1' height='1'/%3E%3C/svg%3E");
+  mask-image: var(--pixels);
+  -webkit-mask-image: var(--pixels);
 }
 
 /* A part arrives from a blur as it pans into view. */

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
   useCallback,
@@ -20,6 +19,7 @@ import {
   FOCUS,
   FOCUS_INSET,
   INK,
+  LEAF,
   META,
   MONO,
   SOFT,
@@ -53,33 +53,6 @@ const GROUP_W = COLS * BOARD_W + (COLS - 1) * GAP_X;
 const DETAIL = 0.42;
 const MIN_Z = 0.05;
 const MAX_Z = 1.6;
-
-/** Each group sits on a tinted section, this far out from its artboards. */
-const SECTION_PAD = 72;
-
-/**
- * One accent per group, so the sections tell apart at any zoom: the leaf
- * green for AI, the rest spread around the wheel (no yellow, it fails on
- * white). Light and dark values.
- */
-const TONES: Record<string, [string, string]> = {
-  ai: ["#15852A", "#3BB44B"],
-  buttons: ["#E8590C", "#FF8A4C"],
-  cards: ["#2563EB", "#7AA5FF"],
-  inputs: ["#7C3AED", "#A78BFA"],
-  navigation: ["#0D9488", "#2DD4BF"],
-  media: ["#DB2777", "#F472B6"],
-  feedback: ["#DC2626", "#F87171"],
-  texts: ["#C026D3", "#E879F9"],
-  backgrounds: ["#0891B2", "#22D3EE"],
-};
-const toneStyle = (slug: string) => {
-  const [light, dark] = TONES[slug] ?? ["#525252", "#a3a3a3"];
-  return { "--tone-light": light, "--tone-dark": dark } as CSSProperties;
-};
-
-/** The overview in the corner, this wide. */
-const MINI_W = 128;
 
 interface Board {
   part: Part;
@@ -246,10 +219,9 @@ export function Canvas({ parts }: { parts: Part[] }) {
 
   const viewport = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
-  const minor = useRef<HTMLDivElement>(null);
-  const major = useRef<HTMLDivElement>(null);
+  const fine = useRef<HTMLDivElement>(null);
+  const coarse = useRef<HTMLDivElement>(null);
   const zoomLabel = useRef<HTMLSpanElement>(null);
-  const miniView = useRef<HTMLDivElement>(null);
   const view = useRef<View>({ x: 0, y: 0, z: 1 });
   const frame = useRef(0);
   const motion = useRef(0);
@@ -278,32 +250,30 @@ export function Canvas({ parts }: { parts: Part[] }) {
     const { x, y, z } = view.current;
     w.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
 
-    // Two layers of dots, the second every fifth. As you zoom out the fine
-    // layer fades before it gets dense, and the coarse one takes its place,
-    // so the grid never pops between sizes.
-    let step = 24 * z;
-    while (step < 8) {
-      step *= 5;
+    // The dither: square pixels in a staggered (ordered-dither) pattern.
+    // The fine layer fades out as you zoom out, leaving every other pixel,
+    // and becomes the coarse layer at the next step, so it never pops.
+    let period = 28 * z;
+    while (period < 16) {
+      period *= 2;
     }
     const position = `${x}px ${y}px`;
-    if (minor.current && major.current) {
-      minor.current.style.backgroundSize = `${step}px ${step}px`;
-      minor.current.style.backgroundPosition = position;
-      minor.current.style.opacity = String(
-        Math.min(1, Math.max(0, (step - 8) / 18))
+    const size = `${period * 2}px ${period * 2}px`;
+    for (const layer of [fine.current, coarse.current]) {
+      if (layer) {
+        layer.style.maskSize = size;
+        layer.style.maskPosition = position;
+        layer.style.webkitMaskSize = size;
+        layer.style.webkitMaskPosition = position;
+      }
+    }
+    if (fine.current) {
+      fine.current.style.opacity = String(
+        Math.min(1, Math.max(0, (period - 16) / 10))
       );
-      major.current.style.backgroundSize = `${step * 5}px ${step * 5}px`;
-      major.current.style.backgroundPosition = position;
     }
     if (zoomLabel.current) {
       zoomLabel.current.textContent = `${Math.round(z * 100)}%`;
-    }
-    const mini = miniView.current;
-    if (mini) {
-      const m = MINI_W / width;
-      mini.style.transform = `translate(${(-x / z) * m}px, ${(-y / z) * m}px)`;
-      mini.style.width = `${(el.clientWidth / z) * m}px`;
-      mini.style.height = `${(el.clientHeight / z) * m}px`;
     }
 
     cancelAnimationFrame(frame.current);
@@ -326,7 +296,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
       setVisible(names.join("|"));
       setDetail(z >= DETAIL);
     });
-  }, [boards, width]);
+  }, [boards]);
 
   /** How far the camera may go: some of the canvas always stays on screen. */
   const bounds = useCallback(
@@ -519,57 +489,6 @@ export function Canvas({ parts }: { parts: Part[] }) {
     },
     [zoomAt]
   );
-
-  /** The overview: press or drag on it to look there. */
-  const miniDrag = useRef(false);
-  const lookAt = (e: PointerEvent<HTMLDivElement>, instant: boolean) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const m = MINI_W / width;
-    const wx = (e.clientX - r.left) / m;
-    const wy = (e.clientY - r.top) / m;
-    if (instant) {
-      const el = viewport.current;
-      const { z } = view.current;
-      view.current = {
-        x: (el?.clientWidth ?? 0) / 2 - wx * z,
-        y: (el?.clientHeight ?? 0) / 2 - wy * z,
-        z,
-      };
-      clamp();
-      apply();
-    } else {
-      const el = viewport.current;
-      const z = view.current.z;
-      stop();
-      const from = { ...view.current };
-      const to = {
-        x: (el?.clientWidth ?? 0) / 2 - wx * z,
-        y: (el?.clientHeight ?? 0) / 2 - wy * z,
-      };
-      if (reduced()) {
-        view.current = { ...to, z };
-        clamp();
-        apply();
-        return;
-      }
-      const start = performance.now();
-      const tick = (now: number) => {
-        const t = Math.min(1, (now - start) / 280);
-        const k = EASE_OUT(t);
-        view.current = {
-          x: from.x + (to.x - from.x) * k,
-          y: from.y + (to.y - from.y) * k,
-          z,
-        };
-        clamp();
-        apply();
-        if (t < 1) {
-          motion.current = requestAnimationFrame(tick);
-        }
-      };
-      motion.current = requestAnimationFrame(tick);
-    }
-  };
 
   const inView = useCallback(() => {
     const el = viewport.current;
@@ -928,13 +847,13 @@ export function Canvas({ parts }: { parts: Part[] }) {
       >
         <div
           aria-hidden="true"
-          className="canvas-grid pointer-events-none absolute inset-0"
-          ref={minor}
+          className="canvas-dither canvas-dither-fine pointer-events-none absolute inset-0"
+          ref={fine}
         />
         <div
           aria-hidden="true"
-          className="canvas-grid pointer-events-none absolute inset-0"
-          ref={major}
+          className="canvas-dither canvas-dither-coarse pointer-events-none absolute inset-0"
+          ref={coarse}
         />
         <div
           className={cn(
@@ -946,19 +865,15 @@ export function Canvas({ parts }: { parts: Part[] }) {
         >
           {groups.map((g) => (
             <div
-              className="canvas-section pointer-events-none absolute"
+              className="pointer-events-none absolute"
               key={g.slug}
-              style={{
-                ...toneStyle(g.slug),
-                left: g.x - SECTION_PAD,
-                top: g.y - SECTION_PAD,
-                width: GROUP_W + SECTION_PAD * 2,
-                height: g.h + SECTION_PAD * 2,
-                padding: SECTION_PAD,
-              }}
+              style={{ left: g.x, top: g.y, width: GROUP_W }}
             >
               <p
-                className="canvas-tone font-semibold leading-none tracking-[-0.04em]"
+                className={cn(
+                  "font-semibold leading-none tracking-[-0.04em]",
+                  INK
+                )}
                 style={{ fontSize: 150 }}
               >
                 {g.title}
@@ -979,12 +894,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 className="absolute"
                 data-board={b.part.name}
                 key={b.part.name}
-                style={{
-                  ...toneStyle(b.part.categorySlug),
-                  left: b.x,
-                  top: b.y,
-                  width: BOARD_W,
-                }}
+                style={{ left: b.x, top: b.y, width: BOARD_W }}
               >
                 <button
                   className={cn(
@@ -1001,14 +911,14 @@ export function Canvas({ parts }: { parts: Part[] }) {
                   }}
                   type="button"
                 >
-                  <span className={cn(MONO, "canvas-tone text-[11.5px]")}>
+                  <span className={cn(MONO, "text-[11.5px]", LEAF)}>
                     {b.part.code}
                   </span>
                   <span className="truncate">{b.part.title}</span>
                 </button>
                 <div
                   className={cn(
-                    "canvas-board relative overflow-hidden bg-white outline-offset-0 dark:bg-[#0b0b0b]",
+                    "relative overflow-hidden bg-white outline-offset-0 dark:bg-[#0b0b0b]",
                     isSelected
                       ? "outline-2 outline-[#0a6cff] outline-solid"
                       : "outline-1 outline-black/[0.08] outline-solid dark:outline-white/[0.1]"
@@ -1027,7 +937,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
                   ) : (
                     <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-3 px-8 text-center">
                       <span
-                        className="canvas-tone font-semibold leading-tight opacity-45"
+                        className="font-semibold text-black/30 leading-tight dark:text-white/30"
                         style={{ fontSize: 40 }}
                       >
                         {b.part.title}
@@ -1116,16 +1026,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
                   onClick={() => focusGroup(g.slug)}
                   type="button"
                 >
-                  <span
-                    className="flex items-center gap-2.5"
-                    style={toneStyle(g.slug)}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="canvas-swatch size-2 rounded-[2px]"
-                    />
-                    {g.title}
-                  </span>
+                  <span>{g.title}</span>
                   <span className={META}>{g.count}</span>
                 </button>
               ))}
@@ -1151,7 +1052,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
           <aside
             className={cn(
               PANEL,
-              "canvas-panel-in absolute right-3 bottom-[68px] left-3 z-10 flex max-h-[60%] flex-col gap-4 overflow-y-auto p-5 md:top-3 md:bottom-auto md:left-auto md:max-h-[calc(100%-96px)] md:w-[372px] lg:max-h-[calc(100%-200px)]"
+              "canvas-panel-in absolute right-3 bottom-[68px] left-3 z-10 flex max-h-[60%] flex-col gap-4 overflow-y-auto p-5 md:top-3 md:bottom-auto md:left-auto md:max-h-[calc(100%-96px)] md:w-[372px]"
             )}
             data-ui
           >
@@ -1159,12 +1060,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
               <p className={cn(META, "flex gap-3")}>
                 {selected ? (
                   <>
-                    <span
-                      className="canvas-tone"
-                      style={toneStyle(selected.part.categorySlug)}
-                    >
-                      {selected.part.code}
-                    </span>
+                    <span className={LEAF}>{selected.part.code}</span>
                     <span>{selected.part.category}</span>
                   </>
                 ) : (
@@ -1271,10 +1167,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
                     }}
                     type="button"
                   >
-                    <span
-                      className={cn(MONO, "canvas-tone text-[11px]")}
-                      style={toneStyle(p.categorySlug)}
-                    >
+                    <span className={cn(MONO, "text-[11px]", LEAF)}>
                       {p.code}
                     </span>
                     <span className="truncate">{p.title}</span>
@@ -1344,50 +1237,6 @@ export function Canvas({ parts }: { parts: Part[] }) {
               <span className="hidden sm:inline">Add what's in view</span>
             </ToolButton>
           </div>
-        </div>
-
-        <div
-          aria-hidden="true"
-          className={cn(
-            PANEL,
-            "canvas-mini absolute right-3 bottom-3 z-10 hidden cursor-pointer overflow-hidden p-0 lg:block"
-          )}
-          data-ui
-          onPointerDown={(e) => {
-            miniDrag.current = true;
-            e.currentTarget.setPointerCapture(e.pointerId);
-            lookAt(e, false);
-          }}
-          onPointerMove={(e) => {
-            if (miniDrag.current && e.buttons) {
-              lookAt(e, true);
-            }
-          }}
-          onPointerUp={() => {
-            miniDrag.current = false;
-          }}
-          style={{ width: MINI_W + 2, height: (height * MINI_W) / width + 2 }}
-        >
-          {groups.map((g) => {
-            const m = MINI_W / width;
-            return (
-              <div
-                className="canvas-mini-section absolute rounded-[2px]"
-                key={g.slug}
-                style={{
-                  ...toneStyle(g.slug),
-                  left: g.x * m,
-                  top: g.y * m,
-                  width: GROUP_W * m,
-                  height: g.h * m,
-                }}
-              />
-            );
-          })}
-          <div
-            className="pointer-events-none absolute top-0 left-0 rounded-[3px] border-[1.5px] border-black/70 dark:border-white/80"
-            ref={miniView}
-          />
         </div>
       </div>
     </div>
