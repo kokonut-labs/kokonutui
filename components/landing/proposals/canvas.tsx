@@ -937,7 +937,9 @@ export function Canvas({ parts }: { parts: Part[] }) {
 
   return (
     <div className="relative">
-      <h1 className="sr-only">Kokonut UI: every component on one canvas</h1>
+      <h1 className="sr-only">
+        Kokonut UI: UI and AI components that feel right
+      </h1>
       {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: the canvas is the control; it pans and zooms with the pointer and keys */}
       <div
         aria-label="Component canvas. Arrow keys pan, plus and minus zoom, 0 shows everything."
@@ -1080,7 +1082,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
             data-ui
           >
             <div className="flex items-start justify-between gap-4">
-              <p className={META}>Kokonut UI · Free and open source</p>
+              <p className={META}>Kokonut UI · React, Tailwind CSS, Motion</p>
               <button
                 aria-label="Hide intro"
                 className={cn(
@@ -1100,12 +1102,14 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 INK
               )}
             >
-              Every component, running on one canvas.
+              UI and AI components that feel right.
             </p>
             <p className={cn("mt-3 text-[14px] leading-[1.55]", SOFT)}>
-              Try any of the {parts.length} parts right here. Click one to see
-              what it is, then open its docs for the props, the source and the
-              line that installs it.
+              <span className={INK}>
+                Open-source React components for the chat and the app around it,
+                made to sit on the same screen.
+              </span>{" "}
+              Install them with the shadcn CLI, or ask your agent to.
             </p>
             <div className="mt-5">
               <HeroActions count={parts.length} />
