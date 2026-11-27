@@ -6,6 +6,7 @@ const PROPOSALS = [
   { href: "/", label: "Current" },
   { href: "/landing/ask", label: "1. Ask" },
   { href: "/landing/canvas", label: "2. Canvas" },
+  { href: "/landing/prompts", label: "3. Prompts" },
 ];
 
 /** Links between the proposals, above the cover. Not part of the design. */

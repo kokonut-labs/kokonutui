@@ -8,6 +8,7 @@ import {
   type ProposalId,
 } from "@/components/landing/proposals/ids";
 import { ProposalNav } from "@/components/landing/proposals/nav";
+import { Prompts } from "@/components/landing/proposals/prompts";
 import "@/components/landing/home/home.css";
 import "@/components/landing/proposals/proposals.css";
 
@@ -21,7 +22,7 @@ export function generateStaticParams() {
   return PROPOSAL_IDS.map((variant) => ({ variant }));
 }
 
-const VIEWS = { ask: Ask, canvas: Canvas };
+const VIEWS = { ask: Ask, canvas: Canvas, prompts: Prompts };
 
 export default async function LandingProposal({
   params,

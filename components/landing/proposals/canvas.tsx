@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   type KeyboardEvent,
   type PointerEvent,
@@ -229,6 +229,10 @@ function DitherField({ width, height }: { width: number; height: number }) {
   );
 }
 
+/** Elements inside a running part that answer a click themselves. */
+const CONTROLS =
+  "a, button, input, textarea, select, label, canvas, [role=button], [role=slider], [role=switch], [role=tab], [contenteditable]";
+
 const HANDLES = [
   "-top-[5px] -left-[5px]",
   "-top-[5px] -right-[5px]",
@@ -277,6 +281,7 @@ const PANEL =
   "rounded-[16px] border border-black/[0.1] bg-white dark:border-white/[0.12] dark:bg-[#0b0b0b]";
 
 export function Canvas({ parts }: { parts: Part[] }) {
+  const router = useRouter();
   const { boards, groups, width, height } = useMemo(
     () => layout(parts),
     [parts]
@@ -485,32 +490,16 @@ export function Canvas({ parts }: { parts: Part[] }) {
     [anchor, byName, flyTo]
   );
 
-  /**
-   * Select without moving, unless the artboard sits under a panel or off
-   * screen: then glide it into the free space, keeping the zoom.
-   */
-  const selectBoard = useCallback(
+  /** A click on an artboard opens that component's docs page. */
+  const openDocs = useCallback(
     (name: string) => {
       const b = byName.get(name);
-      const el = viewport.current;
-      if (!(b && el)) {
-        return;
-      }
-      setSelection({ kind: "one", name });
-      const { x, y, z } = view.current;
-      const vw = el.clientWidth;
-      const wide = vw >= 1024;
-      const left = wide && intro ? 392 : 0;
-      const right = wide ? vw - 392 : vw;
-      const sx = b.x * z + x;
-      const ex = (b.x + BOARD_W) * z + x;
-      const sy = b.y * z + y;
-      const ey = (b.y + LABEL + b.h) * z + y;
-      if (sx < left || ex > right || sy < 0 || ey > el.clientHeight - 64) {
-        flyTo(b.x + BOARD_W / 2, b.y + (LABEL + b.h) / 2, z, true);
+      if (b) {
+        setSelection({ kind: "one", name });
+        router.push(b.part.url);
       }
     },
-    [byName, flyTo, intro]
+    [byName, router]
   );
 
   const focusGroup = useCallback(
@@ -694,8 +683,13 @@ export function Canvas({ parts }: { parts: Part[] }) {
     const r = viewport.current?.getBoundingClientRect();
     const x = e.clientX - (r?.left ?? 0);
     const y = e.clientY - (r?.top ?? 0);
-    if (Math.hypot(x - p.x, y - p.y) < 6) {
-      selectBoard(p.board);
+    // The part's own controls keep working; a click anywhere else on the
+    // artboard opens its docs.
+    if (
+      Math.hypot(x - p.x, y - p.y) < 6 &&
+      !(e.target as Element).closest(CONTROLS)
+    ) {
+      openDocs(p.board);
     }
   };
   const pinch = useRef<{ d: number; z: number; mx: number; my: number } | null>(
@@ -863,11 +857,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
     viewport.current?.removeAttribute("data-dragging");
     if (!d.moved) {
       if (d.board) {
-        if (view.current.z < DETAIL) {
-          focusBoard(d.board);
-        } else {
-          selectBoard(d.board);
-        }
+        openDocs(d.board);
       }
       return;
     }
@@ -918,8 +908,6 @@ export function Canvas({ parts }: { parts: Part[] }) {
     }
   };
 
-  const selected =
-    selection?.kind === "one" ? byName.get(selection.name) : null;
   const picked =
     selection?.kind === "view"
       ? selection.names.flatMap((n) => byName.get(n)?.part ?? [])
@@ -1000,7 +988,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
                     // Pointer clicks are handled on release, so a drag that
                     // starts on a label doesn't select it.
                     if (e.detail === 0) {
-                      focusBoard(b.part.name);
+                      openDocs(b.part.name);
                     }
                   }}
                   type="button"
@@ -1094,9 +1082,8 @@ export function Canvas({ parts }: { parts: Part[] }) {
               Every component, running on one canvas.
             </p>
             <p className={cn("mt-3 text-[14px] leading-[1.55]", SOFT)}>
-              Try any of the {parts.length} parts right here. Click one to get
-              the line that adds it to your project, through shadcn or your
-              agent.
+              Try any of the {parts.length} parts right here, then click one to
+              open its docs: props, source and the line that installs it.
             </p>
             <div className="mt-5">
               <HeroActions count={parts.length} />
@@ -1118,7 +1105,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
               )}
             </p>
             <p className={cn(META, "mt-4 hidden md:block")}>
-              Drag to move · Scroll or pinch to zoom · Click to pick
+              Drag to move · Scroll or pinch to zoom · Click for docs
             </p>
             <nav
               aria-label="Groups"
@@ -1158,7 +1145,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
           </button>
         )}
 
-        {selected || picked.length ? (
+        {picked.length ? (
           <aside
             className={cn(
               PANEL,
@@ -1168,14 +1155,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
           >
             <div className="flex items-start justify-between gap-4">
               <p className={cn(META, "flex gap-3")}>
-                {selected ? (
-                  <>
-                    <span className={LEAF}>{selected.part.code}</span>
-                    <span>{selected.part.category}</span>
-                  </>
-                ) : (
-                  <span>{picked.length} in view</span>
-                )}
+                <span>{picked.length} in view</span>
               </p>
               <button
                 aria-label="Close"
@@ -1190,64 +1170,23 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 ×
               </button>
             </div>
-            {selected ? (
-              <>
-                <div>
-                  <p
-                    className={cn(
-                      "font-semibold text-[22px] leading-[1.15] tracking-[-0.02em]",
-                      INK
-                    )}
-                  >
-                    {selected.part.title}
-                  </p>
-                  {selected.part.description ? (
-                    <p className={cn("mt-2 text-[14px] leading-[1.55]", SOFT)}>
-                      {selected.part.description}
-                    </p>
-                  ) : null}
-                </div>
-                {selected.part.dependencies.length ? (
-                  <p className={META}>
-                    Installs {selected.part.dependencies.join(", ")}
-                  </p>
-                ) : null}
-                <InstallBar
-                  defaultWay="claude"
-                  key={selected.part.name}
-                  names={[selected.part.name]}
-                />
-                <Link
-                  className={cn(
-                    "text-[13px] underline-offset-4 hover:underline",
-                    INK,
-                    FOCUS
-                  )}
-                  href={selected.part.url}
-                >
-                  Docs and props ↗
-                </Link>
-              </>
-            ) : (
-              <>
-                <p
-                  className={cn(
-                    "font-semibold text-[20px] leading-[1.2] tracking-[-0.02em]",
-                    INK
-                  )}
-                >
-                  Everything on screen, in one ask.
-                </p>
-                <p className={cn("text-[13px] leading-[1.6]", SOFT)}>
-                  {picked.map((p) => p.title).join(", ")}
-                </p>
-                <InstallBar
-                  defaultWay="claude"
-                  key={picked.map((p) => p.name).join()}
-                  names={picked.map((p) => p.name)}
-                />
-              </>
-            )}
+
+            <p
+              className={cn(
+                "font-semibold text-[20px] leading-[1.2] tracking-[-0.02em]",
+                INK
+              )}
+            >
+              Everything on screen, in one ask.
+            </p>
+            <p className={cn("text-[13px] leading-[1.6]", SOFT)}>
+              {picked.map((p) => p.title).join(", ")}
+            </p>
+            <InstallBar
+              defaultWay="claude"
+              key={picked.map((p) => p.name).join()}
+              names={picked.map((p) => p.name)}
+            />
           </aside>
         ) : null}
 

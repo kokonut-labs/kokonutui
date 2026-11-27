@@ -113,9 +113,12 @@ type PickParts = (names: string[]) => Part[];
 
 export function Catalog({
   parts,
+  cover,
   className,
 }: {
   parts: Part[];
+  /** Replaces the cover, for the landing proposals. */
+  cover?: ReactNode;
   className?: string;
 }) {
   const byName = new Map(parts.map((p) => [p.name, p]));
@@ -135,7 +138,7 @@ export function Catalog({
         className
       )}
     >
-      <Cover count={parts.length} steps={steps} />
+      {cover ?? <Cover count={parts.length} steps={steps} />}
       <Screens pick={pick} />
       <Agents />
       <Index parts={parts} />
