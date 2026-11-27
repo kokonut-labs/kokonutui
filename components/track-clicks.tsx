@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { trackHome, trackLink } from "@/lib/track";
+import { trackLink } from "@/lib/track";
 
 /**
  * One listener for the whole site, mounted in the root layout: it reports
  * links out to Pro, GitHub and the Open in tools as analytics
- * events, so no link needs its own handler. Middle clicks count too. From
- * the homepage, a link into the docs counts for the homepage test.
+ * events, so no link needs its own handler. Middle clicks count too.
  */
 export function TrackClicks() {
   useEffect(() => {
@@ -19,16 +18,8 @@ export function TrackClicks() {
         event.target instanceof Element
           ? event.target.closest("a[href]")
           : null;
-      if (!(link instanceof HTMLAnchorElement)) {
-        return;
-      }
-      trackLink(link.href);
-      if (
-        window.location.pathname === "/" &&
-        link.origin === window.location.origin &&
-        link.pathname.startsWith("/docs")
-      ) {
-        trackHome("docs");
+      if (link instanceof HTMLAnchorElement) {
+        trackLink(link.href);
       }
     };
     // Capture, so a menu that stops the click from bubbling is still seen.

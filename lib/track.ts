@@ -1,19 +1,8 @@
 // Custom events for Vercel Web Analytics: what was copied and which links
 // out were followed. Only a kind and a component or placement name are sent,
-// never the copied text, and at most two properties per event. While the
-// homepage test runs, each event also carries the version the visitor saw
-// as the `home` flag.
+// never the copied text, and at most two properties per event.
 
 import { track } from "@vercel/analytics";
-import { homeVersion } from "@/lib/home-test";
-
-function send(
-  name: string,
-  properties?: Record<string, string | undefined>
-): void {
-  const version = homeVersion();
-  track(name, properties, version ? { flags: { home: version } } : undefined);
-}
 
 const SOURCE_FILE = /^([a-z0-9-]+)\.tsx$/;
 const MARKDOWN_FILE = /^([a-z0-9-]+)\.md$/;
@@ -69,7 +58,7 @@ export function trackCopy(text?: string) {
   if (!value) {
     return;
   }
-  send("Copy", describeCopy(value));
+  track("Copy", describeCopy(value));
 }
 
 /**
@@ -87,7 +76,7 @@ export function trackLink(href: string) {
 
   if (host === "kokonutui.pro") {
     // Every link to Pro carries where it sits in utm_medium.
-    send("Pro click", {
+    track("Pro click", {
       placement: url.searchParams.get("utm_medium") ?? "unknown",
       item:
         url.searchParams.get("utm_content") ??
@@ -99,7 +88,7 @@ export function trackLink(href: string) {
     host === "github.com" &&
     url.pathname.startsWith("/kokonut-labs/kokonutui")
   ) {
-    send("GitHub click");
+    track("GitHub click");
     return;
   }
   const tool = OPEN_IN[host];
@@ -107,17 +96,6 @@ export function trackLink(href: string) {
     ? REGISTRY_ENTRY.exec(decodeURIComponent(url.search))?.[1]
     : undefined;
   if (tool && component) {
-    send("Open in", { tool, component });
-  }
-}
-
-/**
- * The homepage test's own measures: a view of the homepage, and a way out
- * of it into the docs. Sent only for visitors in the test.
- */
-export function trackHome(action: "view" | "docs") {
-  // Outside the test (phones, tablets, crawlers) there's nothing to compare.
-  if (homeVersion()) {
-    send("Home", { action });
+    track("Open in", { tool, component });
   }
 }
