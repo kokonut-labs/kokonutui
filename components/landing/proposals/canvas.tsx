@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   type KeyboardEvent,
   type PointerEvent,
@@ -27,8 +27,8 @@ import {
 } from "@/components/landing/home/styles";
 import { cn } from "@/lib/utils";
 import { PartDemo } from "./demo";
-import { InstallBar } from "./install";
 import { matchParts } from "./match";
+import { PRO_PARTS, PRO_RED, PRO_SLUG, ProStill } from "./pro";
 
 // The homepage is one canvas with every component on it, running, laid out
 // like a design file: a group per category, an artboard per component.
@@ -39,6 +39,8 @@ const BOARD_H: Record<string, number> = {
   buttons: 240,
   texts: 240,
   backgrounds: 600,
+  // Pro stills are 1000 × 1125.
+  [PRO_SLUG]: 495,
 };
 const BOARD_H_DEFAULT = 430;
 const LABEL = 34;
@@ -103,7 +105,8 @@ function layout(parts: Part[]) {
     heights[column] += groupH + GROUP_GAP;
     groups.push({
       slug,
-      title: items[0]?.category ?? slug,
+      title:
+        slug === PRO_SLUG ? "Kokonut UI Pro" : (items[0]?.category ?? slug),
       count: items.length,
       x: gx,
       y: gy,
@@ -241,6 +244,24 @@ function DitherField({ width, height }: { width: number; height: number }) {
 const CONTROLS =
   "a, button, input, textarea, select, label, canvas, [role=button], [role=slider], [role=switch], [role=tab], [contenteditable]";
 
+const isPro = (part: Part) => part.categorySlug === PRO_SLUG;
+const codeColor = (part: Part) => (isPro(part) ? PRO_RED : LEAF);
+
+/** What an artboard runs: the part itself, a background filling it, or a Pro still. */
+function BoardBody({ part }: { part: Part }) {
+  if (isPro(part)) {
+    return <ProStill part={part} />;
+  }
+  if (WIDE.has(part.categorySlug)) {
+    return <PartDemo fill part={part} />;
+  }
+  return (
+    <Fit className="p-6">
+      <PartDemo part={part} />
+    </Fit>
+  );
+}
+
 const HANDLES = [
   "-top-[5px] -left-[5px]",
   "-top-[5px] -right-[5px]",
@@ -251,10 +272,6 @@ const HANDLES = [
 const clampZ = (z: number) => Math.min(MAX_Z, Math.max(MIN_Z, z));
 const reduced = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-type Selection =
-  | { kind: "one"; name: string }
-  | { kind: "view"; names: string[] };
 
 function ToolButton({
   children,
@@ -289,9 +306,8 @@ const PANEL =
   "rounded-[16px] border border-black/[0.1] bg-white dark:border-white/[0.12] dark:bg-[#0b0b0b]";
 
 export function Canvas({ parts }: { parts: Part[] }) {
-  const router = useRouter();
   const { boards, groups, width, height } = useMemo(
-    () => layout(parts),
+    () => layout([...parts, ...PRO_PARTS]),
     [parts]
   );
   const byName = useMemo(
@@ -310,7 +326,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
   const [ready, setReady] = useState(false);
   const [visible, setVisible] = useState("");
   const [detail, setDetail] = useState(true);
-  const [selection, setSelection] = useState<Selection | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
   const [intro, setIntro] = useState(true);
   const [query, setQuery] = useState("");
 
@@ -490,7 +506,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
       if (!b) {
         return;
       }
-      setSelection({ kind: "one", name });
+      setSelected(name);
       const { w, h } = anchor(true);
       const z = Math.min(1, (w - 80) / b.w, (h - 120) / (b.h + LABEL));
       flyTo(b.x + b.w / 2, b.y + (LABEL + b.h) / 2, z, true);
@@ -498,16 +514,32 @@ export function Canvas({ parts }: { parts: Part[] }) {
     [anchor, byName, flyTo]
   );
 
-  /** A click on an artboard opens that component's docs page. */
-  const openDocs = useCallback(
+  /**
+   * Select without moving, unless the artboard sits under a panel or off
+   * screen: then glide it into the free space, keeping the zoom.
+   */
+  const selectBoard = useCallback(
     (name: string) => {
       const b = byName.get(name);
-      if (b) {
-        setSelection({ kind: "one", name });
-        router.push(b.part.url);
+      const el = viewport.current;
+      if (!(b && el)) {
+        return;
+      }
+      setSelected(name);
+      const { x, y, z } = view.current;
+      const vw = el.clientWidth;
+      const wide = vw >= 1024;
+      const left = wide && intro ? 392 : 0;
+      const right = wide ? vw - 364 : vw;
+      const sx = b.x * z + x;
+      const ex = (b.x + b.w) * z + x;
+      const sy = b.y * z + y;
+      const ey = (b.y + LABEL + b.h) * z + y;
+      if (sx < left || ex > right || sy < 0 || ey > el.clientHeight - 64) {
+        flyTo(b.x + b.w / 2, b.y + (LABEL + b.h) / 2, z, true);
       }
     },
-    [byName, router]
+    [byName, flyTo, intro]
   );
 
   const focusGroup = useCallback(
@@ -559,27 +591,6 @@ export function Canvas({ parts }: { parts: Part[] }) {
     },
     [zoomAt]
   );
-
-  const inView = useCallback(() => {
-    const el = viewport.current;
-    if (!el) {
-      return;
-    }
-    const { x, y, z } = view.current;
-    const names = boards
-      .filter(
-        (b) =>
-          b.x * z + x >= -40 &&
-          (b.x + b.w) * z + x <= el.clientWidth + 40 &&
-          b.y * z + y >= -40 &&
-          (b.y + LABEL + b.h) * z + y <= el.clientHeight + 40
-      )
-      .slice(0, 12)
-      .map((b) => b.part.name);
-    if (names.length) {
-      setSelection({ kind: "view", names });
-    }
-  }, [boards]);
 
   // First frame: open on the AI group, beside the intro.
   useLayoutEffect(() => {
@@ -692,12 +703,12 @@ export function Canvas({ parts }: { parts: Part[] }) {
     const x = e.clientX - (r?.left ?? 0);
     const y = e.clientY - (r?.top ?? 0);
     // The part's own controls keep working; a click anywhere else on the
-    // artboard opens its docs.
+    // artboard picks it.
     if (
       Math.hypot(x - p.x, y - p.y) < 6 &&
       !(e.target as Element).closest(CONTROLS)
     ) {
-      openDocs(p.board);
+      selectBoard(p.board);
     }
   };
   const pinch = useRef<{ d: number; z: number; mx: number; my: number } | null>(
@@ -864,8 +875,12 @@ export function Canvas({ parts }: { parts: Part[] }) {
     drag.current = null;
     viewport.current?.removeAttribute("data-dragging");
     if (!d.moved) {
-      if (d.board) {
-        openDocs(d.board);
+      if (!d.board) {
+        setSelected(null);
+      } else if (view.current.z < DETAIL) {
+        focusBoard(d.board);
+      } else {
+        selectBoard(d.board);
       }
       return;
     }
@@ -913,13 +928,12 @@ export function Canvas({ parts }: { parts: Part[] }) {
       zoomBy(0.8);
     } else if (e.key === "0") {
       fitAll(true);
+    } else if (e.key === "Escape") {
+      setSelected(null);
     }
   };
 
-  const picked =
-    selection?.kind === "view"
-      ? selection.names.flatMap((n) => byName.get(n)?.part ?? [])
-      : [];
+  const current = selected ? byName.get(selected) : undefined;
 
   return (
     <div className="relative">
@@ -969,16 +983,15 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 {g.title}
               </p>
               <p className={cn(MONO, "mt-6", SOFT)} style={{ fontSize: 34 }}>
-                {g.count} components
+                {g.slug === PRO_SLUG
+                  ? `${g.count} of 150+ components · Pro`
+                  : `${g.count} components`}
               </p>
             </div>
           ))}
           {boards.map((b) => {
             const running = detail && live.has(b.part.name);
-            const isSelected =
-              selection?.kind === "one"
-                ? selection.name === b.part.name
-                : selection?.names.includes(b.part.name);
+            const isSelected = selected === b.part.name;
             return (
               <div
                 className="absolute"
@@ -996,12 +1009,14 @@ export function Canvas({ parts }: { parts: Part[] }) {
                     // Pointer clicks are handled on release, so a drag that
                     // starts on a label doesn't select it.
                     if (e.detail === 0) {
-                      openDocs(b.part.name);
+                      focusBoard(b.part.name);
                     }
                   }}
                   type="button"
                 >
-                  <span className={cn(MONO, "text-[11.5px]", LEAF)}>
+                  <span
+                    className={cn(MONO, "text-[11.5px]", codeColor(b.part))}
+                  >
                     {b.part.code}
                   </span>
                   <span className="truncate">{b.part.title}</span>
@@ -1037,13 +1052,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
                       // Arrives from a blur as it comes into view, so panning
                       // reveals parts instead of popping them in.
                       <div className="canvas-live-in absolute inset-0">
-                        {WIDE.has(b.part.categorySlug) ? (
-                          <PartDemo fill part={b.part} />
-                        ) : (
-                          <Fit className="p-6">
-                            <PartDemo part={b.part} />
-                          </Fit>
-                        )}
+                        <BoardBody part={b.part} />
                       </div>
                     ) : (
                       <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-3 px-8 text-center">
@@ -1094,8 +1103,9 @@ export function Canvas({ parts }: { parts: Part[] }) {
               Every component, running on one canvas.
             </p>
             <p className={cn("mt-3 text-[14px] leading-[1.55]", SOFT)}>
-              Try any of the {parts.length} parts right here, then click one to
-              open its docs: props, source and the line that installs it.
+              Try any of the {parts.length} parts right here. Click one to see
+              what it is, then open its docs for the props, the source and the
+              line that installs it.
             </p>
             <div className="mt-5">
               <HeroActions count={parts.length} />
@@ -1117,7 +1127,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
               )}
             </p>
             <p className={cn(META, "mt-4 hidden md:block")}>
-              Drag to move · Scroll or pinch to zoom · Click for docs
+              Drag to move · Scroll or pinch to zoom · Click to pick
             </p>
             <nav
               aria-label="Groups"
@@ -1157,48 +1167,85 @@ export function Canvas({ parts }: { parts: Part[] }) {
           </button>
         )}
 
-        {picked.length ? (
+        {current ? (
+          // The whole card is the way to the docs; only × stays apart.
           <aside
             className={cn(
               PANEL,
-              "canvas-panel-in absolute right-3 bottom-[68px] left-3 z-10 flex max-h-[60%] flex-col gap-4 overflow-y-auto p-5 md:top-3 md:bottom-auto md:left-auto md:max-h-[calc(100%-96px)] md:w-[372px]"
+              "canvas-panel-in absolute right-3 bottom-[68px] left-3 z-10 md:top-3 md:bottom-auto md:left-auto md:w-[340px]"
             )}
             data-ui
+            key={current.part.name}
           >
-            <div className="flex items-start justify-between gap-4">
-              <p className={cn(META, "flex gap-3")}>
-                <span>{picked.length} in view</span>
-              </p>
-              <button
-                aria-label="Close"
-                className={cn(
-                  "-mt-1 -mr-1 flex size-7 items-center justify-center rounded-full text-black/50 hover:bg-black/[0.06] hover:text-black dark:text-white/50 dark:hover:bg-white/[0.08] dark:hover:text-white",
-                  EASE_COLORS,
-                  FOCUS
-                )}
-                onClick={() => setSelection(null)}
-                type="button"
-              >
-                ×
-              </button>
-            </div>
-
-            <p
+            <Link
               className={cn(
-                "font-semibold text-[20px] leading-[1.2] tracking-[-0.02em]",
-                INK
+                "group block rounded-[15px] p-5 hover:bg-black/[0.025] dark:hover:bg-white/[0.035]",
+                EASE_COLORS,
+                FOCUS_INSET
               )}
+              href={current.part.url}
+              {...(isPro(current.part)
+                ? { rel: "noreferrer", target: "_blank" }
+                : {})}
             >
-              Everything on screen, in one ask.
-            </p>
-            <p className={cn("text-[13px] leading-[1.6]", SOFT)}>
-              {picked.map((p) => p.title).join(", ")}
-            </p>
-            <InstallBar
-              defaultWay="claude"
-              key={picked.map((p) => p.name).join()}
-              names={picked.map((p) => p.name)}
-            />
+              <p className={cn(META, "flex gap-3 pr-8")}>
+                <span className={codeColor(current.part)}>
+                  {current.part.code}
+                </span>
+                <span>{current.part.category}</span>
+              </p>
+              <p
+                className={cn(
+                  "mt-3 font-semibold text-[22px] leading-[1.15] tracking-[-0.02em]",
+                  INK
+                )}
+              >
+                {current.part.title}
+              </p>
+              {current.part.description ? (
+                <p
+                  className={cn(
+                    "mt-2 line-clamp-4 text-[14px] leading-[1.55]",
+                    SOFT
+                  )}
+                >
+                  {current.part.description}
+                </p>
+              ) : null}
+              {current.part.dependencies.length ? (
+                <p className={cn(META, "mt-3")}>
+                  Uses {current.part.dependencies.join(", ")}
+                </p>
+              ) : null}
+              <span
+                className={cn(
+                  "mt-5 flex items-center justify-between border-black/[0.08] border-t pt-3.5 font-medium text-[13.5px] dark:border-white/[0.1]",
+                  INK
+                )}
+              >
+                {isPro(current.part)
+                  ? "See it on Kokonut UI Pro"
+                  : "Open the docs"}
+                <span
+                  aria-hidden="true"
+                  className="text-black/40 transition-[color,translate] duration-200 ease-out group-hover:translate-x-0.5 group-hover:text-black dark:text-white/40 dark:group-hover:text-white"
+                >
+                  →
+                </span>
+              </span>
+            </Link>
+            <button
+              aria-label="Close"
+              className={cn(
+                "absolute top-3.5 right-3.5 flex size-7 items-center justify-center rounded-full text-black/50 hover:bg-black/[0.06] hover:text-black dark:text-white/50 dark:hover:bg-white/[0.08] dark:hover:text-white",
+                EASE_COLORS,
+                FOCUS
+              )}
+              onClick={() => setSelected(null)}
+              type="button"
+            >
+              ×
+            </button>
           </aside>
         ) : null}
 
@@ -1288,15 +1335,6 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 value={query}
               />
             </form>
-            <span className="mx-1 h-5 w-px bg-black/[0.1] dark:bg-white/[0.12]" />
-            <ToolButton
-              className="whitespace-nowrap font-medium text-black dark:text-white"
-              label="Add everything in view"
-              onClick={inView}
-            >
-              <span className="sm:hidden">Add view</span>
-              <span className="hidden sm:inline">Add what's in view</span>
-            </ToolButton>
           </div>
         </div>
       </div>
