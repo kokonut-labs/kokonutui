@@ -113,12 +113,9 @@ type PickParts = (names: string[]) => Part[];
 
 export function Catalog({
   parts,
-  cover,
   className,
 }: {
   parts: Part[];
-  /** Replaces the cover, for the landing proposals. */
-  cover?: ReactNode;
   className?: string;
 }) {
   const byName = new Map(parts.map((p) => [p.name, p]));
@@ -138,7 +135,7 @@ export function Catalog({
         className
       )}
     >
-      {cover ?? <Cover count={parts.length} steps={steps} />}
+      <Cover count={parts.length} steps={steps} />
       <Screens pick={pick} />
       <Agents />
       <Index parts={parts} />
@@ -282,7 +279,7 @@ function VercelMeta() {
  * The two ways into the library, each drawn with a Kokonut button: Slide Text
  * Button opens the docs, Command Button opens search (and answers ⌘K).
  */
-export function HeroActions({ count }: { count: number }) {
+function HeroActions({ count }: { count: number }) {
   const { setOpenSearch } = useSearchContext();
   return (
     <div

@@ -999,7 +999,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
         aria-label="Component canvas. Arrow keys pan, plus and minus zoom, 0 shows everything."
         aria-roledescription="canvas"
         className={cn(
-          "canvas-surface relative h-[calc(100svh-140px)] min-h-[540px] w-full touch-none select-none overflow-hidden border-black/[0.1] border-t dark:border-white/[0.12]",
+          "canvas-surface relative h-[calc(100svh-108px)] min-h-[540px] w-full touch-none select-none overflow-hidden border-black/[0.1] border-t dark:border-white/[0.12]",
           FOCUS_INSET
         )}
         onClickCapture={onClickCapture}

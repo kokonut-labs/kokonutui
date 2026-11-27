@@ -66,7 +66,8 @@ Each component has an entry in `registry/registry-components.ts` (name, dependen
 - Use the `@/` path alias, never relative imports across directories. The shadcn CLI only rewrites `@/` imports.
 - When adding a component, add its entry to `registry/registry-components.ts`, its docs page in `content/docs/<category>/`, and run the build-registry script.
 - Demo data inside components is intentional: a component should look complete right after `shadcn add`.
-- The site uses Vercel Analytics and Speed Insights. The only custom events are in `lib/track.ts`: `Copy` (sent from `announceCopy`, so any new copy button should go through it) and clicks out to Pro, GitHub and the Open in tools (one listener, `components/track-clicks.tsx`). Events carry a kind and a component or placement name, never the copied text, and at most two properties.
+- The site uses Vercel Analytics and Speed Insights. The only custom events are in `lib/track.ts`: `Copy` (sent from `announceCopy`, so any new copy button should go through it) and clicks out to Pro, GitHub and the Open in tools (one listener, `components/track-clicks.tsx`). Events carry a kind and a component or placement name, never the copied text, and at most two properties. A `Home` event (view, or a click into the docs) serves the homepage test.
+- Homepage test: `proxy.ts` splits new desktop visitors between the current homepage and the canvas (`/canvas`, served at `/`), kept in the `home-test` cookie; events carry the version as the `home` flag. `CANVAS_SHARE` in `lib/home-test.ts` sets the split, 0 ends it. `?home=canvas` or `?home=current` picks one by hand.
 
 ## Traps
 
