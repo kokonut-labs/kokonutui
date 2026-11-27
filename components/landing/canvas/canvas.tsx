@@ -305,7 +305,7 @@ function ProGroupRow({
     <button
       aria-current={active ? "location" : undefined}
       className={cn(
-        "-mx-2 mt-2 flex flex-col gap-1 rounded-[8px] border-black/[0.08] border-t px-2 pt-3 pb-2 text-left hover:bg-black/[0.05] dark:border-white/[0.1] dark:hover:bg-white/[0.07]",
+        "col-span-2 -mx-2 mt-2 flex flex-col gap-1 rounded-[8px] border-black/[0.08] border-t px-2 pt-3 pb-2 text-left hover:bg-black/[0.05] dark:border-white/[0.1] dark:hover:bg-white/[0.07]",
         active && GROUP_HERE,
         EASE_COLORS,
         FOCUS_INSET
@@ -1167,7 +1167,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
           <aside
             className={cn(
               PANEL,
-              "canvas-panel-in absolute top-3 right-3 left-3 flex max-h-[calc(100%-96px)] flex-col overflow-y-auto p-5 md:right-auto md:w-[372px]"
+              "canvas-panel-in absolute top-3 right-3 left-3 flex max-h-[calc(100%-96px)] flex-col overflow-y-auto p-5 [scrollbar-width:none] *:shrink-0 md:right-auto md:w-[372px] xl:max-h-[calc(100%-24px)] [&::-webkit-scrollbar]:hidden"
             )}
             data-ui
           >
@@ -1225,7 +1225,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
             </p>
             <nav
               aria-label="Groups"
-              className="mt-6 hidden flex-col border-black/[0.08] border-t pt-3 md:flex dark:border-white/[0.1]"
+              className="mt-6 hidden grid-cols-2 gap-x-6 border-black/[0.08] border-t pt-3 md:grid dark:border-white/[0.1]"
             >
               {groups.map((g) =>
                 g.slug === PRO_SLUG ? (
@@ -1238,7 +1238,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
                   <button
                     aria-current={here === g.slug ? "location" : undefined}
                     className={cn(
-                      "-mx-2 flex h-8 items-center justify-between rounded-[8px] px-2 text-[13px] hover:bg-black/[0.05] dark:hover:bg-white/[0.07]",
+                      "-mx-2 flex h-7 items-center justify-between rounded-[8px] px-2 text-[13px] hover:bg-black/[0.05] dark:hover:bg-white/[0.07]",
                       here === g.slug && GROUP_HERE,
                       INK,
                       EASE_COLORS,
