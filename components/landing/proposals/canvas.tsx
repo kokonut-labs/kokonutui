@@ -28,7 +28,15 @@ import { cn } from "@/lib/utils";
 import { ProposalActions } from "./actions";
 import { PartDemo } from "./demo";
 import { matchParts } from "./match";
-import { PRO_LINE, PRO_PARTS, PRO_RED, PRO_SLUG, ProStill } from "./pro";
+import {
+  isProHero,
+  PRO_LINE,
+  PRO_PARTS,
+  PRO_RED,
+  PRO_SLUG,
+  ProStill,
+  proRatio,
+} from "./pro";
 
 // The homepage is one canvas with every component on it, running, laid out
 // like a design file: a group per category, an artboard per component.
@@ -52,7 +60,6 @@ const GROUP_W = COLS * BOARD_W + (COLS - 1) * GAP_X;
 /** Backgrounds fill a screen, so they get two to a row, at twice the width. */
 const WIDE = new Set(["backgrounds"]);
 const WIDE_COLS = 2;
-const WIDE_W = (GROUP_W - (WIDE_COLS - 1) * GAP_X) / WIDE_COLS;
 
 /** Below this zoom, artboards show their name instead of running. */
 const DETAIL = 0.42;
@@ -82,15 +89,22 @@ interface View {
   z: number;
 }
 
-/** Backgrounds and Pro heroes fill a screen; they get the wide boards. */
-const isWideBoard = (part: Part) =>
-  WIDE.has(part.categorySlug) ||
-  (part.categorySlug === PRO_SLUG && part.name.endsWith("-hero"));
+/** How many boards share a row: Pro heroes alone, backgrounds two, the rest four. */
+function boardCols(part: Part) {
+  if (isProHero(part)) {
+    return 1;
+  }
+  return WIDE.has(part.categorySlug) ? WIDE_COLS : COLS;
+}
 
-function boardHeight(part: Part, wide: boolean) {
+const boardWidth = (cols: number) => (GROUP_W - (cols - 1) * GAP_X) / cols;
+
+function boardHeight(part: Part, w: number) {
+  if (isProHero(part)) {
+    return Math.round(w * proRatio(part));
+  }
   if (part.categorySlug === PRO_SLUG) {
-    // Pro stills are 1000 × 1125; the board keeps their shape.
-    return Math.round((wide ? WIDE_W : BOARD_W) * 1.125);
+    return w;
   }
   return BOARD_H[part.categorySlug] ?? BOARD_H_DEFAULT;
 }
@@ -116,18 +130,18 @@ function layout(parts: Part[]) {
     let rowCols = 0;
     let rowH = 0;
     for (const part of items) {
-      const wide = isWideBoard(part);
-      const cols = wide ? WIDE_COLS : COLS;
-      const w = wide ? WIDE_W : BOARD_W;
-      const h = boardHeight(part, wide);
+      const cols = boardCols(part);
+      const w = boardWidth(cols);
+      const h = boardHeight(part, w);
       if (col > 0 && (cols !== rowCols || col >= cols)) {
         y += LABEL + rowH + GAP_Y;
         col = 0;
       }
       if (col === 0) {
         rowCols = cols;
-        rowH = h;
+        rowH = 0;
       }
+      rowH = Math.max(rowH, h);
       boards.push({ part, w, h, x: gx + col * (w + GAP_X), y });
       col += 1;
     }
@@ -273,7 +287,7 @@ function BoardBody({ part }: { part: Part }) {
   if (isPro(part)) {
     return <ProStill part={part} />;
   }
-  if (isWideBoard(part)) {
+  if (WIDE.has(part.categorySlug)) {
     return <PartDemo fill part={part} />;
   }
   return (
