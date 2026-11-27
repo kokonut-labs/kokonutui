@@ -10,8 +10,23 @@ import { LazyDemo } from "@/components/mdx/lazy-demo";
  * the component as `shadcn add` delivers it, with its own demo data.
  * Backgrounds get a box to fill, since they size to their parent.
  */
-export function PartDemo({ part }: { part: Part }) {
+export function PartDemo({
+  part,
+  fill = false,
+}: {
+  part: Part;
+  /** Fill the parent instead of a fixed box, for a background. */
+  fill?: boolean;
+}) {
   const entry = LIVE[part.name];
+  if (fill) {
+    return (
+      <LazyDemo
+        className="absolute inset-0 h-full min-h-0 w-full"
+        demo={`kokonutui/${part.name}`}
+      />
+    );
+  }
   if (entry) {
     const Demo = entry.Component;
     return (

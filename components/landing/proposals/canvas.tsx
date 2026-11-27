@@ -38,7 +38,7 @@ const BOARD_W = 440;
 const BOARD_H: Record<string, number> = {
   buttons: 240,
   texts: 240,
-  backgrounds: 330,
+  backgrounds: 600,
 };
 const BOARD_H_DEFAULT = 430;
 const LABEL = 34;
@@ -49,6 +49,10 @@ const GROUP_HEAD = 300;
 const GROUP_GAP = 360;
 const GROUP_COLUMNS = 3;
 const GROUP_W = COLS * BOARD_W + (COLS - 1) * GAP_X;
+/** Backgrounds fill a screen, so they get two to a row, at twice the width. */
+const WIDE = new Set(["backgrounds"]);
+const WIDE_COLS = 2;
+const WIDE_W = (GROUP_W - (WIDE_COLS - 1) * GAP_X) / WIDE_COLS;
 
 /** Below this zoom, artboards show their name instead of running. */
 const DETAIL = 0.42;
@@ -59,6 +63,7 @@ interface Board {
   part: Part;
   x: number;
   y: number;
+  w: number;
   h: number;
 }
 
@@ -88,7 +93,9 @@ function layout(parts: Part[]) {
   for (const slug of slugs) {
     const items = parts.filter((p) => p.categorySlug === slug);
     const h = BOARD_H[slug] ?? BOARD_H_DEFAULT;
-    const rows = Math.ceil(items.length / COLS);
+    const cols = WIDE.has(slug) ? WIDE_COLS : COLS;
+    const w = WIDE.has(slug) ? WIDE_W : BOARD_W;
+    const rows = Math.ceil(items.length / cols);
     const groupH = GROUP_HEAD + rows * (LABEL + h + GAP_Y) - GAP_Y;
     const column = heights.indexOf(Math.min(...heights));
     const gx = column * (GROUP_W + GROUP_GAP);
@@ -105,9 +112,10 @@ function layout(parts: Part[]) {
     items.forEach((part, i) => {
       boards.push({
         part,
+        w,
         h,
-        x: gx + (i % COLS) * (BOARD_W + GAP_X),
-        y: gy + GROUP_HEAD + Math.floor(i / COLS) * (LABEL + h + GAP_Y),
+        x: gx + (i % cols) * (w + GAP_X),
+        y: gy + GROUP_HEAD + Math.floor(i / cols) * (LABEL + h + GAP_Y),
       });
     });
   }
@@ -338,7 +346,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
         .filter(
           (b) =>
             b.x < right &&
-            b.x + BOARD_W > left &&
+            b.x + b.w > left &&
             b.y < bottom &&
             b.y + LABEL + b.h > top
         )
@@ -484,8 +492,8 @@ export function Canvas({ parts }: { parts: Part[] }) {
       }
       setSelection({ kind: "one", name });
       const { w, h } = anchor(true);
-      const z = Math.min(1, (w - 80) / BOARD_W, (h - 120) / (b.h + LABEL));
-      flyTo(b.x + BOARD_W / 2, b.y + (LABEL + b.h) / 2, z, true);
+      const z = Math.min(1, (w - 80) / b.w, (h - 120) / (b.h + LABEL));
+      flyTo(b.x + b.w / 2, b.y + (LABEL + b.h) / 2, z, true);
     },
     [anchor, byName, flyTo]
   );
@@ -562,7 +570,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
       .filter(
         (b) =>
           b.x * z + x >= -40 &&
-          (b.x + BOARD_W) * z + x <= el.clientWidth + 40 &&
+          (b.x + b.w) * z + x <= el.clientWidth + 40 &&
           b.y * z + y >= -40 &&
           (b.y + LABEL + b.h) * z + y <= el.clientHeight + 40
       )
@@ -976,7 +984,7 @@ export function Canvas({ parts }: { parts: Part[] }) {
                 className="absolute"
                 data-board={b.part.name}
                 key={b.part.name}
-                style={{ left: b.x, top: b.y, width: BOARD_W }}
+                style={{ left: b.x, top: b.y, width: b.w }}
               >
                 <button
                   className={cn(
@@ -1029,9 +1037,13 @@ export function Canvas({ parts }: { parts: Part[] }) {
                       // Arrives from a blur as it comes into view, so panning
                       // reveals parts instead of popping them in.
                       <div className="canvas-live-in absolute inset-0">
-                        <Fit className="p-6">
-                          <PartDemo part={b.part} />
-                        </Fit>
+                        {WIDE.has(b.part.categorySlug) ? (
+                          <PartDemo fill part={b.part} />
+                        ) : (
+                          <Fit className="p-6">
+                            <PartDemo part={b.part} />
+                          </Fit>
+                        )}
                       </div>
                     ) : (
                       <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-3 px-8 text-center">
