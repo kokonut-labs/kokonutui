@@ -952,6 +952,17 @@ export const component: Registry = [
     ],
   },
   {
+    name: "ai-post",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-post.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "ai-handoff",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],

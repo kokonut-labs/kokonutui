@@ -62,8 +62,9 @@ export function trackCopy(text?: string) {
 }
 
 /**
- * Report a followed link when it leads to Pro, the GitHub repo or an AI tool
- * from the Open in menu. Any other link is left alone.
+ * Report a followed link when it leads to Pro, the GitHub repo, an app that
+ * uses a component, or an AI tool from the Open in menu. Any other link is
+ * left alone.
  */
 export function trackLink(href: string) {
   let url: URL;
@@ -81,6 +82,14 @@ export function trackLink(href: string) {
       item:
         url.searchParams.get("utm_content") ??
         (url.hash.slice(1) || url.pathname.replace(SLASHES, "") || "home"),
+    });
+    return;
+  }
+  if (url.searchParams.get("utm_medium") === "used-in") {
+    // The "This component is used in …" line under a demo.
+    track("Used in click", {
+      app: host,
+      component: url.searchParams.get("utm_content") ?? "unknown",
     });
     return;
   }

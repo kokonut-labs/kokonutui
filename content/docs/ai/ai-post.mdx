@@ -1,0 +1,46 @@
+---
+title: AI Post
+description: A post the assistant sent to several accounts at once. Each row counts the characters against that network's limit and shows when it went out, or when it will.
+keywords: ["social media", "post", "scheduler", "publish", "x", "bluesky", "linkedin", "agent", "chat"]
+icon: Send
+full: false
+---
+
+import AIPost from "@/components/kokonutui/ai-post";
+
+<Preview link="ai-post">
+    <AIPost />
+</Preview>
+
+## Usage
+
+With no props it plays the demo: X and Bluesky go live, LinkedIn waits for its time, and Post now sends it early. Pass `targets` and the card follows your scheduler instead, one row per account. A row's `status` is `scheduled`, `posting`, `posted` or `failed`; `when` is the time to show, `url` adds a View link once it's live, and `error` explains a failure. Edit and Post now only show while a row is still scheduled, and only when you pass `onEdit` or `onPostNow`.
+
+```tsx
+"use client";
+
+import AIPost, { type PostTarget } from "@/components/kokonutui/ai-post";
+
+/** `targets` comes from your scheduler, refreshed as each post goes out. */
+export function PostCard({
+  caption,
+  targets,
+  publishNow,
+}: {
+  caption: string;
+  targets: PostTarget[];
+  publishNow: () => void;
+}) {
+  return (
+    <AIPost
+      caption={caption}
+      done="Everything is live."
+      label="Weekly update"
+      onPostNow={publishNow}
+      targets={targets}
+    />
+  );
+}
+```
+
+From an AI SDK tool, have a `create_post` tool return the caption and one entry per account, and pass its `output` in. Poll the post's status, or stream data parts, to move rows from `scheduled` to `posted`.

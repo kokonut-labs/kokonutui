@@ -28,6 +28,7 @@
     "ai-redact",
     "ai-memory",
     "ai-autocomplete",
+    "ai-post",
     "slash-command-menu",
     "image-generation-card"
   ]

@@ -31,6 +31,7 @@ import { ProNext } from "@/components/mdx/pro-next";
 import { ProPeek } from "@/components/mdx/pro-peek";
 import { ProShowcase, ProShowcaseIntro } from "@/components/mdx/pro-showcase";
 import { ProTemplates } from "@/components/mdx/pro-templates";
+import { UsedIn } from "@/components/mdx/used-in";
 import WhatIncluded from "@/components/mdx/what-included";
 import { siteConfig } from "@/config/site";
 import {
@@ -41,6 +42,7 @@ import {
 import { readComponentSource } from "@/lib/get-llm-text";
 import { isProPeekUrl } from "@/lib/pro-peeks";
 import { source } from "@/lib/source";
+import { usedInFor } from "@/lib/used-in";
 import { cn } from "@/lib/utils";
 
 /**
@@ -60,12 +62,29 @@ async function plateFor({ link, isBlock }: PreviewProps) {
   return { dependencies: part.dependencies, source };
 }
 
+/** "This component is used in …", right under the demo of a component a real app ships. */
+function UsedInLine({ link }: Pick<PreviewProps, "link">) {
+  const name = link.split("/").at(-1);
+  const app = usedInFor(name);
+  return app && name ? <UsedIn app={app} slug={name} /> : null;
+}
+
 async function DocsPreview(props: PreviewProps) {
-  return <Preview {...props} part={await plateFor(props)} />;
+  return (
+    <>
+      <Preview {...props} part={await plateFor(props)} />
+      <UsedInLine link={props.link} />
+    </>
+  );
 }
 
 async function DocsPreviewClient(props: PreviewProps) {
-  return <PreviewClient {...props} part={await plateFor(props)} />;
+  return (
+    <>
+      <PreviewClient {...props} part={await plateFor(props)} />
+      <UsedInLine link={props.link} />
+    </>
+  );
 }
 
 function ogImagePath(slug: string[] = []) {
