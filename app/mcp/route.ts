@@ -13,4 +13,13 @@ const handler = createMcpHandler(createKokonutServer, {
 
 const serve = (request: Request) => handler.fetch(request);
 
-export { serve as DELETE, serve as GET, serve as POST };
+/** A person opening /mcp in a browser lands on the setup docs. */
+const get = (request: Request) =>
+  request.headers.get("accept")?.includes("text/html")
+    ? Response.redirect(
+        new URL("/docs/agents#kokonut-ui-mcp-server", request.url),
+        302
+      )
+    : handler.fetch(request);
+
+export { serve as DELETE, get as GET, serve as POST };

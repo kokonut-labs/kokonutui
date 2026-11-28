@@ -70,7 +70,7 @@ Every component has a live demo, its source, and the packages it installs on its
 
 ## Use with AI agents
 
-Claude Code, Cursor, VS Code and Codex can search and install Kokonut UI components through the [shadcn MCP server](https://ui.shadcn.com/docs/mcp). The [Agents page](https://kokonutui.com/docs/agents) has the one-line setup for each editor and a rules file to drop in. The docs are also available as plain text at [kokonutui.com/llms.txt](https://kokonutui.com/llms.txt).
+Claude Code, Cursor, VS Code and Codex can search and install Kokonut UI components through the [shadcn MCP server](https://ui.shadcn.com/docs/mcp), or through Kokonut UI's own MCP server at `https://kokonutui.com/mcp`, which adds a skill that teaches the agent to find and install components (`claude mcp add --transport http kokonutui https://kokonutui.com/mcp`). The [Agents page](https://kokonutui.com/docs/agents) has the one-line setup for each editor and a rules file to drop in. The docs are also available as plain text at [kokonutui.com/llms.txt](https://kokonutui.com/llms.txt).
 
 ## Kokonut UI Pro
 

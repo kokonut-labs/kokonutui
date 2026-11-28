@@ -1,7 +1,7 @@
 // The skill the MCP server publishes (MCP Skills extension). A host that
-// supports skills loads SKILL.md when the work calls for it; the references
-// are read on demand. The component list is generated from the catalog, so
-// the skill always names what the registry really serves.
+// supports skills loads SKILL.md when the work calls for it; the setup
+// reference is read on demand. The component list stays in the tools, so the
+// skill never has to repeat the registry.
 
 import {
   memorySkillFiles,
@@ -9,7 +9,6 @@ import {
   SkillsExtension,
 } from "@modelcontextprotocol/server/ext/skills";
 import { siteConfig } from "@/config/site";
-import { getCatalog, getCategories } from "@/lib/mcp/catalog";
 
 export const SKILL_NAME = "kokonutui";
 
@@ -28,7 +27,7 @@ Check Kokonut UI before building any of these by hand: an AI chat input, model p
 
 ## Workflow
 
-1. **Find the component.** Call \`search_components\` with what the user needs in plain words ("chat input with file attachments", "hold to confirm button"). Pass \`category\` to narrow it. With no tools, read [references/components.md](references/components.md).
+1. **Find the component.** Call \`search_components\` with what the user needs in plain words ("chat input with file attachments", "hold to confirm button"). Pass \`category\` to narrow it.
 2. **Read it before installing.** Call \`get_component\` with the name. It returns the install command, what gets installed, the props and the import line. Add \`include_source: true\` only when you need to see the implementation.
 3. **Check the project.** It needs Tailwind CSS v4 and shadcn/ui set up (a \`components.json\`). If either is missing, follow [references/setup.md](references/setup.md) first.
 4. **Install with the CLI.** Run it with the project's package manager:
@@ -67,26 +66,6 @@ Skip any step that is already done. Run commands with the project's package mana
 Full guide: ${siteConfig.url}/docs/agents
 `;
 
-function componentsMd(): string {
-  const catalog = getCatalog();
-  const lines = [
-    "# Kokonut UI components",
-    "",
-    "Install any of these with `npx shadcn@latest add @kokonutui/<name>`. Each name links to its docs page and live demo.",
-  ];
-  for (const category of getCategories()) {
-    lines.push("", `## ${category.title}`, "");
-    for (const component of catalog) {
-      if (component.category === category.id) {
-        lines.push(
-          `- [\`${component.name}\`](${component.url}): ${component.title}. ${component.description}`
-        );
-      }
-    }
-  }
-  return `${lines.join("\n")}\n`;
-}
-
 let extension: Promise<SkillCatalog> | undefined;
 
 /**
@@ -97,7 +76,6 @@ export function getSkillsExtension(): Promise<SkillCatalog> {
   extension ??= SkillsExtension.load(
     memorySkillFiles({
       [`${SKILL_NAME}/SKILL.md`]: SKILL_MD,
-      [`${SKILL_NAME}/references/components.md`]: componentsMd(),
       [`${SKILL_NAME}/references/setup.md`]: SETUP_MD,
     }),
     // The files only change with a deploy.
