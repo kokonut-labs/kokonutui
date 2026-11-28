@@ -1,6 +1,6 @@
 # Kokonut UI - Component Registry Index
 
-116 free, open-source React components for AI chat and agents, plus the inputs, cards and buttons around them. Built with Tailwind CSS, Motion and shadcn/ui.
+117 free, open-source React components for AI chat and agents, plus the inputs, cards and buttons around them. Built with Tailwind CSS, Motion and shadcn/ui.
 
 Install any component with: npx shadcn@latest add @kokonutui/<component-name>
 
@@ -32,6 +32,7 @@ The documentation index for LLMs lives at https://kokonutui.com/llms.txt
 - [AI Message Queue](https://kokonutui.com/docs/ai/ai-message-queue.md): Keep typing while the agent works. Follow-ups stack above the composer, where you can reorder, edit or send one now, and go in one by one when the run ends. Install: `npx shadcn@latest add @kokonutui/ai-message-queue`
 - [AI Model Selector](https://kokonutui.com/docs/ai/ai-model-selector.md): Pick a model and how hard it thinks. Effort is a detent track that reshapes for each model and keeps your level when you switch. Install: `npx shadcn@latest add @kokonutui/ai-model-selector`
 - [AI Order Status](https://kokonutui.com/docs/ai/ai-order-status.md): A live delivery card in the reply. The courier moves along the route while the ETA counts down, and the route turns green on arrival. Install: `npx shadcn@latest add @kokonutui/ai-order-status`
+- [AI Post](https://kokonutui.com/docs/ai/ai-post.md): A post the assistant sent to several accounts at once. Each row counts the characters against that network's limit and shows when it went out, or when it will. Install: `npx shadcn@latest add @kokonutui/ai-post`
 - [AI Redact](https://kokonutui.com/docs/ai/ai-redact.md): Masks names, emails, card numbers and keys as placeholders before a prompt is sent, then fills the real values back into the reply. Install: `npx shadcn@latest add @kokonutui/ai-redact`
 - [AI Schedule](https://kokonutui.com/docs/ai/ai-schedule.md): Meeting times the assistant found, each with a strip of both calendars so you can see why it is free. Booking folds the list into the event. Install: `npx shadcn@latest add @kokonutui/ai-schedule`
 - [AI Send](https://kokonutui.com/docs/ai/ai-send.md): An email the assistant drafted, editable in place. Send starts a short countdown you can undo before anything goes out. Install: `npx shadcn@latest add @kokonutui/ai-send`

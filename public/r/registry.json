@@ -1285,6 +1285,22 @@
       ]
     },
     {
+      "name": "ai-post",
+      "type": "registry:component",
+      "title": "AI Post",
+      "description": "A post the assistant sent to several accounts at once. Each row counts the characters against that network's limit and shows when it went out, or when it will.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-post.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "ai-handoff",
       "type": "registry:component",
       "title": "AI Handoff",
