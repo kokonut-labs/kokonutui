@@ -1,0 +1,42 @@
+---
+title: Platform Picker
+description: The add-an-account panel. Pick a platform from the grid, read what connecting it takes, and come back to the grid with the new account counted.
+keywords: ["picker", "integrations", "connect account", "oauth", "social", "platforms", "onboarding", "plan limit"]
+icon: LayoutGrid
+full: false
+---
+
+import PlatformPicker from "@/components/kokonutui/platform-picker";
+
+<Preview link="platform-picker">
+    <PlatformPicker />
+</Preview>
+
+## Usage
+
+Each platform has an `id`, a `name`, how many accounts are `connected`, and an optional `hint` for the connect step. `x`, `bluesky`, `linkedin`, `threads`, `discord` and `pinterest` get their marks. Pass `icon` for any other platform. `limit` is how many accounts the plan allows, and it drives the meter at the bottom. `onConnect` runs when the user continues. Resolve it once the account is in, and the picker goes back to the grid with the count up by one. Throw from it and the step stays open, so they can try again.
+
+```tsx
+"use client";
+
+import PlatformPicker from "@/components/kokonutui/platform-picker";
+
+export function AddAccount({ counts }: { counts: Record<string, number> }) {
+  return (
+    <PlatformPicker
+      limit={10}
+      onConnect={(platform) => signInWith(platform.id)}
+      platforms={[
+        { id: "x", name: "X", connected: counts.x },
+        {
+          id: "bluesky",
+          name: "Bluesky",
+          connected: counts.bluesky,
+          hint: "Connect with your handle and an app password.",
+        },
+        { id: "linkedin", name: "LinkedIn", connected: counts.linkedin },
+      ]}
+    />
+  );
+}
+```

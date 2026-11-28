@@ -30,6 +30,7 @@
     "ai-autocomplete",
     "ai-post",
     "slash-command-menu",
-    "image-generation-card"
+    "image-generation-card",
+    "ai-upload"
   ]
 }

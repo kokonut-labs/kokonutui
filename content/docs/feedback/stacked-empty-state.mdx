@@ -1,0 +1,34 @@
+---
+title: Stacked Empty State
+description: An empty list drawn as a blank post on top of two others, fanned out like one post going to several places. The cards spread a little on hover.
+keywords: ["empty state", "blank slate", "zero state", "no results", "onboarding", "illustration"]
+icon: Layers
+full: false
+---
+
+import StackedEmptyState from "@/components/kokonutui/stacked-empty-state";
+
+<Preview link="stacked-empty-state">
+    <StackedEmptyState />
+</Preview>
+
+## Usage
+
+Pass your own `title`, `description` and `actions`. `icon` takes any Lucide icon for the blue tile on the front card. Without `actions` it shows the demo's two buttons, so pass `actions={null}` for none. It renders on the server: no client JavaScript, and the hover is plain CSS.
+
+```tsx
+import { Inbox } from "lucide-react";
+import StackedEmptyState from "@/components/kokonutui/stacked-empty-state";
+import { Button } from "@/components/ui/button";
+
+export function EmptyInbox() {
+  return (
+    <StackedEmptyState
+      actions={<Button>Connect an inbox</Button>}
+      description="Messages from every channel land here."
+      icon={Inbox}
+      title="Nothing in your inbox"
+    />
+  );
+}
+```

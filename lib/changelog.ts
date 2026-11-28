@@ -35,7 +35,13 @@ export const NEW_FOR_DAYS = 30;
 export const RELEASES: Release[] = [
   {
     date: "2026-11-28",
-    added: [{ name: "ai-post", pr: 164 }],
+    added: [
+      { name: "ai-post", pr: 164 },
+      { name: "ai-upload", pr: 165 },
+      { name: "stacked-empty-state", pr: 165 },
+      { name: "account-card", pr: 165 },
+      { name: "platform-picker", pr: 165 },
+    ],
     improved: [],
   },
   {
