@@ -1285,6 +1285,68 @@
       ]
     },
     {
+      "name": "ai-upload",
+      "type": "registry:component",
+      "title": "AI Upload",
+      "description": "A drop zone the assistant shows when a post needs photos or a video. Each file uploads with its own progress, and one button hands the links back to the chat.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/ai-upload.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "stacked-empty-state",
+      "type": "registry:component",
+      "title": "Stacked Empty State",
+      "description": "An empty list drawn as a blank post on top of two others, fanned out like one post going to several places. The cards spread a little on hover.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/stacked-empty-state.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "account-card",
+      "type": "registry:component",
+      "title": "Account Card",
+      "description": "A connected social account with its platform on the avatar, its followers, and two weeks of posts as tiny bars. Hover a bar to see that day.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/account-card.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "platform-picker",
+      "type": "registry:component",
+      "title": "Platform Picker",
+      "description": "The add-an-account panel. Pick a platform from the grid, read what connecting it takes, and come back to the grid with the new account counted.",
+      "dependencies": [
+        "lucide-react",
+        "motion"
+      ],
+      "files": [
+        {
+          "path": "components/kokonutui/platform-picker.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
       "name": "ai-post",
       "type": "registry:component",
       "title": "AI Post",
