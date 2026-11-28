@@ -1,0 +1,51 @@
+---
+title: AI Upload
+description: A drop zone the assistant shows when a post needs photos or a video. Each file uploads with its own progress, and one button hands the links back to the chat.
+keywords: ["upload", "drop zone", "file upload", "media", "images", "video", "agent", "chat", "attachments"]
+icon: ImageUp
+full: false
+---
+
+import AIUpload from "@/components/kokonutui/ai-upload";
+
+<Preview link="ai-upload">
+    <AIUpload />
+</Preview>
+
+## Usage
+
+With no props it plays the demo: one photo is up, the next is on its way, and any file you drop fakes its upload. Pass `upload` and the card sends real files instead. It gets each `File` and an `onProgress` callback, and resolves with the file's URL. `onUse` receives every URL when the user presses Use these files. Up to `maxFiles` photos fit in one post (4 by default), and a video always goes alone.
+
+```tsx
+"use client";
+
+import AIUpload from "@/components/kokonutui/ai-upload";
+
+/** Sends each file to your storage and returns its public URL. */
+async function upload(file: File, onProgress: (progress: number) => void) {
+  const { url, publicUrl } = await fetch("/api/upload-url", {
+    method: "POST",
+    body: JSON.stringify({ name: file.name, type: file.type }),
+  }).then((res) => res.json());
+
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (event) => onProgress(event.loaded / event.total);
+    xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error("Upload failed.")));
+    xhr.onerror = () => reject(new Error("Upload failed."));
+    xhr.open("PUT", url);
+    xhr.send(file);
+  });
+  return publicUrl;
+}
+
+export function MediaStep({ send }: { send: (text: string) => void }) {
+  return (
+    <AIUpload
+      message="Drop the photos for this post."
+      onUse={(urls) => send(`Use these as mediaUrls:\n${urls.join("\n")}`)}
+      upload={upload}
+    />
+  );
+}
+```

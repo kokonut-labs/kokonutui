@@ -29,6 +29,10 @@ const POSTRIPPL: UsedInApp = {
 /** By registry name. */
 const USED_IN: Record<string, UsedInApp> = {
   "ai-post": POSTRIPPL,
+  "ai-upload": POSTRIPPL,
+  "stacked-empty-state": POSTRIPPL,
+  "account-card": POSTRIPPL,
+  "platform-picker": POSTRIPPL,
 };
 
 export const usedInFor = (slug: string | undefined) =>

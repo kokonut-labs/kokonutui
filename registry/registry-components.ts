@@ -952,6 +952,50 @@ export const component: Registry = [
     ],
   },
   {
+    name: "ai-upload",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/ai-upload.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "stacked-empty-state",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/stacked-empty-state.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "account-card",
+    type: "registry:component",
+    dependencies: ["lucide-react"],
+    files: [
+      {
+        path: "components/kokonutui/account-card.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
+    name: "platform-picker",
+    type: "registry:component",
+    dependencies: ["lucide-react", "motion"],
+    files: [
+      {
+        path: "components/kokonutui/platform-picker.tsx",
+        type: "registry:component",
+      },
+    ],
+  },
+  {
     name: "ai-post",
     type: "registry:component",
     dependencies: ["lucide-react", "motion"],

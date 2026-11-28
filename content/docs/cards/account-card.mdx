@@ -1,0 +1,42 @@
+---
+title: Account Card
+description: A connected social account with its platform on the avatar, its followers, and two weeks of posts as tiny bars. Hover a bar to see that day.
+keywords: ["account", "profile", "social", "card", "sparkline", "activity", "connected accounts", "integration"]
+icon: CircleUserRound
+full: false
+---
+
+import AccountCard from "@/components/kokonutui/account-card";
+
+<Preview link="account-card">
+    <AccountCard />
+</Preview>
+
+## Usage
+
+`activity` is posts per day, oldest first. Empty days show as faint dots, so a quiet stretch reads as calm. `platform` puts the network's mark on the avatar: `x`, `bluesky`, `linkedin` and `threads` get theirs, and any other name gets its initial. When the connection has died, set `status="expired"` and the activity line turns into a single red Reconnect button that calls `onReconnect`. `actions` goes on the right of the header, for a menu.
+
+```tsx
+"use client";
+
+import AccountCard from "@/components/kokonutui/account-card";
+
+export function Accounts({ accounts }: { accounts: Account[] }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {accounts.map((account) => (
+        <AccountCard
+          activity={account.postsPerDay}
+          avatarUrl={account.avatar}
+          followers={account.followers}
+          handle={account.handle}
+          key={account.id}
+          onReconnect={() => reconnect(account.id)}
+          platform={account.platform}
+          status={account.expired ? "expired" : "active"}
+        />
+      ))}
+    </div>
+  );
+}
+```

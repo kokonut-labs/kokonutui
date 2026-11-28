@@ -5,6 +5,7 @@
     "inline-alert",
     "save-status",
     "empty-state",
-    "helpful-rating"
+    "helpful-rating",
+    "stacked-empty-state"
   ]
 }

@@ -18,6 +18,7 @@
     "tip-selector",
     "location-picker",
     "swatch-fan",
-    "price-range"
+    "price-range",
+    "platform-picker"
   ]
 }
