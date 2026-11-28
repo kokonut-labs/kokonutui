@@ -5,6 +5,7 @@ import HeaderProSmall from "@/components/landing/header-pro-small";
 import { getParts } from "@/components/landing/home/parts";
 import { LEAF, MONO } from "@/components/landing/home/styles";
 import { SidebarIntentPrefetch } from "@/components/sidebar-intent-prefetch";
+import { isRecentlyUpdatedPage } from "@/lib/changelog";
 import { isProPeekUrl } from "@/lib/pro-peeks";
 import { PRO_SHOWCASE_PAGE } from "@/lib/pro-showcase";
 import { PRO_TEMPLATES_PAGE } from "@/lib/pro-templates";
@@ -60,7 +61,7 @@ function folderTag(
 /**
  * The sidebar reads like the homepage's index: each component is listed by
  * its catalog code instead of an icon. Only the category says how many of
- * its parts are new or updated; the rows themselves stay plain, and the
+ * its parts are new or updated; component rows stay plain, and the
  * category page tags each one.
  */
 function withCodes(tree: PageTree.Root): PageTree.Root {
@@ -96,6 +97,10 @@ function withCodes(tree: PageTree.Root): PageTree.Root {
         isProPeekUrl(node.url))
     ) {
       return { ...node, name: tagged(node.name, "PRO", "text-[#FF2D55]") };
+    }
+    // Guide pages with news, like the Agents page when the MCP server landed.
+    if (node.type === "page" && isRecentlyUpdatedPage(node.url)) {
+      return { ...node, name: tagged(node.name, "Updated") };
     }
     const code = node.type === "page" ? codes.get(node.url) : undefined;
     if (!code || node.type !== "page") {
