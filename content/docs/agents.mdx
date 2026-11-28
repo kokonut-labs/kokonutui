@@ -1,6 +1,6 @@
 ---
 title: Agents
-description: Use Kokonut UI with Claude Code, Cursor, VS Code or Codex. Connect the shadcn MCP server, add a rules file, and give your agent the docs as Markdown.
+description: Use Kokonut UI with Claude Code, Cursor, VS Code or Codex. Connect the shadcn or Kokonut UI MCP server, add a rules file, and give your agent the docs as Markdown.
 keywords: ["mcp", "mcp server", "ai", "llm", "llms.txt", "claude code", "cursor", "codex", "copilot", "agents.md", "rules"]
 ---
 
@@ -27,6 +27,16 @@ The [shadcn MCP server](https://ui.shadcn.com/docs/mcp) lets your agent list, se
 <McpSetup />
 
 Any other client that speaks the Model Context Protocol works too: point it at `npx shadcn@latest mcp`.
+
+### Kokonut UI MCP server
+
+Kokonut UI also runs its own MCP server at `https://kokonutui.com/mcp`. It has two tools, one that searches the components by what they do and one that returns a component's install command, props and source, plus a `kokonutui` skill that tells your agent when to reach for Kokonut UI and how to install a component. Clients that support skills over MCP, like Claude Code, load the skill when the work calls for it.
+
+```bash title="Claude Code"
+claude mcp add --transport http kokonutui https://kokonutui.com/mcp
+```
+
+In Claude, add `https://kokonutui.com/mcp` as a custom connector. Other clients take the same URL as a remote (Streamable HTTP) server.
 
 ## Ask your agent
 
