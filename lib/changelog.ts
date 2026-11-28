@@ -571,6 +571,18 @@ export function releaseAnchor(date: string) {
 
 export const CHANGELOG_URL = "/docs/changelog";
 
+/**
+ * Docs pages (not components) that changed in a release worth pointing at.
+ * The sidebar tags each one Updated for as long as the release is recent.
+ */
+const PAGE_UPDATES: { url: string; date: string }[] = [
+  { url: "/docs/agents", date: "2026-11-28" },
+];
+
+/** Whether the sidebar should tag this docs page Updated. */
+export const isRecentlyUpdatedPage = (url: string) =>
+  PAGE_UPDATES.some((page) => page.url === url && isRecent(page.date));
+
 /** The release date for each component, keyed by registry name. */
 export function getAddedDates(): Map<string, string> {
   const added = new Map<string, string>();
