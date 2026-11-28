@@ -3,9 +3,10 @@ import { siteConfig } from "@/config/site";
 /**
  * Emits an API catalog (RFC 9727) as an RFC 9264 linkset.
  *
- * Two APIs are public here: the shadcn component registry that the CLI reads,
- * and the Orama-backed docs search. Both are unauthenticated, so no `status`
- * or auth relations are advertised — there is nothing to hold a token for.
+ * Three APIs are public here: the shadcn component registry that the CLI
+ * reads, the MCP server at /mcp, and the Orama-backed docs search. All are
+ * unauthenticated, so no `status` or auth relations are advertised — there
+ * is nothing to hold a token for.
  */
 export function GET() {
   const linkset = {
@@ -35,6 +36,17 @@ export function GET() {
             href: `${siteConfig.url}/llms.txt`,
             type: "text/plain",
             title: "llms.txt index of the documentation",
+          },
+        ],
+      },
+      {
+        anchor: `${siteConfig.url}/mcp`,
+        "service-doc": [
+          {
+            href: `${siteConfig.url}/docs/agents`,
+            type: "text/html",
+            title:
+              "Kokonut UI MCP server: component search tools and the kokonutui skill",
           },
         ],
       },

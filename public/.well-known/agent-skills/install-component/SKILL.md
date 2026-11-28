@@ -27,6 +27,10 @@ append `.md` to the URL) to get clean Markdown instead of HTML. For example,
 
 ## Installing
 
+The Kokonut UI MCP server at `https://kokonutui.com/mcp` (Streamable HTTP)
+searches the components and returns each one's install command and props.
+It also publishes a `kokonutui` skill to clients that support skills over MCP.
+
 If a shadcn MCP server is available, use it to browse and install components
 directly — it works with the `@kokonutui` registry out of the box. Setup:
 `https://kokonutui.com/docs/agents`.

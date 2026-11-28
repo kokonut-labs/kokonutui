@@ -154,6 +154,8 @@ Kokonut UI (${siteConfig.url}) is a shadcn/ui component registry. You are an AI 
    npx shadcn@latest add https://kokonutui.com/r/utils.json
 4. Connect the shadcn MCP server for the editor you are running in, so you can browse and install components later:
    npx shadcn@latest mcp init --client <claude|cursor|vscode|codex>
+   If the client takes remote MCP servers, also add the Kokonut UI server at ${siteConfig.url}/mcp. It searches the components and ships a skill for installing them. In Claude Code:
+   claude mcp add --transport http kokonutui ${siteConfig.url}/mcp
 5. Add the rules below to the project's agent instructions file: CLAUDE.md, AGENTS.md, .cursor/rules/kokonutui.mdc or .github/copilot-instructions.md, whichever the project already uses. Create AGENTS.md if there is none.
 
 ${indent(RULES_BODY)}
@@ -175,6 +177,11 @@ export const AGENT_PROMPTS = [
 ];
 
 export const AGENT_ENDPOINTS = [
+  {
+    path: "/mcp",
+    description:
+      "The Kokonut UI MCP server (Streamable HTTP): search_components, get_component and the kokonutui skill.",
+  },
   {
     path: "/setup.md",
     description:

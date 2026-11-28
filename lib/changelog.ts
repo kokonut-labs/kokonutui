@@ -30,7 +30,7 @@ export interface Release {
  * release. Measured from the changelog, not the clock, so pages stay static
  * and the tags only move when a release is added.
  */
-export const NEW_FOR_DAYS = 30;
+export const NEW_FOR_DAYS = 14;
 
 export const RELEASES: Release[] = [
   {
@@ -43,6 +43,12 @@ export const RELEASES: Release[] = [
       { name: "platform-picker", pr: 165 },
     ],
     improved: [],
+    library: [
+      {
+        note: "A Kokonut UI MCP server at kokonutui.com/mcp: tools to search components and read one, and a skill that teaches your agent to install them with shadcn add.",
+        prs: [166],
+      },
+    ],
   },
   {
     date: "2026-11-16",

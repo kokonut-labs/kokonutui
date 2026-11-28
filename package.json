@@ -14,6 +14,7 @@
     "check:changed": "bun run ./scripts/check-changed.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "2.4.0",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-slot": "^1.2.0",
     "@tailwindcss/postcss": "^4.3.0",
